@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(mv:*)",
+      "Bash(php artisan migrate:fresh:*)",
+      "Bash(php artisan:*)",
+      "Bash(php:*)",
+      "Bash(npm install)",
+      "Bash(npm run build:*)",
+      "Bash(npm install:*)",
+      "Bash(curl:*)",
+      "Bash(rm:*)",
+      "Bash(npm run dev:*)",
+      "Bash(composer require:*)",
+      "Bash(./vendor/bin/pint:*)",
+      "Bash(find:*)",
+      "Bash(cp:*)",
+      "Bash(sed:*)",
+      "Bash(./vendor/bin/phpstan analyse --level=max app/Helpers/SalesCalculator.php)",
+      "Bash(./vendor/bin/phpstan analyse --level=5 app/Helpers/SalesCalculator.php)",
+      "Bash(./vendor/bin/phpstan:*)",
+      "Bash(cat:*)",
+      "Bash(taskkill:*)",
+      "Bash(pkill:*)",
+      "Bash(wmic process where:*)",
+      "Bash(node:*)",
+      "Bash(npm:*)",
+      "Bash(powershell:*)",
+      "Bash(del composer-setup.php)",
+      "Bash(git remote add:*)",
+      "Bash(git add:*)"
+    ],
+    "defaultMode": "acceptEdits",
+    "additionalDirectories": [
+      "D:\\"
+    ]
+  }
+}

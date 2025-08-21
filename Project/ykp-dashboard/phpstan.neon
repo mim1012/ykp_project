@@ -1,0 +1,7 @@
+parameters:
+    level: 5
+    paths:
+        - app/Helpers/
+        - app/Application/
+        - app/Http/Controllers/
+        - app/Http/Requests/
