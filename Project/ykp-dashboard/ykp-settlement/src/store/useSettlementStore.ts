@@ -239,13 +239,82 @@ export const useSettlementStore = create<SettlementStore>((set, get) => ({
     set({ isSaving: true });
     
     try {
-      // API 호출 시뮬레이션
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // YKP Settlement 데이터를 Sales API 형식으로 변환
+      const salesData = rows.map(row => ({
+        dealer_code: row.dealerId || 'DEFAULT',
+        store_id: 1, // 기본값
+        branch_id: 1, // 기본값
+        sale_date: row.activationDate || new Date().toISOString().split('T')[0],
+        carrier: row.carrier || 'SK',
+        activation_type: row.activationType || '신규',
+        model_name: row.modelName || '',
+        base_price: parseFloat(row.faceValue) || 0,
+        verbal1: parseFloat(row.verbal1) || 0,
+        verbal2: parseFloat(row.verbal2) || 0,
+        grade_amount: parseFloat(row.gradeAmount) || 0,
+        additional_amount: parseFloat(row.additionalAmount) || 0,
+        settlement_amount: parseFloat(row.settlementAmount) || 0,
+        tax: parseFloat(row.tax) || 0,
+        margin_after_tax: parseFloat(row.finalMargin) || 0,
+        cash_received: parseFloat(row.cashReceived) || 0,
+        payback: parseFloat(row.payback) || 0,
+        phone_number: row.customerPhone || '',
+        memo: row.memo || ''
+      }));
+
+      // Laravel Sales API로 저장
+      const response = await fetch('http://localhost:8000/api/sales/bulk-save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({ sales: salesData })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(`API 저장 실패: ${errorData.message || response.statusText}`);
+      }
+
+      const result = await response.json();
       
-      // localStorage에 저장
+      if (!result.success) {
+        throw new Error(`저장 실패: ${result.message || '알 수 없는 오류'}`);
+      }
+
+      // 성공 시 localStorage도 백업용으로 저장
       localStorage.setItem('settlement_data', JSON.stringify(rows));
+      localStorage.setItem('last_save_time', new Date().toISOString());
       
-      console.log('저장 완료:', rows);
+      console.log('✅ 데이터베이스 저장 완료:', result);
+      
+      // 저장 성공 알림
+      if (typeof window !== 'undefined') {
+        const notification = document.createElement('div');
+        notification.innerHTML = '✅ 데이터가 성공적으로 저장되었습니다!';
+        notification.style.cssText = 'position:fixed;top:20px;right:20px;background:#10b981;color:white;padding:12px 20px;border-radius:8px;z-index:1000;font-weight:600;';
+        document.body.appendChild(notification);
+        setTimeout(() => notification.remove(), 3000);
+      }
+      
+    } catch (error) {
+      console.error('저장 오류:', error);
+      
+      // 실패 시 localStorage라도 저장
+      localStorage.setItem('settlement_data', JSON.stringify(rows));
+      localStorage.setItem('last_save_error', error.message);
+      
+      // 오류 알림
+      if (typeof window !== 'undefined') {
+        const notification = document.createElement('div');
+        notification.innerHTML = `❌ 저장 실패: ${error.message}`;
+        notification.style.cssText = 'position:fixed;top:20px;right:20px;background:#ef4444;color:white;padding:12px 20px;border-radius:8px;z-index:1000;font-weight:600;';
+        document.body.appendChild(notification);
+        setTimeout(() => notification.remove(), 5000);
+      }
+      
+      throw error;
     } finally {
       set({ isSaving: false });
     }
@@ -255,16 +324,69 @@ export const useSettlementStore = create<SettlementStore>((set, get) => ({
     set({ isLoading: true });
     
     try {
-      // API 호출 시뮬레이션
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Laravel Sales API에서 최근 데이터 로드
+      const response = await fetch('http://localhost:8000/api/sales?limit=50&sort=sale_date&order=desc');
       
-      // localStorage에서 로드
+      if (response.ok) {
+        const result = await response.json();
+        
+        if (result.success && result.data.length > 0) {
+          // Sales 데이터를 YKP Settlement 형식으로 변환
+          const convertedRows = result.data.map((sale: any) => ({
+            id: `settlement_${sale.id}`,
+            seller: sale.salesperson || '미기재',
+            dealerId: sale.dealer_code || 'DEFAULT',
+            dealerName: '대리점명', // API에서 가져올 예정
+            carrier: sale.carrier || 'SK',
+            activationType: sale.activation_type || '신규',
+            modelName: sale.model_name || '',
+            activationDate: sale.sale_date || new Date().toISOString().split('T')[0],
+            customerName: '고객명', // 개인정보는 마스킹
+            customerPhone: sale.phone_number || '',
+            faceValue: String(sale.base_price || 0),
+            verbal1: String(sale.verbal1 || 0),
+            verbal2: String(sale.verbal2 || 0),
+            gradeAmount: String(sale.grade_amount || 0),
+            additionalAmount: String(sale.additional_amount || 0),
+            cashReceived: String(sale.cash_received || 0),
+            payback: String(sale.payback || 0),
+            memo: sale.memo || '',
+            
+            // 계산 필드들
+            settlementAmount: String(sale.settlement_amount || 0),
+            tax: String(sale.tax || 0),
+            finalMargin: String(sale.margin_after_tax || 0)
+          }));
+          
+          get().setRows(convertedRows);
+          console.log('✅ API에서 데이터 로드 완료:', convertedRows.length + '건');
+        } else {
+          // API 데이터가 없으면 localStorage 시도
+          const saved = localStorage.getItem('settlement_data');
+          if (saved) {
+            const rows = JSON.parse(saved);
+            get().setRows(rows);
+            console.log('📦 localStorage에서 데이터 로드:', rows.length + '건');
+          } else {
+            // 완전히 새로운 시작
+            get().setRows([createNewRow(DEFAULT_PROFILE)]);
+            console.log('🆕 새로운 데이터로 시작');
+          }
+        }
+      } else {
+        throw new Error(`API 호출 실패: ${response.status}`);
+      }
+      
+    } catch (error) {
+      console.error('데이터 로드 오류:', error);
+      
+      // API 실패 시 localStorage 폴백
       const saved = localStorage.getItem('settlement_data');
       if (saved) {
         const rows = JSON.parse(saved);
         get().setRows(rows);
+        console.log('📦 오류로 인한 localStorage 폴백:', rows.length + '건');
       } else {
-        // 초기 데이터
         get().setRows([createNewRow(DEFAULT_PROFILE)]);
       }
     } finally {

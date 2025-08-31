@@ -4,12 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Sale extends Model
 {
     use HasFactory;
 
     protected $fillable = [
+        'dealer_code',
         'store_id',
         'branch_id',
         'sale_date',
@@ -67,5 +69,29 @@ class Sale extends Model
     public function branch()
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    /**
+     * Get the dealer profile that owns this sale.
+     */
+    public function dealerProfile(): BelongsTo
+    {
+        return $this->belongsTo(DealerProfile::class, 'dealer_code', 'dealer_code');
+    }
+
+    /**
+     * Get the total amount for this sale (calculated field).
+     */
+    public function getTotalAmountAttribute(): float
+    {
+        return $this->settlement_amount ?? 0;
+    }
+
+    /**
+     * Get the MNP discount for this sale.
+     */
+    public function getMnpDiscountAttribute(): float
+    {
+        return $this->new_mnp_discount ?? 0;
     }
 }

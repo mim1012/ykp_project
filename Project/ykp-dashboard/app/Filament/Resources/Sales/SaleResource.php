@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Sales;
 
 use App\Filament\Resources\Sales\Pages\ManageSales;
 use App\Models\Sale;
+use App\Models\DealerProfile;
 use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -11,6 +12,7 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
@@ -30,6 +32,11 @@ class SaleResource extends Resource
     {
         return $schema
             ->components([
+                Select::make('dealer_code')
+                    ->label('대리점')
+                    ->options(DealerProfile::active()->pluck('dealer_name', 'dealer_code'))
+                    ->searchable()
+                    ->preload(),
                 TextInput::make('store_id')
                     ->required()
                     ->numeric(),
@@ -179,6 +186,10 @@ class SaleResource extends Resource
     {
         return $table
             ->columns([
+                TextColumn::make('dealerProfile.dealer_name')
+                    ->label('대리점')
+                    ->searchable()
+                    ->sortable(),
                 TextColumn::make('store_id')
                     ->numeric()
                     ->sortable(),

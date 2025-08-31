@@ -11,27 +11,44 @@ use Illuminate\Support\Facades\Route;
 
 // Authentication routes (accessible to guests only)
 Route::middleware('guest')->group(function () {
-    Route::get('/login', [AuthController::class, 'showLoginForm'])->name('auth.login');
+    Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
 
     // Only show registration in non-production environments
     if (config('app.env') !== 'production') {
-        Route::get('/register', [AuthController::class, 'showRegistrationForm'])->name('auth.register');
+        Route::get('/register', [AuthController::class, 'showRegistrationForm'])->name('register');
         Route::post('/register', [AuthController::class, 'register']);
     }
 });
 
 // Logout route (accessible to authenticated users only)
-Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('auth.logout');
+Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth')->name('logout');
 
-// Root route - redirect based on authentication status
+// Root route - 실운영 환경과 동일
 Route::get('/', function () {
     if (auth()->check()) {
-        return view('modern-dashboard-optimized');
+        return redirect('/dashboard');
+    } else {
+        return redirect('/login');
     }
-
-    return redirect()->route('auth.login');
 })->name('home');
+
+// 연동 테스트용 (인증 없이 접근)
+Route::get('/test-integration', function () {
+    return view('github-dashboard')->with([
+        'user' => (object)[
+            'id' => 1,
+            'name' => '테스트 사용자',
+            'email' => 'test@ykp.com',
+            'role' => 'headquarters'
+        ]
+    ]);
+})->name('test.integration');
+
+// 기존 고급 대시보드 복구 (임시)
+Route::get('/premium-dash', function () {
+    return view('premium-dashboard');
+})->name('premium.dashboard');
 
 /*
 |--------------------------------------------------------------------------
@@ -41,20 +58,18 @@ Route::get('/', function () {
 
 // All dashboard routes require authentication and RBAC
 Route::middleware(['auth', 'rbac'])->group(function () {
-    // Dashboard home
+    // Dashboard home (인증된 사용자용) - 사이드바 포함 버전 사용
     Route::get('/dashboard', function () {
-        return view('modern-dashboard-optimized');
+        return view('premium-dashboard');
     })->name('dashboard.home');
 
-    // Excel 스타일 판매 데이터 입력
+    // 개통표 Excel 스타일 입력 (Feature Flag 적용)
     Route::get('/sales/excel-input', function () {
+        if (!app('App\Services\FeatureService')->isEnabled('excel_input_form')) {
+            abort(404, '이 기능은 아직 사용할 수 없습니다.');
+        }
         return view('sales.excel-input');
     })->name('sales.excel-input');
-
-    // 개통표 스타일 고급 입력
-    Route::get('/sales/advanced-input', function () {
-        return view('sales.advanced-input');
-    })->name('sales.advanced-input');
 
     // 개선된 개통표 입력
     Route::get('/sales/improved-input', function () {
@@ -73,7 +88,153 @@ Route::middleware(['auth', 'rbac'])->group(function () {
     Route::get('/sales/advanced-input-simple', function () {
         return view('sales.advanced-input-simple');
     })->name('sales.advanced-input-simple');
+
+    // AgGrid 기반 판매 관리 시스템
+    Route::get('/sales/aggrid', function () {
+        return view('sales.aggrid-management');
+    })->name('sales.aggrid');
 });
+
+// 임시 테스트용 라우트 (인증 없이 접근 가능)
+Route::get('/test/aggrid', function () {
+    return view('sales.aggrid-management');
+})->name('test.aggrid');
+
+// 간단한 AgGrid (순수 JavaScript + 실시간 API)
+Route::get('/test/simple-aggrid', function () {
+    return view('sales.simple-aggrid');
+})->name('test.simple-aggrid');
+
+// 완전한 AgGrid (모든 필드 포함)
+Route::get('/test/complete-aggrid', function () {
+    return view('sales.complete-aggrid');
+})->name('test.complete-aggrid');
+
+// 개통표 테스트 (인증 우회)
+Route::get('/test/excel-input', function () {
+    return view('sales.excel-input');
+})->name('test.excel-input');
+
+// 빠른 로그인 테스트 (CSRF 우회)
+Route::get('/quick-login/{role}', function ($role) {
+    $userData = [
+        'headquarters' => ['email' => 'hq@ykp.com', 'id' => 100],
+        'branch' => ['email' => 'branch@ykp.com', 'id' => 101], 
+        'store' => ['email' => 'store@ykp.com', 'id' => 102]
+    ];
+    
+    if (isset($userData[$role])) {
+        $user = \App\Models\User::where('email', $userData[$role]['email'])->first();
+        if ($user) {
+            auth()->login($user);
+            return redirect('/dashboard');
+        }
+    }
+    
+    return redirect('/login')->with('error', '테스트 계정을 찾을 수 없습니다.');
+})->name('quick-login');
+
+// 테스트용 통합 대시보드 (인증 우회) - 권한 파라미터로 구분  
+Route::get('/test/dashboard', function () {
+    $role = request()->get('role', 'headquarters');
+    
+    $userData = [
+        'headquarters' => [
+            'id' => 100, 'name' => '본사 관리자', 'email' => 'hq@ykp.com',
+            'role' => 'headquarters', 'store_id' => null, 'branch_id' => null,
+            'store' => null, 'branch' => null
+        ],
+        'branch' => [
+            'id' => 101, 'name' => '지사 관리자', 'email' => 'branch@ykp.com', 
+            'role' => 'branch', 'store_id' => null, 'branch_id' => 1,
+            'store' => null, 'branch' => (object)['name' => '서울지사']
+        ],
+        'store' => [
+            'id' => 102, 'name' => '매장 직원', 'email' => 'store@ykp.com',
+            'role' => 'store', 'store_id' => 1, 'branch_id' => 1, 
+            'store' => (object)['name' => '서울지점 1호점'], 'branch' => (object)['name' => '서울지사']
+        ]
+    ];
+    
+    return view('premium-dashboard')->with([
+        'user' => (object)($userData[$role] ?? $userData['headquarters'])
+    ]);
+})->name('test.dashboard');
+
+// 판매관리 시스템 네비게이션 (개발자용으로 이동)
+Route::get('/dev/sales', function () {
+    return view('sales-navigation');
+})->name('sales.navigation');
+
+// 사용자 친화적 판매관리 (간단한 AgGrid만)
+Route::get('/sales', function () {
+    return redirect('/test/simple-aggrid');
+})->name('sales.simple');
+
+// 메인 대시보드 (인증 없이 접근)
+Route::get('/main', function () {
+    return view('sales-navigation'); // 통합 네비게이션을 메인으로
+})->name('main.dashboard');
+
+// 대시보드 직접 접근 (개발/테스트용)
+Route::get('/dash', function () {
+    return view('dashboard-test')->with([
+        'user' => (object)[
+            'id' => 1,
+            'name' => '테스트 사용자',
+            'email' => 'test@ykp.com',
+            'role' => 'headquarters'
+        ]
+    ]);
+})->name('dashboard.test');
+
+// YKP 정산 시스템 (별도 React 앱으로 프록시)
+Route::get('/settlement', function () {
+    // 정산 시스템이 실행 중인지 확인하고 리다이렉트
+    return redirect('http://localhost:5173')->with('message', 'YKP 정산 시스템으로 이동합니다.');
+})->name('settlement.index');
+
+// 일일지출 관리 페이지
+Route::get('/daily-expenses', function () {
+    return view('expenses.daily-expenses');
+})->name('expenses.daily');
+
+// 고정지출 관리 페이지
+Route::get('/fixed-expenses', function () {
+    return view('expenses.fixed-expenses');
+})->name('expenses.fixed');
+
+// 직원급여 관리 페이지 (엑셀 방식)
+Route::get('/payroll', function () {
+    return view('payroll.payroll-management');
+})->name('payroll.management');
+
+// 환수 관리 페이지 (신규)
+Route::get('/refunds', function () {
+    return view('refunds.refund-management');
+})->name('refunds.management');
+
+// 월마감정산 페이지 (핵심 기능)
+Route::get('/monthly-settlement', function () {
+    return view('settlements.monthly-settlement');
+})->name('settlements.monthly');
+
+// 권한별 대시보드 (별도 경로)
+Route::middleware(['auth'])->get('/role-dashboard', function () {
+    return view('role-based-dashboard');
+})->name('role.dashboard');
+
+// 대시보드 테스트용 (인증 우회)
+Route::get('/dashboard-test', function () {
+    return view('dashboard-test')->with([
+        'user' => (object)[
+            'id' => 1,
+            'name' => '테스트 사용자',
+            'email' => 'test@ykp.com',
+            'role' => 'headquarters'
+        ]
+    ]);
+})->name('dashboard.test.noauth');
 
 /*
 |--------------------------------------------------------------------------

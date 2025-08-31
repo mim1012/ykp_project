@@ -47,7 +47,7 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('auth.register') }}" class="space-y-6">
+            <form method="POST" action="{{ route('register') }}" class="space-y-6">
                 @csrf
                 <div>
                     <label for="name" class="block text-sm font-medium text-gray-700 mb-1">이름</label>
@@ -156,7 +156,7 @@
                 </div>
 
                 <div class="text-center">
-                    <a href="{{ route('auth.login') }}" class="text-primary-600 hover:text-primary-500 text-sm">
+                    <a href="{{ route('login') }}" class="text-primary-600 hover:text-primary-500 text-sm">
                         이미 계정이 있으신가요? 로그인
                     </a>
                 </div>

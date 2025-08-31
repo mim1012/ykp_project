@@ -78,11 +78,21 @@ class User extends Authenticatable
         return $this->role === 'store';
     }
 
+    public function isDeveloper()
+    {
+        return $this->role === 'developer';
+    }
+
+    public function isSuperUser()
+    {
+        return $this->isDeveloper() || $this->isHeadquarters();
+    }
+
     // 접근 가능한 매장 ID 목록
     public function getAccessibleStoreIds()
     {
-        if ($this->isHeadquarters()) {
-            return Store::pluck('id')->toArray();
+        if ($this->isDeveloper() || $this->isHeadquarters()) {
+            return Store::pluck('id')->toArray(); // 전체 접근
         } elseif ($this->isBranch()) {
             return Store::where('branch_id', $this->branch_id)->pluck('id')->toArray();
         } else {

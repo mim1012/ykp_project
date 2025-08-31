@@ -53,7 +53,7 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('auth.login') }}" class="space-y-6">
+            <form method="POST" action="{{ route('login') }}" class="space-y-6">
                 @csrf
                 <div>
                     <label for="email" class="block text-sm font-medium text-gray-700 mb-1">이메일 주소</label>
@@ -107,7 +107,7 @@
 
                 @if(config('app.env') !== 'production')
                 <div class="text-center">
-                    <a href="{{ route('auth.register') }}" class="text-primary-600 hover:text-primary-500 text-sm">
+                    <a href="{{ route('register') }}" class="text-primary-600 hover:text-primary-500 text-sm">
                         계정이 없으신가요? 회원가입
                     </a>
                 </div>
@@ -120,9 +120,9 @@
         <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
             <h3 class="text-sm font-medium text-yellow-800 mb-2">테스트 계정 (개발용)</h3>
             <div class="text-xs text-yellow-700 space-y-1">
-                <div>본사: admin@ykp.com / password</div>
-                <div>지사: branch@ykp.com / password</div>
-                <div>매장: store@ykp.com / password</div>
+                <div>본사: hq@ykp.com / 123456</div>
+                <div>지사: branch@ykp.com / 123456</div>
+                <div>매장: store@ykp.com / 123456</div>
             </div>
         </div>
         @endif
@@ -131,6 +131,46 @@
     <script>
         // CSRF token for AJAX requests
         window.csrf_token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        
+        // 419 오류 발생 시 자동 새로고침
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.querySelector('form');
+            
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                try {
+                    const formData = new FormData(form);
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        body: formData,
+                        headers: {
+                            'X-CSRF-TOKEN': window.csrf_token
+                        }
+                    });
+                    
+                    if (response.status === 419) {
+                        // 토큰 만료 시 페이지 새로고침
+                        location.reload();
+                        return;
+                    }
+                    
+                    if (response.ok) {
+                        // 로그인 성공 시 대시보드로 이동
+                        window.location.href = '/dashboard';
+                    } else {
+                        // 에러 처리
+                        const result = await response.text();
+                        document.body.innerHTML = result;
+                    }
+                    
+                } catch (error) {
+                    console.error('로그인 오류:', error);
+                    alert('로그인 중 오류가 발생했습니다. 페이지를 새로고침합니다.');
+                    location.reload();
+                }
+            });
+        });
     </script>
 </body>
 </html>

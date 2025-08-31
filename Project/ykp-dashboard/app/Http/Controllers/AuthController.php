@@ -50,7 +50,7 @@ class AuthController extends Controller
                 'user_agent' => $request->userAgent(),
             ]);
 
-            return redirect()->intended('/');
+            return redirect()->intended('/dashboard');
         }
 
         return back()->withErrors([
@@ -133,7 +133,7 @@ class AuthController extends Controller
             'ip' => $request->ip(),
         ]);
 
-        return redirect('/')->with('message', '회원가입이 완료되었습니다.');
+        return redirect('/dashboard')->with('message', '회원가입이 완료되었습니다.');
     }
 
     /**

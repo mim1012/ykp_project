@@ -21,7 +21,7 @@ class RBACMiddleware
                 return response()->json(['error' => 'Unauthorized'], 401);
             }
 
-            return redirect()->route('auth.login')
+            return redirect()->route('login')
                 ->with('message', '로그인이 필요합니다.');
         }
 

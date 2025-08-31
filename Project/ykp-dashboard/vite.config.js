@@ -9,7 +9,8 @@ export default defineConfig({
             input: [
                 'resources/css/app.css', 
                 'resources/js/app.js',
-                'resources/js/dashboard.jsx'
+                'resources/js/dashboard.jsx',
+                'resources/js/sales-aggrid.jsx'
             ],
             refresh: true,
         }),
@@ -26,9 +27,11 @@ export default defineConfig({
                 manualChunks: {
                     vendor: ['react', 'react-dom'],
                     animations: ['framer-motion'],
-                    query: ['@tanstack/react-query'],
+                    query: ['@tanstack/react-query', '@tanstack/react-query-devtools'],
                     icons: ['lucide-react'],
-                    virtualization: ['react-window', 'react-virtualized-auto-sizer']
+                    virtualization: ['react-window', 'react-virtualized-auto-sizer'],
+                    aggrid: ['ag-grid-community', 'ag-grid-react'],
+                    utils: ['axios']
                 }
             }
         },
@@ -57,7 +60,11 @@ export default defineConfig({
             'react-dom', 
             'framer-motion', 
             '@tanstack/react-query',
-            'lucide-react'
+            '@tanstack/react-query-devtools',
+            'lucide-react',
+            'ag-grid-community',
+            'ag-grid-react',
+            'axios'
         ],
         exclude: ['react-window', 'react-virtualized-auto-sizer']
     },

@@ -99,9 +99,24 @@
 
     <script src="https://cdn.jsdelivr.net/npm/handsontable/dist/handsontable.full.min.js"></script>
     <script>
+        // 사용자 정보 설정
+        window.userData = {
+            id: {{ auth()->user()->id ?? 1 }},
+            name: '{{ auth()->user()->name ?? "테스트 사용자" }}',
+            role: '{{ auth()->user()->role ?? "headquarters" }}',
+            store_id: {{ auth()->user()->store_id ?? 'null' }},
+            branch_id: {{ auth()->user()->branch_id ?? 'null' }},
+            store_name: '{{ auth()->user()->store->name ?? "본사" }}',
+            branch_name: '{{ auth()->user()->branch->name ?? "본사" }}'
+        };
+        
+        console.log('사용자 정보:', window.userData);
+        
         // 컬럼 정의
         const columns = [
             {data: 'sale_date', type: 'date', dateFormat: 'YYYY-MM-DD', title: '판매일'},
+            {data: 'store_name', type: 'text', title: '매장명', readOnly: true, renderer: 'calculatedRenderer'},
+            {data: 'branch_name', type: 'text', title: '지사명', readOnly: true, renderer: 'calculatedRenderer'},
             {data: 'carrier', type: 'dropdown', source: ['SK', 'KT', 'LG', 'MVNO'], title: '통신사'},
             {data: 'activation_type', type: 'dropdown', source: ['신규', '기변', 'MNP'], title: '개통유형'},
             {data: 'model_name', type: 'text', title: '모델명'},
@@ -132,6 +147,10 @@
         for(let i = 0; i < 20; i++) {
             data.push({
                 sale_date: new Date().toISOString().split('T')[0],
+                store_id: window.userData.store_id,
+                branch_id: window.userData.branch_id,
+                store_name: window.userData.store_name,
+                branch_name: window.userData.branch_name,
                 carrier: 'SK',
                 activation_type: '신규',
                 model_name: '',
@@ -251,8 +270,8 @@
             status.style.display = 'block';
             status.textContent = '저장 중...';
             
-            const validData = hot.getData().filter(row => {
-                return row[3]; // model_name이 있는 행만
+            const validData = hot.getSourceData().filter(row => {
+                return row.model_name && row.model_name.trim(); // model_name이 있는 행만
             });
 
             fetch('/api/sales/bulk', {
@@ -263,30 +282,32 @@
                 },
                 body: JSON.stringify({
                     sales: validData.map(row => ({
-                        sale_date: row[0],
-                        carrier: row[1],
-                        activation_type: row[2],
-                        model_name: row[3],
-                        base_price: row[4] || 0,
-                        verbal1: row[5] || 0,
-                        verbal2: row[6] || 0,
-                        grade_amount: row[7] || 0,
-                        additional_amount: row[8] || 0,
-                        rebate_total: row[9] || 0,
-                        cash_activation: row[10] || 0,
-                        usim_fee: row[11] || 0,
-                        new_mnp_discount: row[12] || 0,
-                        deduction: row[13] || 0,
-                        settlement_amount: row[14] || 0,
-                        tax: row[15] || 0,
-                        margin_before_tax: row[16] || 0,
-                        cash_received: row[17] || 0,
-                        payback: row[18] || 0,
-                        margin_after_tax: row[19] || 0,
-                        monthly_fee: row[20] || 0,
-                        phone_number: row[21],
-                        salesperson: row[22],
-                        memo: row[23]
+                        sale_date: row.sale_date,
+                        store_id: window.userData.store_id,
+                        branch_id: window.userData.branch_id,
+                        carrier: row.carrier,
+                        activation_type: row.activation_type,
+                        model_name: row.model_name,
+                        base_price: row.base_price || 0,
+                        verbal1: row.verbal1 || 0,
+                        verbal2: row.verbal2 || 0,
+                        grade_amount: row.grade_amount || 0,
+                        additional_amount: row.additional_amount || 0,
+                        rebate_total: row.rebate_total || 0,
+                        cash_activation: row.cash_activation || 0,
+                        usim_fee: row.usim_fee || 0,
+                        new_mnp_discount: row.new_mnp_discount || 0,
+                        deduction: row.deduction || 0,
+                        settlement_amount: row.settlement_amount || 0,
+                        tax: row.tax || 0,
+                        margin_before_tax: row.margin_before_tax || 0,
+                        cash_received: row.cash_received || 0,
+                        payback: row.payback || 0,
+                        margin_after_tax: row.margin_after_tax || 0,
+                        monthly_fee: row.monthly_fee || 0,
+                        phone_number: row.phone_number,
+                        salesperson: row.salesperson,
+                        memo: row.memo
                     }))
                 })
             })

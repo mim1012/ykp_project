@@ -29,7 +29,14 @@
       "Bash(powershell:*)",
       "Bash(del composer-setup.php)",
       "Bash(git remote add:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git push:*)",
+      "Bash(grep:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(git fetch:*)",
+      "Bash(composer test:*)",
+      "Bash(composer show:*)",
+      "Bash(wmic:*)"
     ],
     "defaultMode": "acceptEdits",
     "additionalDirectories": [

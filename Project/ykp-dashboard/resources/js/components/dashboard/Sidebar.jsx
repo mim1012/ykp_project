@@ -8,7 +8,11 @@ export const Sidebar = ({ activeMenu, setActiveMenu, isMobile = false }) => {
     
     const menuItems = [
         { id: 'dashboard', icon: 'layout-dashboard', label: '대시보드' },
-        { id: 'advanced-input', icon: 'grid-3x3', label: '개통표 입력', url: '/sales/advanced-input' },
+        ...(window.features?.excel_input_form ? [
+            { id: 'excel-input', icon: 'grid-3x3', label: '개통표 입력 (Excel)', url: '/sales/excel-input' }
+        ] : []),
+        { id: 'complete-aggrid', icon: 'table', label: '완전한 AgGrid', url: '/test/complete-aggrid', badge: 'DEV ONLY' },
+        { id: 'simple-aggrid', icon: 'grid', label: '간단 AgGrid', url: '/test/simple-aggrid', badge: 'DEV ONLY' },
         { id: 'stores', icon: 'store', label: '매장 관리' },
         { id: 'reports', icon: 'file-text', label: '보고서' },
         { id: 'settings', icon: 'settings', label: '설정' }
@@ -51,9 +55,16 @@ export const Sidebar = ({ activeMenu, setActiveMenu, isMobile = false }) => {
                                 href={item.url}
                                 className="w-12 h-12 rounded-lg flex items-center justify-center transition-all group relative text-gray-500 hover:bg-gray-100 hover:text-gray-700"
                             >
-                                <Icon name={item.icon} className="w-5 h-5" />
+                                <div className="relative">
+                                    <Icon name={item.icon} className="w-5 h-5" />
+                                    {item.badge && (
+                                        <span className="absolute -top-1 -right-1 text-xs bg-red-500 text-white rounded-full px-1 leading-none">
+                                            {item.badge}
+                                        </span>
+                                    )}
+                                </div>
                                 <span className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
-                                    {item.label}
+                                    {item.label} {item.badge && <span className="text-red-400">({item.badge})</span>}
                                 </span>
                             </a>
                         ) : (
@@ -160,8 +171,20 @@ export const Sidebar = ({ activeMenu, setActiveMenu, isMobile = false }) => {
                                         className="flex items-center gap-3 px-3 py-3 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
                                         onClick={() => setIsMobileMenuOpen(false)}
                                     >
-                                        <Icon name={item.icon} className="w-5 h-5" />
+                                        <div className="relative">
+                                            <Icon name={item.icon} className="w-5 h-5" />
+                                            {item.badge && (
+                                                <span className="absolute -top-1 -right-1 text-xs bg-red-500 text-white rounded-full px-1 leading-none">
+                                                    {item.badge}
+                                                </span>
+                                            )}
+                                        </div>
                                         <span className="font-medium">{item.label}</span>
+                                        {item.badge && (
+                                            <span className="ml-auto bg-red-100 text-red-800 text-xs px-2 py-1 rounded-full">
+                                                {item.badge}
+                                            </span>
+                                        )}
                                     </a>
                                 ) : (
                                     <button
