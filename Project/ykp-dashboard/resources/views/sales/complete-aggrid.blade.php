@@ -34,6 +34,25 @@
 
     <!-- 메인 컨텐츠 -->
     <main class="max-w-full mx-auto py-6 px-4">
+        <!-- 날짜 선택 컨트롤 -->
+        <div class="bg-white p-4 rounded-lg shadow mb-6">
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2">
+                    <label class="text-sm font-medium text-gray-700">조회 날짜:</label>
+                    <input type="date" id="filter-date" class="border border-gray-300 rounded px-3 py-1 text-sm">
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="loadTodayData()" class="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600">오늘</button>
+                    <button onclick="loadYesterdayData()" class="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600">어제</button>
+                    <button onclick="loadDateData()" class="px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600">조회</button>
+                </div>
+                <div class="flex items-center gap-2 ml-auto">
+                    <span class="text-sm text-gray-500">현재 조회일:</span>
+                    <span id="current-date" class="text-sm font-medium text-blue-600">2025-09-01</span>
+                </div>
+            </div>
+        </div>
+        
         <!-- 통계 카드 -->
         <div class="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
             <div class="bg-white p-4 rounded-lg shadow">
@@ -683,6 +702,11 @@
                 }
             });
             
+            // 초기 날짜 설정
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('filter-date').value = today;
+            document.getElementById('current-date').textContent = today;
+            
             // 초기 테이블 렌더링
             updateCompleteTable();
             updateCompleteStats();
@@ -690,6 +714,100 @@
             console.log('완전한 개통표 AgGrid 시스템 초기화 완료');
             showStatus('모든 필드 준비 완료 (40개 필드)', 'success');
         });
+        
+        // 날짜별 데이터 로딩 함수들
+        function loadTodayData() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('filter-date').value = today;
+            loadDateData();
+        }
+        
+        function loadYesterdayData() {
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayStr = yesterday.toISOString().split('T')[0];
+            document.getElementById('filter-date').value = yesterdayStr;
+            loadDateData();
+        }
+        
+        function loadDateData() {
+            const selectedDate = document.getElementById('filter-date').value;
+            if (!selectedDate) {
+                alert('날짜를 선택해주세요.');
+                return;
+            }
+            
+            document.getElementById('current-date').textContent = selectedDate;
+            showStatus(`${selectedDate} 데이터 로딩 중...`, 'info');
+            
+            // API 호출로 해당 날짜 데이터 로드
+            fetch(`/api/sales?sale_date=${selectedDate}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // 해당 날짜 데이터로 테이블 업데이트
+                        completeTableData = data.sales || [];
+                        updateCompleteTable();
+                        updateCompleteStats();
+                        showStatus(`${selectedDate} 데이터 로드 완료 (${completeTableData.length}건)`, 'success');
+                    } else {
+                        // 새로운 날짜인 경우 빈 템플릿 제공
+                        initializeNewDateData(selectedDate);
+                        showStatus(`${selectedDate} 새로운 개통표 생성`, 'info');
+                    }
+                })
+                .catch(error => {
+                    console.error('데이터 로드 오류:', error);
+                    initializeNewDateData(selectedDate);
+                    showStatus(`${selectedDate} 새로운 개통표 생성`, 'info');
+                });
+        }
+        
+        // 새로운 날짜의 빈 데이터 초기화
+        function initializeNewDateData(date) {
+            completeTableData = Array.from({length: 10}, () => ({
+                id: null,
+                sale_date: date,
+                salesperson: '',
+                dealer_code: '',
+                store_id: window.userData?.store_id || null,
+                branch_id: window.userData?.branch_id || null,
+                carrier: 'SK',
+                activation_type: '신규',
+                model_name: '',
+                customer_name: '',
+                phone_number: '',
+                base_price: 0,
+                verbal1: 0,
+                verbal2: 0,
+                grade_amount: 0,
+                additional_amount: 0,
+                cash_activation: 0,
+                usim_fee: 0,
+                new_mnp_discount: 0,
+                deduction: 0,
+                cash_received: 0,
+                payback: 0,
+                monthly_fee: 0,
+                memo: ''
+            }));
+            
+            updateCompleteTable();
+            updateCompleteStats();
+        }
+        
+        // 사용자 정보 설정
+        window.userData = {
+            id: {{ auth()->user()->id ?? 1 }},
+            name: '{{ auth()->user()->name ?? "테스트 사용자" }}',
+            role: '{{ auth()->user()->role ?? "headquarters" }}',
+            store_id: {{ auth()->user()->store_id ?? 'null' }},
+            branch_id: {{ auth()->user()->branch_id ?? 'null' }},
+            store_name: '{{ auth()->user()->store->name ?? "본사" }}',
+            branch_name: '{{ auth()->user()->branch->name ?? "본사" }}'
+        };
+        
+        console.log('사용자 정보:', window.userData);
     </script>
 </body>
 </html>

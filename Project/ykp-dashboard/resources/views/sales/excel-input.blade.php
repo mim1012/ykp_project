@@ -90,7 +90,7 @@
             <button onclick="addRow()">➕ 행 추가</button>
             <button onclick="deleteRow()">➖ 행 삭제</button>
             <button onclick="saveData()" class="save-btn">💾 저장 (Ctrl+S)</button>
-            <button onclick="window.location.href='/admin'">🏠 대시보드</button>
+            <button onclick="window.location.href='/dashboard'">🏠 대시보드</button>
         </div>
     </div>
 

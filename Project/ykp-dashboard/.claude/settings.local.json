@@ -36,7 +36,9 @@
       "Bash(git fetch:*)",
       "Bash(composer test:*)",
       "Bash(composer show:*)",
-      "Bash(wmic:*)"
+      "Bash(wmic:*)",
+      "Bash(git commit:*)",
+      "Bash(git checkout:*)"
     ],
     "defaultMode": "acceptEdits",
     "additionalDirectories": [

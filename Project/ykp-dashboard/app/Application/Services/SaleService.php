@@ -136,6 +136,13 @@ class SaleService implements SaleServiceInterface
 
     private function applyDateFilters($query, array $filters): void
     {
+        // 특정 날짜 조회 (우선순위)
+        if (isset($filters['sale_date'])) {
+            $query->whereDate('sale_date', $filters['sale_date']);
+            return;
+        }
+        
+        // 기간 조회
         if (isset($filters['start_date'])) {
             $query->where('sale_date', '>=', $filters['start_date']);
         }

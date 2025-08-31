@@ -8,11 +8,7 @@ export const Sidebar = ({ activeMenu, setActiveMenu, isMobile = false }) => {
     
     const menuItems = [
         { id: 'dashboard', icon: 'layout-dashboard', label: '대시보드' },
-        ...(window.features?.excel_input_form ? [
-            { id: 'excel-input', icon: 'grid-3x3', label: '개통표 입력 (Excel)', url: '/sales/excel-input' }
-        ] : []),
-        { id: 'complete-aggrid', icon: 'table', label: '완전한 AgGrid', url: '/test/complete-aggrid', badge: 'DEV ONLY' },
-        { id: 'simple-aggrid', icon: 'grid', label: '간단 AgGrid', url: '/test/simple-aggrid', badge: 'DEV ONLY' },
+        { id: 'complete-aggrid', icon: 'grid-3x3', label: '개통표 입력', url: '/test/complete-aggrid' },
         { id: 'stores', icon: 'store', label: '매장 관리' },
         { id: 'reports', icon: 'file-text', label: '보고서' },
         { id: 'settings', icon: 'settings', label: '설정' }

@@ -54,7 +54,7 @@ class SalesApiController extends Controller
     public function index(Request $request): JsonResponse
     {
         $filters = $request->only([
-            'start_date', 'end_date', 'store_id',
+            'start_date', 'end_date', 'sale_date', 'store_id',
             'branch_id', 'per_page',
         ]);
 
