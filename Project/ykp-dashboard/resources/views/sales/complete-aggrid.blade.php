@@ -34,21 +34,38 @@
 
     <!-- 메인 컨텐츠 -->
     <main class="max-w-full mx-auto py-6 px-4">
-        <!-- 날짜 선택 컨트롤 -->
+        <!-- 캘린더 형태 날짜 선택 -->
         <div class="bg-white p-4 rounded-lg shadow mb-6">
-            <div class="flex items-center gap-4">
-                <div class="flex items-center gap-2">
-                    <label class="text-sm font-medium text-gray-700">조회 날짜:</label>
-                    <input type="date" id="filter-date" class="border border-gray-300 rounded px-3 py-1 text-sm">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-4">
+                    <h3 class="text-lg font-medium text-gray-900">📅 개통표 날짜 선택</h3>
+                    <span class="text-sm text-gray-500">선택된 날짜:</span>
+                    <span id="current-date" class="text-sm font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">2025-09-01</span>
                 </div>
                 <div class="flex items-center gap-2">
                     <button onclick="loadTodayData()" class="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600">오늘</button>
-                    <button onclick="loadYesterdayData()" class="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600">어제</button>
-                    <button onclick="loadDateData()" class="px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600">조회</button>
+                    <button onclick="toggleCalendar()" class="px-3 py-1 bg-purple-500 text-white rounded text-sm hover:bg-purple-600">📅 달력</button>
                 </div>
-                <div class="flex items-center gap-2 ml-auto">
-                    <span class="text-sm text-gray-500">현재 조회일:</span>
-                    <span id="current-date" class="text-sm font-medium text-blue-600">2025-09-01</span>
+            </div>
+            
+            <!-- 미니 캘린더 -->
+            <div id="mini-calendar" class="hidden">
+                <div class="flex items-center justify-between mb-2">
+                    <button onclick="changeMonth(-1)" class="px-2 py-1 text-gray-600 hover:bg-gray-100 rounded">◀</button>
+                    <span id="calendar-title" class="font-medium text-gray-900">2025년 9월</span>
+                    <button onclick="changeMonth(1)" class="px-2 py-1 text-gray-600 hover:bg-gray-100 rounded">▶</button>
+                </div>
+                <div class="grid grid-cols-7 gap-1 text-center text-xs">
+                    <div class="p-2 text-gray-500 font-medium">일</div>
+                    <div class="p-2 text-gray-500 font-medium">월</div>
+                    <div class="p-2 text-gray-500 font-medium">화</div>
+                    <div class="p-2 text-gray-500 font-medium">수</div>
+                    <div class="p-2 text-gray-500 font-medium">목</div>
+                    <div class="p-2 text-gray-500 font-medium">금</div>
+                    <div class="p-2 text-gray-500 font-medium">토</div>
+                </div>
+                <div id="calendar-days" class="grid grid-cols-7 gap-1 text-center text-sm">
+                    <!-- 동적 생성 -->
                 </div>
             </div>
         </div>
@@ -704,8 +721,8 @@
             
             // 초기 날짜 설정
             const today = new Date().toISOString().split('T')[0];
-            document.getElementById('filter-date').value = today;
             document.getElementById('current-date').textContent = today;
+            currentCalendarDate = new Date(); // 캘린더 초기 날짜
             
             // 초기 테이블 렌더링
             updateCompleteTable();
@@ -715,23 +732,103 @@
             showStatus('모든 필드 준비 완료 (40개 필드)', 'success');
         });
         
-        // 날짜별 데이터 로딩 함수들
+        // 캘린더 관련 변수
+        let currentCalendarDate = new Date();
+        let datesWithData = new Set(); // 데이터가 있는 날짜들
+        
+        // 캘린더 토글
+        function toggleCalendar() {
+            const calendar = document.getElementById('mini-calendar');
+            calendar.classList.toggle('hidden');
+            if (!calendar.classList.contains('hidden')) {
+                loadDataDates(); // 데이터 있는 날짜 로드
+                renderCalendar();
+            }
+        }
+        
+        // 월 변경
+        function changeMonth(direction) {
+            currentCalendarDate.setMonth(currentCalendarDate.getMonth() + direction);
+            renderCalendar();
+            loadDataDates(); // 해당 월의 데이터 날짜 로드
+        }
+        
+        // 캘린더 렌더링
+        function renderCalendar() {
+            const year = currentCalendarDate.getFullYear();
+            const month = currentCalendarDate.getMonth();
+            
+            document.getElementById('calendar-title').textContent = `${year}년 ${month + 1}월`;
+            
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            
+            let calendarHTML = '';
+            
+            // 빈 셀 (이전 달)
+            for (let i = 0; i < firstDay; i++) {
+                calendarHTML += '<div class="p-2"></div>';
+            }
+            
+            // 해당 월의 날짜들
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const isToday = dateStr === new Date().toISOString().split('T')[0];
+                const hasData = datesWithData.has(dateStr);
+                const isSelected = dateStr === document.getElementById('current-date').textContent;
+                
+                let classes = 'p-2 cursor-pointer hover:bg-blue-100 rounded';
+                if (isToday) classes += ' bg-blue-100 font-bold';
+                if (hasData) classes += ' bg-green-50 border border-green-200';
+                if (isSelected) classes += ' bg-blue-500 text-white';
+                
+                calendarHTML += `<div class="${classes}" onclick="selectDate('${dateStr}')">${day}</div>`;
+            }
+            
+            document.getElementById('calendar-days').innerHTML = calendarHTML;
+        }
+        
+        // 날짜 선택
+        function selectDate(dateStr) {
+            document.getElementById('current-date').textContent = dateStr;
+            loadDateData(dateStr);
+            document.getElementById('mini-calendar').classList.add('hidden');
+        }
+        
+        // 데이터 있는 날짜들 로드
+        function loadDataDates() {
+            const year = currentCalendarDate.getFullYear();
+            const month = currentCalendarDate.getMonth() + 1;
+            const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+            const endDate = `${year}-${String(month).padStart(2, '0')}-${new Date(year, month, 0).getDate()}`;
+            
+            fetch(`/api/sales?start_date=${startDate}&end_date=${endDate}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.data) {
+                        datesWithData.clear();
+                        data.data.forEach(sale => {
+                            if (sale.sale_date) {
+                                datesWithData.add(sale.sale_date.split(' ')[0]); // 날짜 부분만
+                            }
+                        });
+                        renderCalendar(); // 데이터 표시 업데이트
+                    }
+                })
+                .catch(error => console.log('날짜 데이터 로드 중 오류:', error));
+        }
+        
+        // 오늘 데이터 로드
         function loadTodayData() {
             const today = new Date().toISOString().split('T')[0];
-            document.getElementById('filter-date').value = today;
-            loadDateData();
+            selectDate(today);
         }
         
-        function loadYesterdayData() {
-            const yesterday = new Date();
-            yesterday.setDate(yesterday.getDate() - 1);
-            const yesterdayStr = yesterday.toISOString().split('T')[0];
-            document.getElementById('filter-date').value = yesterdayStr;
-            loadDateData();
-        }
-        
-        function loadDateData() {
-            const selectedDate = document.getElementById('filter-date').value;
+        function loadDateData(selectedDate = null) {
+            if (!selectedDate) {
+                selectedDate = document.getElementById('current-date').textContent;
+            }
+            
             if (!selectedDate) {
                 alert('날짜를 선택해주세요.');
                 return;

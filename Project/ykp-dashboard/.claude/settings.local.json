@@ -38,7 +38,8 @@
       "Bash(composer show:*)",
       "Bash(wmic:*)",
       "Bash(git commit:*)",
-      "Bash(git checkout:*)"
+      "Bash(git checkout:*)",
+      "Bash(git remote set-url:*)"
     ],
     "defaultMode": "acceptEdits",
     "additionalDirectories": [
