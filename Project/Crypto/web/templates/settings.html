@@ -1,0 +1,1035 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - Crypto Trading System{% endblock %}
+
+{% block extra_css %}
+<style>
+    .settings-section {
+        margin-bottom: 2rem;
+    }
+    
+    .settings-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 1rem 1rem 0 0;
+        padding: 1.5rem;
+        margin-bottom: 0;
+    }
+    
+    .settings-card {
+        border-radius: 0 0 1rem 1rem;
+        border-top: none;
+    }
+    
+    .form-section {
+        background: #f8f9fa;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-section-title {
+        font-size: 1.1rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: #495057;
+        border-bottom: 2px solid #dee2e6;
+        padding-bottom: 0.5rem;
+    }
+    
+    .setting-item {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .setting-item:hover {
+        box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
+        transform: translateY(-2px);
+    }
+    
+    .setting-toggle {
+        transform: scale(1.2);
+    }
+    
+    .setting-enabled {
+        border-left: 4px solid #28a745;
+        background: linear-gradient(to right, rgba(40, 167, 69, 0.05) 0%, white 100%);
+    }
+    
+    .setting-disabled {
+        border-left: 4px solid #6c757d;
+        background: #f8f9fa;
+        opacity: 0.8;
+    }
+    
+    .advanced-settings {
+        border: 1px dashed #dee2e6;
+        border-radius: 0.5rem;
+        padding: 1rem;
+        background: rgba(255, 255, 255, 0.5);
+    }
+    
+    .save-indicator {
+        position: fixed;
+        top: 1rem;
+        right: 1rem;
+        z-index: 1050;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    
+    .save-indicator.show {
+        opacity: 1;
+    }
+    
+    .preset-buttons {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        flex-wrap: wrap;
+    }
+    
+    .preset-btn {
+        padding: 0.5rem 1rem;
+        border: 2px solid #dee2e6;
+        border-radius: 2rem;
+        background: white;
+        color: #6c757d;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .preset-btn:hover {
+        border-color: #007bff;
+        color: #007bff;
+    }
+    
+    .preset-btn.active {
+        background: #007bff;
+        color: white;
+        border-color: #007bff;
+    }
+    
+    .range-slider {
+        width: 100%;
+        margin: 1rem 0;
+    }
+    
+    .range-value {
+        display: inline-block;
+        background: #007bff;
+        color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.875rem;
+        margin-left: 0.5rem;
+    }
+    
+    /* Mobile optimizations */
+    @media (max-width: 768px) {
+        .preset-buttons {
+            justify-content: center;
+        }
+        
+        .preset-btn {
+            flex: 1;
+            min-width: 120px;
+        }
+        
+        .form-section {
+            padding: 1rem;
+        }
+        
+        .setting-item {
+            padding: 0.75rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="settings-section">
+    <div class="settings-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h4 class="mb-0">
+                    <i class="bi bi-gear"></i>
+                    Trading Settings
+                </h4>
+                <small>Configure your automated trading system</small>
+            </div>
+            <div class="d-flex gap-2">
+                <button id="resetSettings" class="btn btn-outline-light btn-sm">
+                    <i class="bi bi-arrow-counterclockwise"></i>
+                    Reset to Defaults
+                </button>
+                <button id="saveSettings" class="btn btn-light btn-sm">
+                    <i class="bi bi-check-circle"></i>
+                    Save Changes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Trading Presets -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-bookmark"></i>
+                    Quick Presets
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="preset-buttons" id="presetButtons">
+                    <button class="preset-btn" data-preset="conservative">Conservative</button>
+                    <button class="preset-btn active" data-preset="balanced">Balanced</button>
+                    <button class="preset-btn" data-preset="aggressive">Aggressive</button>
+                    <button class="preset-btn" data-preset="scalping">Scalping</button>
+                    <button class="preset-btn" data-preset="custom">Custom</button>
+                </div>
+                <p class="text-muted mb-0">
+                    <small>Select a preset configuration or customize your own settings below.</small>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Entry Conditions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card settings-card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-play-circle"></i>
+                    Entry Conditions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="form-section">
+                    <div class="form-section-title">Technical Indicators</div>
+                    
+                    <!-- Moving Average -->
+                    <div class="setting-item" data-setting="moving_average">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h6 class="mb-1">Moving Average Filter</h6>
+                                <p class="mb-0 text-muted">
+                                    <small>Only enter trades when price is above/below moving average</small>
+                                </p>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input setting-toggle" type="checkbox" 
+                                           id="maEnabled" name="moving_average.enabled">
+                                    <label class="form-check-label" for="maEnabled">Enable</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="advanced-settings mt-3" id="maSettings">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label class="form-label">MA Type</label>
+                                    <select class="form-select" name="moving_average.type">
+                                        <option value="SMA">Simple MA</option>
+                                        <option value="EMA">Exponential MA</option>
+                                        <option value="WMA">Weighted MA</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Period</label>
+                                    <input type="range" class="range-slider" name="moving_average.period" 
+                                           min="5" max="200" step="5" value="20">
+                                    <span class="range-value">20</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Price Channel -->
+                    <div class="setting-item" data-setting="price_channel">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h6 class="mb-1">Price Channel Breakout</h6>
+                                <p class="mb-0 text-muted">
+                                    <small>Enter on price channel breakouts</small>
+                                </p>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input setting-toggle" type="checkbox" 
+                                           id="pcEnabled" name="price_channel.enabled">
+                                    <label class="form-check-label" for="pcEnabled">Enable</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="advanced-settings mt-3" id="pcSettings">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label class="form-label">Period</label>
+                                    <input type="range" class="range-slider" name="price_channel.period" 
+                                           min="10" max="100" step="5" value="20">
+                                    <span class="range-value">20</span>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Threshold (%)</label>
+                                    <input type="range" class="range-slider" name="price_channel.threshold" 
+                                           min="0.05" max="1.0" step="0.05" value="0.1">
+                                    <span class="range-value">0.10%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Order Flow -->
+                    <div class="setting-item" data-setting="order_flow">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h6 class="mb-1">Order Flow Analysis</h6>
+                                <p class="mb-0 text-muted">
+                                    <small>Analyze market depth and order flow</small>
+                                </p>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input setting-toggle" type="checkbox" 
+                                           id="ofEnabled" name="order_flow.enabled">
+                                    <label class="form-check-label" for="ofEnabled">Enable</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="advanced-settings mt-3" id="ofSettings">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <label class="form-label">Minimum Volume Threshold</label>
+                                    <input type="range" class="range-slider" name="order_flow.threshold" 
+                                           min="500" max="10000" step="100" value="1000">
+                                    <span class="range-value">1,000</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <div class="form-section-title">Advanced Entry Conditions</div>
+                    
+                    <!-- Tick Based -->
+                    <div class="setting-item" data-setting="tick_based">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h6 class="mb-1">Tick-Based Entry</h6>
+                                <p class="mb-0 text-muted">
+                                    <small>Enter based on consecutive tick movements</small>
+                                </p>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input setting-toggle" type="checkbox" 
+                                           id="tbEnabled" name="tick_based.enabled">
+                                    <label class="form-check-label" for="tbEnabled">Enable</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="advanced-settings mt-3" id="tbSettings">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <label class="form-label">Minimum Ticks</label>
+                                    <input type="range" class="range-slider" name="tick_based.min_ticks" 
+                                           min="2" max="10" step="1" value="3">
+                                    <span class="range-value">3</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Candle Pattern -->
+                    <div class="setting-item" data-setting="candle_pattern">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h6 class="mb-1">Candle Pattern Recognition</h6>
+                                <p class="mb-0 text-muted">
+                                    <small>Recognize bullish/bearish candle patterns</small>
+                                </p>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input setting-toggle" type="checkbox" 
+                                           id="cpEnabled" name="candle_pattern.enabled">
+                                    <label class="form-check-label" for="cpEnabled">Enable</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="advanced-settings mt-3" id="cpSettings">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <label class="form-label">Patterns to Detect</label>
+                                    <div class="mt-2">
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="checkbox" value="hammer" name="candle_pattern.patterns">
+                                            <label class="form-check-label">Hammer</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="checkbox" value="doji" name="candle_pattern.patterns">
+                                            <label class="form-check-label">Doji</label>
+                                        </div>
+                                        <div class="form-check form-check-inline">
+                                            <input class="form-check-input" type="checkbox" value="engulfing" name="candle_pattern.patterns">
+                                            <label class="form-check-label">Engulfing</label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Exit Conditions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card settings-card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-stop-circle"></i>
+                    Exit Conditions
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="form-section">
+                    <div class="form-section-title">Profit Taking</div>
+                    
+                    <!-- PCS Exit -->
+                    <div class="setting-item setting-enabled" data-setting="pcs_exit">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h6 class="mb-1">PCS (Partial Close System)</h6>
+                                <p class="mb-0 text-muted">
+                                    <small>Close positions partially at predefined levels</small>
+                                </p>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input setting-toggle" type="checkbox" 
+                                           id="pcsEnabled" name="pcs_exit.enabled" checked>
+                                    <label class="form-check-label" for="pcsEnabled">Enable</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="advanced-settings mt-3" id="pcsSettings">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label class="form-label">Level 1 (%)</label>
+                                    <input type="number" class="form-control" name="pcs_exit.level1" 
+                                           value="0.5" step="0.1" min="0.1" max="5.0">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Level 2 (%)</label>
+                                    <input type="number" class="form-control" name="pcs_exit.level2" 
+                                           value="1.0" step="0.1" min="0.1" max="5.0">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Level 3 (%)</label>
+                                    <input type="number" class="form-control" name="pcs_exit.level3" 
+                                           value="1.5" step="0.1" min="0.1" max="5.0">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- PC Trailing -->
+                    <div class="setting-item" data-setting="pc_trailing">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <h6 class="mb-1">Price Channel Trailing</h6>
+                                <p class="mb-0 text-muted">
+                                    <small>Trail stop loss using price channel</small>
+                                </p>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input setting-toggle" type="checkbox" 
+                                           id="trailEnabled" name="pc_trailing.enabled">
+                                    <label class="form-check-label" for="trailEnabled">Enable</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="advanced-settings mt-3" id="trailSettings">
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <label class="form-label">Trailing Distance (%)</label>
+                                    <input type="range" class="range-slider" name="pc_trailing.distance" 
+                                           min="0.1" max="2.0" step="0.1" value="0.2">
+                                    <span class="range-value">0.2%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- System Settings -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card settings-card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-sliders"></i>
+                    System Configuration
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="form-section">
+                    <div class="form-section-title">Exchange & Symbols</div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label class="form-label">Exchange</label>
+                            <select class="form-select" name="system_settings.exchange">
+                                <option value="binance">Binance</option>
+                                <option value="bybit">Bybit</option>
+                                <option value="okx">OKX</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Trading Symbols</label>
+                            <select class="form-select" name="system_settings.symbols" multiple>
+                                <option value="BTCUSDT" selected>BTC/USDT</option>
+                                <option value="ETHUSDT" selected>ETH/USDT</option>
+                                <option value="ADAUSDT">ADA/USDT</option>
+                                <option value="SOLUSDT">SOL/USDT</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <div class="form-section-title">Position Management</div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label class="form-label">Leverage</label>
+                            <input type="range" class="range-slider" name="system_settings.leverage" 
+                                   min="1" max="50" step="1" value="10">
+                            <span class="range-value">10x</span>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Position Size (%)</label>
+                            <input type="range" class="range-slider" name="system_settings.position_size" 
+                                   min="0.01" max="1.0" step="0.01" value="0.1">
+                            <span class="range-value">10%</span>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Max Positions</label>
+                            <input type="range" class="range-slider" name="system_settings.max_positions" 
+                                   min="1" max="10" step="1" value="2">
+                            <span class="range-value">2</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <div class="form-section-title">Risk Management</div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <label class="form-label">Max Daily Loss (%)</label>
+                            <input type="range" class="range-slider" name="system_settings.risk_management.max_daily_loss" 
+                                   min="1" max="20" step="0.5" value="5.0">
+                            <span class="range-value">5.0%</span>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Max Drawdown (%)</label>
+                            <input type="range" class="range-slider" name="system_settings.risk_management.max_drawdown" 
+                                   min="5" max="50" step="1" value="10">
+                            <span class="range-value">10%</span>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Stop Loss (%)</label>
+                            <input type="range" class="range-slider" name="system_settings.risk_management.stop_loss" 
+                                   min="0.5" max="10" step="0.1" value="2.0">
+                            <span class="range-value">2.0%</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-section">
+                    <div class="form-section-title">Time Control</div>
+                    
+                    <div class="row align-items-center">
+                        <div class="col-md-4">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" 
+                                       id="timeControlEnabled" name="system_settings.time_control.enabled">
+                                <label class="form-check-label" for="timeControlEnabled">
+                                    Enable Time Control
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Start Time</label>
+                            <input type="time" class="form-control" name="system_settings.time_control.start" value="09:00">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">End Time</label>
+                            <input type="time" class="form-control" name="system_settings.time_control.end" value="17:00">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Save Indicator -->
+<div class="save-indicator alert alert-success" id="saveIndicator">
+    <i class="bi bi-check-circle"></i>
+    Settings saved successfully!
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    let currentSettings = {};
+    let hasUnsavedChanges = false;
+    
+    // Initialize settings page
+    initializeSettings();
+    
+    function initializeSettings() {
+        // Load current settings
+        loadSettings();
+        
+        // Set up event listeners
+        setupEventListeners();
+        
+        // Initialize UI elements
+        initializeUI();
+    }
+    
+    async function loadSettings() {
+        try {
+            const settings = await apiRequest('/api/settings');
+            if (settings) {
+                currentSettings = settings;
+                populateForm(settings);
+            }
+        } catch (error) {
+            console.error('Failed to load settings:', error);
+            showToast('Failed to load settings', 'danger');
+        }
+    }
+    
+    function setupEventListeners() {
+        // Preset buttons
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                selectPreset(this.dataset.preset);
+            });
+        });
+        
+        // Setting toggles
+        document.querySelectorAll('.setting-toggle').forEach(toggle => {
+            toggle.addEventListener('change', function() {
+                handleToggleChange(this);
+                markAsChanged();
+            });
+        });
+        
+        // Range sliders
+        document.querySelectorAll('.range-slider').forEach(slider => {
+            slider.addEventListener('input', function() {
+                updateRangeValue(this);
+                markAsChanged();
+            });
+        });
+        
+        // Form inputs
+        document.querySelectorAll('input, select').forEach(input => {
+            if (!input.classList.contains('setting-toggle') && !input.classList.contains('range-slider')) {
+                input.addEventListener('change', markAsChanged);
+            }
+        });
+        
+        // Save button
+        document.getElementById('saveSettings').addEventListener('click', saveSettings);
+        
+        // Reset button
+        document.getElementById('resetSettings').addEventListener('click', resetSettings);
+        
+        // Auto-save on changes (debounced)
+        let autoSaveTimeout;
+        function markAsChanged() {
+            hasUnsavedChanges = true;
+            clearTimeout(autoSaveTimeout);
+            autoSaveTimeout = setTimeout(autoSave, 2000); // Auto-save after 2 seconds
+        }
+    }
+    
+    function initializeUI() {
+        // Initialize range slider values
+        document.querySelectorAll('.range-slider').forEach(slider => {
+            updateRangeValue(slider);
+        });
+        
+        // Initialize setting visibility
+        document.querySelectorAll('.setting-toggle').forEach(toggle => {
+            handleToggleChange(toggle);
+        });
+    }
+    
+    function selectPreset(presetName) {
+        // Update active button
+        document.querySelectorAll('.preset-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelector(`[data-preset="${presetName}"]`).classList.add('active');
+        
+        // Load preset configuration
+        const presets = getPresetConfigurations();
+        if (presets[presetName]) {
+            currentSettings = { ...currentSettings, ...presets[presetName] };
+            populateForm(currentSettings);
+            markAsChanged();
+            showToast(`${presetName.charAt(0).toUpperCase() + presetName.slice(1)} preset loaded`, 'info');
+        }
+    }
+    
+    function getPresetConfigurations() {
+        return {
+            conservative: {
+                entry_conditions: {
+                    moving_average: { enabled: true, period: 50, type: 'SMA' },
+                    price_channel: { enabled: true, period: 30, threshold: 0.2 },
+                    order_flow: { enabled: false },
+                    tick_based: { enabled: false },
+                    candle_pattern: { enabled: false }
+                },
+                exit_conditions: {
+                    pcs_exit: { enabled: true, level1: 0.3, level2: 0.6, level3: 1.0 },
+                    pc_trailing: { enabled: true, distance: 0.3 }
+                },
+                system_settings: {
+                    leverage: 5,
+                    position_size: 0.05,
+                    risk_management: { max_daily_loss: 2.0, stop_loss: 1.5 }
+                }
+            },
+            balanced: {
+                entry_conditions: {
+                    moving_average: { enabled: true, period: 20, type: 'SMA' },
+                    price_channel: { enabled: true, period: 20, threshold: 0.1 },
+                    order_flow: { enabled: true, threshold: 1000 },
+                    tick_based: { enabled: false },
+                    candle_pattern: { enabled: false }
+                },
+                exit_conditions: {
+                    pcs_exit: { enabled: true, level1: 0.5, level2: 1.0, level3: 1.5 },
+                    pc_trailing: { enabled: true, distance: 0.2 }
+                },
+                system_settings: {
+                    leverage: 10,
+                    position_size: 0.1,
+                    risk_management: { max_daily_loss: 5.0, stop_loss: 2.0 }
+                }
+            },
+            aggressive: {
+                entry_conditions: {
+                    moving_average: { enabled: true, period: 10, type: 'EMA' },
+                    price_channel: { enabled: true, period: 15, threshold: 0.05 },
+                    order_flow: { enabled: true, threshold: 500 },
+                    tick_based: { enabled: true, min_ticks: 2 },
+                    candle_pattern: { enabled: true, patterns: ['hammer', 'engulfing'] }
+                },
+                exit_conditions: {
+                    pcs_exit: { enabled: true, level1: 0.8, level2: 1.5, level3: 2.5 },
+                    pc_trailing: { enabled: true, distance: 0.15 }
+                },
+                system_settings: {
+                    leverage: 20,
+                    position_size: 0.2,
+                    risk_management: { max_daily_loss: 10.0, stop_loss: 3.0 }
+                }
+            },
+            scalping: {
+                entry_conditions: {
+                    moving_average: { enabled: false },
+                    price_channel: { enabled: true, period: 10, threshold: 0.02 },
+                    order_flow: { enabled: true, threshold: 2000 },
+                    tick_based: { enabled: true, min_ticks: 3 },
+                    candle_pattern: { enabled: true, patterns: ['doji'] }
+                },
+                exit_conditions: {
+                    pcs_exit: { enabled: true, level1: 0.2, level2: 0.4, level3: 0.6 },
+                    pc_trailing: { enabled: false }
+                },
+                system_settings: {
+                    leverage: 25,
+                    position_size: 0.15,
+                    risk_management: { max_daily_loss: 8.0, stop_loss: 1.0 }
+                }
+            }
+        };
+    }
+    
+    function populateForm(settings) {
+        // Recursively populate form fields
+        function setFieldValue(obj, prefix = '') {
+            for (const [key, value] of Object.entries(obj)) {
+                const fieldName = prefix ? `${prefix}.${key}` : key;
+                
+                if (typeof value === 'object' && !Array.isArray(value)) {
+                    setFieldValue(value, fieldName);
+                } else {
+                    const field = document.querySelector(`[name="${fieldName}"]`);
+                    if (field) {
+                        if (field.type === 'checkbox') {
+                            field.checked = Boolean(value);
+                            handleToggleChange(field);
+                        } else if (field.type === 'range') {
+                            field.value = value;
+                            updateRangeValue(field);
+                        } else if (field.multiple) {
+                            // Handle multi-select
+                            Array.from(field.options).forEach(option => {
+                                option.selected = Array.isArray(value) && value.includes(option.value);
+                            });
+                        } else if (Array.isArray(value)) {
+                            // Handle checkbox groups
+                            const checkboxes = document.querySelectorAll(`[name="${fieldName}"]`);
+                            checkboxes.forEach(cb => {
+                                cb.checked = value.includes(cb.value);
+                            });
+                        } else {
+                            field.value = value;
+                        }
+                    }
+                }
+            }
+        }
+        
+        setFieldValue(settings);
+    }
+    
+    function handleToggleChange(toggle) {
+        const settingItem = toggle.closest('.setting-item');
+        const advancedSettings = settingItem.querySelector('.advanced-settings');
+        
+        if (toggle.checked) {
+            settingItem.classList.remove('setting-disabled');
+            settingItem.classList.add('setting-enabled');
+            if (advancedSettings) {
+                advancedSettings.style.display = 'block';
+            }
+        } else {
+            settingItem.classList.remove('setting-enabled');
+            settingItem.classList.add('setting-disabled');
+            if (advancedSettings) {
+                advancedSettings.style.display = 'none';
+            }
+        }
+    }
+    
+    function updateRangeValue(slider) {
+        const valueSpan = slider.nextElementSibling;
+        if (valueSpan && valueSpan.classList.contains('range-value')) {
+            let displayValue = slider.value;
+            
+            // Format value based on field name
+            const fieldName = slider.name;
+            if (fieldName.includes('threshold') && parseFloat(displayValue) < 1) {
+                displayValue = (parseFloat(displayValue) * 100).toFixed(2) + '%';
+            } else if (fieldName.includes('leverage')) {
+                displayValue = displayValue + 'x';
+            } else if (fieldName.includes('position_size') && parseFloat(displayValue) <= 1) {
+                displayValue = (parseFloat(displayValue) * 100).toFixed(0) + '%';
+            } else if (fieldName.includes('distance') && parseFloat(displayValue) < 1) {
+                displayValue = displayValue + '%';
+            } else if (fieldName.includes('loss') || fieldName.includes('stop_loss')) {
+                displayValue = displayValue + '%';
+            } else if (fieldName.includes('threshold') && fieldName.includes('order_flow')) {
+                displayValue = parseInt(displayValue).toLocaleString();
+            }
+            
+            valueSpan.textContent = displayValue;
+        }
+    }
+    
+    function collectFormData() {
+        const formData = {};
+        
+        // Collect all form fields
+        document.querySelectorAll('[name]').forEach(field => {
+            const path = field.name.split('.');
+            let current = formData;
+            
+            // Navigate to the right nested object
+            for (let i = 0; i < path.length - 1; i++) {
+                if (!current[path[i]]) {
+                    current[path[i]] = {};
+                }
+                current = current[path[i]];
+            }
+            
+            const finalKey = path[path.length - 1];
+            
+            if (field.type === 'checkbox' && field.name.endsWith('.patterns')) {
+                // Handle checkbox arrays
+                if (!current[finalKey]) current[finalKey] = [];
+                if (field.checked) {
+                    current[finalKey].push(field.value);
+                }
+            } else if (field.type === 'checkbox') {
+                current[finalKey] = field.checked;
+            } else if (field.multiple) {
+                current[finalKey] = Array.from(field.selectedOptions).map(option => option.value);
+            } else if (field.type === 'number' || field.type === 'range') {
+                current[finalKey] = parseFloat(field.value);
+            } else {
+                current[finalKey] = field.value;
+            }
+        });
+        
+        return formData;
+    }
+    
+    async function saveSettings() {
+        const saveButton = document.getElementById('saveSettings');
+        const originalContent = saveButton.innerHTML;
+        
+        // Show loading state
+        saveButton.disabled = true;
+        saveButton.innerHTML = '<div class="spinner-border spinner-border-sm"></div> Saving...';
+        
+        try {
+            const formData = collectFormData();
+            
+            const response = await apiRequest('/api/settings', {
+                method: 'POST',
+                body: JSON.stringify(formData)
+            });
+            
+            if (response && response.success) {
+                currentSettings = formData;
+                hasUnsavedChanges = false;
+                showSaveIndicator();
+                showToast('Settings saved successfully', 'success');
+            } else {
+                throw new Error(response?.message || 'Failed to save settings');
+            }
+            
+        } catch (error) {
+            console.error('Failed to save settings:', error);
+            showToast('Failed to save settings', 'danger');
+        } finally {
+            saveButton.disabled = false;
+            saveButton.innerHTML = originalContent;
+        }
+    }
+    
+    async function autoSave() {
+        if (!hasUnsavedChanges) return;
+        
+        try {
+            const formData = collectFormData();
+            
+            const response = await apiRequest('/api/settings', {
+                method: 'POST',
+                body: JSON.stringify(formData)
+            });
+            
+            if (response && response.success) {
+                currentSettings = formData;
+                hasUnsavedChanges = false;
+                showSaveIndicator();
+            }
+        } catch (error) {
+            console.error('Auto-save failed:', error);
+        }
+    }
+    
+    function showSaveIndicator() {
+        const indicator = document.getElementById('saveIndicator');
+        indicator.classList.add('show');
+        
+        setTimeout(() => {
+            indicator.classList.remove('show');
+        }, 2000);
+    }
+    
+    async function resetSettings() {
+        if (!confirm('Are you sure you want to reset all settings to defaults? This action cannot be undone.')) {
+            return;
+        }
+        
+        try {
+            // Load default settings (this would typically come from the backend)
+            const defaultSettings = getPresetConfigurations().balanced;
+            
+            currentSettings = defaultSettings;
+            populateForm(defaultSettings);
+            
+            // Set balanced preset as active
+            selectPreset('balanced');
+            
+            showToast('Settings reset to defaults', 'info');
+            
+        } catch (error) {
+            console.error('Failed to reset settings:', error);
+            showToast('Failed to reset settings', 'danger');
+        }
+    }
+    
+    // Warn user about unsaved changes
+    window.addEventListener('beforeunload', function(e) {
+        if (hasUnsavedChanges) {
+            e.preventDefault();
+            e.returnValue = '';
+        }
+    });
+    
+    // Keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey || e.metaKey) {
+            switch (e.key) {
+                case 's':
+                    e.preventDefault();
+                    saveSettings();
+                    break;
+                case 'r':
+                    if (e.shiftKey) {
+                        e.preventDefault();
+                        resetSettings();
+                    }
+                    break;
+            }
+        }
+    });
+    
+    // Initialize with balanced preset
+    selectPreset('balanced');
+});
+</script>
+{% endblock %}
