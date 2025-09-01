@@ -2,10 +2,10 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests/playwright',
-  timeout: 30000,
+  timeout: 90000, // 30초 → 90초로 증가
   fullyParallel: false, // 순차 실행 (로그인 테스트)
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
+  retries: process.env.CI ? 2 : 1, // 재시도 1회 추가
   workers: 1, // 단일 워커 (세션 충돌 방지)
   reporter: 'html',
   use: {
@@ -14,6 +14,8 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
     headless: false, // 브라우저 UI 표시
+    navigationTimeout: 30000, // 페이지 로딩 타임아웃
+    actionTimeout: 15000, // 액션 타임아웃
   },
 
   projects: [

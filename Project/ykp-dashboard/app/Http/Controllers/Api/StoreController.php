@@ -44,24 +44,36 @@ class StoreController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        if (Auth::user()->role !== 'headquarters') {
-            return response()->json(['error' => '본사 관리자만 매장을 추가할 수 있습니다.'], 403);
+        $user = Auth::user();
+        
+        // 본사와 지사만 매장 추가 가능
+        if (!in_array($user->role, ['headquarters', 'branch'])) {
+            return response()->json(['error' => '본사 또는 지사 관리자만 매장을 추가할 수 있습니다.'], 403);
         }
         
-        $request->validate([
+        $validationRules = [
             'name' => 'required|string|max:255',
             'code' => 'required|string|unique:stores,code',
-            'branch_id' => 'required|exists:branches,id',
             'owner_name' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:20',
             'address' => 'nullable|string|max:500'
-        ]);
+        ];
         
-        return DB::transaction(function () use ($request) {
+        // 본사는 지사 선택 가능, 지사는 자기 지사로 고정
+        if ($user->role === 'headquarters') {
+            $validationRules['branch_id'] = 'required|exists:branches,id';
+        }
+        
+        $request->validate($validationRules);
+        
+        // 지사인 경우 자기 지사로 강제 설정
+        $branchId = $user->role === 'branch' ? $user->branch_id : $request->branch_id;
+        
+        return DB::transaction(function () use ($request, $user, $branchId) {
             $store = Store::create([
                 'name' => $request->name,
                 'code' => $request->code,
-                'branch_id' => $request->branch_id,
+                'branch_id' => $branchId,
                 'owner_name' => $request->owner_name,
                 'phone' => $request->phone,
                 'address' => $request->address,

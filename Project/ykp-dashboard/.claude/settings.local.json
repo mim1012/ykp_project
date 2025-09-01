@@ -48,7 +48,10 @@
       "mcp__microsoft-playwright-mcp__browser_click",
       "mcp__microsoft-playwright-mcp__browser_wait_for",
       "mcp__microsoft-playwright-mcp__browser_hover",
-      "mcp__microsoft-playwright-mcp__browser_close"
+      "mcp__microsoft-playwright-mcp__browser_close",
+      "Read(C:\\Users\\PC_1M\\Downloads\\php-8.4.11-nts-Win32-vs17-x64/**)",
+      "Read(C:\\Users\\PC_1M\\Downloads\\php-8.4.11-nts-Win32-vs17-x64/**)",
+      "Bash(git rm:*)"
     ],
     "defaultMode": "acceptEdits",
     "additionalDirectories": [

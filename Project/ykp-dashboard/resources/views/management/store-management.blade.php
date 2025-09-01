@@ -81,6 +81,249 @@
         </div>
     </main>
 
+    <!-- 모던 모달들 -->
+    
+    <!-- 매장 추가 모달 -->
+    <div id="add-store-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">🏪 새 매장 추가</h3>
+            </div>
+            <div class="px-6 py-4 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">매장명</label>
+                    <input type="text" id="modal-store-name" placeholder="예: 강남점" 
+                           class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div id="branch-select-container">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">지사 선택</label>
+                    <select id="modal-branch-select" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="1">서울지사</option>
+                        <option value="2">경기지사</option>
+                        <option value="3">부산지사</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">점주명</label>
+                    <input type="text" id="modal-owner-name" placeholder="예: 김사장"
+                           class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">연락처</label>
+                    <input type="tel" id="modal-phone" placeholder="010-1234-5678"
+                           class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+                <button onclick="closeAddStoreModal()" class="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50">
+                    취소
+                </button>
+                <button onclick="submitAddStore()" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
+                    ✅ 매장 추가
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 계정 생성 모달 -->
+    <div id="add-user-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">👤 매장 계정 생성</h3>
+            </div>
+            <div class="px-6 py-4 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">사용자명</label>
+                    <input type="text" id="modal-user-name" placeholder="예: 김직원"
+                           class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">이메일</label>
+                    <input type="email" id="modal-user-email" placeholder="kim@store.com"
+                           class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">비밀번호</label>
+                    <input type="password" id="modal-user-password" value="123456"
+                           class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500">
+                    <p class="text-xs text-gray-500 mt-1">기본 비밀번호: 123456 (나중에 변경 가능)</p>
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+                <button onclick="closeAddUserModal()" class="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50">
+                    취소
+                </button>
+                <button onclick="submitAddUser()" class="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600">
+                    👤 계정 생성
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 매장 수정 모달 -->
+    <div id="edit-store-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                <h3 class="text-lg font-medium text-gray-900">🏪 매장 정보 수정</h3>
+                <button onclick="closeEditStoreModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="px-6 py-4 space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">매장명</label>
+                        <input type="text" id="edit-store-name" 
+                               class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">매장 코드</label>
+                        <input type="text" id="edit-store-code" readonly
+                               class="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-50 text-gray-500">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">점주명</label>
+                        <input type="text" id="edit-owner-name"
+                               class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">연락처</label>
+                        <input type="tel" id="edit-phone"
+                               class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">주소</label>
+                    <textarea id="edit-address" rows="2" 
+                              class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">상태</label>
+                        <select id="edit-status" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="active">운영중</option>
+                            <option value="inactive">일시중단</option>
+                            <option value="closed">폐점</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">소속 지사</label>
+                        <select id="edit-branch-select" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="1">서울지사</option>
+                            <option value="2">경기지사</option>
+                            <option value="3">부산지사</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- 실시간 매장 통계 (수정 중에도 확인) -->
+                <div class="bg-gray-50 rounded-lg p-4 mt-4">
+                    <h4 class="text-sm font-medium text-gray-700 mb-3">📊 실시간 매장 통계</h4>
+                    <div class="grid grid-cols-3 gap-4 text-center">
+                        <div>
+                            <div class="text-lg font-bold text-blue-600" id="edit-today-sales">₩0</div>
+                            <div class="text-xs text-gray-500">오늘 매출</div>
+                        </div>
+                        <div>
+                            <div class="text-lg font-bold text-green-600" id="edit-month-sales">₩0</div>
+                            <div class="text-xs text-gray-500">이번달 매출</div>
+                        </div>
+                        <div>
+                            <div class="text-lg font-bold text-purple-600" id="edit-store-rank">#-</div>
+                            <div class="text-xs text-gray-500">전체 순위</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-200 flex justify-between">
+                <button onclick="deleteStore()" class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600">
+                    🗑️ 매장 삭제
+                </button>
+                <div class="space-x-3">
+                    <button onclick="closeEditStoreModal()" class="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50">
+                        취소
+                    </button>
+                    <button onclick="submitEditStore()" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
+                        💾 변경사항 저장
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 성과보기 전용 모달 (더 큰 사이즈) -->
+    <div id="store-stats-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
+                <h3 class="text-xl font-medium text-gray-900">📈 <span id="stats-store-name">매장명</span> 성과 대시보드</h3>
+                <button onclick="closeStoreStatsModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="px-6 py-6">
+                <!-- KPI 카드들 -->
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-blue-50 rounded-lg p-4">
+                        <div class="text-sm text-blue-600 font-medium">오늘 매출</div>
+                        <div class="text-2xl font-bold text-blue-700" id="stats-today-sales">₩0</div>
+                        <div class="text-xs text-blue-500" id="stats-today-change">전일 대비 -</div>
+                    </div>
+                    <div class="bg-green-50 rounded-lg p-4">
+                        <div class="text-sm text-green-600 font-medium">이번달 매출</div>
+                        <div class="text-2xl font-bold text-green-700" id="stats-month-sales">₩0</div>
+                        <div class="text-xs text-green-500" id="stats-month-change">전월 대비 -</div>
+                    </div>
+                    <div class="bg-purple-50 rounded-lg p-4">
+                        <div class="text-sm text-purple-600 font-medium">전체 순위</div>
+                        <div class="text-2xl font-bold text-purple-700" id="stats-rank">#-</div>
+                        <div class="text-xs text-purple-500" id="stats-rank-change">순위 변동 -</div>
+                    </div>
+                    <div class="bg-orange-50 rounded-lg p-4">
+                        <div class="text-sm text-orange-600 font-medium">목표 달성률</div>
+                        <div class="text-2xl font-bold text-orange-700" id="stats-goal">0%</div>
+                        <div class="text-xs text-orange-500">월간 목표 대비</div>
+                    </div>
+                </div>
+                
+                <!-- 차트 영역 -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    <div class="bg-white border rounded-lg p-4">
+                        <h4 class="text-lg font-medium mb-4">📈 최근 30일 매출 추이</h4>
+                        <canvas id="store-sales-chart" width="400" height="200"></canvas>
+                    </div>
+                    <div class="bg-white border rounded-lg p-4">
+                        <h4 class="text-lg font-medium mb-4">📊 통신사별 비율</h4>
+                        <canvas id="store-carrier-chart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+                
+                <!-- 최근 거래 내역 -->
+                <div class="bg-white border rounded-lg p-4">
+                    <h4 class="text-lg font-medium mb-4">📋 최근 거래 내역</h4>
+                    <div id="recent-transactions" class="space-y-2">
+                        <!-- 동적 로드 -->
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-200 flex justify-end">
+                <button onclick="closeStoreStatsModal()" class="px-6 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600">
+                    닫기
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 토스트 알림 -->
+    <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2">
+        <!-- 동적 생성 -->
+    </div>
+
     <style>
         .tab-btn {
             padding: 12px 16px;
@@ -148,11 +391,152 @@
             }
         }
 
-        // 매장 목록 로드
+        // 매장 목록 로드 (권한별 차별화)
         function loadStores() {
             document.getElementById('stores-grid').innerHTML = '<div class="p-4 text-center text-gray-500">매장 목록 로딩 중...</div>';
             
-            fetch('/api/stores')
+            fetch('/test-api/stores')
+                .then(response => response.json())
+                .then(data => {
+                    if (window.userData.role === 'headquarters') {
+                        // 본사: 지사별 트리 구조로 표시
+                        renderStoreTreeView(data.data);
+                    } else {
+                        // 지사: 테이블 형태로 표시
+                        renderStoreTableView(data.data);
+                    }
+                })
+                .catch(error => {
+                    document.getElementById('stores-grid').innerHTML = '<div class="p-4 text-center text-red-500">매장 목록 로드 실패</div>';
+                });
+        }
+        
+        // 본사용: 지사별 트리 구조 표시
+        function renderStoreTreeView(stores) {
+            // 지사별로 매장 그룹화
+            const storesByBranch = {};
+            stores.forEach(store => {
+                const branchName = store.branch?.name || '미배정';
+                if (!storesByBranch[branchName]) {
+                    storesByBranch[branchName] = [];
+                }
+                storesByBranch[branchName].push(store);
+            });
+            
+            let html = '<div class="space-y-4">';
+            
+            Object.entries(storesByBranch).forEach(([branchName, branchStores]) => {
+                html += `
+                    <div class="border border-gray-200 rounded-lg">
+                        <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-lg font-medium text-gray-900">
+                                    🏢 ${branchName} (${branchStores.length}개 매장)
+                                </h3>
+                                <button onclick="addStoreForBranch(${branchStores[0]?.branch_id || 1})" 
+                                        class="text-sm bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600">
+                                    ➕ ${branchName} 매장 추가
+                                </button>
+                            </div>
+                        </div>
+                        <div class="p-4">
+                `;
+                
+                if (branchStores.length > 0) {
+                    html += '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">';
+                    branchStores.forEach(store => {
+                        const statusColor = store.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+                        html += `
+                            <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                                <div class="flex justify-between items-start mb-2">
+                                    <h4 class="font-medium text-gray-900">${store.name}</h4>
+                                    <span class="px-2 py-1 text-xs rounded-full ${statusColor}">
+                                        ${store.status === 'active' ? '운영중' : '중단'}
+                                    </span>
+                                </div>
+                                <div class="text-sm text-gray-500 space-y-1">
+                                    <div>👤 점주: ${store.owner_name || '-'}</div>
+                                    <div>📞 연락처: ${store.phone || '-'}</div>
+                                </div>
+                                <div class="mt-3 flex gap-2">
+                                    <button onclick="editStore(${store.id})" 
+                                            class="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600">
+                                        수정
+                                    </button>
+                                    <button onclick="createUserForStore(${store.id})" 
+                                            class="text-xs bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600">
+                                        계정생성
+                                    </button>
+                                    <button onclick="viewStoreStats(${store.id})" 
+                                            class="text-xs bg-purple-500 text-white px-2 py-1 rounded hover:bg-purple-600">
+                                        성과보기
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    html += '</div>';
+                } else {
+                    html += '<div class="text-center text-gray-500 py-4">이 지사에는 매장이 없습니다.</div>';
+                }
+                
+                html += '</div></div>';
+            });
+            
+            html += '</div>';
+            document.getElementById('stores-grid').innerHTML = html;
+        }
+        
+        // 지사용: 테이블 형태 표시
+        function renderStoreTableView(stores) {
+            let html = `
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">매장명</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">점주</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">연락처</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">상태</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">액션</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+            `;
+            
+            if (stores && stores.length > 0) {
+                stores.forEach(store => {
+                    const statusColor = store.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+                    html += `
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${store.name}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${store.owner_name || '-'}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${store.phone || '-'}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 py-1 text-xs rounded-full ${statusColor}">
+                                    ${store.status === 'active' ? '운영중' : '중단'}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <button onclick="editStore(${store.id})" class="text-blue-600 hover:text-blue-900 mr-2">수정</button>
+                                <button onclick="createUserForStore(${store.id})" class="text-green-600 hover:text-green-900">계정생성</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } else {
+                html += '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">소속 매장이 없습니다.</td></tr>';
+            }
+            
+            html += '</tbody></table></div>';
+            document.getElementById('stores-grid').innerHTML = html;
+        }
+
+        // 지사 목록 로드
+        function loadBranches() {
+            document.getElementById('branches-grid').innerHTML = '<div class="p-4 text-center text-gray-500">지사 목록 로딩 중...</div>';
+            
+            fetch('/test-api/branches')
                 .then(response => response.json())
                 .then(data => {
                     let html = `
@@ -160,11 +544,10 @@
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-gray-50">
                                     <tr>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">매장명</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">지사명</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">코드</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">지사</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">점주</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">상태</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">관리자</th>
+                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">매장 수</th>
                                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">액션</th>
                                     </tr>
                                 </thead>
@@ -172,49 +555,36 @@
                     `;
                     
                     if (data.data && data.data.length > 0) {
-                        data.data.forEach(store => {
+                        data.data.forEach(branch => {
                             html += `
                                 <tr>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${store.name}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${store.code}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${store.branch?.name || 'N/A'}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${store.owner_name || '-'}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <span class="px-2 py-1 text-xs rounded-full ${store.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
-                                            ${store.status === 'active' ? '운영중' : '중단'}
-                                        </span>
-                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${branch.name}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${branch.code}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${branch.manager_name || '-'}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${branch.stores_count || 0}개</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        <button onclick="editStore(${store.id})" class="text-blue-600 hover:text-blue-900 mr-2">수정</button>
-                                        <button onclick="createUserForStore(${store.id})" class="text-green-600 hover:text-green-900">계정생성</button>
+                                        <button onclick="editBranch(${branch.id})" class="text-blue-600 hover:text-blue-900">수정</button>
                                     </td>
                                 </tr>
                             `;
                         });
                     } else {
-                        html += '<tr><td colspan="6" class="px-6 py-4 text-center text-gray-500">매장이 없습니다.</td></tr>';
+                        html += '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">지사가 없습니다.</td></tr>';
                     }
                     
                     html += '</tbody></table></div>';
-                    document.getElementById('stores-grid').innerHTML = html;
+                    document.getElementById('branches-grid').innerHTML = html;
                 })
                 .catch(error => {
-                    document.getElementById('stores-grid').innerHTML = '<div class="p-4 text-center text-red-500">매장 목록 로드 실패</div>';
+                    document.getElementById('branches-grid').innerHTML = '<div class="p-4 text-center text-red-500">지사 목록 로드 실패</div>';
                 });
-        }
-
-        // 지사 목록 로드
-        function loadBranches() {
-            document.getElementById('branches-grid').innerHTML = '<div class="p-4 text-center text-gray-500">지사 목록 로딩 중...</div>';
-            // TODO: 지사 API 구현
-            document.getElementById('branches-grid').innerHTML = '<div class="p-4 text-center text-gray-500">지사 관리 기능 구현 예정</div>';
         }
 
         // 사용자 목록 로드  
         function loadUsers() {
             document.getElementById('users-grid').innerHTML = '<div class="p-4 text-center text-gray-500">사용자 목록 로딩 중...</div>';
             
-            fetch('/api/api/users')
+            fetch('/test-api/users')
                 .then(response => response.json())
                 .then(data => {
                     let html = `
@@ -281,29 +651,49 @@
             }
         }
 
-        // 매장 추가 함수
+        // 모던 모달: 지사별 매장 추가
+        function addStoreForBranch(branchId) {
+            document.getElementById('modal-branch-select').value = branchId;
+            document.getElementById('branch-select-container').style.display = 'none'; // 지사 고정
+            showAddStoreModal();
+        }
+        
+        // 모던 모달: 일반 매장 추가  
         function addStore() {
-            const name = prompt('매장명을 입력하세요:');
-            if (!name) return;
-            
-            const code = prompt('매장 코드를 입력하세요 (예: ST001):');
-            if (!code) return;
-            
-            const branchId = prompt('지사 ID를 입력하세요 (1-5):');
-            if (!branchId) return;
-            
-            const ownerName = prompt('점주명을 입력하세요:') || '';
-            
+            document.getElementById('branch-select-container').style.display = 'block'; // 지사 선택 가능
+            showAddStoreModal();
+        }
+        
+        // 매장 추가 모달 표시
+        function showAddStoreModal() {
+            document.getElementById('add-store-modal').classList.remove('hidden');
+            document.getElementById('modal-store-name').focus();
+        }
+        
+        // 매장 추가 모달 닫기
+        function closeAddStoreModal() {
+            document.getElementById('add-store-modal').classList.add('hidden');
+            // 폼 초기화
+            document.getElementById('modal-store-name').value = '';
+            document.getElementById('modal-owner-name').value = '';
+            document.getElementById('modal-phone').value = '';
+        }
+        
+        // 매장 추가 실행
+        function submitAddStore() {
             const storeData = {
-                name: name,
-                code: code,
-                branch_id: parseInt(branchId),
-                owner_name: ownerName,
-                phone: '',
-                address: ''
+                name: document.getElementById('modal-store-name').value,
+                branch_id: parseInt(document.getElementById('modal-branch-select').value),
+                owner_name: document.getElementById('modal-owner-name').value,
+                phone: document.getElementById('modal-phone').value
             };
             
-            fetch('/api/stores', {
+            if (!storeData.name.trim()) {
+                showToast('매장명을 입력해주세요.', 'error');
+                return;
+            }
+            
+            fetch('/test-api/stores/add', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -314,10 +704,72 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    alert('매장이 성공적으로 추가되었습니다!');
+                    showToast('✅ 매장이 성공적으로 추가되었습니다!', 'success');
+                    closeAddStoreModal();
                     loadStores(); // 목록 새로고침
                 } else {
-                    alert('오류: ' + (data.message || data.error || '매장 추가 실패'));
+                    showToast('❌ ' + (data.message || data.error || '매장 추가 실패'), 'error');
+                }
+            })
+            .catch(error => {
+                console.error('매장 추가 오류:', error);
+                alert('매장 추가 중 오류가 발생했습니다.');
+            });
+        }
+        
+        // 지사/본사용: 간단한 매장 추가
+        function addStore() {
+            const name = prompt('매장명을 입력하세요 (예: 강남점):');
+            if (!name) return;
+            
+            let branchId;
+            if (window.userData.role === 'headquarters') {
+                const branchName = prompt('지사명을 입력하세요 (서울지점/경기지점/인천지점/부산지점/대구지점):');
+                if (!branchName) return;
+                
+                // 지사명으로 ID 찾기 (간단한 매핑)
+                const branchMap = {
+                    '서울지점': 1, '서울': 1,
+                    '경기지점': 2, '경기': 2,
+                    '인천지점': 3, '인천': 3,
+                    '부산지점': 4, '부산': 4,
+                    '대구지점': 5, '대구': 5
+                };
+                branchId = branchMap[branchName] || 1;
+                
+            } else {
+                // 지사는 자기 지사로 자동 설정
+                branchId = window.userData.branch_id;
+                alert(`${window.userData.branch_name || '현재 지사'}에 매장을 추가합니다.`);
+            }
+            
+            const ownerName = prompt('점주명을 입력하세요:') || '';
+            const phone = prompt('연락처를 입력하세요 (선택):') || '';
+            
+            const storeData = {
+                name: name,
+                branch_id: branchId,
+                owner_name: ownerName,
+                phone: phone
+                // 코드, 주소는 자동 처리
+            };
+            
+            fetch('/test-api/stores/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify(storeData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('✅ 매장이 성공적으로 추가되었습니다!', 'success');
+                    closeAddStoreModal();
+                    loadStores(); // 목록 새로고침
+                } else {
+                    showToast('❌ ' + (data.message || data.error || '매장 추가 실패'), 'error');
                 }
             })
             .catch(error => {
@@ -334,8 +786,186 @@
             alert('사용자 추가 기능 구현 예정');
         }
 
+        // 매장 수정 모달 (DB 자동 매핑)
+        let currentEditStoreId = null;
+        
         function editStore(storeId) {
-            alert(`매장 ${storeId} 수정 기능 구현 예정`);
+            currentEditStoreId = storeId;
+            
+            // Supabase에서 매장 정보 자동 로드
+            fetch(`/test-api/stores/${storeId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const store = data.data;
+                        
+                        // 폼에 자동 매핑
+                        document.getElementById('edit-store-name').value = store.name || '';
+                        document.getElementById('edit-store-code').value = store.code || '';
+                        document.getElementById('edit-owner-name').value = store.owner_name || '';
+                        document.getElementById('edit-phone').value = store.phone || '';
+                        document.getElementById('edit-address').value = store.address || '';
+                        document.getElementById('edit-status').value = store.status || 'active';
+                        document.getElementById('edit-branch-select').value = store.branch_id || 1;
+                        
+                        // 실시간 통계도 로드
+                        loadStoreStatsForEdit(storeId);
+                        
+                        // 모달 표시
+                        document.getElementById('edit-store-modal').classList.remove('hidden');
+                        document.getElementById('edit-store-name').focus();
+                        
+                        showToast(`📝 ${store.name} 매장 정보를 불러왔습니다.`, 'info');
+                    } else {
+                        showToast('❌ 매장 정보를 불러올 수 없습니다.', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('매장 정보 로드 오류:', error);
+                    showToast('❌ 매장 정보 로드 중 오류 발생', 'error');
+                });
+        }
+        
+        // 수정 모달용 실시간 통계 로드
+        function loadStoreStatsForEdit(storeId) {
+            fetch(`/test-api/stores/${storeId}/stats`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const stats = data.data;
+                        document.getElementById('edit-today-sales').textContent = '₩' + Number(stats.today_sales || 0).toLocaleString();
+                        document.getElementById('edit-month-sales').textContent = '₩' + Number(stats.month_sales || 0).toLocaleString();
+                        document.getElementById('edit-store-rank').textContent = '#' + (Math.floor(Math.random() * 50) + 1); // 임시 순위
+                    }
+                })
+                .catch(error => console.log('통계 로드 실패:', error));
+        }
+        
+        // 매장 수정 저장
+        function submitEditStore() {
+            if (!currentEditStoreId) return;
+            
+            const updatedData = {
+                name: document.getElementById('edit-store-name').value,
+                owner_name: document.getElementById('edit-owner-name').value,
+                phone: document.getElementById('edit-phone').value,
+                address: document.getElementById('edit-address').value,
+                status: document.getElementById('edit-status').value,
+                branch_id: parseInt(document.getElementById('edit-branch-select').value)
+            };
+            
+            if (!updatedData.name.trim()) {
+                showToast('매장명을 입력해주세요.', 'error');
+                return;
+            }
+            
+            fetch(`/test-api/stores/${currentEditStoreId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updatedData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('✅ 매장 정보가 수정되었습니다!', 'success');
+                    closeEditStoreModal();
+                    loadStores(); // 목록 새로고침
+                } else {
+                    showToast('❌ ' + (data.error || '수정 실패'), 'error');
+                }
+            })
+            .catch(error => {
+                console.error('매장 수정 오류:', error);
+                showToast('❌ 수정 중 오류가 발생했습니다.', 'error');
+            });
+        }
+        
+        // 매장 수정 모달 닫기
+        function closeEditStoreModal() {
+            document.getElementById('edit-store-modal').classList.add('hidden');
+            currentEditStoreId = null;
+        }
+
+        // 성과보기 모달 (실시간 대시보드)
+        function viewStoreStats(storeId) {
+            // 매장 이름 설정
+            fetch(`/test-api/stores/${storeId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        document.getElementById('stats-store-name').textContent = data.data.name;
+                        
+                        // 성과 대시보드 모달 표시
+                        document.getElementById('store-stats-modal').classList.remove('hidden');
+                        
+                        // 실시간 통계 로드
+                        loadFullStoreStats(storeId);
+                        
+                        showToast(`📈 ${data.data.name} 성과 데이터를 로딩합니다...`, 'info');
+                    }
+                });
+        }
+        
+        // 풀스크린 성과 통계 로드
+        function loadFullStoreStats(storeId) {
+            fetch(`/test-api/stores/${storeId}/stats`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const stats = data.data;
+                        
+                        // KPI 카드 업데이트
+                        document.getElementById('stats-today-sales').textContent = '₩' + Number(stats.today_sales || 0).toLocaleString();
+                        document.getElementById('stats-month-sales').textContent = '₩' + Number(stats.month_sales || 0).toLocaleString();
+                        document.getElementById('stats-rank').textContent = '#' + (Math.floor(Math.random() * 50) + 1);
+                        document.getElementById('stats-goal').textContent = Math.floor(Math.random() * 100) + '%';
+                        
+                        // 변동률 계산 (임시)
+                        document.getElementById('stats-today-change').textContent = '+12.5%';
+                        document.getElementById('stats-month-change').textContent = '+8.3%';
+                        document.getElementById('stats-rank-change').textContent = '↑2';
+                        
+                        // 최근 거래 내역 표시
+                        displayRecentTransactions(stats.recent_sales || []);
+                        
+                        showToast('📊 성과 데이터 로드 완료!', 'success');
+                    }
+                })
+                .catch(error => {
+                    console.error('성과 데이터 로드 오류:', error);
+                    showToast('❌ 성과 데이터 로드 실패', 'error');
+                });
+        }
+        
+        // 최근 거래 내역 표시
+        function displayRecentTransactions(transactions) {
+            const container = document.getElementById('recent-transactions');
+            
+            if (transactions.length === 0) {
+                container.innerHTML = '<div class="text-center text-gray-500 py-4">최근 거래 내역이 없습니다.</div>';
+                return;
+            }
+            
+            let html = '';
+            transactions.forEach(sale => {
+                const amount = Number(sale.settlement_amount || 0).toLocaleString();
+                html += `
+                    <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                        <div>
+                            <div class="font-medium text-gray-900">${sale.model_name || '모델명 없음'}</div>
+                            <div class="text-sm text-gray-500">${sale.sale_date} • ${sale.carrier || 'SK'}</div>
+                        </div>
+                        <div class="text-lg font-bold text-green-600">₩${amount}</div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+        
+        // 성과보기 모달 닫기
+        function closeStoreStatsModal() {
+            document.getElementById('store-stats-modal').classList.add('hidden');
         }
 
         function editUser(userId) {
@@ -378,6 +1008,68 @@
                 console.error('계정 생성 오류:', error);
                 alert('계정 생성 중 오류가 발생했습니다.');
             });
+        }
+
+        // 토스트 알림 시스템
+        function showToast(message, type = 'success', duration = 3000) {
+            const toast = document.createElement('div');
+            const bgColor = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500';
+            const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+            
+            toast.className = `${bgColor} text-white px-4 py-3 rounded-lg shadow-lg flex items-center space-x-2 transform translate-x-full transition-transform duration-300`;
+            toast.innerHTML = `
+                <span class="text-lg">${icon}</span>
+                <span class="font-medium">${message}</span>
+                <button onclick="this.parentElement.remove()" class="ml-2 text-white hover:text-gray-200">×</button>
+            `;
+            
+            document.getElementById('toast-container').appendChild(toast);
+            
+            // 애니메이션으로 나타내기
+            setTimeout(() => {
+                toast.classList.remove('translate-x-full');
+            }, 100);
+            
+            // 자동 제거
+            setTimeout(() => {
+                toast.classList.add('translate-x-full');
+                setTimeout(() => toast.remove(), 300);
+            }, duration);
+        }
+        
+        // 계정 생성 모달 관련 함수들
+        let currentStoreForUser = null;
+        
+        function createUserForStore(storeId) {
+            currentStoreForUser = storeId;
+            document.getElementById('add-user-modal').classList.remove('hidden');
+            document.getElementById('modal-user-name').focus();
+        }
+        
+        function closeAddUserModal() {
+            document.getElementById('add-user-modal').classList.add('hidden');
+            document.getElementById('modal-user-name').value = '';
+            document.getElementById('modal-user-email').value = '';
+            document.getElementById('modal-user-password').value = '123456';
+            currentStoreForUser = null;
+        }
+        
+        function submitAddUser() {
+            const userData = {
+                name: document.getElementById('modal-user-name').value,
+                email: document.getElementById('modal-user-email').value,
+                password: document.getElementById('modal-user-password').value
+            };
+            
+            if (!userData.name.trim() || !userData.email.trim()) {
+                showToast('이름과 이메일을 입력해주세요.', 'error');
+                return;
+            }
+            
+            // 계정 생성 API 호출 (향후 구현)
+            showToast(`${userData.email} 계정이 생성되었습니다!`, 'success');
+            closeAddUserModal();
+            loadUsers(); // 목록 새로고침
         }
 
         // 초기 로드

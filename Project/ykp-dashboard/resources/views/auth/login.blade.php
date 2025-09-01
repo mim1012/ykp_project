@@ -132,45 +132,8 @@
         // CSRF token for AJAX requests
         window.csrf_token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
         
-        // 419 오류 발생 시 자동 새로고침
-        document.addEventListener('DOMContentLoaded', function() {
-            const form = document.querySelector('form');
-            
-            form.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                
-                try {
-                    const formData = new FormData(form);
-                    const response = await fetch(form.action, {
-                        method: 'POST',
-                        body: formData,
-                        headers: {
-                            'X-CSRF-TOKEN': window.csrf_token
-                        }
-                    });
-                    
-                    if (response.status === 419) {
-                        // 토큰 만료 시 페이지 새로고침
-                        location.reload();
-                        return;
-                    }
-                    
-                    if (response.ok) {
-                        // 로그인 성공 시 대시보드로 이동
-                        window.location.href = '/dashboard';
-                    } else {
-                        // 에러 처리
-                        const result = await response.text();
-                        document.body.innerHTML = result;
-                    }
-                    
-                } catch (error) {
-                    console.error('로그인 오류:', error);
-                    alert('로그인 중 오류가 발생했습니다. 페이지를 새로고침합니다.');
-                    location.reload();
-                }
-            });
-        });
+        // 간단한 CSRF 토큰 설정만 유지 (기본 폼 제출 사용)
+        // JavaScript로 폼 제출을 가로채지 않고 Laravel 기본 리다이렉트 사용
     </script>
 </body>
 </html>

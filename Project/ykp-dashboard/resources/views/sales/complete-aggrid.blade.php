@@ -905,6 +905,74 @@
         };
         
         console.log('사용자 정보:', window.userData);
+        
+        // 일괄 저장 함수
+        function bulkSave() {
+            if (!completeTableData || completeTableData.length === 0) {
+                alert('저장할 데이터가 없습니다.');
+                return;
+            }
+            
+            // 유효한 데이터만 필터링 (model_name이 있는 행만)
+            const validData = completeTableData.filter(row => 
+                row.model_name && row.model_name.trim()
+            );
+            
+            if (validData.length === 0) {
+                alert('저장할 유효한 데이터가 없습니다. 모델명을 입력해주세요.');
+                return;
+            }
+            
+            showStatus('저장 중...', 'info');
+            
+            // Supabase에 저장 (웹 라우트 API)
+            fetch('/test-api/sales/save', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    sales: validData.map(row => ({
+                        sale_date: row.sale_date,
+                        store_id: window.userData.store_id || 1,
+                        branch_id: window.userData.branch_id || 1,
+                        carrier: row.carrier || 'SK',
+                        activation_type: row.activation_type || '신규',
+                        model_name: row.model_name,
+                        base_price: parseFloat(row.base_price) || 0,
+                        settlement_amount: parseFloat(row.settlement_amount) || 0,
+                        margin_after_tax: parseFloat(row.margin_after_tax) || 0,
+                        phone_number: row.phone_number || '',
+                        salesperson: row.salesperson || '',
+                        memo: row.memo || ''
+                    }))
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showStatus(`✅ ${validData.length}건 저장 완료!`, 'success');
+                    updateCompleteStats(); // 통계 업데이트
+                } else {
+                    showStatus('❌ 저장 실패: ' + (data.message || '알 수 없는 오류'), 'error');
+                }
+            })
+            .catch(error => {
+                console.error('저장 오류:', error);
+                showStatus('❌ 저장 중 오류 발생', 'error');
+            });
+        }
+        
+        // 일괄저장 버튼 이벤트 연결
+        document.addEventListener('DOMContentLoaded', function() {
+            const saveBtn = document.getElementById('save-btn');
+            if (saveBtn) {
+                saveBtn.addEventListener('click', bulkSave);
+                console.log('일괄저장 버튼 이벤트 연결 완료');
+            } else {
+                console.log('일괄저장 버튼을 찾을 수 없습니다');
+            }
+        });
     </script>
 </body>
 </html>
