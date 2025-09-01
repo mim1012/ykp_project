@@ -39,7 +39,16 @@
       "Bash(wmic:*)",
       "Bash(git commit:*)",
       "Bash(git checkout:*)",
-      "Bash(git remote set-url:*)"
+      "Bash(git remote set-url:*)",
+      "Bash(claude mcp add:*)",
+      "Bash(claude mcp:*)",
+      "Bash(npx playwright:*)",
+      "mcp__microsoft-playwright-mcp__browser_navigate",
+      "mcp__microsoft-playwright-mcp__browser_type",
+      "mcp__microsoft-playwright-mcp__browser_click",
+      "mcp__microsoft-playwright-mcp__browser_wait_for",
+      "mcp__microsoft-playwright-mcp__browser_hover",
+      "mcp__microsoft-playwright-mcp__browser_close"
     ],
     "defaultMode": "acceptEdits",
     "additionalDirectories": [

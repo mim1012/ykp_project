@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>대시보드</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -313,6 +314,10 @@
         <div class="sidebar-icon tooltip" onclick="openFixedExpenses()">
             💰
             <span class="tooltip-text">고정지출 관리</span>
+        </div>
+        <div class="sidebar-icon tooltip" onclick="openStoreManagement()">
+            🏪
+            <span class="tooltip-text">매장 관리</span>
         </div>
         <div class="sidebar-icon tooltip" onclick="openRefunds()">
             🔄
@@ -664,6 +669,11 @@
         function openMonthlySettlement() {
             // 월마감정산 페이지 (신규 핵심 기능!)
             window.location.href = '/monthly-settlement';
+        }
+        
+        function openStoreManagement() {
+            // 매장 관리 (본사 전용)
+            window.location.href = '/management/stores';
         }
         
         function openAdmin() {

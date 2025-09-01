@@ -42,6 +42,14 @@ Route::get('/sales/count', function () {
     return response()->json(['count' => \App\Models\Sale::count()]);
 })->name('api.sales.count');
 
+// 매장 관리 API
+Route::middleware(['auth'])->prefix('stores')->group(function () {
+    Route::get('/', [App\Http\Controllers\Api\StoreController::class, 'index'])->name('api.stores.index');
+    Route::post('/', [App\Http\Controllers\Api\StoreController::class, 'store'])->name('api.stores.store');
+    Route::post('/{store}/create-user', [App\Http\Controllers\Api\StoreController::class, 'createStoreUser'])->name('api.stores.create-user');
+    Route::get('/branches', [App\Http\Controllers\Api\StoreController::class, 'branches'])->name('api.stores.branches');
+});
+
 // Sales Data API - 임시로 인증 제거 (연동 테스트용)
 Route::prefix('sales')->group(function () {
     // Read operations (GET)

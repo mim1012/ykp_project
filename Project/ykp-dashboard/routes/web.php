@@ -71,6 +71,14 @@ Route::middleware(['auth', 'rbac'])->group(function () {
         return view('sales.excel-input');
     })->name('sales.excel-input');
 
+    // 본사용 매장 관리 (권한 체크 포함)
+    Route::get('/management/stores', function () {
+        if (auth()->user()->role !== 'headquarters') {
+            abort(403, '본사 관리자만 접근 가능합니다.');
+        }
+        return view('management.store-management');
+    })->name('management.stores');
+
     // 개선된 개통표 입력
     Route::get('/sales/improved-input', function () {
         return view('sales.improved-input');
