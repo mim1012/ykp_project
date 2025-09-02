@@ -160,9 +160,9 @@
         </div>
     </div>
 
-    <!-- 매장 수정 모달 -->
-    <div id="edit-store-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+    <!-- 매장 수정 모달 (반응형 최적화) -->
+    <div id="edit-store-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[85vh] overflow-y-auto flex flex-col">
             <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
                 <h3 class="text-lg font-medium text-gray-900">🏪 매장 정보 수정</h3>
                 <button onclick="closeEditStoreModal()" class="text-gray-400 hover:text-gray-600">
@@ -220,23 +220,16 @@
                     </div>
                 </div>
                 
-                <!-- 실시간 매장 통계 (수정 중에도 확인) -->
-                <div class="bg-gray-50 rounded-lg p-4 mt-4">
-                    <h4 class="text-sm font-medium text-gray-700 mb-3">📊 실시간 매장 통계</h4>
-                    <div class="grid grid-cols-3 gap-4 text-center">
-                        <div>
-                            <div class="text-lg font-bold text-blue-600" id="edit-today-sales">₩0</div>
-                            <div class="text-xs text-gray-500">오늘 매출</div>
-                        </div>
-                        <div>
-                            <div class="text-lg font-bold text-green-600" id="edit-month-sales">₩0</div>
-                            <div class="text-xs text-gray-500">이번달 매출</div>
-                        </div>
-                        <div>
-                            <div class="text-lg font-bold text-purple-600" id="edit-store-rank">#-</div>
-                            <div class="text-xs text-gray-500">전체 순위</div>
-                        </div>
+                <!-- 간단한 매장 통계 (수정 모달용) -->
+                <div class="bg-gray-50 rounded-lg p-3 mt-3">
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium text-gray-700">📊 이번달 매출</span>
+                        <span class="text-lg font-bold text-green-600" id="edit-month-sales">₩0</span>
                     </div>
+                    <button onclick="viewDetailedStats(currentEditStoreId)" 
+                            class="w-full mt-2 text-xs text-blue-600 hover:text-blue-800 border border-blue-200 rounded py-1">
+                        📈 상세 성과보기
+                    </button>
                 </div>
             </div>
             <div class="px-6 py-4 border-t border-gray-200 flex justify-between">
@@ -255,9 +248,9 @@
         </div>
     </div>
 
-    <!-- 성과보기 전용 모달 (더 큰 사이즈) -->
-    <div id="store-stats-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
+    <!-- 성과보기 전용 모달 (반응형 최적화) -->
+    <div id="store-stats-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-5xl max-h-[90vh] overflow-y-auto flex flex-col">
             <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
                 <h3 class="text-xl font-medium text-gray-900">📈 <span id="stats-store-name">매장명</span> 성과 대시보드</h3>
                 <button onclick="closeStoreStatsModal()" class="text-gray-400 hover:text-gray-600">
@@ -345,6 +338,78 @@
     </style>
 
     <script>
+        // 클린코드: 상수 정의 (매직넘버 제거)
+        const CONFIG = {
+            TOAST_DURATION: 3000,
+            API_TIMEOUT: 5000,
+            MODAL_ANIMATION: 300,
+            MAX_RECENT_TRANSACTIONS: 5,
+            ROLES: {
+                HEADQUARTERS: 'headquarters',
+                BRANCH: 'branch', 
+                STORE: 'store'
+            },
+            TOAST_TYPES: {
+                SUCCESS: 'success',
+                ERROR: 'error',
+                INFO: 'info'
+            }
+        };
+
+        // 클린코드: 권한 관리 클래스 (DRY + OCP 원칙)
+        class PermissionManager {
+            constructor(userData) {
+                this.user = userData;
+            }
+            
+            // 매장 수정 권한 체크
+            canEditStore(storeId) {
+                if (this.user.role === 'headquarters') return true;
+                if (this.user.role === 'branch') {
+                    // 지사는 소속 매장만 수정 가능
+                    return this.isStoreBelongsToBranch(storeId);
+                }
+                return false; // 매장 직원은 수정 불가
+            }
+            
+            // 성과 조회 권한 체크
+            canViewStats(storeId) {
+                if (this.user.role === 'headquarters') return true;
+                if (this.user.role === 'branch') {
+                    return this.isStoreBelongsToBranch(storeId);
+                }
+                if (this.user.role === 'store') {
+                    return storeId === this.user.store_id;
+                }
+                return false;
+            }
+            
+            // 매장 추가 권한 체크
+            canAddStore() {
+                return ['headquarters', 'branch'].includes(this.user.role);
+            }
+            
+            // 지사 소속 매장 확인
+            isStoreBelongsToBranch(storeId) {
+                // TODO: 실제 매장-지사 매핑 데이터로 확인
+                return this.user.branch_id !== null;
+            }
+            
+            // 접근 가능한 매장 목록 필터링
+            filterAccessibleStores(stores) {
+                if (this.user.role === 'headquarters') {
+                    return stores; // 모든 매장 접근
+                }
+                if (this.user.role === 'branch') {
+                    return stores.filter(store => store.branch_id === this.user.branch_id);
+                }
+                if (this.user.role === 'store') {
+                    return stores.filter(store => store.id === this.user.store_id);
+                }
+                return [];
+            }
+        }
+
         // 사용자 정보 설정
         window.userData = {
             id: {{ auth()->user()->id ?? 1 }},
@@ -354,12 +419,15 @@
             branch_id: {{ auth()->user()->branch_id ?? 'null' }}
         };
 
-        // 권한 체크
-        if (window.userData.role !== 'headquarters') {
+        // 클린코드: 권한 관리자 인스턴스 생성
+        window.permissionManager = new PermissionManager(window.userData);
+        
+        // 권한 체크 (개선된 방식)
+        if (!window.permissionManager.canAddStore() && window.userData.role !== 'headquarters') {
             document.getElementById('user-role').textContent = '접근 권한 없음';
             document.getElementById('user-role').className = 'ml-2 px-2 py-1 text-xs bg-red-100 text-red-800 rounded';
-            alert('본사 관리자만 접근 가능한 페이지입니다.');
-            window.location.href = '/dashboard';
+            showToast('본사 또는 지사 관리자만 접근 가능한 페이지입니다.', 'error');
+            setTimeout(() => window.location.href = '/dashboard', 2000);
         }
 
         // 탭 전환
@@ -391,22 +459,29 @@
             }
         }
 
-        // 매장 목록 로드 (권한별 차별화)
+        // 클린코드: 매장 목록 로드 (권한 필터링 적용)
         function loadStores() {
             document.getElementById('stores-grid').innerHTML = '<div class="p-4 text-center text-gray-500">매장 목록 로딩 중...</div>';
             
             fetch('/test-api/stores')
                 .then(response => response.json())
                 .then(data => {
+                    // 권한별 데이터 필터링 적용
+                    const accessibleStores = window.permissionManager.filterAccessibleStores(data.data);
+                    
+                    console.log(`권한별 접근 가능 매장: ${accessibleStores.length}개`);
+                    
                     if (window.userData.role === 'headquarters') {
                         // 본사: 지사별 트리 구조로 표시
-                        renderStoreTreeView(data.data);
+                        renderStoreTreeView(accessibleStores);
                     } else {
-                        // 지사: 테이블 형태로 표시
-                        renderStoreTableView(data.data);
+                        // 지사: 테이블 형태로 표시 
+                        renderStoreTableView(accessibleStores);
                     }
                 })
                 .catch(error => {
+                    console.error('매장 목록 로드 오류:', error);
+                    showToast('❌ 매장 목록을 불러올 수 없습니다.', 'error');
                     document.getElementById('stores-grid').innerHTML = '<div class="p-4 text-center text-red-500">매장 목록 로드 실패</div>';
                 });
         }
@@ -786,10 +861,16 @@
             alert('사용자 추가 기능 구현 예정');
         }
 
-        // 매장 수정 모달 (DB 자동 매핑)
+        // 클린코드: 매장 수정 모달 (권한 체크 + DB 자동 매핑)
         let currentEditStoreId = null;
         
         function editStore(storeId) {
+            // 권한 체크 먼저
+            if (!window.permissionManager.canEditStore(storeId)) {
+                showToast('❌ 이 매장을 수정할 권한이 없습니다.', 'error');
+                return;
+            }
+            
             currentEditStoreId = storeId;
             
             // Supabase에서 매장 정보 자동 로드
@@ -886,8 +967,14 @@
             currentEditStoreId = null;
         }
 
-        // 성과보기 모달 (실시간 대시보드)
+        // 클린코드: 성과보기 모달 (권한 체크 + 실시간 대시보드)
         function viewStoreStats(storeId) {
+            // 권한 체크 먼저
+            if (!window.permissionManager.canViewStats(storeId)) {
+                showToast('❌ 이 매장의 성과를 조회할 권한이 없습니다.', 'error');
+                return;
+            }
+            
             // 매장 이름 설정
             fetch(`/test-api/stores/${storeId}`)
                 .then(response => response.json())
@@ -1010,11 +1097,13 @@
             });
         }
 
-        // 토스트 알림 시스템
-        function showToast(message, type = 'success', duration = 3000) {
+        // 클린코드: 토스트 알림 시스템 (상수화 + 개선)
+        function showToast(message, type = CONFIG.TOAST_TYPES.SUCCESS, duration = CONFIG.TOAST_DURATION) {
             const toast = document.createElement('div');
-            const bgColor = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500';
-            const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
+            const bgColor = type === CONFIG.TOAST_TYPES.SUCCESS ? 'bg-green-500' : 
+                           type === CONFIG.TOAST_TYPES.ERROR ? 'bg-red-500' : 'bg-blue-500';
+            const icon = type === CONFIG.TOAST_TYPES.SUCCESS ? '✅' : 
+                        type === CONFIG.TOAST_TYPES.ERROR ? '❌' : 'ℹ️';
             
             toast.className = `${bgColor} text-white px-4 py-3 rounded-lg shadow-lg flex items-center space-x-2 transform translate-x-full transition-transform duration-300`;
             toast.innerHTML = `

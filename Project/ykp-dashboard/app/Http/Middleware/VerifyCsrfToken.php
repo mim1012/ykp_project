@@ -13,5 +13,6 @@ class VerifyCsrfToken extends Middleware
      */
     protected $except = [
         '/test-api/*',  // Playwright 테스트 API 경로 CSRF 제외
+        '/api/dev/*',   // 개발용 API도 CSRF 제외
     ];
 }
