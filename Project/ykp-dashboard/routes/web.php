@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Hash;
 
 /*
 |--------------------------------------------------------------------------
@@ -316,6 +317,127 @@ Route::get('/test-api/users', function () {
 Route::get('/test-api/branches', function () {
     $branches = App\Models\Branch::withCount('stores')->get();
     return response()->json(['success' => true, 'data' => $branches]);
+});
+
+// 지사 추가 API
+Route::post('/test-api/branches/add', function (Illuminate\Http\Request $request) {
+    try {
+        // 지사코드 중복 확인
+        $existingBranch = App\Models\Branch::where('code', $request->code)->first();
+        if ($existingBranch) {
+            return response()->json(['success' => false, 'error' => '이미 존재하는 지사코드입니다.'], 400);
+        }
+        
+        // 지사 생성
+        $branch = App\Models\Branch::create([
+            'name' => $request->name,
+            'code' => $request->code,
+            'manager_name' => $request->manager_name ?? '',
+            'phone' => $request->phone ?? '',
+            'address' => $request->address ?? '',
+            'status' => 'active'
+        ]);
+        
+        // 지사 관리자 계정 자동 생성
+        $managerEmail = 'branch_' . strtolower($request->code) . '@ykp.com';
+        $manager = App\Models\User::create([
+            'name' => $request->manager_name ?? $request->name . ' 관리자',
+            'email' => $managerEmail,
+            'password' => Hash::make('123456'), // 기본 패스워드
+            'role' => 'branch',
+            'branch_id' => $branch->id,
+            'store_id' => null,
+            'is_active' => true,
+            'created_by_user_id' => auth()->user()->id ?? 1
+        ]);
+        
+        return response()->json([
+            'success' => true,
+            'message' => '지사가 성공적으로 추가되었습니다.',
+            'data' => [
+                'branch' => $branch->load('stores'),
+                'manager' => $manager,
+                'login_info' => [
+                    'email' => $managerEmail,
+                    'password' => '123456'
+                ]
+            ]
+        ]);
+    } catch (Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+// 지사 상세 조회 API
+Route::get('/test-api/branches/{id}', function ($id) {
+    try {
+        $branch = App\Models\Branch::with(['stores'])->findOrFail($id);
+        return response()->json(['success' => true, 'data' => $branch]);
+    } catch (Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 404);
+    }
+});
+
+// 지사 수정 API
+Route::put('/test-api/branches/{id}', function (Illuminate\Http\Request $request, $id) {
+    try {
+        $branch = App\Models\Branch::findOrFail($id);
+        
+        // 지사코드 중복 확인 (자신 제외)
+        if ($request->code !== $branch->code) {
+            $existingBranch = App\Models\Branch::where('code', $request->code)->first();
+            if ($existingBranch) {
+                return response()->json(['success' => false, 'error' => '이미 존재하는 지사코드입니다.'], 400);
+            }
+        }
+        
+        $branch->update([
+            'name' => $request->name,
+            'code' => $request->code,
+            'manager_name' => $request->manager_name,
+            'phone' => $request->phone,
+            'address' => $request->address,
+            'status' => $request->status
+        ]);
+        
+        return response()->json([
+            'success' => true,
+            'message' => '지사 정보가 수정되었습니다.',
+            'data' => $branch->load('stores')
+        ]);
+    } catch (Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+// 지사 삭제 API
+Route::delete('/test-api/branches/{id}', function ($id) {
+    try {
+        $branch = App\Models\Branch::with('stores')->findOrFail($id);
+        
+        // 하위 매장이 있는 경우 경고
+        if ($branch->stores->count() > 0) {
+            return response()->json([
+                'success' => false, 
+                'error' => '하위 매장이 있는 지사는 삭제할 수 없습니다.',
+                'stores_count' => $branch->stores->count(),
+                'stores' => $branch->stores->pluck('name')
+            ], 400);
+        }
+        
+        // 지사 관리자 계정 비활성화
+        App\Models\User::where('branch_id', $id)->update(['is_active' => false]);
+        
+        // 지사 삭제
+        $branch->delete();
+        
+        return response()->json([
+            'success' => true,
+            'message' => '지사가 성공적으로 삭제되었습니다.'
+        ]);
+    } catch (Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
 });
 
 // 매장 수정 API

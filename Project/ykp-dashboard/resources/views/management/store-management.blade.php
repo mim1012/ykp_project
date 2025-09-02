@@ -125,6 +125,116 @@
         </div>
     </div>
 
+    <!-- 지사 추가 모달 -->
+    <div id="add-branch-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">🏢 새 지사 추가</h3>
+            </div>
+            <div class="px-6 py-4 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">지사명</label>
+                    <input type="text" id="modal-branch-name" placeholder="예: 대구지사" 
+                           class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">지사코드</label>
+                    <input type="text" id="modal-branch-code" placeholder="예: BR004" 
+                           class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500">
+                    <p class="text-xs text-gray-500 mt-1">영문 대문자 + 숫자 조합 (예: BR004)</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">관리자명</label>
+                    <input type="text" id="modal-branch-manager" placeholder="예: 김지사장"
+                           class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">연락처</label>
+                    <input type="tel" id="modal-branch-phone" placeholder="053-1234-5678"
+                           class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">주소</label>
+                    <input type="text" id="modal-branch-address" placeholder="대구광역시 중구 ..."
+                           class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500">
+                </div>
+                <div class="bg-blue-50 p-3 rounded-lg">
+                    <p class="text-sm text-blue-800">
+                        <strong>📝 자동 생성:</strong> 지사 관리자 계정이 자동으로 생성됩니다<br>
+                        <strong>이메일:</strong> branch_{지사코드}@ykp.com<br>
+                        <strong>패스워드:</strong> 123456
+                    </p>
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+                <button onclick="closeAddBranchModal()" class="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50">
+                    취소
+                </button>
+                <button onclick="submitAddBranch()" class="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600">
+                    ✅ 지사 추가
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 지사 수정 모달 -->
+    <div id="edit-branch-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">🏢 지사 정보 수정</h3>
+            </div>
+            <div class="px-6 py-4 space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">지사명</label>
+                    <input type="text" id="edit-branch-name" 
+                           class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">지사코드</label>
+                    <input type="text" id="edit-branch-code" 
+                           class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500">
+                    <p class="text-xs text-gray-500 mt-1">변경 시 중복 확인됩니다</p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">관리자명</label>
+                    <input type="text" id="edit-branch-manager"
+                           class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">연락처</label>
+                    <input type="tel" id="edit-branch-phone"
+                           class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">주소</label>
+                    <input type="text" id="edit-branch-address"
+                           class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">상태</label>
+                    <select id="edit-branch-status" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500">
+                        <option value="active">운영중</option>
+                        <option value="inactive">일시중단</option>
+                        <option value="closed">폐점</option>
+                    </select>
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-200 flex justify-between">
+                <button onclick="deleteBranch(currentEditBranchId)" class="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600">
+                    🗑️ 지사 삭제
+                </button>
+                <div class="space-x-3">
+                    <button onclick="closeEditBranchModal()" class="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50">
+                        취소
+                    </button>
+                    <button onclick="submitEditBranch()" class="px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600">
+                        💾 변경사항 저장
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- 계정 생성 모달 -->
     <div id="add-user-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
@@ -658,6 +768,115 @@
                     document.getElementById('branches-grid').innerHTML = '<div class="p-4 text-center text-red-500">지사 목록 로드 실패</div>';
                 });
         }
+        
+        // 지사 목록 로드
+        function loadBranches() {
+            document.getElementById('branches-grid').innerHTML = '<div class="p-4 text-center text-gray-500">지사 목록 로딩 중...</div>';
+            
+            fetch('/test-api/branches')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        renderBranches(data.data);
+                    } else {
+                        document.getElementById('branches-grid').innerHTML = '<div class="p-4 text-center text-red-500">지사 목록 로딩 실패</div>';
+                    }
+                })
+                .catch(error => {
+                    console.error('지사 목록 로딩 오류:', error);
+                    document.getElementById('branches-grid').innerHTML = '<div class="p-4 text-center text-red-500">지사 목록 로딩 중 오류 발생</div>';
+                });
+        }
+        
+        function renderBranches(branches) {
+            if (!branches || branches.length === 0) {
+                document.getElementById('branches-grid').innerHTML = `
+                    <div class="p-8 text-center text-gray-500">
+                        <div class="text-4xl mb-4">🏢</div>
+                        <p class="text-lg font-medium">등록된 지사가 없습니다</p>
+                        <p class="text-sm text-gray-400 mt-2">새 지사를 추가해보세요</p>
+                    </div>
+                `;
+                return;
+            }
+
+            let branchesHtml = `
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">지사명</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">지사코드</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">관리자</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">매장 수</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">상태</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">관리</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+            `;
+
+            branches.forEach(branch => {
+                // 상태별 표시 스타일
+                let statusBadge = '';
+                let statusText = '';
+                if (branch.status === 'active') {
+                    statusBadge = 'bg-green-100 text-green-800';
+                    statusText = '운영중';
+                } else if (branch.status === 'inactive') {
+                    statusBadge = 'bg-yellow-100 text-yellow-800';
+                    statusText = '일시중단';
+                } else {
+                    statusBadge = 'bg-red-100 text-red-800';
+                    statusText = '폐점';
+                }
+
+                branchesHtml += `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="text-sm font-medium text-gray-900">🏢 ${branch.name}</div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <code class="bg-gray-100 px-2 py-1 rounded text-xs">${branch.code}</code>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${branch.manager_name || '-'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                ${branch.stores_count || 0}개 매장
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusBadge}">
+                                ${statusText}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <button onclick="editBranch(${branch.id})" 
+                                    class="text-green-600 hover:text-green-900 mr-3 font-medium">
+                                ✏️ 수정
+                            </button>
+                            <button onclick="viewBranchStats(${branch.id})" 
+                                    class="text-blue-600 hover:text-blue-900 font-medium">
+                                📊 통계
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            branchesHtml += `
+                    </tbody>
+                </table>
+            `;
+            
+            document.getElementById('branches-grid').innerHTML = branchesHtml;
+        }
+        
+        // 지사 통계 조회 (향후 구현)
+        function viewBranchStats(branchId) {
+            showToast('지사 통계 기능은 향후 구현 예정입니다.', 'info');
+        }
 
         // 사용자 목록 로드  
         function loadUsers() {
@@ -857,8 +1076,169 @@
             });
         }
 
+        // 지사 관리 함수들
+        let currentEditBranchId = null;
+        
         function addBranch() {
-            alert('지사 추가 기능 구현 예정');
+            document.getElementById('add-branch-modal').classList.remove('hidden');
+        }
+        
+        function closeAddBranchModal() {
+            document.getElementById('add-branch-modal').classList.add('hidden');
+            // 폼 초기화
+            document.getElementById('modal-branch-name').value = '';
+            document.getElementById('modal-branch-code').value = '';
+            document.getElementById('modal-branch-manager').value = '';
+            document.getElementById('modal-branch-phone').value = '';
+            document.getElementById('modal-branch-address').value = '';
+        }
+        
+        function submitAddBranch() {
+            const branchData = {
+                name: document.getElementById('modal-branch-name').value,
+                code: document.getElementById('modal-branch-code').value.toUpperCase(),
+                manager_name: document.getElementById('modal-branch-manager').value,
+                phone: document.getElementById('modal-branch-phone').value,
+                address: document.getElementById('modal-branch-address').value
+            };
+            
+            // 필수 필드 검증
+            if (!branchData.name.trim() || !branchData.code.trim()) {
+                showToast('지사명과 지사코드는 필수 입력 항목입니다.', 'error');
+                return;
+            }
+            
+            // 지사코드 형식 검증 (영문대문자 + 숫자)
+            if (!/^[A-Z]{2,3}[0-9]{3,4}$/.test(branchData.code)) {
+                showToast('지사코드는 영문대문자 + 숫자 형식이어야 합니다. (예: BR004)', 'error');
+                return;
+            }
+            
+            fetch('/test-api/branches/add', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify(branchData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(`✅ 지사가 성공적으로 추가되었습니다!\n📧 관리자 계정: ${data.data.login_info.email}\n🔑 초기 비밀번호: ${data.data.login_info.password}`, 'success');
+                    closeAddBranchModal();
+                    loadBranches(); // 지사 목록 새로고침
+                } else {
+                    showToast('❌ ' + (data.message || data.error || '지사 추가 실패'), 'error');
+                }
+            })
+            .catch(error => {
+                console.error('지사 추가 오류:', error);
+                showToast('지사 추가 중 오류가 발생했습니다.', 'error');
+            });
+        }
+        
+        function editBranch(branchId) {
+            currentEditBranchId = branchId;
+            
+            // 지사 정보 불러오기
+            fetch(`/test-api/branches/${branchId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const branch = data.data;
+                    document.getElementById('edit-branch-name').value = branch.name;
+                    document.getElementById('edit-branch-code').value = branch.code;
+                    document.getElementById('edit-branch-manager').value = branch.manager_name || '';
+                    document.getElementById('edit-branch-phone').value = branch.phone || '';
+                    document.getElementById('edit-branch-address').value = branch.address || '';
+                    document.getElementById('edit-branch-status').value = branch.status;
+                    
+                    document.getElementById('edit-branch-modal').classList.remove('hidden');
+                } else {
+                    showToast('지사 정보를 불러올 수 없습니다.', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('지사 정보 로딩 오류:', error);
+                showToast('지사 정보 로딩 중 오류가 발생했습니다.', 'error');
+            });
+        }
+        
+        function closeEditBranchModal() {
+            document.getElementById('edit-branch-modal').classList.add('hidden');
+            currentEditBranchId = null;
+        }
+        
+        function submitEditBranch() {
+            const branchData = {
+                name: document.getElementById('edit-branch-name').value,
+                code: document.getElementById('edit-branch-code').value.toUpperCase(),
+                manager_name: document.getElementById('edit-branch-manager').value,
+                phone: document.getElementById('edit-branch-phone').value,
+                address: document.getElementById('edit-branch-address').value,
+                status: document.getElementById('edit-branch-status').value
+            };
+            
+            // 필수 필드 검증
+            if (!branchData.name.trim() || !branchData.code.trim()) {
+                showToast('지사명과 지사코드는 필수 입력 항목입니다.', 'error');
+                return;
+            }
+            
+            fetch(`/test-api/branches/${currentEditBranchId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify(branchData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('✅ 지사 정보가 성공적으로 수정되었습니다!', 'success');
+                    closeEditBranchModal();
+                    loadBranches(); // 지사 목록 새로고침
+                } else {
+                    showToast('❌ ' + (data.message || data.error || '지사 수정 실패'), 'error');
+                }
+            })
+            .catch(error => {
+                console.error('지사 수정 오류:', error);
+                showToast('지사 수정 중 오류가 발생했습니다.', 'error');
+            });
+        }
+        
+        function deleteBranch(branchId) {
+            if (!confirm('정말로 이 지사를 삭제하시겠습니까?\n\n⚠️ 주의: 지사를 삭제하면 해당 지사 관리자 계정도 비활성화됩니다.\n하위 매장이 있는 경우 삭제할 수 없습니다.')) {
+                return;
+            }
+            
+            fetch(`/test-api/branches/${branchId}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('✅ 지사가 성공적으로 삭제되었습니다!', 'success');
+                    closeEditBranchModal();
+                    loadBranches(); // 지사 목록 새로고침
+                } else {
+                    if (data.stores_count && data.stores_count > 0) {
+                        showToast(`❌ 하위 매장이 ${data.stores_count}개 있어 삭제할 수 없습니다.\n매장: ${data.stores.join(', ')}\n먼저 매장을 다른 지사로 이관하거나 삭제해주세요.`, 'error');
+                    } else {
+                        showToast('❌ ' + (data.message || data.error || '지사 삭제 실패'), 'error');
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('지사 삭제 오류:', error);
+                showToast('지사 삭제 중 오류가 발생했습니다.', 'error');
+            });
         }
 
         function addUser() {
