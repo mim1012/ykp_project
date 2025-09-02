@@ -10,84 +10,128 @@ use App\Models\DealerProfile;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class DashboardController extends Controller
 {
+    // 클린코드: 상수 정의 (매직 넘버 제거)
+    private const MONTHLY_TARGET = 50000000; // 5천만원 목표
+    private const DEFAULT_RANKING_LIMIT = 10;
+    private const DEFAULT_TREND_DAYS = 30;
     /**
      * 전체 현황 요약 - 메인 대시보드용
      */
     public function overview(Request $request): JsonResponse
     {
-        $today = now()->toDateString();
-        $currentMonth = now()->format('Y-m');
-        
-        // 권한별 데이터 필터링
+        try {
+            Log::info('Dashboard overview API called', ['user_id' => auth()->id()]);
+            
+            $user = auth()->user();
+            $baseQuery = $this->getAuthorizedSalesQuery($user);
+            
+            // 클린코드: 단일 책임 원칙 적용
+            $todayStats = $this->getTodayStatistics($baseQuery);
+            $monthStats = $this->getMonthStatistics($baseQuery);
+            $goals = $this->calculateGoals($monthStats['sales']);
+            
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'today' => $todayStats,
+                    'month' => $monthStats,
+                    'goals' => $goals
+                ],
+                'timestamp' => now()->toISOString(),
+                'user_role' => $user?->role ?? 'guest'
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Dashboard overview API error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'error' => 'Internal server error',
+                'message' => config('app.debug') ? $e->getMessage() : 'Data loading failed'
+            ], 500);
+        }
+    }
+    
+    // 클린코드: 권한별 쿼리 생성 (DRY 원칙)
+    private function getAuthorizedSalesQuery($user = null)
+    {
         $query = Sale::query();
         
-        if ($request->has('store_ids')) {
-            $storeIds = explode(',', $request->store_ids);
-            $query->whereIn('store_id', $storeIds);
+        if ($user) {
+            try {
+                $accessibleStoreIds = $user->getAccessibleStoreIds();
+                if (!empty($accessibleStoreIds)) {
+                    $query->whereIn('store_id', $accessibleStoreIds);
+                }
+            } catch (\Exception $e) {
+                Log::warning('Failed to get accessible store IDs', ['user_id' => $user->id]);
+                // 권한 확인 실패 시 빈 결과 반환
+                $query->whereRaw('1 = 0'); 
+            }
         }
         
-        // 오늘 매출 (권한별 필터링 적용)
-        $todaySales = (clone $query)->whereDate('sale_date', $today)
-            ->sum('settlement_amount');
+        return $query;
+    }
+    
+    // 클린코드: 오늘 통계 계산 (SRP)
+    private function getTodayStatistics($baseQuery): array
+    {
+        $today = now()->toDateString();
+        $todayQuery = (clone $baseQuery)->whereDate('sale_date', $today);
         
-        // 이번 달 매출 (권한별 필터링 적용)
-        $monthSales = (clone $query)->whereYear('sale_date', now()->year)
-            ->whereMonth('sale_date', now()->month)
-            ->sum('settlement_amount');
+        return [
+            'sales' => $todayQuery->sum('settlement_amount') ?? 0,
+            'activations' => $todayQuery->count(),
+            'date' => $today
+        ];
+    }
+    
+    // 클린코드: 월간 통계 계산 (SRP)
+    private function getMonthStatistics($baseQuery): array
+    {
+        $currentMonth = now()->format('Y-m');
+        $monthQuery = (clone $baseQuery)->whereYear('sale_date', now()->year)
+                                        ->whereMonth('sale_date', now()->month);
         
-        // 오늘 개통 건수 (권한별 필터링 적용)
-        $todayActivations = (clone $query)->whereDate('sale_date', $today)->count();
+        $monthSales = $monthQuery->sum('settlement_amount') ?? 0;
+        $avgMargin = $monthQuery->where('settlement_amount', '>', 0)
+                               ->avg(DB::raw('COALESCE(margin_after_tax / NULLIF(settlement_amount, 0) * 100, 0)')) ?? 0;
         
-        // 이번 달 개통 건수 (권한별 필터링 적용)
-        $monthActivations = (clone $query)->whereYear('sale_date', now()->year)
-            ->whereMonth('sale_date', now()->month)
-            ->count();
-        
-        // 평균 마진율 계산
-        $avgMargin = Sale::whereYear('sale_date', now()->year)
-            ->whereMonth('sale_date', now()->month)
-            ->where('settlement_amount', '>', 0)
-            ->avg(DB::raw('(margin_after_tax / settlement_amount) * 100'));
-        
-        // VAT 포함 매출
-        $vatIncludedSales = Sale::whereYear('sale_date', now()->year)
-            ->whereMonth('sale_date', now()->month)
-            ->sum(DB::raw('settlement_amount + tax'));
+        // VAT 계산 (안전한 계산)
+        $vatIncludedSales = $monthQuery->sum(DB::raw('settlement_amount + COALESCE(tax, 0)')) ?? 0;
         
         // 전월 대비 증감률
-        $lastMonthSales = Sale::whereYear('sale_date', now()->subMonth()->year)
-            ->whereMonth('sale_date', now()->subMonth()->month)
-            ->sum('settlement_amount');
+        $lastMonthSales = (clone $baseQuery)->whereYear('sale_date', now()->subMonth()->year)
+                                           ->whereMonth('sale_date', now()->subMonth()->month)
+                                           ->sum('settlement_amount') ?? 0;
         
         $growthRate = $lastMonthSales > 0 ? 
             round((($monthSales - $lastMonthSales) / $lastMonthSales) * 100, 1) : 0;
         
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'today' => [
-                    'sales' => $todaySales,
-                    'activations' => $todayActivations,
-                    'date' => $today
-                ],
-                'month' => [
-                    'sales' => $monthSales,
-                    'activations' => $monthActivations,
-                    'vat_included_sales' => $vatIncludedSales,
-                    'year_month' => $currentMonth,
-                    'growth_rate' => $growthRate,
-                    'avg_margin' => round($avgMargin ?? 0, 1)
-                ],
-                'goals' => [
-                    'monthly_target' => 50000000, // 5천만원 목표
-                    'achievement_rate' => round(($monthSales / 50000000) * 100, 1)
-                ]
-            ],
-            'timestamp' => now()->toISOString()
-        ]);
+        return [
+            'sales' => $monthSales,
+            'activations' => $monthQuery->count(),
+            'vat_included_sales' => $vatIncludedSales,
+            'year_month' => $currentMonth,
+            'growth_rate' => $growthRate,
+            'avg_margin' => round($avgMargin, 1)
+        ];
+    }
+    
+    // 클린코드: 목표 달성률 계산 (SRP)
+    private function calculateGoals(float $monthSales): array
+    {
+        return [
+            'monthly_target' => self::MONTHLY_TARGET,
+            'achievement_rate' => round(($monthSales / self::MONTHLY_TARGET) * 100, 1)
+        ];
     }
 
     /**
@@ -95,22 +139,26 @@ class DashboardController extends Controller
      */
     public function salesTrend(Request $request): JsonResponse
     {
-        $days = $request->get('days', 30);
-        $endDate = now();
-        $startDate = $endDate->copy()->subDays($days - 1);
+        try {
+            $days = min($request->get('days', self::DEFAULT_TREND_DAYS), 90); // 최대 90일 제한
+            $endDate = now();
+            $startDate = $endDate->copy()->subDays($days - 1);
+            $user = auth()->user();
+            
+            $baseQuery = $this->getAuthorizedSalesQuery($user);
         
         $trendData = [];
         
         for ($i = 0; $i < $days; $i++) {
             $date = $startDate->copy()->addDays($i);
-            $dailySales = Sale::whereDate('sale_date', $date->toDateString())
-                ->sum('settlement_amount');
+            $dailyQuery = (clone $baseQuery)->whereDate('sale_date', $date->toDateString());
+            $dailySales = $dailyQuery->sum('settlement_amount') ?? 0;
             
             $trendData[] = [
                 'date' => $date->toDateString(),
                 'day_label' => $date->format('j일'),
                 'sales' => $dailySales,
-                'activations' => Sale::whereDate('sale_date', $date->toDateString())->count()
+                'activations' => $dailyQuery->count()
             ];
         }
         
@@ -232,11 +280,16 @@ class DashboardController extends Controller
      */
     public function storeRanking(Request $request): JsonResponse
     {
-        $period = $request->get('period', 'daily'); // daily, weekly, monthly
-        $limit = $request->get('limit', 10);
-        
-        $query = Sale::with(['store:id,name,code', 'store.branch:id,name'])
-            ->select([
+        try {
+            $period = $request->get('period', 'daily');
+            $limit = min($request->get('limit', self::DEFAULT_RANKING_LIMIT), 50); // 최대 50개 제한
+            $user = auth()->user();
+            
+            $baseQuery = $this->getAuthorizedSalesQuery($user)
+                             ->with(['store:id,name,code', 'store.branch:id,name']);
+            
+            $query = $this->applyPeriodFilter($baseQuery, $period)
+                         ->select([
                 'store_id',
                 DB::raw('COUNT(*) as activation_count'),
                 DB::raw('SUM(settlement_amount) as total_sales'),
@@ -348,5 +401,21 @@ class DashboardController extends Controller
                 ]
             ]
         ]);
+    }
+    
+    // 클린코드: 기간별 필터 적용 (DRY 원칙)
+    private function applyPeriodFilter($query, string $period)
+    {
+        switch ($period) {
+            case 'daily':
+                return $query->whereDate('sale_date', now()->toDateString());
+            case 'weekly':
+                return $query->whereBetween('sale_date', [now()->startOfWeek(), now()->endOfWeek()]);
+            case 'monthly':
+                return $query->whereYear('sale_date', now()->year)
+                            ->whereMonth('sale_date', now()->month);
+            default:
+                return $query->whereDate('sale_date', now()->toDateString());
+        }
     }
 }

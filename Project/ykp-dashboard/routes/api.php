@@ -367,13 +367,14 @@ Route::middleware(['auth:sanctum'])->prefix('payroll')->group(function () {
 | 메인 대시보드용 실시간 데이터 제공
 */
 
-Route::middleware(['auth:sanctum'])->prefix('dashboard')->group(function () {
+// 웹 대시보드용 API (세션 인증 + 권한별 데이터 필터링)
+Route::middleware(['web', 'auth'])->prefix('dashboard')->group(function () {
     Route::get('/overview', [App\Http\Controllers\Api\DashboardController::class, 'overview'])->name('api.dashboard.overview');
     Route::get('/sales-trend', [App\Http\Controllers\Api\DashboardController::class, 'salesTrend'])->name('api.dashboard.sales-trend');
     Route::get('/dealer-performance', [App\Http\Controllers\Api\DashboardController::class, 'dealerPerformance'])->name('api.dashboard.dealer-performance');
     Route::get('/financial-summary', [App\Http\Controllers\Api\DashboardController::class, 'financialSummary'])->name('api.dashboard.financial-summary');
     
-    // 새로운 기능: 매장별 랭킹 및 일별 통계
+    // 권한별 매장 랭킹 및 일별 통계 (Supabase 연동)
     Route::get('/store-ranking', [App\Http\Controllers\Api\DashboardController::class, 'storeRanking'])->name('api.dashboard.store-ranking');
     Route::get('/daily-sales-report', [App\Http\Controllers\Api\DashboardController::class, 'dailySalesReport'])->name('api.dashboard.daily-sales-report');
 });

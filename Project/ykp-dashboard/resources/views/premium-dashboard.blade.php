@@ -702,7 +702,7 @@
         async function loadRealTimeData() {
             try {
                 // 사용자 권한별 API 엔드포인트 구성
-                let apiUrl = '/api/dev/dashboard/overview';
+                let apiUrl = '/api/dashboard/overview';
                 if (window.userData.role !== 'headquarters') {
                     // 지사/매장 사용자는 접근 가능한 매장 ID를 파라미터로 전달
                     const storeIds = window.userData.store_id ? [window.userData.store_id] : 
