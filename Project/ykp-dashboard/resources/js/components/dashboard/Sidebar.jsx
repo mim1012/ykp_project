@@ -8,8 +8,8 @@ export const Sidebar = ({ activeMenu, setActiveMenu, isMobile = false }) => {
     
     const menuItems = [
         { id: 'dashboard', icon: 'layout-dashboard', label: '대시보드' },
-        { id: 'complete-aggrid', icon: 'grid-3x3', label: '개통표 입력', url: '/test/complete-aggrid' },
-        { id: 'stores', icon: 'store', label: '매장 관리' },
+        { id: 'complete-aggrid', icon: 'grid-3x3', label: '완전한 판매관리', url: '/test/complete-aggrid' },
+        { id: 'stores', icon: 'store', label: '매장 관리', url: '/management/stores' },
         { id: 'reports', icon: 'file-text', label: '보고서' },
         { id: 'settings', icon: 'settings', label: '설정' }
     ];

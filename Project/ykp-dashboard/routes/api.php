@@ -42,6 +42,104 @@ Route::get('/sales/count', function () {
     return response()->json(['count' => \App\Models\Sale::count()]);
 })->name('api.sales.count');
 
+// 매장 관리 API (개발용 - 완전 우회)
+Route::get('dev/stores/list', function() {
+    $stores = App\Models\Store::with('branch')->get();
+    return response()->json(['success' => true, 'data' => $stores]);
+});
+
+Route::post('dev/stores/add', function(Illuminate\Http\Request $request) {
+    $branch = App\Models\Branch::find($request->branch_id);
+    $storeCount = App\Models\Store::where('branch_id', $request->branch_id)->count();
+    $autoCode = $branch->code . '-' . str_pad($storeCount + 1, 3, '0', STR_PAD_LEFT);
+    
+    $store = App\Models\Store::create([
+        'name' => $request->name,
+        'code' => $autoCode,
+        'branch_id' => $request->branch_id,
+        'owner_name' => $request->owner_name,
+        'phone' => $request->phone,
+        'address' => '',
+        'status' => 'active',
+        'opened_at' => now()
+    ]);
+    
+    return response()->json(['success' => true, 'data' => $store]);
+});
+
+// 기존 복잡한 라우트 (문제 있음)
+Route::prefix('dev/stores')->group(function () {
+    Route::get('/', function() {
+        $stores = App\Models\Store::with('branch')->get();
+        return response()->json(['success' => true, 'data' => $stores]);
+    });
+    Route::any('/', function(Illuminate\Http\Request $request) {
+        // 매장명과 지사 정보로 간단하게 추가
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'branch_id' => 'required|exists:branches,id',
+            'owner_name' => 'nullable|string|max:255',
+            'phone' => 'nullable|string|max:20'
+        ]);
+        
+        // 자동 코드 생성
+        $branch = App\Models\Branch::find($request->branch_id);
+        $storeCount = App\Models\Store::where('branch_id', $request->branch_id)->count();
+        $autoCode = $branch->code . '-' . str_pad($storeCount + 1, 3, '0', STR_PAD_LEFT);
+        
+        $store = App\Models\Store::create([
+            'name' => $request->name,
+            'code' => $autoCode, // 자동 생성
+            'branch_id' => $request->branch_id,
+            'owner_name' => $request->owner_name,
+            'phone' => $request->phone,
+            'address' => '',
+            'status' => 'active',
+            'opened_at' => now()
+        ]);
+        
+        return response()->json([
+            'success' => true,
+            'message' => '매장이 추가되었습니다.',
+            'data' => $store->load('branch')
+        ], 201);
+    });
+    Route::get('/branches', function() {
+        $branches = App\Models\Branch::withCount('stores')->get();
+        return response()->json(['success' => true, 'data' => $branches]);
+    });
+    Route::post('/sales/save', function(Illuminate\Http\Request $request) {
+        try {
+            $salesData = $request->input('sales', []);
+            $savedCount = 0;
+            
+            foreach ($salesData as $sale) {
+                App\Models\Sale::create($sale);
+                $savedCount++;
+            }
+            
+            return response()->json([
+                'success' => true,
+                'message' => $savedCount . '건이 저장되었습니다.',
+                'saved_count' => $savedCount
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => '저장 오류: ' . $e->getMessage()
+            ], 500);
+        }
+    });
+});
+
+// 매장 관리 API (운영용 - 인증 필요)
+Route::middleware(['auth'])->prefix('stores')->group(function () {
+    Route::get('/', [App\Http\Controllers\Api\StoreController::class, 'index'])->name('api.stores.index');
+    Route::post('/', [App\Http\Controllers\Api\StoreController::class, 'store'])->name('api.stores.store');
+    Route::post('/{store}/create-user', [App\Http\Controllers\Api\StoreController::class, 'createStoreUser'])->name('api.stores.create-user');
+    Route::get('/branches', [App\Http\Controllers\Api\StoreController::class, 'branches'])->name('api.stores.branches');
+});
+
 // Sales Data API - 임시로 인증 제거 (연동 테스트용)
 Route::prefix('sales')->group(function () {
     // Read operations (GET)
@@ -269,13 +367,14 @@ Route::middleware(['auth:sanctum'])->prefix('payroll')->group(function () {
 | 메인 대시보드용 실시간 데이터 제공
 */
 
-Route::middleware(['auth:sanctum'])->prefix('dashboard')->group(function () {
+// 웹 대시보드용 API (세션 인증 + 권한별 데이터 필터링)
+Route::middleware(['web', 'auth'])->prefix('dashboard')->group(function () {
     Route::get('/overview', [App\Http\Controllers\Api\DashboardController::class, 'overview'])->name('api.dashboard.overview');
     Route::get('/sales-trend', [App\Http\Controllers\Api\DashboardController::class, 'salesTrend'])->name('api.dashboard.sales-trend');
     Route::get('/dealer-performance', [App\Http\Controllers\Api\DashboardController::class, 'dealerPerformance'])->name('api.dashboard.dealer-performance');
     Route::get('/financial-summary', [App\Http\Controllers\Api\DashboardController::class, 'financialSummary'])->name('api.dashboard.financial-summary');
     
-    // 새로운 기능: 매장별 랭킹 및 일별 통계
+    // 권한별 매장 랭킹 및 일별 통계 (Supabase 연동)
     Route::get('/store-ranking', [App\Http\Controllers\Api\DashboardController::class, 'storeRanking'])->name('api.dashboard.store-ranking');
     Route::get('/daily-sales-report', [App\Http\Controllers\Api\DashboardController::class, 'dailySalesReport'])->name('api.dashboard.daily-sales-report');
 });

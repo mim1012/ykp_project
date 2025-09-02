@@ -25,7 +25,6 @@ class User extends Authenticatable
         'branch_id',
         'store_id',
         'is_active',
-        'created_by_user_id',
     ];
 
     /**

@@ -40,7 +40,22 @@
       "Bash(git commit:*)",
       "Bash(git checkout:*)",
       "Bash(git remote set-url:*)",
-      "Bash(git merge:*)"
+      "Bash(git merge:*)",
+      "Bash(claude mcp add:*)",
+      "Bash(claude mcp:*)",
+      "Bash(npx playwright:*)",
+      "mcp__microsoft-playwright-mcp__browser_navigate",
+      "mcp__microsoft-playwright-mcp__browser_type",
+      "mcp__microsoft-playwright-mcp__browser_click",
+      "mcp__microsoft-playwright-mcp__browser_wait_for",
+      "mcp__microsoft-playwright-mcp__browser_hover",
+      "mcp__microsoft-playwright-mcp__browser_close",
+      "Read(C:\\Users\\PC_1M\\Downloads\\php-8.4.11-nts-Win32-vs17-x64/**)",
+      "Read(C:\\Users\\PC_1M\\Downloads\\php-8.4.11-nts-Win32-vs17-x64/**)",
+      "Bash(git rm:*)",
+      "mcp__microsoft-playwright-mcp__browser_evaluate",
+      "mcp__microsoft-playwright-mcp__browser_snapshot",
+      "mcp__microsoft-playwright-mcp__browser_handle_dialog"
     ],
     "defaultMode": "acceptEdits",
     "additionalDirectories": [

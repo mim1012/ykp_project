@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>대시보드</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -313,6 +314,10 @@
         <div class="sidebar-icon tooltip" onclick="openFixedExpenses()">
             💰
             <span class="tooltip-text">고정지출 관리</span>
+        </div>
+        <div class="sidebar-icon tooltip" onclick="openStoreManagement()">
+            🏪
+            <span class="tooltip-text">매장 관리</span>
         </div>
         <div class="sidebar-icon tooltip" onclick="openRefunds()">
             🔄
@@ -666,6 +671,11 @@
             window.location.href = '/monthly-settlement';
         }
         
+        function openStoreManagement() {
+            // 매장 관리 (본사 전용)
+            window.location.href = '/management/stores';
+        }
+        
         function openAdmin() {
             // 관리자 패널
             window.location.href = '/admin';
@@ -692,7 +702,7 @@
         async function loadRealTimeData() {
             try {
                 // 사용자 권한별 API 엔드포인트 구성
-                let apiUrl = '/api/dev/dashboard/overview';
+                let apiUrl = '/api/dashboard/overview';
                 if (window.userData.role !== 'headquarters') {
                     // 지사/매장 사용자는 접근 가능한 매장 ID를 파라미터로 전달
                     const storeIds = window.userData.store_id ? [window.userData.store_id] : 

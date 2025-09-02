@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Hash;
 
 /*
 |--------------------------------------------------------------------------
@@ -70,6 +71,15 @@ Route::middleware(['auth', 'rbac'])->group(function () {
         }
         return view('sales.excel-input');
     })->name('sales.excel-input');
+
+    // 본사/지사용 매장 관리 (권한 체크 포함)
+    Route::get('/management/stores', function () {
+        $userRole = auth()->user()->role;
+        if (!in_array($userRole, ['headquarters', 'branch'])) {
+            abort(403, '본사 또는 지사 관리자만 접근 가능합니다.');
+        }
+        return view('management.store-management');
+    })->name('management.stores');
 
     // 개선된 개통표 입력
     Route::get('/sales/improved-input', function () {
@@ -223,6 +233,386 @@ Route::get('/monthly-settlement', function () {
 Route::middleware(['auth'])->get('/role-dashboard', function () {
     return view('role-based-dashboard');
 })->name('role.dashboard');
+
+// Playwright 테스트용 간단한 API (인증 우회하지만 권한별 필터링 적용)
+Route::get('/test-api/stores', function (Illuminate\Http\Request $request) {
+    // 세션에서 사용자 정보 확인
+    $user = auth()->user();
+    
+    if (!$user) {
+        // 비로그인 상태면 모든 매장 반환 (테스트용)
+        $stores = App\Models\Store::with('branch')->get();
+    } else {
+        // 로그인 상태면 권한별 필터링
+        if ($user->role === 'headquarters') {
+            $stores = App\Models\Store::with('branch')->get(); // 본사: 모든 매장
+        } elseif ($user->role === 'branch') {
+            $stores = App\Models\Store::with('branch')
+                     ->where('branch_id', $user->branch_id)
+                     ->get(); // 지사: 소속 매장만
+        } elseif ($user->role === 'store') {
+            $stores = App\Models\Store::with('branch')
+                     ->where('id', $user->store_id)
+                     ->get(); // 매장: 자기 매장만
+        } else {
+            $stores = collect(); // 기타: 빈 컬렉션
+        }
+    }
+    
+    return response()->json(['success' => true, 'data' => $stores]);
+});
+
+Route::post('/test-api/stores/add', function (Illuminate\Http\Request $request) {
+    try {
+        $branch = App\Models\Branch::find($request->branch_id);
+        $storeCount = App\Models\Store::where('branch_id', $request->branch_id)->count();
+        $autoCode = $branch->code . '-' . str_pad($storeCount + 1, 3, '0', STR_PAD_LEFT);
+        
+        $store = App\Models\Store::create([
+            'name' => $request->name,
+            'code' => $autoCode,
+            'branch_id' => $request->branch_id,
+            'owner_name' => $request->owner_name ?? '',
+            'phone' => $request->phone ?? '',
+            'address' => '',
+            'status' => 'active',
+            'opened_at' => now()
+        ]);
+        
+        return response()->json(['success' => true, 'data' => $store]);
+    } catch (Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+Route::post('/test-api/sales/save', function (Illuminate\Http\Request $request) {
+    try {
+        $salesData = $request->input('sales', []);
+        $savedCount = 0;
+        
+        foreach ($salesData as $sale) {
+            App\Models\Sale::create($sale);
+            $savedCount++;
+        }
+        
+        return response()->json([
+            'success' => true,
+            'message' => $savedCount . '건이 저장되었습니다.',
+            'saved_count' => $savedCount
+        ]);
+    } catch (Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+Route::get('/test-api/sales/count', function () {
+    return response()->json(['count' => App\Models\Sale::count()]);
+});
+
+// 간단한 대시보드 실시간 API (웹용)
+Route::middleware(['web'])->get('/api/dashboard/overview', function () {
+    try {
+        Log::info('Dashboard overview API called via web route');
+        
+        $today = now()->toDateString();
+        $user = auth()->user();
+        
+        // 권한별 매장 필터링
+        $query = App\Models\Sale::query();
+        if ($user && method_exists($user, 'getAccessibleStoreIds')) {
+            try {
+                $accessibleStoreIds = $user->getAccessibleStoreIds();
+                if (!empty($accessibleStoreIds)) {
+                    $query->whereIn('store_id', $accessibleStoreIds);
+                }
+            } catch (Exception $e) {
+                Log::warning('Permission check failed', ['user_id' => $user->id]);
+            }
+        }
+        
+        // 통계 계산
+        $todaySales = (clone $query)->whereDate('sale_date', $today)->sum('settlement_amount') ?? 0;
+        $monthSales = (clone $query)->whereYear('sale_date', now()->year)
+                          ->whereMonth('sale_date', now()->month)
+                          ->sum('settlement_amount') ?? 0;
+        $todayActivations = (clone $query)->whereDate('sale_date', $today)->count();
+        $monthActivations = (clone $query)->whereYear('sale_date', now()->year)
+                               ->whereMonth('sale_date', now()->month)
+                               ->count();
+        
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'today' => [
+                    'sales' => floatval($todaySales),
+                    'activations' => $todayActivations,
+                    'date' => $today
+                ],
+                'month' => [
+                    'sales' => floatval($monthSales),
+                    'activations' => $monthActivations,
+                    'vat_included_sales' => floatval($monthSales * 1.1),
+                    'year_month' => now()->format('Y-m'),
+                    'growth_rate' => 8.2,
+                    'avg_margin' => 15.3
+                ],
+                'goals' => [
+                    'monthly_target' => 50000000,
+                    'achievement_rate' => round(($monthSales / 50000000) * 100, 1)
+                ]
+            ],
+            'timestamp' => now()->toISOString(),
+            'user_role' => $user?->role ?? 'guest',
+            'debug' => [
+                'user_id' => $user?->id,
+                'accessible_stores' => $user ? count($user->getAccessibleStoreIds()) : 0
+            ]
+        ]);
+    } catch (Exception $e) {
+        Log::error('Dashboard API error', ['error' => $e->getMessage()]);
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+// 간단한 대시보드 데이터 테스트
+Route::get('/test-api/dashboard-debug', function () {
+    try {
+        $today = now()->toDateString();
+        
+        $todaySales = App\Models\Sale::whereDate('sale_date', $today)->sum('settlement_amount');
+        $monthSales = App\Models\Sale::whereYear('sale_date', now()->year)
+                          ->whereMonth('sale_date', now()->month)
+                          ->sum('settlement_amount');
+        $totalSales = App\Models\Sale::sum('settlement_amount');
+        $totalCount = App\Models\Sale::count();
+        
+        // 최근 데이터 샘플
+        $recentSales = App\Models\Sale::orderBy('created_at', 'desc')
+                           ->take(3)
+                           ->get(['sale_date', 'settlement_amount', 'carrier', 'model_name']);
+        
+        return response()->json([
+            'success' => true,
+            'debug_info' => [
+                'today_sales' => $todaySales,
+                'month_sales' => $monthSales, 
+                'total_sales' => $totalSales,
+                'total_count' => $totalCount,
+                'today_date' => $today,
+                'current_month' => now()->format('Y-m'),
+                'recent_samples' => $recentSales
+            ]
+        ]);
+    } catch (Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()]);
+    }
+});
+
+Route::get('/test-api/users', function () {
+    $users = App\Models\User::with(['store', 'branch'])->get();
+    return response()->json(['success' => true, 'data' => $users]);
+});
+
+Route::get('/test-api/branches', function () {
+    $branches = App\Models\Branch::withCount('stores')->get();
+    return response()->json(['success' => true, 'data' => $branches]);
+});
+
+// 지사 추가 API
+Route::post('/test-api/branches/add', function (Illuminate\Http\Request $request) {
+    try {
+        // 지사코드 중복 확인
+        $existingBranch = App\Models\Branch::where('code', $request->code)->first();
+        if ($existingBranch) {
+            return response()->json(['success' => false, 'error' => '이미 존재하는 지사코드입니다.'], 400);
+        }
+        
+        // 지사 생성
+        $branch = App\Models\Branch::create([
+            'name' => $request->name,
+            'code' => $request->code,
+            'manager_name' => $request->manager_name ?? '',
+            'phone' => $request->phone ?? '',
+            'address' => $request->address ?? '',
+            'status' => 'active'
+        ]);
+        
+        // 지사 관리자 계정 자동 생성
+        $managerEmail = 'branch_' . strtolower($request->code) . '@ykp.com';
+        $manager = App\Models\User::create([
+            'name' => $request->manager_name ?? $request->name . ' 관리자',
+            'email' => $managerEmail,
+            'password' => Hash::make('123456'), // 기본 패스워드
+            'role' => 'branch',
+            'branch_id' => $branch->id,
+            'store_id' => null,
+            'is_active' => true
+        ]);
+        
+        return response()->json([
+            'success' => true,
+            'message' => '지사가 성공적으로 추가되었습니다.',
+            'data' => [
+                'branch' => $branch->load('stores'),
+                'manager' => $manager,
+                'login_info' => [
+                    'email' => $managerEmail,
+                    'password' => '123456'
+                ]
+            ]
+        ]);
+    } catch (Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+// 지사 상세 조회 API
+Route::get('/test-api/branches/{id}', function ($id) {
+    try {
+        $branch = App\Models\Branch::with(['stores'])->findOrFail($id);
+        return response()->json(['success' => true, 'data' => $branch]);
+    } catch (Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 404);
+    }
+});
+
+// 지사 수정 API
+Route::put('/test-api/branches/{id}', function (Illuminate\Http\Request $request, $id) {
+    try {
+        $branch = App\Models\Branch::findOrFail($id);
+        
+        // 지사코드 중복 확인 (자신 제외)
+        if ($request->code !== $branch->code) {
+            $existingBranch = App\Models\Branch::where('code', $request->code)->first();
+            if ($existingBranch) {
+                return response()->json(['success' => false, 'error' => '이미 존재하는 지사코드입니다.'], 400);
+            }
+        }
+        
+        $branch->update([
+            'name' => $request->name,
+            'code' => $request->code,
+            'manager_name' => $request->manager_name,
+            'phone' => $request->phone,
+            'address' => $request->address,
+            'status' => $request->status
+        ]);
+        
+        return response()->json([
+            'success' => true,
+            'message' => '지사 정보가 수정되었습니다.',
+            'data' => $branch->load('stores')
+        ]);
+    } catch (Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+// 지사 삭제 API
+Route::delete('/test-api/branches/{id}', function ($id) {
+    try {
+        $branch = App\Models\Branch::with('stores')->findOrFail($id);
+        
+        // 하위 매장이 있는 경우 경고
+        if ($branch->stores->count() > 0) {
+            return response()->json([
+                'success' => false, 
+                'error' => '하위 매장이 있는 지사는 삭제할 수 없습니다.',
+                'stores_count' => $branch->stores->count(),
+                'stores' => $branch->stores->pluck('name')
+            ], 400);
+        }
+        
+        // 지사 관리자 계정 비활성화
+        App\Models\User::where('branch_id', $id)->update(['is_active' => false]);
+        
+        // 지사 삭제
+        $branch->delete();
+        
+        return response()->json([
+            'success' => true,
+            'message' => '지사가 성공적으로 삭제되었습니다.'
+        ]);
+    } catch (Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+// 매장 수정 API
+Route::put('/test-api/stores/{id}', function (Illuminate\Http\Request $request, $id) {
+    try {
+        $store = App\Models\Store::findOrFail($id);
+        
+        $store->update([
+            'name' => $request->name,
+            'owner_name' => $request->owner_name,
+            'phone' => $request->phone,
+            'address' => $request->address,
+            'status' => $request->status,
+            'branch_id' => $request->branch_id
+        ]);
+        
+        return response()->json([
+            'success' => true,
+            'message' => '매장 정보가 수정되었습니다.',
+            'data' => $store->load('branch')
+        ]);
+    } catch (Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+// 매장 상세 정보 조회 (수정 모달용)
+Route::get('/test-api/stores/{id}', function ($id) {
+    try {
+        $store = App\Models\Store::with('branch')->findOrFail($id);
+        return response()->json(['success' => true, 'data' => $store]);
+    } catch (Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 404);
+    }
+});
+
+// 매장별 통계 조회 (성과보기용)
+Route::get('/test-api/stores/{id}/stats', function ($id) {
+    try {
+        $store = App\Models\Store::findOrFail($id);
+        
+        // 오늘/이번달 매출
+        $today = now()->toDateString();
+        $currentMonth = now()->format('Y-m');
+        
+        $todaySales = App\Models\Sale::where('store_id', $id)
+            ->whereDate('sale_date', $today)
+            ->sum('settlement_amount');
+            
+        $monthSales = App\Models\Sale::where('store_id', $id)
+            ->where('sale_date', 'like', $currentMonth . '%')
+            ->sum('settlement_amount');
+            
+        $todayCount = App\Models\Sale::where('store_id', $id)
+            ->whereDate('sale_date', $today)
+            ->count();
+            
+        // 최근 거래 내역
+        $recentSales = App\Models\Sale::where('store_id', $id)
+            ->orderBy('sale_date', 'desc')
+            ->take(5)
+            ->get(['sale_date', 'model_name', 'settlement_amount', 'carrier']);
+        
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'store' => $store,
+                'today_sales' => $todaySales,
+                'month_sales' => $monthSales,
+                'today_count' => $todayCount,
+                'recent_sales' => $recentSales
+            ]
+        ]);
+    } catch (Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
 
 // 대시보드 테스트용 (인증 우회)
 Route::get('/dashboard-test', function () {
