@@ -81,6 +81,23 @@ Route::middleware(['auth', 'rbac'])->group(function () {
         return view('management.store-management');
     })->name('management.stores');
 
+    // 권한별 통계 페이지 라우팅
+    Route::get('/statistics', function () {
+        $user = auth()->user();
+        
+        // 권한별 통계 페이지 라우팅
+        switch($user->role) {
+            case 'headquarters':
+                return view('statistics.headquarters-statistics')->with(['user' => $user]);
+            case 'branch':
+                return view('statistics.branch-statistics')->with(['user' => $user]);
+            case 'store':
+                return view('statistics.store-statistics')->with(['user' => $user]);
+            default:
+                abort(403, '통계 접근 권한이 없습니다.');
+        }
+    })->name('statistics');
+
     // 개선된 개통표 입력
     Route::get('/sales/improved-input', function () {
         return view('sales.improved-input');
