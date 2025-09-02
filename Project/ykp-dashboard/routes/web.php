@@ -71,10 +71,11 @@ Route::middleware(['auth', 'rbac'])->group(function () {
         return view('sales.excel-input');
     })->name('sales.excel-input');
 
-    // 본사용 매장 관리 (권한 체크 포함)
+    // 본사/지사용 매장 관리 (권한 체크 포함)
     Route::get('/management/stores', function () {
-        if (auth()->user()->role !== 'headquarters') {
-            abort(403, '본사 관리자만 접근 가능합니다.');
+        $userRole = auth()->user()->role;
+        if (!in_array($userRole, ['headquarters', 'branch'])) {
+            abort(403, '본사 또는 지사 관리자만 접근 가능합니다.');
         }
         return view('management.store-management');
     })->name('management.stores');
@@ -232,9 +233,31 @@ Route::middleware(['auth'])->get('/role-dashboard', function () {
     return view('role-based-dashboard');
 })->name('role.dashboard');
 
-// Playwright 테스트용 간단한 API (인증 우회)
-Route::get('/test-api/stores', function () {
-    $stores = App\Models\Store::with('branch')->get();
+// Playwright 테스트용 간단한 API (인증 우회하지만 권한별 필터링 적용)
+Route::get('/test-api/stores', function (Illuminate\Http\Request $request) {
+    // 세션에서 사용자 정보 확인
+    $user = auth()->user();
+    
+    if (!$user) {
+        // 비로그인 상태면 모든 매장 반환 (테스트용)
+        $stores = App\Models\Store::with('branch')->get();
+    } else {
+        // 로그인 상태면 권한별 필터링
+        if ($user->role === 'headquarters') {
+            $stores = App\Models\Store::with('branch')->get(); // 본사: 모든 매장
+        } elseif ($user->role === 'branch') {
+            $stores = App\Models\Store::with('branch')
+                     ->where('branch_id', $user->branch_id)
+                     ->get(); // 지사: 소속 매장만
+        } elseif ($user->role === 'store') {
+            $stores = App\Models\Store::with('branch')
+                     ->where('id', $user->store_id)
+                     ->get(); // 매장: 자기 매장만
+        } else {
+            $stores = collect(); // 기타: 빈 컬렉션
+        }
+    }
+    
     return response()->json(['success' => true, 'data' => $stores]);
 });
 

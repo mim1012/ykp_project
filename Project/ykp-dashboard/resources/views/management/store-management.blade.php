@@ -222,6 +222,10 @@
                 
                 <!-- 간단한 매장 통계 (수정 모달용) -->
                 <div class="bg-gray-50 rounded-lg p-3 mt-3">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm font-medium text-gray-700">📊 오늘 매출</span>
+                        <span class="text-lg font-bold text-blue-600" id="edit-today-sales">₩0</span>
+                    </div>
                     <div class="flex justify-between items-center">
                         <span class="text-sm font-medium text-gray-700">📊 이번달 매출</span>
                         <span class="text-lg font-bold text-green-600" id="edit-month-sales">₩0</span>
