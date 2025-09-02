@@ -770,17 +770,62 @@
                 // 실제 데이터로 표시 (SQLite에 데이터 있음)
                 const banner = document.querySelector('.alert-banner');
                 if (banner) {
+                    // 실제 시스템 현황 데이터 로드
+                    const systemStats = await loadSystemStatus();
+                    
                     banner.innerHTML = `
                         <span>✅</span>
                         <div>
                             <strong>YKP ERP 시스템 정상 운영 중</strong><br>
-                            사용자 56명, 매장 50개, 개통 12건 데이터 연동 완료
+                            ${systemStats}
                         </div>
                     `;
                     banner.style.background = '#dcfce7';
                     banner.style.border = '1px solid #16a34a';
                     banner.style.color = '#166534';
                 }
+            }
+        }
+        
+        // 실제 시스템 상태 데이터 로드
+        async function loadSystemStatus() {
+            try {
+                const [usersRes, storesRes, salesRes, branchesRes] = await Promise.all([
+                    fetch('/api/users/count'),
+                    fetch('/api/stores/count'),  
+                    fetch('/api/sales/count'),
+                    fetch('/test-api/branches')
+                ]);
+                
+                const [users, stores, sales, branches] = await Promise.all([
+                    usersRes.json(),
+                    storesRes.json(),
+                    salesRes.json(), 
+                    branchesRes.json()
+                ]);
+                
+                const userCount = users.count || 0;
+                const storeCount = stores.count || 0;
+                const salesCount = sales.count || 0;
+                const branchCount = branches.data?.length || 0;
+                
+                // 권한별 메시지 차별화
+                const role = window.userData.role;
+                if (role === 'headquarters') {
+                    return `지사 ${branchCount}개, 매장 ${storeCount}개, 사용자 ${userCount}명, 개통 ${salesCount}건 관리 중`;
+                } else if (role === 'branch') {
+                    const branchName = window.userData.branch_name || '소속 지사';
+                    return `${branchName} 매장 관리 중 - 개통 ${salesCount}건 데이터 연동`;
+                } else if (role === 'store') {
+                    const storeName = window.userData.store_name || '매장';
+                    return `${storeName} 운영 중 - 개통 ${salesCount}건 실적 관리`;
+                } else {
+                    return `시스템 개발 모드 - 총 ${salesCount}건 데이터`;
+                }
+                
+            } catch (error) {
+                console.error('시스템 상태 로드 오류:', error);
+                return '시스템 상태 확인 중...';
             }
         }
 

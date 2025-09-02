@@ -309,6 +309,100 @@ Route::get('/test-api/sales/count', function () {
     return response()->json(['count' => App\Models\Sale::count()]);
 });
 
+// 간단한 그래프 데이터 API (웹용)
+Route::middleware(['web'])->get('/api/dashboard/sales-trend', function (Illuminate\Http\Request $request) {
+    try {
+        $days = min($request->get('days', 30), 90);
+        $user = auth()->user();
+        
+        // 권한별 매장 필터링
+        $query = App\Models\Sale::query();
+        if ($user && method_exists($user, 'getAccessibleStoreIds')) {
+            try {
+                $accessibleStoreIds = $user->getAccessibleStoreIds();
+                if (!empty($accessibleStoreIds)) {
+                    $query->whereIn('store_id', $accessibleStoreIds);
+                }
+            } catch (Exception $e) {
+                Log::warning('Permission check failed in trend', ['user_id' => $user->id]);
+            }
+        }
+        
+        $endDate = now();
+        $startDate = $endDate->copy()->subDays($days - 1);
+        $trendData = [];
+        
+        for ($i = 0; $i < $days; $i++) {
+            $date = $startDate->copy()->addDays($i);
+            $dailyQuery = (clone $query)->whereDate('sale_date', $date->toDateString());
+            $dailySales = $dailyQuery->sum('settlement_amount') ?? 0;
+            
+            $trendData[] = [
+                'date' => $date->toDateString(),
+                'day_label' => $date->format('j일'),
+                'sales' => floatval($dailySales),
+                'activations' => $dailyQuery->count()
+            ];
+        }
+        
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'trend_data' => $trendData,
+                'period' => [
+                    'start_date' => $startDate->toDateString(),
+                    'end_date' => $endDate->toDateString(),
+                    'days' => $days
+                ]
+            ]
+        ]);
+    } catch (Exception $e) {
+        Log::error('Sales trend API error', ['error' => $e->getMessage()]);
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+Route::middleware(['web'])->get('/api/dashboard/dealer-performance', function () {
+    try {
+        $user = auth()->user();
+        
+        // 권한별 매장 필터링
+        $query = App\Models\Sale::query();
+        if ($user && method_exists($user, 'getAccessibleStoreIds')) {
+            try {
+                $accessibleStoreIds = $user->getAccessibleStoreIds();
+                if (!empty($accessibleStoreIds)) {
+                    $query->whereIn('store_id', $accessibleStoreIds);
+                }
+            } catch (Exception $e) {
+                Log::warning('Permission check failed in performance', ['user_id' => $user->id]);
+            }
+        }
+        
+        $carrierStats = (clone $query)->whereYear('sale_date', now()->year)
+            ->whereMonth('sale_date', now()->month)
+            ->select([
+                'carrier',
+                DB::raw('COUNT(*) as count'),
+                DB::raw('SUM(settlement_amount) as total_sales'),
+                DB::raw('ROUND(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM sales WHERE YEAR(sale_date) = YEAR(NOW()) AND MONTH(sale_date) = MONTH(NOW())), 1) as percentage')
+            ])
+            ->groupBy('carrier')
+            ->get();
+            
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'carrier_breakdown' => $carrierStats,
+                'year_month' => now()->format('Y-m')
+            ]
+        ]);
+    } catch (Exception $e) {
+        Log::error('Dealer performance API error', ['error' => $e->getMessage()]);
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
 // 간단한 대시보드 실시간 API (웹용)
 Route::middleware(['web'])->get('/api/dashboard/overview', function () {
     try {
@@ -374,6 +468,44 @@ Route::middleware(['web'])->get('/api/dashboard/overview', function () {
     }
 });
 
+// 매출 데이터 매장별 분산 (1회성 작업)
+Route::get('/test-api/distribute-sales', function () {
+    try {
+        $totalSales = App\Models\Sale::count();
+        $perStore = ceil($totalSales / 3); // 3개 매장에 균등 분배
+        
+        // 서울 1호점 (Store 1) - 기존 데이터 유지
+        $store1Count = App\Models\Sale::where('store_id', 1)->count();
+        
+        // 서울 2호점 (Store 2)에 일부 할당
+        App\Models\Sale::where('store_id', 1)
+            ->skip($perStore)
+            ->take($perStore)
+            ->update(['store_id' => 2, 'branch_id' => 1]);
+            
+        // 경기 1호점 (Store 3)에 일부 할당  
+        App\Models\Sale::where('store_id', 1)
+            ->skip($perStore * 2)
+            ->update(['store_id' => 3, 'branch_id' => 2]);
+        
+        $distribution = [
+            'store_1' => App\Models\Sale::where('store_id', 1)->count(),
+            'store_2' => App\Models\Sale::where('store_id', 2)->count(),
+            'store_3' => App\Models\Sale::where('store_id', 3)->count()
+        ];
+        
+        return response()->json([
+            'success' => true,
+            'message' => '매출 데이터가 매장별로 분산되었습니다.',
+            'distribution' => $distribution,
+            'total_redistributed' => array_sum($distribution)
+        ]);
+        
+    } catch (Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()]);
+    }
+});
+
 // 간단한 대시보드 데이터 테스트
 Route::get('/test-api/dashboard-debug', function () {
     try {
@@ -386,10 +518,10 @@ Route::get('/test-api/dashboard-debug', function () {
         $totalSales = App\Models\Sale::sum('settlement_amount');
         $totalCount = App\Models\Sale::count();
         
-        // 최근 데이터 샘플
+        // 최근 데이터 샘플 (store_id 포함)
         $recentSales = App\Models\Sale::orderBy('created_at', 'desc')
                            ->take(3)
-                           ->get(['sale_date', 'settlement_amount', 'carrier', 'model_name']);
+                           ->get(['sale_date', 'settlement_amount', 'carrier', 'model_name', 'store_id', 'branch_id']);
         
         return response()->json([
             'success' => true,
