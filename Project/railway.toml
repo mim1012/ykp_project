@@ -1,5 +1,6 @@
 [build]
-root = "Project/ykp-dashboard"
+root = "Project/ykp-dashboard"  
+builder = "DOCKERFILE"
 
 [deploy]
 healthcheckPath = "/"
