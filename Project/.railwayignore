@@ -1,11 +1,14 @@
+# 전체 레포에서 스냅샷 불필요 파일 제외
 caches/
-**/node_modules/
-**/vendor/
 **/.git/
-**/.gitignore
-**/.github/
-**/playwright-report/
-**/test-results/
-**/storage/logs/
-**/storage/framework/cache/
-**/storage/framework/sessions/
+**/.DS_Store
+**/*.log
+
+# 앱 하위 빅 디렉토리 제외 (배포 시 생성되거나 불필요)
+Project/ykp-dashboard/node_modules/
+Project/ykp-dashboard/vendor/
+Project/ykp-dashboard/storage/
+Project/ykp-dashboard/bootstrap/cache/
+Project/ykp-dashboard/tests/
+Project/ykp-dashboard/playwright-report/
+Project/ykp-dashboard/.env

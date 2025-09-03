@@ -1,7 +1,7 @@
 [build]
-root = "Project/ykp-dashboard"  
-builder = "DOCKERFILE"
+root = "Project/ykp-dashboard"
+builder = "docker"
+nixpacks = false
 
 [deploy]
-healthcheckPath = "/"
-restartPolicyType = "ON_FAILURE"
+restartPolicyType = "always"

@@ -1,15 +1,17 @@
-# .dockerignore
-.git
-caches/
-**/node_modules/
-**/vendor/
-**/storage/logs/
-**/storage/framework/**
-**/public/hot
-**/.env*
-**/*.log
-**/playwright-report/**
-**/test-results/**
+# 기본적으로 전부 제외
+**
 
-# 특수문자/윈도우 경로 비슷한 파일 확실히 제외
-CWindowsSystem32driversetchosts
+# ykp-dashboard만 포함
+!Project/
+Project/**
+!Project/ykp-dashboard/
+Project/ykp-dashboard/**
+
+# 그래도 빌드에 불필요한 대용량은 제외
+Project/ykp-dashboard/node_modules
+Project/ykp-dashboard/vendor
+Project/ykp-dashboard/storage
+Project/ykp-dashboard/bootstrap/cache
+Project/ykp-dashboard/tests
+Project/ykp-dashboard/playwright-report
+Project/ykp-dashboard/.env*
