@@ -14,8 +14,16 @@ try {
     }
     
     $parsed = parse_url($dbUrl);
-    $dsn = "pgsql:host={$parsed['host']};port={$parsed['port']};dbname=" . ltrim($parsed['path'], '/') . ";sslmode=require";
-    $pdo = new PDO($dsn, $parsed['user'], $parsed['pass'], [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
+    $host = $parsed['host'] ?? '';
+    $port = $parsed['port'] ?? 6543;
+    $dbname = isset($parsed['path']) ? ltrim($parsed['path'], '/') : 'postgres';
+    $username = $parsed['user'] ?? '';
+    $password = $parsed['pass'] ?? '';
+    
+    echo "<p>🔌 연결 정보: $host:$port/$dbname</p>";
+    
+    $dsn = "pgsql:host=$host;port=$port;dbname=$dbname;sslmode=require";
+    $pdo = new PDO($dsn, $username, $password, [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
     
     echo "<p>✅ 데이터베이스 연결 성공</p>";
     
