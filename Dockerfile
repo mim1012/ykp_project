@@ -11,14 +11,28 @@ RUN npm run build
 # ===== 2) Composer install =====
 FROM composer:2 AS composer_build
 WORKDIR /build
-ENV COMPOSER_MEMORY_LIMIT=-1
-ENV COMPOSER_CACHE_DIR=/tmp/composer-cache
+
+# 메모리/병렬 제한 및 캐시 경로
+ENV COMPOSER_MEMORY_LIMIT=-1 \
+    COMPOSER_MAX_PARALLEL_HTTP=3 \
+    COMPOSER_CACHE_DIR=/tmp/composer-cache \
+    COMPOSER_PROCESS_TIMEOUT=1200
+
+# 의존성 파일만 먼저 복사
 COPY Project/ykp-dashboard/composer.json Project/ykp-dashboard/composer.lock ./
+
+# 네트워크/메모리 부담 최소화 옵션 세트
 RUN composer install \
-    --no-dev --optimize-autoloader \
-    --no-interaction --no-progress \
-    --no-scripts --no-plugins \
-    --prefer-dist --ignore-platform-reqs
+    --no-dev \
+    --prefer-dist \
+    --no-interaction \
+    --no-progress \
+    --no-scripts \
+    --no-plugins \
+    --optimize-autoloader \
+    --classmap-authoritative \
+    --apcu-autoloader \
+    --ignore-platform-reqs
 
 # ===== 3) PHP 8.3 Apache runtime =====
 FROM php:8.3-apache-bookworm
