@@ -1,9 +1,5 @@
 [build]
-builder = "DOCKERFILE"
-dockerfilePath = "Project/ykp-dashboard/Dockerfile"
-
-[build.root]
-path = "Project/ykp-dashboard"
+root = "Project/ykp-dashboard"
 
 [deploy]
 healthcheckPath = "/"
