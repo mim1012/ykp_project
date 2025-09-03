@@ -9,7 +9,7 @@ ENV NODE_OPTIONS=--max-old-space-size=2048
 RUN npm run build
 
 # ===== 2) Composer install =====
-FROM composer:2.7-bin AS composer_build
+FROM composer:2 AS composer_build
 WORKDIR /build
 ENV COMPOSER_MEMORY_LIMIT=-1
 ENV COMPOSER_CACHE_DIR=/tmp/composer-cache
