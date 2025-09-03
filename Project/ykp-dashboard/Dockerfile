@@ -48,8 +48,9 @@ COPY . ./
 # 프론트 빌드 산출물 반영
 COPY --from=frontend-builder /app/public/build ./public/build
 
-# .env 파일 생성 (Railway 환경변수 기반)
-RUN cp .env.example .env
+# entrypoint 스크립트 복사 및 권한 설정
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # 권한
 RUN chown -R www-data:www-data storage bootstrap/cache && chmod -R 775 storage bootstrap/cache
@@ -62,5 +63,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 CMD curl
 
 EXPOSE 80
 
-# 부팅 시 라라벨 최적화 및 마이그레이션 후 Apache 시작 (에러 허용)
-CMD ["bash", "-c", "[ ! -f .env ] && cp .env.example .env || echo '.env exists' && [ -z \"$APP_KEY\" ] && php artisan key:generate --force || echo 'APP_KEY already set' && php artisan config:cache || true && php artisan route:cache || true && php artisan view:cache || true && php artisan migrate --force || echo 'Migration failed but continuing...' && apache2-foreground"]
+# entrypoint 스크립트 사용
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
