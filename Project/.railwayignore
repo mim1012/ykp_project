@@ -1,0 +1,14 @@
+caches/
+**/node_modules/
+**/vendor/
+**/storage/logs/
+**/storage/framework/cache/
+**/storage/framework/sessions/
+**/storage/framework/views/
+**/playwright-report/
+**/test-results/
+**/*.log
+**/.git/
+.tmp/
+$RECYCLE.BIN/
+System Volume Information/
