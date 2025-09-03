@@ -1,0 +1,8 @@
+[build]
+builder = "NIXPACKS"
+buildCommand = "cd Project/ykp-dashboard && composer install --no-interaction --prefer-dist && npm ci && npm run build"
+
+[deploy]  
+startCommand = "cd Project/ykp-dashboard && php artisan migrate --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan serve --host 0.0.0.0 --port ${PORT:-8080}"
+healthcheckPath = "/"
+restartPolicyType = "ON_FAILURE"
