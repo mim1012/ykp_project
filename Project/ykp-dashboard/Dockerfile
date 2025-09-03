@@ -18,18 +18,22 @@ RUN apt-get update \
 # 2) Composer 제공
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# 3) 앱 소스
+# 3) 앱 소스 - 의존성 먼저
 WORKDIR /app
+COPY composer.json composer.lock package*.json ./
+
+# 4) Composer 메모리 최적화 및 캐시 효율화
+ENV COMPOSER_MEMORY_LIMIT=-1
+RUN composer install --no-dev -o --no-interaction --no-progress
+
+# 5) Node.js 의존성 설치
+RUN npm ci
+
+# 6) 전체 소스 복사
 COPY . /app
 
-# 4) Node.js 의존성 및 빌드
-RUN set -eux; \
-    npm ci; \
-    npm run build
-
-# 5) PHP 의존성
-RUN set -eux; \
-    composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader
+# 7) Node.js 빌드
+RUN npm run build
 
 # 5) Apache 설정
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
