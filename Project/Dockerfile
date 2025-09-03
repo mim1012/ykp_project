@@ -1,17 +1,21 @@
-# ========== 1) Node 빌드 ==========
-FROM node:18-bookworm AS node_build
+# ========== 1) Node 빌드 최적화 ==========
+FROM node:20-bookworm-slim AS node_build
 WORKDIR /app
 COPY Project/ykp-dashboard/package*.json ./
-RUN npm ci
+RUN npm ci --only=production --no-audit --no-fund
 COPY Project/ykp-dashboard/ ./
-# 프론트 빌드 (Vite)
 RUN npm run build
 
-# ========== 2) Composer & PHP 확장(빌드종속) ==========
+# ========== 2) Composer 빌드 최적화 ==========  
 FROM composer:2 AS composer_build
+ENV COMPOSER_MEMORY_LIMIT=-1
 WORKDIR /app
+# vendor 캐싱을 위해 의존성 파일 먼저 복사
 COPY Project/ykp-dashboard/composer.json Project/ykp-dashboard/composer.lock ./
-RUN composer install --no-dev -o --no-interaction --no-progress
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress
+# 소스 복사 후 autoload 재생성
+COPY Project/ykp-dashboard/ ./
+RUN composer dump-autoload --optimize
 
 # ========== 3) PHP-Apache 런타임 ==========
 FROM php:8.3-apache-bookworm

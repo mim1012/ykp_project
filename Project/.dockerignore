@@ -1,17 +1,31 @@
-# 기본적으로 전부 제외
+# 전체 제외 후 필요한 것만 포함
 **
 
-# ykp-dashboard만 포함
-!Project/
-Project/**
+# Laravel 프로젝트만 포함
 !Project/ykp-dashboard/
-Project/ykp-dashboard/**
 
-# 그래도 빌드에 불필요한 대용량은 제외
-Project/ykp-dashboard/node_modules
-Project/ykp-dashboard/vendor
-Project/ykp-dashboard/storage
-Project/ykp-dashboard/bootstrap/cache
-Project/ykp-dashboard/tests
-Project/ykp-dashboard/playwright-report
-Project/ykp-dashboard/.env*
+# 빌드에 필요한 핵심 파일들
+!Project/ykp-dashboard/app/
+!Project/ykp-dashboard/bootstrap/
+!Project/ykp-dashboard/config/
+!Project/ykp-dashboard/database/
+!Project/ykp-dashboard/public/
+!Project/ykp-dashboard/resources/
+!Project/ykp-dashboard/routes/
+!Project/ykp-dashboard/storage/
+!Project/ykp-dashboard/artisan
+!Project/ykp-dashboard/composer.json
+!Project/ykp-dashboard/composer.lock
+!Project/ykp-dashboard/package*.json
+!Project/ykp-dashboard/vite.config.js
+!Project/ykp-dashboard/.env.example
+
+# 빌드/런타임 제외 (생성되거나 불필요)
+Project/ykp-dashboard/node_modules/
+Project/ykp-dashboard/vendor/
+Project/ykp-dashboard/storage/logs/
+Project/ykp-dashboard/storage/framework/
+Project/ykp-dashboard/bootstrap/cache/
+Project/ykp-dashboard/tests/
+Project/ykp-dashboard/playwright-report/
+Project/ykp-dashboard/.env
