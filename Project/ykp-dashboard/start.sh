@@ -1,65 +1,30 @@
-#!/bin/bash
-set -e
+#!/usr/bin/env bash
+set -euo pipefail
 
-echo "🚀 Starting YKP ERP Laravel Application..."
+# Default working dir inside container image
+cd "${APP_WORKDIR:-/var/www/html}" || cd /var/www/html
 
-# Set Apache port from Railway PORT environment variable
-APACHE_PORT=${PORT:-80}
+PORT="${PORT:-8080}"
 
-# Update Apache ports.conf
-echo "Listen ${APACHE_PORT}" > /etc/apache2/ports.conf
-
-# Apply dynamic port to Apache vhost configuration
-envsubst '${APACHE_PORT}' < /etc/apache2/sites-available/000-default.conf.template > /etc/apache2/sites-available/000-default.conf
-
-echo "📝 Apache configured for port ${APACHE_PORT}"
-
-# Laravel application setup
-echo "🔧 Setting up Laravel environment..."
-
-# Copy environment file if not exists
-if [ ! -f .env ]; then
-    cp .env.example .env
-    echo "📄 Environment file created from example"
+# Configure Apache to listen on $PORT
+if [ -f /etc/apache2/ports.conf ]; then
+  sed -ri "s/^Listen [0-9]+/Listen ${PORT}/" /etc/apache2/ports.conf || true
+  if ! grep -q "Listen ${PORT}" /etc/apache2/ports.conf; then
+    echo "Listen ${PORT}" >> /etc/apache2/ports.conf
+  fi
 fi
 
-# Generate application key
-echo "🔑 Generating application key..."
-php artisan key:generate --force
-
-# Create SQLite database if needed
-if [ "$DB_CONNECTION" == "sqlite" ]; then
-    echo "💾 Setting up SQLite database..."
-    mkdir -p database
-    touch database/database.sqlite
-    chmod 664 database/database.sqlite
-    chown www-data:www-data database/database.sqlite
+if [ -f /etc/apache2/sites-enabled/000-default.conf ]; then
+  sed -ri "s#<VirtualHost \*:[0-9]+>#<VirtualHost *:${PORT}>#" /etc/apache2/sites-enabled/000-default.conf || true
 fi
 
-# Run database migrations
-echo "🗄️ Running database migrations..."
-php artisan migrate --force
+# Laravel optimizations & migrations
+php artisan config:cache || true
+php artisan route:cache || true
+php artisan view:cache || true
 
-# Laravel caching for production performance
-echo "⚡ Caching Laravel configuration..."
-php artisan config:cache
-php artisan route:cache  
-php artisan view:cache
+# Run migrations in production containers
+php artisan migrate --force || true
 
-# Clear any existing problematic caches
-echo "🧹 Clearing temporary caches..."
-php artisan cache:clear || true
-
-# Set proper file permissions
-echo "🔐 Setting file permissions..."
-chown -R www-data:www-data /var/www/html
-chmod -R 755 /var/www/html/storage
-chmod -R 755 /var/www/html/bootstrap/cache
-
-# Verify Laravel setup
-echo "✅ Laravel application ready"
-php artisan --version
-
-# Start Apache in foreground mode
-echo "🌐 Starting Apache web server on port ${APACHE_PORT}..."
 exec apache2-foreground
+
