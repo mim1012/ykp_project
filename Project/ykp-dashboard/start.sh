@@ -9,9 +9,8 @@ APACHE_PORT=${PORT:-80}
 # Update Apache ports.conf
 echo "Listen ${APACHE_PORT}" > /etc/apache2/ports.conf
 
-# Update virtual host configuration with dynamic port
-envsubst '${APACHE_PORT}' < /etc/apache2/sites-available/000-default.conf > /tmp/vhost.conf
-mv /tmp/vhost.conf /etc/apache2/sites-available/000-default.conf
+# Apply dynamic port to Apache vhost configuration
+envsubst '${APACHE_PORT}' < /etc/apache2/sites-available/000-default.conf.template > /etc/apache2/sites-available/000-default.conf
 
 echo "📝 Apache configured for port ${APACHE_PORT}"
 
