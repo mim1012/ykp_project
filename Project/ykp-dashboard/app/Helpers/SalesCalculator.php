@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Cache;
  */
 class SalesCalculator
 {
-    const TAX_RATE = 0.133; // 13.3%
+    const TAX_RATE = 0.10; // 10%
 
     /**
      * 판매 행 계산
@@ -22,23 +22,23 @@ class SalesCalculator
      */
     public static function computeRow($row)
     {
-        // 입력 필드 (K~S, W, X)
-        $K = (float) ($row['price_setting'] ?? 0);      // 액면가/셋팅가
-        $L = (float) ($row['verbal1'] ?? 0);            // 구두1
-        $M = (float) ($row['verbal2'] ?? 0);            // 구두2
-        $N = (float) ($row['grade_amount'] ?? 0);       // 그레이드
-        $O = (float) ($row['addon_amount'] ?? 0);       // 부가추가
-        $P = (float) ($row['paper_cash'] ?? 0);         // 서류상현금개통
-        $Q = (float) ($row['usim_fee'] ?? 0);           // 유심비(+)
-        $R = (float) ($row['new_mnp_disc'] ?? 0);       // 신규/MNP할인
-        $S = (float) ($row['deduction'] ?? 0);          // 차감(-)
-        $W = (float) ($row['cash_in'] ?? 0);            // 현금받음
-        $X = (float) ($row['payback'] ?? 0);            // 페이백
+        // 입력 필드 (서로 다른 키 지원: 프런트/레거시 모두 호환)
+        $K = (float) ($row['price_setting'] ?? $row['base_price'] ?? 0);       // 액면가/셋팅가
+        $L = (float) ($row['verbal1'] ?? 0);                                     // 구두1
+        $M = (float) ($row['verbal2'] ?? 0);                                     // 구두2
+        $N = (float) ($row['grade_amount'] ?? 0);                                // 그레이드
+        $O = (float) ($row['addon_amount'] ?? $row['additional_amount'] ?? 0);   // 부가추가
+        $P = (float) ($row['paper_cash'] ?? $row['cash_activation'] ?? 0);       // 서류상현금개통/현금개통비
+        $Q = (float) ($row['usim_fee'] ?? 0);                                    // 유심비(+)
+        $R = (float) ($row['new_mnp_disc'] ?? $row['new_mnp_discount'] ?? 0);   // 신규/MNP할인
+        $S = (float) ($row['deduction'] ?? 0);                                   // 차감(-)
+        $W = (float) ($row['cash_in'] ?? $row['cash_received'] ?? 0);           // 현금받음
+        $X = (float) ($row['payback'] ?? 0);                                     // 페이백
 
         // 계산 필드 (T~Z)
         $T = $K + $L + $M + $N + $O;                   // 리베총계
         $U = $T - $P + $Q + $R + $S;                   // 정산금
-        $V = round($U * self::TAX_RATE);               // 세금 (13.3%)
+        $V = round($U * self::TAX_RATE);               // 세금 (10%)
         $Y = $U - $V + $W + $X;                        // 세전마진
         $Z = $V + $Y;                                  // 세후마진
 

@@ -76,7 +76,7 @@
 </head>
 <body>
     <div class="header">
-        <h1>📊 판매 데이터 입력 (Excel 스타일)</h1>
+        <h1 style="font-weight:600;color:#0f172a">판매 데이터 입력</h1>
         <div class="shortcuts">
             <strong>단축키:</strong> 
             Tab/Enter: 다음 셀 | 
@@ -87,10 +87,15 @@
             F2: 편집
         </div>
         <div class="controls">
-            <button onclick="addRow()">➕ 행 추가</button>
-            <button onclick="deleteRow()">➖ 행 삭제</button>
-            <button onclick="saveData()" class="save-btn">💾 저장 (Ctrl+S)</button>
-            <button onclick="window.location.href='/dashboard'">🏠 대시보드</button>
+            <button onclick="addRow()" data-testid="add-row">행 추가</button>
+            <button onclick="deleteRow()" data-testid="delete-row">행 삭제</button>
+            <button onclick="saveData()" class="save-btn" data-testid="save">저장 (Ctrl+S)</button>
+            <button onclick="window.location.href='/dashboard'">대시보드</button>
+            <span style="margin-left:16px;color:#555">페이지 크기:</span>
+            <input id="pageSize" data-testid="page-size" type="number" min="10" max="200" value="50" style="width:70px" oninput="changePageSize(this.value)" />
+            <button onclick="prevPage()" data-testid="prev-page">이전</button>
+            <span id="pageInfo" data-testid="page-info">1 / 1</span>
+            <button onclick="nextPage()" data-testid="next-page">다음</button>
         </div>
     </div>
 
@@ -131,7 +136,7 @@
             {data: 'new_mnp_discount', type: 'numeric', numericFormat: {pattern: '0,0'}, title: '신규/MNP할인'},
             {data: 'deduction', type: 'numeric', numericFormat: {pattern: '0,0'}, title: '차감'},
             {data: 'settlement_amount', type: 'numeric', numericFormat: {pattern: '0,0'}, title: '정산금액', readOnly: true, renderer: 'calculatedRenderer'},
-            {data: 'tax', type: 'numeric', numericFormat: {pattern: '0,0'}, title: '세금(13.3%)', readOnly: true, renderer: 'calculatedRenderer'},
+            {data: 'tax', type: 'numeric', numericFormat: {pattern: '0,0'}, title: '세금(10%)', readOnly: true, renderer: 'calculatedRenderer'},
             {data: 'margin_before_tax', type: 'numeric', numericFormat: {pattern: '0,0'}, title: '세전마진', readOnly: true, renderer: 'calculatedRenderer'},
             {data: 'cash_received', type: 'numeric', numericFormat: {pattern: '0,0'}, title: '현금받은것'},
             {data: 'payback', type: 'numeric', numericFormat: {pattern: '0,0'}, title: '페이백'},
@@ -142,10 +147,13 @@
             {data: 'memo', type: 'text', title: '메모'}
         ];
 
-        // 초기 데이터
-        let data = [];
-        for(let i = 0; i < 20; i++) {
-            data.push({
+        // 페이징 포함 데이터 관리
+        let allData = [];
+        let currentPage = 1;
+        let pageSize = 50;
+
+        function makeEmptyRow() {
+            return {
                 sale_date: new Date().toISOString().split('T')[0],
                 store_id: window.userData.store_id,
                 branch_id: window.userData.branch_id,
@@ -174,13 +182,15 @@
                 phone_number: '',
                 salesperson: '',
                 memo: ''
-            });
+            };
         }
+
+        for(let i = 0; i < 200; i++) { allData.push(makeEmptyRow()); }
 
         // Handsontable 초기화
         const container = document.getElementById('grid');
         const hot = new Handsontable(container, {
-            data: data,
+            data: [],
             columns: columns,
             rowHeaders: true,
             colHeaders: columns.map(col => col.title),
@@ -196,6 +206,16 @@
             afterChange: function(changes, source) {
                 if (source === 'loadData') return;
                 calculateRow(changes);
+                // 변경 내용을 allData에 반영 (페이지 오프셋 고려)
+                if (changes) {
+                    const offset = (currentPage - 1) * pageSize;
+                    changes.forEach(([row, prop, oldValue, newValue]) => {
+                        const absIndex = offset + row;
+                        if (allData[absIndex]) {
+                            allData[absIndex][prop] = newValue;
+                        }
+                    });
+                }
             },
             cells: function(row, col) {
                 const cellProperties = {};
@@ -231,8 +251,8 @@
                                        (parseFloat(rowData[12]) || 0) + // new_mnp_discount
                                        (parseFloat(rowData[13]) || 0);  // deduction
                 
-                // 세금 계산 (13.3%)
-                const tax = Math.round(settlementAmount * 0.133);
+                // 세금 계산 (10%)
+                const tax = Math.round(settlementAmount * 0.10);
                 
                 // 세전마진
                 const marginBeforeTax = settlementAmount - tax;
@@ -251,16 +271,42 @@
             });
         }
 
-        // 행 추가
-        function addRow() {
-            hot.alter('insert_row_below', hot.countRows() - 1, 5);
+        function refreshPageInfo() {
+            const totalPages = Math.max(1, Math.ceil(allData.length / pageSize));
+            document.getElementById('pageInfo').textContent = `${currentPage} / ${totalPages}`;
         }
 
-        // 행 삭제
+        function loadPage(page) {
+            const totalPages = Math.max(1, Math.ceil(allData.length / pageSize));
+            currentPage = Math.min(Math.max(1, page), totalPages);
+            const start = (currentPage - 1) * pageSize;
+            const slice = allData.slice(start, start + pageSize);
+            hot.loadData(slice);
+            refreshPageInfo();
+        }
+
+        function changePageSize(val) {
+            pageSize = Math.min(Math.max(parseInt(val || '50', 10), 10), 200);
+            loadPage(1);
+        }
+
+        function nextPage() { loadPage(currentPage + 1); }
+        function prevPage() { loadPage(currentPage - 1); }
+
+        // 행 추가: 전체 데이터에 5개 추가 후 현재 페이지 재로딩
+        function addRow() {
+            for (let i = 0; i < 5; i++) allData.push(makeEmptyRow());
+            loadPage(currentPage);
+        }
+
+        // 행 삭제: 선택된 행을 allData에서 삭제(절대 인덱스)
         function deleteRow() {
             const selected = hot.getSelected();
             if (selected) {
-                hot.alter('remove_row', selected[0][0]);
+                const offset = (currentPage - 1) * pageSize;
+                const absIndex = offset + selected[0][0];
+                allData.splice(absIndex, 1);
+                loadPage(currentPage);
             }
         }
 
@@ -270,7 +316,8 @@
             status.style.display = 'block';
             status.textContent = '저장 중...';
             
-            const validData = hot.getSourceData().filter(row => {
+            // 전체 데이터에서 유효한 행만 저장
+            const validData = allData.filter(row => {
                 return row.model_name && row.model_name.trim(); // model_name이 있는 행만
             });
 
@@ -324,6 +371,9 @@
             });
         }
 
+        // 초기 로드
+        loadPage(1);
+
         // Ctrl+S 단축키
         document.addEventListener('keydown', function(e) {
             if (e.ctrlKey && e.key === 's') {
@@ -332,8 +382,8 @@
             }
         });
 
-        // 5초마다 자동 저장
-        setInterval(saveData, 5000);
+        // 20초마다 자동 저장 (부하 감소)
+        setInterval(saveData, 20000);
     </script>
 </body>
 </html>

@@ -5,9 +5,13 @@
     "scripts": {
         "build": "vite build",
         "dev": "vite",
+        "dev:staging": "vite --host 0.0.0.0 --port ${VITE_PORT:-5173}",
+        "start:php": "php artisan serve --host 0.0.0.0 --port ${PORT:-8080}",
         "preview": "vite preview",
         "build:dashboard": "node build-dashboard.js",
-        "analyze": "vite build --mode analyze"
+        "analyze": "vite build --mode analyze",
+        "test:smoke": "playwright test -g \"Deploy Smoke\"",
+        "predeploy": "vite build && php artisan config:cache && php artisan route:cache && php artisan view:cache"
     },
     "dependencies": {
         "@tanstack/react-query": "^5.85.3",

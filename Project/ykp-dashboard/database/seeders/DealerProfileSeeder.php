@@ -18,7 +18,7 @@ class DealerProfileSeeder extends Seeder
                 'address' => '서울시 강남구',
                 'default_sim_fee' => 0,
                 'default_mnp_discount' => 800,
-                'tax_rate' => 0.133,
+                'tax_rate' => 0.10,
                 'default_payback_rate' => 0.00,
                 'status' => 'active',
                 'activated_at' => now()
@@ -31,7 +31,7 @@ class DealerProfileSeeder extends Seeder
                 'address' => '서울시 서초구',
                 'default_sim_fee' => 0,
                 'default_mnp_discount' => 800,
-                'tax_rate' => 0.133,
+                'tax_rate' => 0.10,
                 'default_payback_rate' => 2.50,
                 'status' => 'active',
                 'activated_at' => now()
@@ -44,7 +44,7 @@ class DealerProfileSeeder extends Seeder
                 'address' => '서울시 종로구',
                 'default_sim_fee' => 0,
                 'default_mnp_discount' => 800,
-                'tax_rate' => 0.133,
+                'tax_rate' => 0.10,
                 'default_payback_rate' => 1.80,
                 'status' => 'active',
                 'activated_at' => now()
@@ -57,7 +57,7 @@ class DealerProfileSeeder extends Seeder
                 'address' => '부산시 해운대구',
                 'default_sim_fee' => 0,
                 'default_mnp_discount' => 800,
-                'tax_rate' => 0.133,
+                'tax_rate' => 0.10,
                 'default_payback_rate' => 3.00,
                 'status' => 'active',
                 'activated_at' => now()
@@ -70,7 +70,7 @@ class DealerProfileSeeder extends Seeder
                 'address' => '경기도 성남시',
                 'default_sim_fee' => 0,
                 'default_mnp_discount' => 800,
-                'tax_rate' => 0.133,
+                'tax_rate' => 0.10,
                 'default_payback_rate' => 2.20,
                 'status' => 'inactive',
                 'deactivated_at' => now()

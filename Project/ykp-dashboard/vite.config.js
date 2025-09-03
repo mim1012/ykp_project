@@ -10,7 +10,8 @@ export default defineConfig({
                 'resources/css/app.css', 
                 'resources/js/app.js',
                 'resources/js/dashboard.jsx',
-                'resources/js/sales-aggrid.jsx'
+                'resources/js/sales-aggrid.jsx',
+                'resources/js/chart-theme.js'
             ],
             refresh: true,
         }),
@@ -49,8 +50,11 @@ export default defineConfig({
         target: 'es2020'
     },
     server: {
+        host: true,
+        port: Number(process.env.VITE_PORT || 5173),
         hmr: {
-            host: 'localhost',
+            host: process.env.VITE_HMR_HOST || 'localhost',
+            port: Number(process.env.VITE_HMR_PORT || process.env.VITE_PORT || 5173),
         },
     },
     // Dependency optimization

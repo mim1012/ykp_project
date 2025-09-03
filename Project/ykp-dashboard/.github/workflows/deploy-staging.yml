@@ -1,0 +1,31 @@
+name: Deploy to Staging (Railway)
+
+on:
+  push:
+    branches: [ develop ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Railway CLI
+        uses: railwayapp/actions@v1
+        with:
+          railwayToken: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Install deps (build validation)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y php-cli unzip
+          php -v
+          npm ci
+          npm run build
+
+      - name: Deploy to Staging
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+        run: |
+          railway up --service ${{ secrets.RAILWAY_STAGING_SERVICE_ID }} --yes
+

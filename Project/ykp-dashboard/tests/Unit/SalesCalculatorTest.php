@@ -39,7 +39,7 @@ class SalesCalculatorTest extends TestCase
         $this->assertEquals(8800.0, $result['settlement']);
     }
 
-    public function test_세금_계산_13점3퍼센트(): void
+    public function test_세금_계산_10퍼센트(): void
     {
         $data = [
             'price_setting' => 10000,
@@ -47,8 +47,8 @@ class SalesCalculatorTest extends TestCase
 
         $result = SalesCalculator::computeRow($data);
 
-        // 10000 * 0.133 = 1330 (반올림)
-        $this->assertEquals(1330.0, $result['tax']);
+        // 10000 * 0.10 = 1000 (반올림)
+        $this->assertEquals(1000.0, $result['tax']);
     }
 
     public function test_데이터_검증_필수_필드_누락(): void

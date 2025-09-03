@@ -29,7 +29,7 @@ class SaleFactory extends Factory
 
         $rebateTotal = $basePrice + $verbal1 + $verbal2 + $gradeAmount + $additionalAmount;
         $settlementAmount = $rebateTotal;
-        $tax = round($settlementAmount * 0.133, 2);
+        $tax = round($settlementAmount * 0.10, 2);
         $marginAfterTax = $settlementAmount - $tax;
 
         return [

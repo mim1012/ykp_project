@@ -19,7 +19,7 @@ return new class extends Migration
             // 기본 설정값들 (ykp-settlement 기반)
             $table->decimal('default_sim_fee', 10, 2)->default(0);
             $table->decimal('default_mnp_discount', 10, 2)->default(800);
-            $table->decimal('tax_rate', 5, 3)->default(0.133);
+            $table->decimal('tax_rate', 5, 3)->default(0.10);
             $table->decimal('default_payback_rate', 5, 2)->default(0);
             
             // 계산 옵션들

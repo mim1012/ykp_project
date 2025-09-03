@@ -145,7 +145,7 @@ class AdvancedSeeder extends Seeder
                     $deduction = rand(0, 20000);
 
                     $settlementAmount = $rebateTotal - $cashActivation + $usimFee + $newMnpDiscount + $deduction;
-                    $tax = round($settlementAmount * 0.133);
+                    $tax = round($settlementAmount * 0.10);
                     $marginBeforeTax = $settlementAmount - $tax;
 
                     $cashReceived = rand(0, 100000);
