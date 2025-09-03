@@ -1,46 +1,48 @@
-# Multi-stage Dockerfile for Laravel + Vite (monorepo path: Project/ykp-dashboard)
-
-FROM node:18 AS frontend
+# ---------- 1) Node 빌드 ----------
+FROM node:20-bookworm-slim AS node_build
 WORKDIR /app
-COPY . ./
-RUN ls -la resources/js/ && cat vite.config.js | grep -A 10 "input:"
-RUN npm ci && npm run build
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
 
-FROM composer:2 AS vendor
+# ---------- 2) Composer ----------  
+FROM php:8.3-cli-bookworm AS composer_build
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends git unzip \
+ && rm -rf /var/lib/apt/lists/*
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 WORKDIR /app
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --prefer-dist --no-interaction --no-scripts --ignore-platform-reqs
+RUN composer install --no-dev -o --no-interaction --no-progress
+COPY . .
+RUN composer install --no-dev -o --no-interaction --no-progress
 
-FROM php:8.2-apache
+# ---------- 3) 런타임 (Apache + PHP 8.3) ----------
+FROM php:8.3-apache-bookworm
+
+# Apache 설정
+RUN a2enmod rewrite
+
+# Supabase(PostgreSQL)용 필수 패키지 + PHP 확장 빌드
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      ca-certificates git unzip libzip-dev libicu-dev libpq-dev \
+ && docker-php-ext-install -j"$(nproc)" intl zip pdo_pgsql \
+ && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /var/www/html
 
-RUN apt-get update \
-    && apt-get install -y git unzip libpq-dev libzip-dev libicu-dev postgresql-client \
-    && docker-php-ext-install intl zip pdo_mysql pdo_pgsql \
-    && rm -rf /var/lib/apt/lists/*
+# 애플리케이션 복사
+COPY --from=composer_build /app /var/www/html
+COPY --from=node_build /app/public /var/www/html/public
 
-# Apache document root to /public and enable rewrite
-ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
-RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
-    && a2enmod rewrite
+# 권한 및 심볼릭 링크  
+RUN chown -R www-data:www-data storage bootstrap/cache \
+ && php artisan storage:link || true
 
-# Copy application code
-COPY . ./
-# Copy vendor and built assets
-COPY --from=vendor /app/vendor ./vendor
-COPY --from=frontend /app/public/build ./public/build
-
-# Startup script to set Apache port and warm caches+migrations
+# 스타트 스크립트
 COPY start.sh /usr/local/bin/start.sh
 RUN chmod +x /usr/local/bin/start.sh
-
-# Permissions for storage/cache
-RUN chown -R www-data:www-data storage bootstrap/cache || true
-
-ENV APP_ENV=production \
-    APP_DEBUG=false
-
-EXPOSE 80
-
-# Default start (migrations can be run by start command in Railway)
-CMD ["start.sh"]
+EXPOSE 8080
+CMD ["/usr/local/bin/start.sh"]
