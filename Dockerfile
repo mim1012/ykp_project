@@ -1,11 +1,18 @@
 # ===== 1) Frontend build (Node) =====
 FROM node:20-alpine AS frontend_build
 WORKDIR /build
+
+# package 파일 복사
 COPY Project/ykp-dashboard/package*.json ./
-RUN npm ci --only=production --no-audit --no-fund --prefer-offline
+
+# devDependencies 포함 설치
+RUN npm ci --include=dev --no-audit --no-fund --prefer-offline
+
+# 앱 코드 복사
 COPY Project/ykp-dashboard/ ./
-# Vite 메모리 제한 (2GB)
-ENV NODE_OPTIONS=--max-old-space-size=2048
+
+# Vite 빌드 (메모리 제한 2GB)
+ENV NODE_OPTIONS="--max-old-space-size=2048"
 RUN npm run build
 
 # ===== 2) Composer install =====
