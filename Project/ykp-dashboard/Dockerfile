@@ -2,12 +2,12 @@
 
 FROM node:18 AS frontend
 WORKDIR /app
-COPY Project/ykp-dashboard/ ./
+COPY . ./
 RUN npm ci && npm run build
 
 FROM composer:2 AS vendor
 WORKDIR /app
-COPY Project/ykp-dashboard/ ./
+COPY . ./
 RUN composer install --no-dev --prefer-dist --no-interaction --no-scripts \
     && composer dump-autoload -o
 
@@ -25,7 +25,7 @@ RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-av
     && a2enmod rewrite
 
 # Copy application code
-COPY Project/ykp-dashboard/ ./
+COPY . ./
 # Copy vendor and built assets
 COPY --from=vendor /app/vendor ./vendor
 COPY --from=frontend /app/public/build ./public/build
