@@ -1,0 +1,15 @@
+# .dockerignore
+.git
+caches/
+**/node_modules/
+**/vendor/
+**/storage/logs/
+**/storage/framework/**
+**/public/hot
+**/.env*
+**/*.log
+**/playwright-report/**
+**/test-results/**
+
+# 특수문자/윈도우 경로 비슷한 파일 확실히 제외
+CWindowsSystem32driversetchosts
