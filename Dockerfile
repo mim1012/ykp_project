@@ -20,14 +20,25 @@ COPY Project/ykp-dashboard/ ./
 RUN npm run build
 
 # ===== 2) Composer install =====
-FROM composer:2 AS composer_build
+FROM php:8.3-cli-bookworm AS composer_build
 WORKDIR /build
 
+# 런타임과 동일 확장 설치 (intl 필수)
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends \
+      git unzip libicu-dev libzip-dev libpq-dev pkg-config \
+ && docker-php-ext-install -j"$(nproc)" intl zip pdo_pgsql \
+ && rm -rf /var/lib/apt/lists/*
+
+# Composer 설치
 ENV COMPOSER_MEMORY_LIMIT=-1 \
     COMPOSER_MAX_PARALLEL_HTTP=3 \
     COMPOSER_CACHE_DIR=/tmp/composer-cache \
-    COMPOSER_PROCESS_TIMEOUT=1200
+    COMPOSER_PROCESS_TIMEOUT=1200 \
+    COMPOSER_ALLOW_SUPERUSER=1
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
+# 의존성 먼저 설치(캐시 최적화)
 COPY Project/ykp-dashboard/composer.json Project/ykp-dashboard/composer.lock ./
 RUN composer install \
     --no-dev \
