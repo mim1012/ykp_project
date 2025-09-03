@@ -1,6 +1,6 @@
 FROM php:8.2-cli
 
-# Install dependencies
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     git \
     curl \
@@ -9,38 +9,44 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev \
     zip \
     unzip \
-    nodejs \
-    npm
+    sqlite3 \
+    libsqlite3-dev
 
-# Install PHP extensions
-RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
+# Install Node.js
+RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+    && apt-get install -y nodejs
+
+# Install PHP extensions  
+RUN docker-php-ext-install pdo_mysql pdo_sqlite mbstring exif pcntl bcmath gd
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Set working directory
-WORKDIR /var/www
+# Set working directory to Laravel project
+WORKDIR /app/Project/ykp-dashboard
 
-# Copy application files
-COPY . .
+# Copy all files
+COPY . /app/
 
-# Install PHP dependencies
-RUN composer install --no-dev --optimize-autoloader
+# Copy .env file
+RUN cp .env.example .env
 
-# Install Node dependencies and build
-RUN npm ci && npm run build
+# Install dependencies and build
+RUN composer install --no-dev --optimize-autoloader \
+    && npm ci \
+    && npm run build
 
-# Create database directory
-RUN mkdir -p database && touch database/database.sqlite
+# Setup Laravel
+RUN php artisan key:generate \
+    && mkdir -p database \
+    && touch database/database.sqlite \
+    && php artisan migrate --force
 
 # Set permissions
-RUN chown -R www-data:www-data /var/www \
-    && chmod -R 755 /var/www/storage
+RUN chmod -R 755 storage bootstrap/cache
 
 # Expose port
 EXPOSE 8080
 
 # Start command
-CMD php artisan session:table || true && \
-    php artisan migrate --force && \
-    php artisan serve --host=0.0.0.0 --port=$PORT
+CMD ["php", "artisan", "serve", "--host=0.0.0.0", "--port=8080"]
