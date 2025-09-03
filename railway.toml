@@ -1,2 +1,3 @@
+# railway.toml
 [build]
-root = "Project/ykp-dashboard"
+root = "."         # ← Project/… 가 아니라 리포 루트
