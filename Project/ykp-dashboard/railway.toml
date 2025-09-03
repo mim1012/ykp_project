@@ -1,33 +1,8 @@
-# Railway Configuration for YKP Dashboard
-
-# Production Service (single optimized build)
 [build]
 builder = "NIXPACKS"
+buildCommand = "cd Project/ykp-dashboard && composer install --no-interaction --prefer-dist && npm ci && npm run build"
 
 [deploy]
-startCommand = "php -d variables_order=EGPCS artisan serve --host=0.0.0.0 --port=$PORT"
-buildCommand = """
-composer install --no-dev -o && npm ci && npm run build
-php artisan session:table || true
-php artisan migrate --force
-php artisan config:cache && php artisan route:cache && php artisan view:cache
-"""
-watchPatterns = [
-  "app/**",
-  "bootstrap/**", 
-  "config/**",
-  "database/**",
-  "public/**",
-  "resources/**",
-  "routes/**",
-  "composer.lock",
-  "package-lock.json",
-  "vite.config.*"
-]
-
-[env]
-APP_ENV = "production"
-APP_DEBUG = "false"
-SESSION_DRIVER = "database"
-FEATURE_EXCEL_INPUT = "true"
-FEATURE_ADVANCED_REPORTS = "true"
+startCommand = "cd Project/ykp-dashboard && php artisan migrate --force && php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan serve --host 0.0.0.0 --port ${PORT:-8080}"
+healthcheckPath = "/"
+restartPolicyType = "ON_FAILURE"

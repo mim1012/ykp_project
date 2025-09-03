@@ -1,0 +1,70 @@
+# Git
+.git
+.gitignore
+
+# Node.js
+node_modules
+npm-debug.log
+yarn-error.log
+
+# PHP/Composer
+vendor/
+composer.phar
+
+# Laravel
+storage/app/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/logs/*
+!storage/app/.gitignore
+!storage/framework/.gitignore
+!storage/logs/.gitignore
+
+# Environment files (keep .env.example)
+.env
+.env.local
+.env.staging
+.env.production
+.env.supabase
+.env.laragon
+
+# Testing
+playwright-report/
+test-results/
+.phpunit.result.cache
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation
+*.md
+!README.md
+
+# Temporary files
+*.log
+*.tmp
+*.temp
+
+# Build artifacts
+public/build/*
+!public/build/.gitignore
+
+# Windows
+*.bat
+
+# Laravel specific
+storage/framework/down
+bootstrap/cache/*.php
+
+# Development tools
+.claude/
+playwright.config.js
+vite.config.js.backup
