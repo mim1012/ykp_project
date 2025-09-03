@@ -2,22 +2,20 @@
 FROM node:20-bullseye-slim AS frontend_build
 WORKDIR /build
 
-# npm 설정: 메모리 절약 & 네트워크 부하 감소
 ENV npm_config_loglevel=warn \
     npm_config_progress=false \
     npm_config_fetch_retries=5 \
     npm_config_maxsockets=1
-# Node 힙 메모리 한도 2GB
 ENV NODE_OPTIONS="--max-old-space-size=2048"
 
-# package 파일만 복사 → 의존성 설치 (캐시 최적화)
 COPY Project/ykp-dashboard/package*.json ./
 
-RUN npm ci --omit=optional --no-audit --no-fund --prefer-offline --cache /tmp/npm-cache --legacy-peer-deps
+# 🔧 핵심: --omit=optional 제거 (rollup 네이티브 패키지 필요)
+RUN npm ci --no-audit --no-fund --prefer-offline --cache /tmp/npm-cache --legacy-peer-deps
 
-# 앱 코드 복사 및 빌드
 COPY Project/ykp-dashboard/ ./
 RUN npm run build
+
 
 # ===== 2) Composer install =====
 FROM php:8.3-cli-bookworm AS composer_build
