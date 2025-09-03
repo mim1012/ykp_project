@@ -3,6 +3,9 @@
 FROM node:20-alpine AS frontend_build
 WORKDIR /app
 
+# 확인용 - Railway가 루트 Dockerfile 사용 중임을 검증
+RUN echo ">>> USING ROOT DOCKERFILE @ $(date)" && sleep 2
+
 # 레이어 캐시 최적화
 COPY Project/ykp-dashboard/package*.json ./
 RUN npm ci --no-audit --no-fund --prefer-offline
@@ -38,7 +41,7 @@ FROM php:8.3-apache-bookworm
 WORKDIR /var/www/html
 
 # 캐시 버스터(선택)
-ARG CACHE_BUST=2025-09-04-v4
+ARG CACHE_BUST=2025-09-04-v5
 
 # Apache 모듈
 RUN a2enmod rewrite headers

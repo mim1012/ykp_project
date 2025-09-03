@@ -1,7 +1,9 @@
 [build]
-root = "Project/ykp-dashboard"
+root = "."
 builder = "docker"
-nixpacks = false
+dockerfilePath = "./Dockerfile"
+# 필요하면 캐시버스트
+buildArgs = { CACHE_BUST = "2025-09-04-v5" }
 
 [deploy]
 restartPolicyType = "always"
