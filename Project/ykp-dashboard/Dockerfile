@@ -4,19 +4,14 @@ FROM php:8.2-apache-bookworm
 # Apache 모듈 활성화
 RUN a2enmod rewrite
 
-# 시스템 패키지 + PHP 확장 빌드 의존성
-RUN set -eux; \
-    apt-get update; \
-    apt-get install -y --no-install-recommends \
-      git unzip curl ca-certificates \
-      libicu-dev g++ \
-      libzip-dev zlib1g-dev \
-      libpq-dev \
-      nodejs npm; \
-    docker-php-ext-configure intl; \
-    docker-php-ext-configure zip; \
-    docker-php-ext-install -j"$(nproc)" intl zip pdo_mysql pdo_pgsql; \
-    rm -rf /var/lib/apt/lists/*
+# 시스템 패키지 + PHP 확장 빌드 최적화
+ENV MAKEFLAGS="-j$(nproc)"
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+       git unzip pkg-config libzip-dev libicu-dev libpq-dev \
+       nodejs npm \
+  && docker-php-ext-install intl zip pdo_mysql pdo_pgsql \
+  && rm -rf /var/lib/apt/lists/*
 
 # 2) Composer 제공
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
