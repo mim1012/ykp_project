@@ -16,8 +16,8 @@ FROM php:8.2-apache
 WORKDIR /var/www/html
 
 RUN apt-get update \
-    && apt-get install -y git unzip libpq-dev libzip-dev \
-    && docker-php-ext-install pdo_mysql pdo_pgsql zip \
+    && apt-get install -y git unzip libpq-dev libzip-dev libicu-dev postgresql-client \
+    && docker-php-ext-install intl zip pdo_mysql pdo_pgsql \
     && rm -rf /var/lib/apt/lists/*
 
 # Apache document root to /public and enable rewrite
