@@ -1,6 +1,5 @@
 [build]
 builder = "DOCKER"
-root = "Project/ykp-dashboard"
 
 [deploy]
 healthcheckPath = "/healthz.php"

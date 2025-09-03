@@ -59,5 +59,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 CMD curl
 
 EXPOSE 80
 
-# 부팅 시 라라벨 캐시 정리 후 Apache 시작
-CMD ["bash", "-c", "php artisan config:clear || true && php artisan route:clear || true && php artisan view:clear || true && apache2-foreground"]
+# 부팅 시 라라벨 최적화 및 마이그레이션 후 Apache 시작
+CMD ["bash", "-c", "php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan migrate --force && apache2-foreground"]
