@@ -1,87 +1,64 @@
 # ===== 1) Frontend build (Node) =====
-FROM node:20-alpine AS frontend_build
+FROM node:20-bullseye-slim AS frontend_build
 WORKDIR /build
 
-# package 파일 복사
-COPY Project/ykp-dashboard/package*.json ./
-
-# devDependencies 포함 설치
-RUN npm ci --include=dev --no-audit --no-fund --prefer-offline
-
-# 앱 코드 복사
-COPY Project/ykp-dashboard/ ./
-
-# Vite 빌드 (메모리 제한 2GB)
+ENV npm_config_loglevel=warn \
+    npm_config_progress=false \
+    npm_config_fetch_retries=5 \
+    npm_config_maxsockets=1
 ENV NODE_OPTIONS="--max-old-space-size=2048"
+
+COPY Project/ykp-dashboard/package*.json ./
+RUN npm ci --no-audit --no-fund --prefer-offline --cache /tmp/npm-cache --legacy-peer-deps
+
+COPY Project/ykp-dashboard/ ./
 RUN npm run build
 
-# ===== 2) Composer install =====
-FROM composer:2 AS composer_build
-WORKDIR /build
 
-# 메모리/병렬 제한 및 캐시 경로
-ENV COMPOSER_MEMORY_LIMIT=-1 \
-    COMPOSER_MAX_PARALLEL_HTTP=3 \
-    COMPOSER_CACHE_DIR=/tmp/composer-cache \
-    COMPOSER_PROCESS_TIMEOUT=1200
-
-# 의존성 파일만 먼저 복사
-COPY Project/ykp-dashboard/composer.json Project/ykp-dashboard/composer.lock ./
-
-# 네트워크/메모리 부담 최소화 옵션 세트
-RUN composer install \
-    --no-dev \
-    --prefer-dist \
-    --no-interaction \
-    --no-progress \
-    --no-scripts \
-    --no-plugins \
-    --optimize-autoloader \
-    --classmap-authoritative \
-    --apcu-autoloader \
-    --ignore-platform-reqs
-
-# ===== 3) PHP 8.3 Apache runtime =====
+# ===== 2) PHP 8.3 Apache runtime =====
 FROM php:8.3-apache-bookworm
 WORKDIR /var/www/html
 
-# 캐시버스터(값만 바꿔 커밋하면 강제 재빌드)
-ARG CACHE_BUST=2025-09-04-02
-RUN echo ">>> ROOT DOCKERFILE ${CACHE_BUST}"
-
-# Apache
-RUN a2enmod rewrite headers
-
-# 확장 빌드에 필요한 시스템 패키지
-RUN apt-get update \
+# PHP 확장 + Apache 모듈
+RUN a2enmod rewrite headers \
+ && apt-get update \
  && apt-get install -y --no-install-recommends \
       git unzip curl ca-certificates \
-      libicu-dev libzip-dev libpq-dev \
-      pkg-config \
+      libicu-dev libzip-dev libpq-dev pkg-config \
  && docker-php-ext-install -j"$(nproc)" intl zip pdo_pgsql \
  && rm -rf /var/lib/apt/lists/* \
  && apt-get clean
 
-# DocumentRoot 변경
+# Apache DocumentRoot + .htaccess 활성화
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
-RUN sed -ri 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/000-default.conf
+RUN sed -ri 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/000-default.conf \
+ && sed -ri 's!AllowOverride None!AllowOverride All!g' /etc/apache2/apache2.conf
 
-# 앱 소스
+# 앱 소스 복사
 COPY Project/ykp-dashboard/ ./
 
-# 빌드 산출물/벤더 주입
-COPY --from=frontend_build  /build/public/build ./public/build
-COPY --from=composer_build /build/vendor ./vendor
+# 프론트 빌드 산출물 복사
+COPY --from=frontend_build /build/public/build ./public/build
+
+# ⚡ 핵심: 미리 생성해둔 vendor/를 그대로 주입 (네 레포/아티팩트에서 가져옴)
+COPY Project/ykp-dashboard/vendor ./vendor
+
+# autoload 최적화(네트워크 없이 수행)
+RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
+ && php composer-setup.php --install-dir=/usr/local/bin --filename=composer \
+ && rm composer-setup.php \
+ && composer dump-autoload -o
 
 # 권한
 RUN chown -R www-data:www-data storage bootstrap/cache \
  && chmod -R 775 storage bootstrap/cache
 
-ENV APP_ENV=production
-ENV APP_DEBUG=false
+# 단순 헬스엔드포인트
+RUN printf "<?php echo 'OK';" > public/healthz.php
+
 EXPOSE 80
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-  CMD curl -f http://localhost/ || exit 1
+  CMD curl -fsS http://localhost/healthz.php || exit 1
 
-CMD ["apache2-foreground"]
+CMD bash -lc "php artisan config:clear || true; php artisan route:clear || true; php artisan view:clear || true; apache2-foreground"
