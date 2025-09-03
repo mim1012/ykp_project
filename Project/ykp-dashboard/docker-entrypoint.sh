@@ -3,35 +3,29 @@ set -e
 
 echo "🚀 Starting YKP Dashboard deployment..."
 
-# .env 파일 확실히 생성
+# .env 파일 확실히 있는지 확인
 if [ ! -f .env ]; then
     echo "📝 Creating .env file from .env.example"
     cp .env.example .env
-    echo "✅ .env file created"
-else
-    echo "✅ .env file already exists"
 fi
 
-# APP_KEY 확인 및 생성
-if [ -z "$APP_KEY" ] || [ "$APP_KEY" = "" ]; then
-    echo "🔑 Generating APP_KEY..."
-    php artisan key:generate --force
-    echo "✅ APP_KEY generated"
-else
-    echo "✅ APP_KEY already set"
-fi
+# .env 파일 내용 확인
+echo "📄 .env file exists: $([ -f .env ] && echo 'YES' || echo 'NO')"
+ls -la .env* || true
 
-# Laravel 캐시 및 최적화 (에러 무시)
-echo "⚡ Optimizing Laravel..."
-php artisan config:cache || echo "Config cache failed, continuing..."
-php artisan route:cache || echo "Route cache failed, continuing..."
-php artisan view:cache || echo "View cache failed, continuing..."
+# APP_KEY 강제 생성 (항상)
+echo "🔑 Generating APP_KEY..."
+php artisan key:generate --force --no-interaction
+echo "✅ APP_KEY generated"
 
-# 마이그레이션 시도 (에러 무시)
-echo "🗄️ Running migrations..."
-php artisan migrate --force || echo "Migration failed, continuing..."
+# Laravel 설정 확인
+echo "🔍 Testing Laravel config..."
+php artisan config:show app.name || echo "Config test failed"
 
-echo "🎉 Laravel setup complete, starting Apache..."
+# Laravel 기본 명령들 (간소화)
+echo "⚡ Laravel setup..."
+php artisan config:clear || true
+php artisan cache:clear || true
 
-# Apache 실행
+echo "🎉 Starting Apache..."
 exec apache2-foreground

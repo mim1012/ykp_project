@@ -48,6 +48,9 @@ COPY . ./
 # 프론트 빌드 산출물 반영
 COPY --from=frontend-builder /app/public/build ./public/build
 
+# .env 파일 확실히 생성 (빌드 시점)
+RUN cp .env.example .env && echo "APP_KEY=" >> .env
+
 # entrypoint 스크립트 복사 및 권한 설정
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
