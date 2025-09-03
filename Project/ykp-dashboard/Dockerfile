@@ -3,6 +3,7 @@
 FROM node:18 AS frontend
 WORKDIR /app
 COPY . ./
+RUN ls -la resources/js/ && cat vite.config.js | grep -A 10 "input:"
 RUN npm ci && npm run build
 
 FROM composer:2 AS vendor
