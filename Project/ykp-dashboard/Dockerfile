@@ -8,9 +8,8 @@ RUN npm ci && npm run build
 
 FROM composer:2 AS vendor
 WORKDIR /app
-COPY . ./
-RUN composer install --no-dev --prefer-dist --no-interaction --no-scripts \
-    && composer dump-autoload -o
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --prefer-dist --no-interaction --no-scripts --ignore-platform-reqs
 
 FROM php:8.2-apache
 WORKDIR /var/www/html
