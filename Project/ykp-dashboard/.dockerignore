@@ -1,15 +1,21 @@
+# Common exclusions
 .git
+**/storage/logs/*
+**/storage/framework/*
+**/tests
+**/playwright-report
+**/caches
+
+# Frontend
 node_modules
-vendor
-storage/logs
-storage/framework/cache
-storage/framework/sessions
-storage/framework/views
-tests
-playwright-report
-Project/ykp-dashboard/node_modules
-Project/ykp-dashboard/vendor
-Project/ykp-dashboard/storage/logs
-Project/ykp-dashboard/storage/framework/*
-Project/ykp-dashboard/tests
-Project/ykp-dashboard/playwright-report
+
+# Backend - vendor COPY strategy: keep vendor/ included
+# vendor  # uncomment to exclude vendor if using multi-stage composer install
+
+# Docker files
+Dockerfile.old
+Dockerfile.debug
+
+# Env files
+**/.env
+**/.env.*

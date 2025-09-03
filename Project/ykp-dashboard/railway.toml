@@ -3,6 +3,5 @@ builder = "DOCKER"
 root = "Project/ykp-dashboard"
 
 [deploy]
-startCommand = "/usr/local/bin/start.sh"
-healthcheckPath = "/"
+healthcheckPath = "/healthz.php"
 restartPolicyType = "ON_FAILURE"
