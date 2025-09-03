@@ -19,7 +19,7 @@ FROM php:8.3-apache-bookworm
 # 필요한 라이브러리 및 확장
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
-      git unzip libzip-dev libicu-dev libpq-dev zlib1g-dev \
+      git unzip libzip-dev libicu-dev libpq-dev \
  && docker-php-ext-configure pdo_pgsql --with-pgsql=/usr \
  && docker-php-ext-install intl zip pdo_mysql pdo_pgsql \
  && rm -rf /var/lib/apt/lists/*
