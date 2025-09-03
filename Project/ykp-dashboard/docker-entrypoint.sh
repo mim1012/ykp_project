@@ -3,26 +3,44 @@ set -e
 
 echo "🚀 Starting YKP Dashboard deployment..."
 
-# .env 파일 확실히 있는지 확인
-if [ ! -f .env ]; then
-    echo "📝 Creating .env file from .env.example"
-    cp .env.example .env
+# Railway 환경변수를 .env 파일에 직접 쓰기
+echo "📝 Creating .env from Railway environment variables..."
+cat > .env << EOF
+# Railway Environment Variables
+APP_NAME="YKP ERP"
+APP_ENV=${APP_ENV:-production}
+APP_DEBUG=${APP_DEBUG:-false}
+APP_KEY=${APP_KEY}
+APP_URL=https://ykpproject-production.up.railway.app
+
+# Database
+DB_CONNECTION=${DB_CONNECTION:-pgsql}
+DATABASE_URL="${DATABASE_URL}"
+
+# Laravel Settings
+LOG_CHANNEL=stack
+LOG_LEVEL=error
+CACHE_STORE=array
+SESSION_DRIVER=array
+QUEUE_CONNECTION=sync
+
+# Locale
+APP_LOCALE=ko
+APP_FALLBACK_LOCALE=en
+EOF
+
+echo "✅ .env file created from Railway environment"
+echo "📄 .env file size: $(wc -c < .env) bytes"
+
+# APP_KEY 확인 및 생성
+if [ -z "$APP_KEY" ]; then
+    echo "🔑 Generating APP_KEY..."
+    php artisan key:generate --force --no-interaction
+else
+    echo "✅ APP_KEY already set from Railway"
 fi
 
-# .env 파일 내용 확인
-echo "📄 .env file exists: $([ -f .env ] && echo 'YES' || echo 'NO')"
-ls -la .env* || true
-
-# APP_KEY 강제 생성 (항상)
-echo "🔑 Generating APP_KEY..."
-php artisan key:generate --force --no-interaction
-echo "✅ APP_KEY generated"
-
-# Laravel 설정 확인
-echo "🔍 Testing Laravel config..."
-php artisan config:show app.name || echo "Config test failed"
-
-# Laravel 기본 명령들 (간소화)
+# Laravel 기본 설정
 echo "⚡ Laravel setup..."
 php artisan config:clear || true
 php artisan cache:clear || true
