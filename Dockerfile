@@ -9,49 +9,17 @@ ENV npm_config_loglevel=warn \
 ENV NODE_OPTIONS="--max-old-space-size=2048"
 
 COPY Project/ykp-dashboard/package*.json ./
-
-# 🔧 핵심: --omit=optional 제거 (rollup 네이티브 패키지 필요)
 RUN npm ci --no-audit --no-fund --prefer-offline --cache /tmp/npm-cache --legacy-peer-deps
 
 COPY Project/ykp-dashboard/ ./
 RUN npm run build
 
 
-# ===== 2) Composer install =====
-FROM php:8.3-cli-bookworm AS composer_build
-WORKDIR /build
-
-# 런타임과 동일 확장 설치 (intl 필수)
-RUN apt-get update \
- && apt-get install -y --no-install-recommends \
-      git unzip libicu-dev libzip-dev libpq-dev pkg-config \
- && docker-php-ext-install -j"$(nproc)" intl zip pdo_pgsql \
- && rm -rf /var/lib/apt/lists/*
-
-# Composer 설치
-ENV COMPOSER_MEMORY_LIMIT=-1 \
-    COMPOSER_MAX_PARALLEL_HTTP=3 \
-    COMPOSER_CACHE_DIR=/tmp/composer-cache \
-    COMPOSER_PROCESS_TIMEOUT=1200 \
-    COMPOSER_ALLOW_SUPERUSER=1
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
-
-# 의존성 먼저 설치(캐시 최적화)
-COPY Project/ykp-dashboard/composer.json Project/ykp-dashboard/composer.lock ./
-RUN composer install \
-    --no-dev \
-    --prefer-dist \
-    --no-interaction \
-    --no-progress \
-    --optimize-autoloader
-
-# ===== 3) PHP 8.3 Apache runtime =====
+# ===== 2) PHP 8.3 Apache runtime =====
 FROM php:8.3-apache-bookworm
 WORKDIR /var/www/html
 
-ARG CACHE_BUST=2025-09-04-03
-RUN echo ">>> ROOT DOCKERFILE ${CACHE_BUST}"
-
+# PHP 확장 + Apache 모듈
 RUN a2enmod rewrite headers \
  && apt-get update \
  && apt-get install -y --no-install-recommends \
@@ -69,15 +37,23 @@ RUN sed -ri 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-avail
 # 앱 소스 복사
 COPY Project/ykp-dashboard/ ./
 
-# 빌드 산출물/벤더 복사
-COPY --from=frontend_build  /build/public/build ./public/build
-COPY --from=composer_build /build/vendor ./vendor
+# 프론트 빌드 산출물 복사
+COPY --from=frontend_build /build/public/build ./public/build
 
-# 권한 설정
+# ⚡ 핵심: 미리 생성해둔 vendor/를 그대로 주입 (네 레포/아티팩트에서 가져옴)
+COPY Project/ykp-dashboard/vendor ./vendor
+
+# autoload 최적화(네트워크 없이 수행)
+RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
+ && php composer-setup.php --install-dir=/usr/local/bin --filename=composer \
+ && rm composer-setup.php \
+ && composer dump-autoload -o
+
+# 권한
 RUN chown -R www-data:www-data storage bootstrap/cache \
  && chmod -R 775 storage bootstrap/cache
 
-# 단순 헬스체크 엔드포인트
+# 단순 헬스엔드포인트
 RUN printf "<?php echo 'OK';" > public/healthz.php
 
 EXPOSE 80
