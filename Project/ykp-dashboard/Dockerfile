@@ -59,5 +59,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 CMD curl
 
 EXPOSE 80
 
-# 부팅 시 라라벨 최적화 및 마이그레이션 후 Apache 시작
-CMD ["bash", "-c", "php artisan config:cache && php artisan route:cache && php artisan view:cache && php artisan migrate --force && apache2-foreground"]
+# 부팅 시 라라벨 최적화 및 마이그레이션 후 Apache 시작 (에러 허용)
+CMD ["bash", "-c", "[ -z \"$APP_KEY\" ] && php artisan key:generate --force || echo 'APP_KEY already set' && php artisan config:cache || true && php artisan route:cache || true && php artisan view:cache || true && php artisan migrate --force || echo 'Migration failed but continuing...' && apache2-foreground"]
