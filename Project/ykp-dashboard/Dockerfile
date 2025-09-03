@@ -4,14 +4,16 @@ FROM php:8.2-apache-bookworm
 # Apache 모듈 활성화
 RUN a2enmod rewrite
 
-# 시스템 패키지 + PHP 확장 빌드 최적화
-ENV MAKEFLAGS="-j$(nproc)"
+# 캐시 무효화를 위한 빌드 ID
+ARG BUILD_ID=2025-09-04-01
+
+# 필요한 확장: intl, zip, pdo_mysql, pdo_pgsql  
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends \
-       git unzip pkg-config libzip-dev libicu-dev libpq-dev \
-       nodejs npm \
-  && docker-php-ext-install intl zip pdo_mysql pdo_pgsql \
-  && rm -rf /var/lib/apt/lists/*
+ && apt-get install -y --no-install-recommends \
+    git unzip libzip-dev libicu-dev libpq-dev \
+    nodejs npm \
+ && docker-php-ext-install intl zip pdo_mysql pdo_pgsql \
+ && rm -rf /var/lib/apt/lists/*
 
 # 2) Composer 제공
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
