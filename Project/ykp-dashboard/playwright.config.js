@@ -13,7 +13,7 @@ export default defineConfig({
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'retain-on-failure',
-    headless: false, // 브라우저 UI 표시
+    headless: !!process.env.CI, // CI에서는 headless로 실행
     navigationTimeout: 30000, // 페이지 로딩 타임아웃
     actionTimeout: 15000, // 액션 타임아웃
   },

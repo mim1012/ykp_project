@@ -148,23 +148,23 @@ test.describe('🏪 매장 권한 포괄적 테스트 시나리오', () => {
             { url: '/sales/advanced-input-enhanced', name: '고급 입력' }
         ];
 
-        for (const interface of interfaces) {
-            console.log(`🧪 ${interface.name} 테스트 중...`);
+        for (const testInterface of interfaces) {
+            console.log(`🧪 ${testInterface.name} 테스트 중...`);
             
-            await page.goto(interface.url);
+            await page.goto(testInterface.url);
             await page.waitForTimeout(2000);
             
             // Then 각 인터페이스가 정상적으로 로드된다
             const isLoaded = !page.url().includes('404') && !page.url().includes('403');
             
             if (isLoaded) {
-                console.log(`✅ ${interface.name} 로딩 성공`);
+                console.log(`✅ ${testInterface.name} 로딩 성공`);
                 
                 // 기본 UI 요소들이 있는지 확인
                 const hasInputElements = await page.locator('input, select, button').count() > 0;
                 expect(hasInputElements).toBeTruthy();
             } else {
-                console.log(`⚠️ ${interface.name} 접근 제한`);
+                console.log(`⚠️ ${testInterface.name} 접근 제한`);
             }
         }
         

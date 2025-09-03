@@ -10,8 +10,7 @@ export default defineConfig({
                 'resources/css/app.css', 
                 'resources/js/app.js',
                 'resources/js/dashboard.jsx',
-                'resources/js/sales-aggrid.jsx',
-                'resources/js/chart-theme.js'
+                'resources/js/sales-aggrid.jsx'
             ],
             refresh: true,
         }),

@@ -25,22 +25,24 @@ Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
 |--------------------------------------------------------------------------
 */
 
-// 실시간 통계 API (간단한 카운트) - 인증 없이 접근 가능 (개발용)
-Route::get('/users/count', function () {
-    return response()->json(['count' => \App\Models\User::count()]);
-})->name('api.users.count');
+// 실시간 통계 API (간단한 카운트) - 운영에서는 인증 필요
+Route::middleware(['web','auth'])->group(function () {
+    Route::get('/users/count', function () {
+        return response()->json(['count' => \App\Models\User::count()]);
+    })->name('api.users.count');
 
-Route::get('/stores/count', function () {
-    return response()->json(['count' => \App\Models\Store::count()]);
-})->name('api.stores.count');
+    Route::get('/stores/count', function () {
+        return response()->json(['count' => \App\Models\Store::count()]);
+    })->name('api.stores.count');
 
-Route::get('/dealer-profiles/count', function () {
-    return response()->json(['count' => \App\Models\DealerProfile::count()]);
-})->name('api.dealer-profiles.count');
+    Route::get('/dealer-profiles/count', function () {
+        return response()->json(['count' => \App\Models\DealerProfile::count()]);
+    })->name('api.dealer-profiles.count');
 
-Route::get('/sales/count', function () {
-    return response()->json(['count' => \App\Models\Sale::count()]);
-})->name('api.sales.count');
+    Route::get('/sales/count', function () {
+        return response()->json(['count' => \App\Models\Sale::count()]);
+    })->name('api.sales.count');
+});
 
 // 매장 관리 API (개발용 - 완전 우회)
 Route::get('dev/stores/list', function() {
@@ -140,8 +142,8 @@ Route::middleware(['auth'])->prefix('stores')->group(function () {
     Route::get('/branches', [App\Http\Controllers\Api\StoreController::class, 'branches'])->name('api.stores.branches');
 });
 
-// Sales Data API - 임시로 인증 제거 (연동 테스트용)
-Route::prefix('sales')->group(function () {
+// Sales Data API - 인증 및 RBAC 보호
+Route::middleware(['web','auth','rbac'])->prefix('sales')->group(function () {
     // Read operations (GET)
     Route::get('/', [SalesApiController::class, 'index'])->name('api.sales.index');
     Route::get('/statistics', [SalesApiController::class, 'statistics'])->name('api.sales.statistics');

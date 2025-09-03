@@ -122,71 +122,107 @@ Route::middleware(['auth', 'rbac'])->group(function () {
     })->name('sales.aggrid');
 });
 
-// 임시 테스트용 라우트 (인증 없이 접근 가능)
-Route::get('/test/aggrid', function () {
-    return view('sales.aggrid-management');
-})->name('test.aggrid');
+// 개발/테스트용 라우트는 운영에서 비활성화
+if (config('app.env') !== 'production') {
+    // 임시 테스트용 라우트 (인증 없이 접근 가능)
+    Route::get('/test/aggrid', function () {
+        return view('sales.aggrid-management');
+    })->name('test.aggrid');
 
-// 간단한 AgGrid (순수 JavaScript + 실시간 API)
-Route::get('/test/simple-aggrid', function () {
-    return view('sales.simple-aggrid');
-})->name('test.simple-aggrid');
+    // 간단한 AgGrid (순수 JavaScript + 실시간 API)
+    Route::get('/test/simple-aggrid', function () {
+        return view('sales.simple-aggrid');
+    })->name('test.simple-aggrid');
 
-// 완전한 AgGrid (모든 필드 포함)
-Route::get('/test/complete-aggrid', function () {
-    return view('sales.complete-aggrid');
-})->name('test.complete-aggrid');
+    // 완전한 AgGrid (모든 필드 포함)
+    Route::get('/test/complete-aggrid', function () {
+        return view('sales.complete-aggrid');
+    })->name('test.complete-aggrid');
 
-// 개통표 테스트 (인증 우회)
-Route::get('/test/excel-input', function () {
-    return view('sales.excel-input');
-})->name('test.excel-input');
+    // 개통표 테스트 (인증 우회)
+    Route::get('/test/excel-input', function () {
+        return view('sales.excel-input');
+    })->name('test.excel-input');
 
-// 빠른 로그인 테스트 (CSRF 우회)
-Route::get('/quick-login/{role}', function ($role) {
-    $userData = [
-        'headquarters' => ['email' => 'hq@ykp.com', 'id' => 100],
-        'branch' => ['email' => 'branch@ykp.com', 'id' => 101], 
-        'store' => ['email' => 'store@ykp.com', 'id' => 102]
-    ];
-    
-    if (isset($userData[$role])) {
-        $user = \App\Models\User::where('email', $userData[$role]['email'])->first();
-        if ($user) {
-            auth()->login($user);
-            return redirect('/dashboard');
+    // 빠른 로그인 테스트 (CSRF 우회) - 없으면 생성 후 로그인
+    Route::get('/quick-login/{role}', function ($role) {
+        $map = [
+            'headquarters' => ['email' => 'hq@ykp.com', 'name' => '본사 관리자', 'role' => 'headquarters'],
+            'branch' => ['email' => 'branch@ykp.com', 'name' => '지사 관리자', 'role' => 'branch'], 
+            'store' => ['email' => 'store@ykp.com', 'name' => '매장 직원', 'role' => 'store']
+        ];
+
+        if (!isset($map[$role])) {
+            return redirect('/login')->with('error', '유효하지 않은 역할입니다.');
         }
-    }
-    
-    return redirect('/login')->with('error', '테스트 계정을 찾을 수 없습니다.');
-})->name('quick-login');
 
-// 테스트용 통합 대시보드 (인증 우회) - 권한 파라미터로 구분  
-Route::get('/test/dashboard', function () {
-    $role = request()->get('role', 'headquarters');
-    
-    $userData = [
-        'headquarters' => [
-            'id' => 100, 'name' => '본사 관리자', 'email' => 'hq@ykp.com',
-            'role' => 'headquarters', 'store_id' => null, 'branch_id' => null,
-            'store' => null, 'branch' => null
-        ],
-        'branch' => [
-            'id' => 101, 'name' => '지사 관리자', 'email' => 'branch@ykp.com', 
-            'role' => 'branch', 'store_id' => null, 'branch_id' => 1,
-            'store' => null, 'branch' => (object)['name' => '서울지사']
-        ],
-        'store' => [
-            'id' => 102, 'name' => '매장 직원', 'email' => 'store@ykp.com',
-            'role' => 'store', 'store_id' => 1, 'branch_id' => 1, 
-            'store' => (object)['name' => '서울지점 1호점'], 'branch' => (object)['name' => '서울지사']
-        ]
-    ];
-    
-    return view('premium-dashboard')->with([
-        'user' => (object)($userData[$role] ?? $userData['headquarters'])
-    ]);
-})->name('test.dashboard');
+        $entry = $map[$role];
+        $user = \App\Models\User::where('email', $entry['email'])->first();
+
+        if (!$user) {
+            // 보조 데이터 생성: 기본 지사/매장
+            $branch = \App\Models\Branch::first() ?? \App\Models\Branch::create([
+                'name' => '서울지사',
+                'code' => 'SEOUL',
+                'manager_name' => '테스트',
+                'phone' => '010-0000-0000',
+                'address' => '서울',
+                'status' => 'active'
+            ]);
+
+            $store = \App\Models\Store::first() ?? \App\Models\Store::create([
+                'name' => '서울 1호점',
+                'code' => 'SEOUL-001',
+                'branch_id' => $branch->id,
+                'owner_name' => '테스트',
+                'phone' => '010-1111-2222',
+                'address' => '서울',
+                'status' => 'active',
+                'opened_at' => now(),
+            ]);
+
+            $user = \App\Models\User::create([
+                'name' => $entry['name'],
+                'email' => $entry['email'],
+                'password' => \Illuminate\Support\Facades\Hash::make('123456'),
+                'role' => $entry['role'],
+                'branch_id' => $entry['role'] === 'headquarters' ? null : $branch->id,
+                'store_id' => $entry['role'] === 'store' ? $store->id : null,
+                'is_active' => true,
+            ]);
+        }
+
+        auth()->login($user);
+        return redirect('/dashboard');
+    })->name('quick-login');
+
+    // 테스트용 통합 대시보드 (인증 우회) - 권한 파라미터로 구분  
+    Route::get('/test/dashboard', function () {
+        $role = request()->get('role', 'headquarters');
+        
+        $userData = [
+            'headquarters' => [
+                'id' => 100, 'name' => '본사 관리자', 'email' => 'hq@ykp.com',
+                'role' => 'headquarters', 'store_id' => null, 'branch_id' => null,
+                'store' => null, 'branch' => null
+            ],
+            'branch' => [
+                'id' => 101, 'name' => '지사 관리자', 'email' => 'branch@ykp.com', 
+                'role' => 'branch', 'store_id' => null, 'branch_id' => 1,
+                'store' => null, 'branch' => (object)['name' => '서울지사']
+            ],
+            'store' => [
+                'id' => 102, 'name' => '매장 직원', 'email' => 'store@ykp.com',
+                'role' => 'store', 'store_id' => 1, 'branch_id' => 1, 
+                'store' => (object)['name' => '서울지점 1호점'], 'branch' => (object)['name' => '서울지사']
+            ]
+        ];
+        
+        return view('premium-dashboard')->with([
+            'user' => (object)($userData[$role] ?? $userData['headquarters'])
+        ]);
+    })->name('test.dashboard');
+}
 
 // 판매관리 시스템 네비게이션 (개발자용으로 이동)
 Route::get('/dev/sales', function () {
@@ -198,9 +234,9 @@ Route::get('/sales', function () {
     return redirect('/test/simple-aggrid');
 })->name('sales.simple');
 
-// 메인 대시보드 (인증 없이 접근)
-Route::get('/main', function () {
-    return view('sales-navigation'); // 통합 네비게이션을 메인으로
+// 메인 대시보드는 인증 후 접근
+Route::middleware(['auth','rbac'])->get('/main', function () {
+    return view('sales-navigation');
 })->name('main.dashboard');
 
 // 대시보드 직접 접근 (개발/테스트용)
@@ -251,7 +287,8 @@ Route::middleware(['auth'])->get('/role-dashboard', function () {
     return view('role-based-dashboard');
 })->name('role.dashboard');
 
-// Playwright 테스트용 간단한 API (인증 우회하지만 권한별 필터링 적용)
+// 테스트/개발용 임시 API (운영 비활성화)
+if (config('app.env') !== 'production') {
 Route::get('/test-api/stores', function (Illuminate\Http\Request $request) {
     // 세션에서 사용자 정보 확인
     $user = auth()->user();
@@ -762,18 +799,21 @@ Route::get('/test-api/stores/{id}/stats', function ($id) {
         return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
     }
 });
+}
 
-// 대시보드 테스트용 (인증 우회)
-Route::get('/dashboard-test', function () {
-    return view('dashboard-test')->with([
-        'user' => (object)[
-            'id' => 1,
-            'name' => '테스트 사용자',
-            'email' => 'test@ykp.com',
-            'role' => 'headquarters'
-        ]
-    ]);
-})->name('dashboard.test.noauth');
+// 대시보드 테스트용 (개발 환경에서만)
+if (config('app.env') !== 'production') {
+    Route::get('/dashboard-test', function () {
+        return view('dashboard-test')->with([
+            'user' => (object)[
+                'id' => 1,
+                'name' => '테스트 사용자',
+                'email' => 'test@ykp.com',
+                'role' => 'headquarters'
+            ]
+        ]);
+    })->name('dashboard.test.noauth');
+}
 
 /*
 |--------------------------------------------------------------------------

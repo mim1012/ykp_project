@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>대시보드</title>
+    @vite(['resources/css/app.css','resources/js/app.js'])
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         * {
@@ -13,7 +14,7 @@
             box-sizing: border-box;
         }
         body {
-            font-family: 'Malgun Gothic', -apple-system, BlinkMacSystemFont, sans-serif;
+            font-family: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif;
             background: #f8fafc;
             color: #333;
         }
@@ -25,7 +26,7 @@
             top: 0;
             width: 60px;
             height: 100vh;
-            background: #6c5ce7;
+            background: #0f172a; /* slate-900 */
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -36,21 +37,21 @@
             width: 35px;
             height: 35px;
             margin: 10px 0;
-            background: rgba(255,255,255,0.2);
+            background: rgba(255,255,255,0.08);
             border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
+            color: #e2e8f0; /* slate-200 */
             cursor: pointer;
             transition: all 0.2s;
         }
         .sidebar-icon:hover {
-            background: rgba(255,255,255,0.3);
+            background: rgba(255,255,255,0.12);
         }
         .sidebar-icon.active {
-            background: white;
-            color: #6c5ce7;
+            background: #ffffff;
+            color: #0f172a;
         }
         
         /* 툴팁 스타일 */
@@ -99,7 +100,7 @@
         
         /* 헤더 */
         .header {
-            background: white;
+            background: rgba(255,255,255,0.95);
             padding: 15px 30px;
             border-bottom: 1px solid #e2e8f0;
             display: flex;
@@ -107,9 +108,9 @@
             align-items: center;
         }
         .header h1 {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: 700;
-            color: #2d3748;
+            color: #0f172a;
         }
         .header-actions {
             display: flex;
@@ -289,52 +290,90 @@
     </style>
 </head>
 <body>
-    <!-- 사이드바 -->
+    <!-- 사이드바 (권한별 맞춤화) -->
     <div class="sidebar">
+        <!-- 모든 권한 공통 -->
         <div class="sidebar-icon active tooltip" onclick="showDashboard()">
             Y
             <span class="tooltip-text">메인 대시보드</span>
         </div>
-        <div class="sidebar-icon tooltip" onclick="openSimpleInput()">
-            📝
-            <span class="tooltip-text">간단한 개통 입력</span>
-        </div>
-        <div class="sidebar-icon tooltip" onclick="openSettlement()">
-            💼
-            <span class="tooltip-text">정산표 시스템</span>
-        </div>
-        <div class="sidebar-icon tooltip" onclick="openManagement()">
-            📋
-            <span class="tooltip-text">완전한 판매관리</span>
-        </div>
-        <div class="sidebar-icon tooltip" onclick="openDailyExpenses()">
-            💳
-            <span class="tooltip-text">일일지출 관리</span>
-        </div>
-        <div class="sidebar-icon tooltip" onclick="openFixedExpenses()">
-            💰
-            <span class="tooltip-text">고정지출 관리</span>
-        </div>
-        <div class="sidebar-icon tooltip" onclick="openStoreManagement()">
-            🏪
-            <span class="tooltip-text">매장 관리</span>
-        </div>
-        <div class="sidebar-icon tooltip" onclick="openRefunds()">
-            🔄
-            <span class="tooltip-text">환수금액 관리</span>
-        </div>
-        <div class="sidebar-icon tooltip" onclick="openPayroll()">
-            👥
-            <span class="tooltip-text">직원급여 관리</span>
-        </div>
-        <div class="sidebar-icon tooltip" onclick="openMonthlySettlement()">
-            📊
-            <span class="tooltip-text">월마감정산</span>
-        </div>
-        <div class="sidebar-icon tooltip" onclick="openAdmin()">
-            ⚙️
-            <span class="tooltip-text">관리자 패널</span>
-        </div>
+
+        @if(auth()->user()->role === 'headquarters')
+            <!-- 본사 전용 메뉴 -->
+            <div class="sidebar-icon tooltip" onclick="openStoreManagement()">
+                🏢
+                <span class="tooltip-text">지사 관리</span>
+            </div>
+            <div class="sidebar-icon tooltip" onclick="openStoreManagement()">
+                🏪
+                <span class="tooltip-text">매장 관리</span>
+            </div>
+            <div class="sidebar-icon tooltip" onclick="openAdmin()">
+                👥
+                <span class="tooltip-text">사용자 관리</span>
+            </div>
+            <div class="sidebar-icon tooltip" onclick="openMonthlySettlement()">
+                
+                <span class="tooltip-text">전체 통계</span>
+            </div>
+            <div class="sidebar-icon tooltip" onclick="openManagement()">
+                
+                <span class="tooltip-text">시스템 관리</span>
+            </div>
+            <div class="sidebar-icon tooltip" onclick="openFixedExpenses()">
+                💰
+                <span class="tooltip-text">재무 관리</span>
+            </div>
+            <div class="sidebar-icon tooltip" onclick="openAdmin()">
+                ⚙️
+                <span class="tooltip-text">시스템 설정</span>
+            </div>
+
+        @elseif(auth()->user()->role === 'branch')
+            <!-- 지사 전용 메뉴 -->
+            <div class="sidebar-icon tooltip" onclick="openStoreManagement()">
+                🏪
+                <span class="tooltip-text">소속 매장 관리</span>
+            </div>
+            <div class="sidebar-icon tooltip" onclick="openSettlement()">
+                💼
+                <span class="tooltip-text">지사 정산</span>
+            </div>
+            <div class="sidebar-icon tooltip" onclick="openMonthlySettlement()">
+                
+                <span class="tooltip-text">지사 통계</span>
+            </div>
+            <div class="sidebar-icon tooltip" onclick="openDailyExpenses()">
+                💳
+                <span class="tooltip-text">지사 지출</span>
+            </div>
+
+        @elseif(auth()->user()->role === 'store')
+            <!-- 매장 전용 메뉴 -->
+            <div class="sidebar-icon tooltip" onclick="openSimpleInput()">
+                
+                <span class="tooltip-text">개통표 입력</span>
+            </div>
+            <div class="sidebar-icon tooltip" onclick="openSettlement()">
+                💼
+                <span class="tooltip-text">매장 정산</span>
+            </div>
+            <div class="sidebar-icon tooltip" onclick="openMonthlySettlement()">
+                
+                <span class="tooltip-text">매장 통계</span>
+            </div>
+            <div class="sidebar-icon tooltip" onclick="openDailyExpenses()">
+                💳
+                <span class="tooltip-text">매장 지출</span>
+            </div>
+
+        @else
+            <!-- 개발자/기타 -->
+            <div class="sidebar-icon tooltip" onclick="openManagement()">
+                🛠️
+                <span class="tooltip-text">개발 도구</span>
+            </div>
+        @endif
     </div>
 
     <!-- 메인 컨텐츠 -->
@@ -348,57 +387,162 @@
                 </div>
             </div>
             <div class="header-actions">
-                <button class="btn btn-success">데이터 수집</button>
-                <button class="btn btn-outline" onclick="location.reload()">새로고침</button>
-                <button class="btn btn-outline">레포트 다운로드</button>
+                @if(auth()->user()->role === 'headquarters')
+                    <!-- 본사 전용 액션 -->
+                    <button class="btn btn-success" onclick="openStoreManagement()">+ 새 지사 추가</button>
+                    <button class="btn btn-success" onclick="openStoreManagement()">+ 새 매장 추가</button>
+                    <button class="btn btn-outline" onclick="downloadSystemReport()">전체 리포트</button>
+                    <button class="btn btn-outline" onclick="location.reload()">🔄 새로고침</button>
+                @elseif(auth()->user()->role === 'branch')
+                    <!-- 지사 전용 액션 -->
+                    <button class="btn btn-success" onclick="openStoreManagement()">+ 매장 추가</button>
+                    <button class="btn btn-outline" onclick="downloadBranchReport()">지사 리포트</button>
+                    <button class="btn btn-outline" onclick="openStoreManagement()">👥 매장 관리</button>
+                    <button class="btn btn-outline" onclick="location.reload()">🔄 새로고침</button>
+                @elseif(auth()->user()->role === 'store')
+                    <!-- 매장 전용 액션 -->
+                    <button class="btn btn-success" onclick="openSimpleInput()">개통표 입력</button>
+                    <button class="btn btn-outline" onclick="downloadStoreReport()">매장 통계</button>
+                    <button class="btn btn-outline" onclick="openSettlement()">💰 정산 확인</button>
+                    <button class="btn btn-outline" onclick="location.reload()">🔄 새로고침</button>
+                @else
+                    <!-- 기본 액션 -->
+                    <button class="btn btn-outline" onclick="location.reload()">새로고침</button>
+                @endif
                 <button class="btn btn-outline" onclick="logout()" style="background: #ef4444; color: white;">로그아웃</button>
             </div>
         </div>
 
-        <!-- 알림 배너 -->
-        <div class="alert-banner">
-            <span>⚠️</span>
+        <!-- 알림 배너 (권한별 메시지) -->
+        <div class="alert-banner" style="background: #dcfce7; border: 1px solid #16a34a; color: #166534;">
+            <span>✅</span>
             <div>
-                <strong>데이터가 없습니다.</strong><br>
-                개통표 정보가 없습니다 또는 대리점에서 데이터가 업로드되지 않았을 수 있습니다.
+                <strong>YKP ERP 시스템 정상 운영 중</strong><br>
+                @if(auth()->user()->role === 'headquarters')
+                    전체 시스템 관리 중 - 실시간 데이터 연동 완료
+                @elseif(auth()->user()->role === 'branch')
+                    {{ auth()->user()->branch->name ?? '지사' }} 매장 관리 중 - 실시간 데이터 연동 완료
+                @elseif(auth()->user()->role === 'store')
+                    {{ auth()->user()->store->name ?? '매장' }} 운영 중 - 실시간 데이터 연동 완료
+                @else
+                    시스템 개발 모드 - 실시간 데이터 연동 완료
+                @endif
             </div>
         </div>
 
         <!-- 대시보드 컨텐츠 -->
         <div class="dashboard-content">
-            <!-- KPI 카드 -->
+            <!-- KPI 카드 (권한별 맞춤화) -->
             <div class="kpi-grid">
-                <div class="kpi-card" id="todaySales">
-                    <div class="kpi-header">
-                        <span class="kpi-title">오늘 매출</span>
-                        <span class="kpi-trend trend-up">+ 12.5%</span>
+                @if(auth()->user()->role === 'headquarters')
+                    <!-- 본사: 전체 시스템 관리 관점 -->
+                    <div class="kpi-card" id="totalBranches" style="border-left: 4px solid #3b82f6;">
+                        <div class="kpi-header">
+                            <span class="kpi-title">🏢 전체 지사 수</span>
+                            <span class="kpi-trend trend-up">+ 2개</span>
+                        </div>
+                        <div class="kpi-value">8개 지사</div>
+                        <div class="kpi-subtitle">전국 지사 관리</div>
                     </div>
-                    <div class="kpi-value">₩0</div>
-                    <div class="kpi-subtitle">전월 동일 요일 대비</div>
-                </div>
-                <div class="kpi-card" id="monthSales">
-                    <div class="kpi-header">
-                        <span class="kpi-title">이번 달 매출</span>
-                        <span class="kpi-trend trend-up">+ 8.2%</span>
+                    <div class="kpi-card" id="totalStores" style="border-left: 4px solid #3b82f6;">
+                        <div class="kpi-header">
+                            <span class="kpi-title">🏪 전체 매장 수</span>
+                            <span class="kpi-trend trend-up">+ 1개</span>
+                        </div>
+                        <div class="kpi-value">3개 매장</div>
+                        <div class="kpi-subtitle">전국 매장 관리</div>
                     </div>
-                    <div class="kpi-value">₩0</div>
-                    <div class="kpi-subtitle">전월 동기 대비</div>
-                </div>
-                <div class="kpi-card" id="vatSales">
-                    <div class="kpi-header">
-                        <span class="kpi-title">VAT 포함 매출</span>
-                        <span class="kpi-trend trend-down">- 2.1%</span>
+                    <div class="kpi-card" id="totalUsers" style="border-left: 4px solid #3b82f6;">
+                        <div class="kpi-header">
+                            <span class="kpi-title">👥 전체 사용자</span>
+                            <span class="kpi-trend trend-up">+ 1명</span>
+                        </div>
+                        <div class="kpi-value">5명 관리</div>
+                        <div class="kpi-subtitle">시스템 사용자</div>
                     </div>
-                    <div class="kpi-value">₩0</div>
-                    <div class="kpi-subtitle">VAT 13.3% 포함</div>
-                </div>
-                <div class="kpi-card" id="goalProgress">
-                    <div class="kpi-header">
-                        <span class="kpi-title">목표 달성률</span>
+                    <div class="kpi-card" id="systemGoal" style="border-left: 4px solid #3b82f6;">
+                        <div class="kpi-header">
+                            <span class="kpi-title">🎯 시스템 목표</span>
+                        </div>
+                        <div class="kpi-value">3.4% 달성</div>
+                        <div class="kpi-subtitle">월 5천만원 목표</div>
                     </div>
-                    <div class="kpi-value">0 / 100</div>
-                    <div class="kpi-subtitle">월간 목표 대비</div>
-                </div>
+                @elseif(auth()->user()->role === 'branch')
+                    <!-- 지사: 소속 매장 관리 관점 -->
+                    <div class="kpi-card" id="branchStores" style="border-left: 4px solid #10b981;">
+                        <div class="kpi-header">
+                            <span class="kpi-title">🏪 관리 매장 수</span>
+                            <span class="kpi-trend trend-stable">= 2개</span>
+                        </div>
+                        <div class="kpi-value">2개 매장</div>
+                        <div class="kpi-subtitle">{{ auth()->user()->branch->name ?? '지사' }} 소속</div>
+                    </div>
+                    <div class="kpi-card" id="branchSales" style="border-left: 4px solid #10b981;">
+                        <div class="kpi-header">
+                            <span class="kpi-title">💰 지사 매출</span>
+                            <span class="kpi-trend trend-up">+ 8.2%</span>
+                        </div>
+                        <div class="kpi-value">₩850,000</div>
+                        <div class="kpi-subtitle">소속 매장 합계</div>
+                    </div>
+                    <div class="kpi-card" id="branchRank" style="border-left: 4px solid #10b981;">
+                        <div class="kpi-header">
+                            <span class="kpi-title">지사 순위</span>
+                            <span class="kpi-trend trend-up">↑ 1위</span>
+                        </div>
+                        <div class="kpi-value">3위 / 8개</div>
+                        <div class="kpi-subtitle">전체 지사 중</div>
+                    </div>
+                    <div class="kpi-card" id="branchGoal" style="border-left: 4px solid #10b981;">
+                        <div class="kpi-header">
+                            <span class="kpi-title">🎯 지사 목표</span>
+                        </div>
+                        <div class="kpi-value">85% 달성</div>
+                        <div class="kpi-subtitle">월 1천만원 목표</div>
+                    </div>
+                @elseif(auth()->user()->role === 'store')
+                    <!-- 매장: 개인 성과 관점 -->
+                    <div class="kpi-card" id="storeToday" style="border-left: 4px solid #f59e0b;">
+                        <div class="kpi-header">
+                            <span class="kpi-title">오늘 개통</span>
+                            <span class="kpi-trend trend-stable">= 0건</span>
+                        </div>
+                        <div class="kpi-value">0건 개통</div>
+                        <div class="kpi-subtitle">{{ now()->format('n월 j일') }} 실적</div>
+                    </div>
+                    <div class="kpi-card" id="storeSales" style="border-left: 4px solid #f59e0b;">
+                        <div class="kpi-header">
+                            <span class="kpi-title">💰 매장 매출</span>
+                            <span class="kpi-trend trend-stable">= 0원</span>
+                        </div>
+                        <div class="kpi-value">₩0</div>
+                        <div class="kpi-subtitle">{{ auth()->user()->store->name ?? '매장' }} 매출</div>
+                    </div>
+                    <div class="kpi-card" id="storeRank" style="border-left: 4px solid #f59e0b;">
+                        <div class="kpi-header">
+                            <span class="kpi-title">매장 순위</span>
+                            <span class="kpi-trend trend-stable">= 순위</span>
+                        </div>
+                        <div class="kpi-value">15위 / 25개</div>
+                        <div class="kpi-subtitle">전체 매장 중</div>
+                    </div>
+                    <div class="kpi-card" id="storeGoal" style="border-left: 4px solid #f59e0b;">
+                        <div class="kpi-header">
+                            <span class="kpi-title">🎯 매장 목표</span>
+                        </div>
+                        <div class="kpi-value">0% 달성</div>
+                        <div class="kpi-subtitle">월 500만원 목표</div>
+                    </div>
+                @else
+                    <!-- 개발자: 시스템 정보 -->
+                    <div class="kpi-card" id="devData">
+                        <div class="kpi-header">
+                            <span class="kpi-title">🛠️ 개발 모드</span>
+                        </div>
+                        <div class="kpi-value">시스템 데이터</div>
+                        <div class="kpi-subtitle">개발자 전용</div>
+                    </div>
+                @endif
             </div>
 
             <!-- 차트 섹션 -->
@@ -421,53 +565,18 @@
             <div class="bottom-grid">
                 <div class="bottom-card">
                     <div class="chart-title">최근 활동</div>
-                    <ul class="activity-list">
-                        <li class="activity-item">
-                            <div class="activity-icon activity-green"></div>
-                            <div>
-                                <div>서울지역 동별 창구 운영</div>
-                                <div style="font-size: 12px; color: #94a3b8;">10분 전</div>
-                            </div>
-                        </li>
-                        <li class="activity-item">
-                            <div class="activity-icon activity-blue"></div>
-                            <div>
-                                <div>경기지역 신규 매점 등록</div>
-                                <div style="font-size: 12px; color: #94a3b8;">1시간 전</div>
-                            </div>
-                        </li>
-                        <li class="activity-item">
-                            <div class="activity-icon activity-yellow"></div>
-                            <div>
-                                <div>부산지역 배고 예약 등록</div>
-                                <div style="font-size: 12px; color: #94a3b8;">2시간 전</div>
-                            </div>
-                        </li>
-                    </ul>
+                    <div style="text-align: center; padding: 40px 20px; color: #6b7280;">
+                        <div style="font-size: 24px; margin-bottom: 12px;">🚧</div>
+                        <div style="font-weight: 600; margin-bottom: 8px;">시스템 준비중입니다</div>
+                        <div style="font-size: 14px;">실시간 활동 로그 시스템을 구축 중입니다.</div>
+                    </div>
                 </div>
                 <div class="bottom-card">
                     <div class="chart-title">공지사항</div>
-                    <div>
-                        <div class="notice-item">
-                            <div>
-                                <div class="notice-title">시스템 업데이트 안내</div>
-                                <div class="notice-date">2024-01-15</div>
-                            </div>
-                            <span class="notice-badge">중요</span>
-                        </div>
-                        <div class="notice-item">
-                            <div>
-                                <div class="notice-title">신규 기능 업데이트</div>
-                                <div class="notice-date">2024-01-14</div>
-                            </div>
-                            <span style="color: #94a3b8; font-size: 12px;">신규</span>
-                        </div>
-                        <div class="notice-item">
-                            <div>
-                                <div class="notice-title">정산 프로세스 변경</div>
-                                <div class="notice-date">2024-01-13</div>
-                            </div>
-                        </div>
+                    <div style="text-align: center; padding: 40px 20px; color: #6b7280;">
+                        <div style="font-size: 24px; margin-bottom: 12px;"></div>
+                        <div style="font-weight: 600; margin-bottom: 8px;">시스템 준비중입니다</div>
+                        <div style="font-size: 14px;">공지사항 관리 시스템을 구축 중입니다.</div>
                     </div>
                 </div>
             </div>
@@ -667,8 +776,8 @@
         }
         
         function openMonthlySettlement() {
-            // 월마감정산 페이지 (신규 핵심 기능!)
-            window.location.href = '/monthly-settlement';
+            // 권한별 통계 페이지로 이동
+            window.location.href = '/statistics';
         }
         
         function openStoreManagement() {
@@ -830,13 +939,49 @@
         }
 
         // 페이지 로드 시 실시간 데이터 로드
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', async function() {
+            // 시스템 상태 먼저 업데이트 (즉시)
+            try {
+                const systemStats = await loadSystemStatus();
+                const banner = document.querySelector('.alert-banner');
+                if (banner) {
+                    banner.innerHTML = `
+                        <span>✅</span>
+                        <div>
+                            <strong>YKP ERP 시스템 정상 운영 중</strong><br>
+                            ${systemStats}
+                        </div>
+                    `;
+                    banner.style.background = '#dcfce7';
+                    banner.style.border = '1px solid #16a34a';
+                    banner.style.color = '#166534';
+                }
+            } catch (error) {
+                console.error('시스템 상태 로드 실패:', error);
+            }
+            
             // 차트 로드 후 실시간 데이터 적용
             setTimeout(loadRealTimeData, 1000);
             
             // 5분마다 데이터 새로고침
             setInterval(loadRealTimeData, 300000);
         });
+
+        // 권한별 리포트 다운로드 함수들
+        function downloadSystemReport() {
+            // 본사 전체 리포트 = 통계 페이지로 이동
+            window.location.href = '/statistics';
+        }
+
+        function downloadBranchReport() {
+            // 지사 리포트 페이지로 이동
+            window.location.href = '/statistics';
+        }
+
+        function downloadStoreReport() {
+            // 매장 통계 페이지로 이동  
+            window.location.href = '/statistics';
+        }
 
         // 사이드바 아이콘 클릭 이벤트
         document.querySelectorAll('.sidebar-icon').forEach(icon => {

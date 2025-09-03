@@ -4,23 +4,10 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>판매관리 시스템 - YKP ERP</title>
-    @vite(['resources/css/app.css'])
+    @vite(['resources/css/app.css','resources/js/app.js'])
 </head>
 <body class="bg-gray-50">
-    <!-- 헤더 -->
-    <header class="bg-white shadow-sm border-b">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center">
-                    <h1 class="text-xl font-semibold text-gray-900">YKP ERP 판매관리 시스템</h1>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <a href="/dashboard" class="text-gray-600 hover:text-gray-900">대시보드</a>
-                    <a href="/admin" class="text-gray-600 hover:text-gray-900">관리자</a>
-                </div>
-            </div>
-        </div>
-    </header>
+    @include('components.topbar', ['title' => 'YKP ERP 판매관리 시스템'])
 
     <!-- 메인 컨텐츠 -->
     <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
@@ -29,13 +16,13 @@
             <div class="bg-white rounded-lg shadow-sm p-1 border">
                 <button onclick="showSection('input')" 
                         id="input-tab"
-                        class="px-6 py-3 rounded-md text-sm font-medium transition-all duration-200 bg-blue-500 text-white">
-                    📝 개통 입력표
+                        class="px-6 py-3 rounded-md text-sm font-medium transition-all duration-200 bg-indigo-600 text-white">
+                    개통 입력표
                 </button>
                 <button onclick="showSection('settlement')" 
                         id="settlement-tab"
-                        class="px-6 py-3 rounded-md text-sm font-medium transition-all duration-200 text-gray-600 hover:text-gray-900">
-                    📊 정산표
+                        class="px-6 py-3 rounded-md text-sm font-medium transition-all duration-200 text-slate-600 hover:text-slate-900">
+                    정산표
                 </button>
             </div>
         </div>

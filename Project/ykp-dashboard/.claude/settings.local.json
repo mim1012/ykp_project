@@ -55,7 +55,16 @@
       "Bash(git rm:*)",
       "mcp__microsoft-playwright-mcp__browser_evaluate",
       "mcp__microsoft-playwright-mcp__browser_snapshot",
-      "mcp__microsoft-playwright-mcp__browser_handle_dialog"
+      "mcp__microsoft-playwright-mcp__browser_handle_dialog",
+      "Bash(git branch:*)",
+      "Bash(Copy-Item .env.example .env)",
+      "Bash(composer install:*)",
+      "Bash(start \"\" \".\\playwright-report\\index.html\")",
+      "Bash(railway login:*)",
+      "Bash(git remote:*)",
+      "Bash(git stash push:*)",
+      "Bash(git pull:*)",
+      "Bash(test:*)"
     ],
     "defaultMode": "acceptEdits",
     "additionalDirectories": [

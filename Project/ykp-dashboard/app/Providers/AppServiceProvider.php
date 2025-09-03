@@ -9,7 +9,9 @@ use App\Application\Services\ExpenseService;
 use App\Application\Services\RefundService;
 use App\Services\FeatureService;
 use App\Models\User;
+use App\Models\Sale;
 use App\Policies\UserPolicy;
+use App\Policies\SalePolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
@@ -38,6 +40,7 @@ class AppServiceProvider extends ServiceProvider
     {
         // Policy 등록
         Gate::policy(User::class, UserPolicy::class);
+        Gate::policy(Sale::class, SalePolicy::class);
         
         // Feature Flag Blade Directives 등록
         $this->registerFeatureFlagDirectives();
