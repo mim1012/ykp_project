@@ -1,8 +1,19 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+echo "🚀 Starting YKP ERP with Railway Variables..."
+
 # Default working dir inside container image
 cd "${APP_WORKDIR:-/var/www/html}" || cd /var/www/html
+
+# 이미지에 .env가 들어있으면 제거 (Railway 변수를 우선 사용)
+[ -f .env ] && rm -f .env && echo "📝 Removed embedded .env file"
+
+# 부팅 로그로 현재 DB 설정 확인
+echo "🔍 Checking Railway Variables..."
+php -r "echo 'DB_HOST='.getenv('DB_HOST').PHP_EOL;"
+php -r "echo 'DB_USERNAME='.getenv('DB_USERNAME').PHP_EOL;"
+php -r "echo 'DB_DATABASE='.getenv('DB_DATABASE').PHP_EOL;"
 
 PORT="${PORT:-8080}"
 

@@ -48,12 +48,11 @@ COPY . ./
 # 프론트 빌드 산출물 반영
 COPY --from=frontend-builder /app/public/build ./public/build
 
-# .env 파일 확실히 생성 (빌드 시점) - Railway용
-RUN cp .env.railway .env
+# .env 파일을 Docker 이미지에 포함하지 않음 (Railway Variables 우선 사용)
 
-# entrypoint 스크립트 복사 및 권한 설정
-COPY docker-entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+# start.sh 스크립트 복사 및 권한 설정
+COPY start.sh /usr/local/bin/start.sh
+RUN chmod +x /usr/local/bin/start.sh
 
 # 권한
 RUN chown -R www-data:www-data storage bootstrap/cache && chmod -R 775 storage bootstrap/cache
@@ -70,5 +69,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 CMD curl
 
 EXPOSE 80
 
-# entrypoint 스크립트 사용
-ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+# start.sh 스크립트 사용
+CMD ["/usr/local/bin/start.sh"]
