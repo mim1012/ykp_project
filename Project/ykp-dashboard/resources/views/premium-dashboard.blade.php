@@ -751,8 +751,8 @@
         }
         
         function openManagement() {
-            // 완전한 판매관리 시스템
-            window.location.href = '/test/complete-aggrid';
+            // 완전한 판매관리 시스템 (인증 경로)
+            window.location.href = '/sales/complete-aggrid';
         }
         
         function openDailyExpenses() {

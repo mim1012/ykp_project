@@ -108,6 +108,11 @@ Route::middleware(['auth', 'rbac'])->group(function () {
         return view('sales.advanced-input-enhanced');
     })->name('sales.advanced-input-enhanced');
 
+    // 완전한 판매관리 (인증 필요)
+    Route::get('/sales/complete-aggrid', function () {
+        return view('sales.complete-aggrid');
+    })->name('sales.complete-aggrid');
+
     Route::get('/sales/advanced-input-pro', function () {
         return view('sales.advanced-input-pro');
     })->name('sales.advanced-input-pro');
