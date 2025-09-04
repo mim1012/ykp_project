@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YKP ERP 대시보드 - {{ auth()->user()->name }}</title>
-    @vite(['resources/css/app.css'])
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css" rel="stylesheet">
     <style>
         /* 기존 premium-dashboard 스타일 재사용 */
         * {

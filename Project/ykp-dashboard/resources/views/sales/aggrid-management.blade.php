@@ -6,7 +6,8 @@
     <title>AgGrid 판매관리 - YKP ERP</title>
     
     <!-- TailwindCSS -->
-    @vite(['resources/css/app.css'])
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css" rel="stylesheet">
     
     <!-- AgGrid CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@34.1.1/styles/ag-grid.css">
@@ -504,6 +505,7 @@
     </script>
 
     <!-- React/AgGrid 스크립트 -->
-    @vite(['resources/css/app.css', 'resources/js/sales-aggrid.jsx'])
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css" rel="stylesheet">
 </body>
 </html>

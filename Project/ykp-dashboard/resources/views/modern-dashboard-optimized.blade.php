@@ -15,7 +15,8 @@
     </noscript>
     
     <!-- Vite CSS -->
-    @vite(['resources/css/app.css'])
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css" rel="stylesheet">
     
     <!-- Preload critical scripts -->
     <link rel="preload" href="https://cdn.jsdelivr.net/npm/chart.js" as="script">
@@ -303,7 +304,8 @@
     <!-- React App - Safe Version with Auth Check -->
     @auth
         <!-- Only load React for authenticated users -->
-        @vite(['resources/js/dashboard.jsx'])
+        <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css" rel="stylesheet">
     @else
         <!-- Guest users get static content only -->
         <script>

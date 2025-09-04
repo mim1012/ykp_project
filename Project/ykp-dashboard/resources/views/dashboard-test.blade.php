@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YKP ERP - 메인 대시보드</title>
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    @vite(['resources/css/app.css'])
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css" rel="stylesheet">
     
     <script>
         // Global CSRF Token and Test User Data
