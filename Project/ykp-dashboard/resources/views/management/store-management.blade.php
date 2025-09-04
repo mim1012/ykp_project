@@ -99,9 +99,7 @@
                 <div id="branch-select-container">
                     <label class="block text-sm font-medium text-gray-700 mb-1">지사 선택</label>
                     <select id="modal-branch-select" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="1">서울지사</option>
-                        <option value="2">경기지사</option>
-                        <option value="3">부산지사</option>
+                        <option value="">지사를 선택하세요...</option>
                     </select>
                 </div>
                 <div>
@@ -324,9 +322,7 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">소속 지사</label>
                         <select id="edit-branch-select" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="1">서울지사</option>
-                            <option value="2">경기지사</option>
-                            <option value="3">부산지사</option>
+                            <option value="">지사를 선택하세요...</option>
                         </select>
                     </div>
                 </div>
@@ -965,10 +961,35 @@
         
         // 매장 추가 모달 표시
         function showAddStoreModal() {
+            // 지사 목록을 동적으로 로드
+            loadBranchOptions('modal-branch-select');
             document.getElementById('add-store-modal').classList.remove('hidden');
             document.getElementById('modal-store-name').focus();
         }
         
+        // 지사 옵션 동적 로드 함수
+        function loadBranchOptions(selectId) {
+            const select = document.getElementById(selectId);
+            select.innerHTML = '<option value="">로딩 중...</option>';
+            
+            fetch('/test-api/branches')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        select.innerHTML = '<option value="">지사를 선택하세요...</option>';
+                        data.data.forEach(branch => {
+                            select.innerHTML += `<option value="${branch.id}">${branch.name}</option>`;
+                        });
+                    } else {
+                        select.innerHTML = '<option value="">지사 목록 로드 실패</option>';
+                    }
+                })
+                .catch(error => {
+                    console.error('지사 목록 로드 오류:', error);
+                    select.innerHTML = '<option value="">지사 목록 로드 오류</option>';
+                });
+        }
+
         // 매장 추가 모달 닫기
         function closeAddStoreModal() {
             document.getElementById('add-store-modal').classList.add('hidden');
@@ -1129,6 +1150,7 @@
                     showToast(`✅ 지사가 성공적으로 추가되었습니다!\n📧 관리자 계정: ${data.data.login_info.email}\n🔑 초기 비밀번호: ${data.data.login_info.password}`, 'success');
                     closeAddBranchModal();
                     loadBranches(); // 지사 목록 새로고침
+                    loadStores(); // 매장 목록도 새로고침 (지사 구조 변경 반영)
                 } else {
                     showToast('❌ ' + (data.message || data.error || '지사 추가 실패'), 'error');
                 }
@@ -1201,6 +1223,7 @@
                     showToast('✅ 지사 정보가 성공적으로 수정되었습니다!', 'success');
                     closeEditBranchModal();
                     loadBranches(); // 지사 목록 새로고침
+                    loadStores(); // 매장 목록도 새로고침
                 } else {
                     showToast('❌ ' + (data.message || data.error || '지사 수정 실패'), 'error');
                 }
@@ -1228,6 +1251,7 @@
                     showToast('✅ 지사가 성공적으로 삭제되었습니다!', 'success');
                     closeEditBranchModal();
                     loadBranches(); // 지사 목록 새로고침
+                    loadStores(); // 매장 목록도 새로고침
                 } else {
                     if (data.stores_count && data.stores_count > 0) {
                         showToast(`❌ 하위 매장이 ${data.stores_count}개 있어 삭제할 수 없습니다.\n매장: ${data.stores.join(', ')}\n먼저 매장을 다른 지사로 이관하거나 삭제해주세요.`, 'error');
@@ -1257,6 +1281,9 @@
             }
             
             currentEditStoreId = storeId;
+            
+            // 지사 목록을 먼저 로드
+            loadBranchOptions('edit-branch-select');
             
             // Supabase에서 매장 정보 자동 로드
             fetch(`/test-api/stores/${storeId}`)
