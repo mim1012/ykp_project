@@ -804,7 +804,6 @@ Route::get('/test-api/stores/{id}/stats', function ($id) {
         return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
     }
 });
-}
 
 // 대시보드 테스트용 (개발 환경에서만)
 if (config('app.env') !== 'production') {
@@ -827,6 +826,8 @@ if (config('app.env') !== 'production') {
 */
 
 // 중복 StoreController 라우팅 제거됨 (기존 클로저 함수 사용)
+
+} // if (config('app.env') !== 'production') 블록 닫기
 
 // API route to get current user info (for AJAX requests)
 Route::middleware('auth')->get('/api/user', [AuthController::class, 'user'])->name('api.user');
