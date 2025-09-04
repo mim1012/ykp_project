@@ -829,5 +829,29 @@ if (config('app.env') !== 'production') {
 
 } // if (config('app.env') !== 'production') 블록 닫기
 
+// 매장 계정 생성 API (누락된 라우팅 복구)
+Route::post('/test-api/stores/{id}/create-user', function (Illuminate\Http\Request $request, $id) {
+    try {
+        $store = App\Models\Store::findOrFail($id);
+        
+        $user = App\Models\User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'role' => 'store',
+            'store_id' => $store->id,
+            'branch_id' => $store->branch_id
+        ]);
+        
+        return response()->json([
+            'success' => true,
+            'data' => $user,
+            'message' => '매장 사용자 계정이 생성되었습니다.'
+        ]);
+    } catch (Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
 // API route to get current user info (for AJAX requests)
 Route::middleware('auth')->get('/api/user', [AuthController::class, 'user'])->name('api.user');
