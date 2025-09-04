@@ -141,56 +141,39 @@ class DashboardController extends Controller
     {
         try {
             $days = min($request->get('days', self::DEFAULT_TREND_DAYS), 90); // 최대 90일 제한
-            $endDate = now()->endOfDay();
-            $startDate = $endDate->copy()->subDays($days - 1)->startOfDay();
+            $endDate = now();
+            $startDate = $endDate->copy()->subDays($days - 1);
             $user = auth()->user();
-
-            $baseQuery = $this->getAuthorizedSalesQuery($user)
-                ->whereBetween('sale_date', [$startDate->toDateString(), $endDate->toDateString()]);
-
-            // 단일 쿼리로 일별 집계 (DB별 DATE() 지원)
-            $rows = (clone $baseQuery)
-                ->select([
-                    DB::raw('DATE(sale_date) as d'),
-                    DB::raw('COUNT(*) as activations'),
-                    DB::raw('COALESCE(SUM(settlement_amount),0) as sales'),
-                ])
-                ->groupBy(DB::raw('DATE(sale_date)'))
-                ->orderBy(DB::raw('DATE(sale_date)'))
-                ->get()
-                ->keyBy('d');
-
-            // 누락 날짜 0 채우기
-            $trendData = [];
-            for ($i = 0; $i < $days; $i++) {
-                $date = $startDate->copy()->addDays($i)->toDateString();
-                $row = $rows->get($date);
-                $trendData[] = [
-                    'date' => $date,
-                    'day_label' => date('j일', strtotime($date)),
-                    'sales' => $row->sales ?? 0,
-                    'activations' => $row->activations ?? 0,
-                ];
-            }
-
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'trend_data' => $trendData,
-                    'period' => [
-                        'start_date' => $startDate->toDateString(),
-                        'end_date' => $endDate->toDateString(),
-                        'days' => $days
-                    ]
-                ],
-                'timestamp' => now()->toISOString()
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Sales trend API error', [
-                'error' => $e->getMessage()
-            ]);
-            return response()->json(['success' => false, 'error' => 'Failed to load trend'], 500);
+            
+            $baseQuery = $this->getAuthorizedSalesQuery($user);
+        
+        $trendData = [];
+        
+        for ($i = 0; $i < $days; $i++) {
+            $date = $startDate->copy()->addDays($i);
+            $dailyQuery = (clone $baseQuery)->whereDate('sale_date', $date->toDateString());
+            $dailySales = $dailyQuery->sum('settlement_amount') ?? 0;
+            
+            $trendData[] = [
+                'date' => $date->toDateString(),
+                'day_label' => $date->format('j일'),
+                'sales' => $dailySales,
+                'activations' => $dailyQuery->count()
+            ];
         }
+        
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'trend_data' => $trendData,
+                'period' => [
+                    'start_date' => $startDate->toDateString(),
+                    'end_date' => $endDate->toDateString(),
+                    'days' => $days
+                ]
+            ],
+            'timestamp' => now()->toISOString()
+        ]);
     }
 
     /**
@@ -214,25 +197,18 @@ class DashboardController extends Controller
             ->orderBy('total_sales', 'desc')
             ->get();
 
-        // 통신사별 분석 (PostgreSQL 호환: 퍼센트는 PHP에서 계산)
-        $baseMonthly = Sale::whereYear('sale_date', substr($yearMonth, 0, 4))
-            ->whereMonth('sale_date', substr($yearMonth, 5, 2));
-
-        $totalMonthlyCount = (clone $baseMonthly)->count();
-
-        $carrierStats = (clone $baseMonthly)
+        // 통신사별 분석
+        $carrierStats = Sale::whereYear('sale_date', substr($yearMonth, 0, 4))
+            ->whereMonth('sale_date', substr($yearMonth, 5, 2))
             ->select([
                 'carrier',
-                DB::raw('COUNT(*) as count')
+                DB::raw('COUNT(*) as count'),
+                DB::raw('(COUNT(*) * 100.0 / (SELECT COUNT(*) FROM sales WHERE YEAR(sale_date) = ? AND MONTH(sale_date) = ?)) as percentage')
             ])
+            ->addBinding(substr($yearMonth, 0, 4))
+            ->addBinding(substr($yearMonth, 5, 2))
             ->groupBy('carrier')
-            ->get()
-            ->map(function ($row) use ($totalMonthlyCount) {
-                $row->percentage = $totalMonthlyCount > 0
-                    ? round(($row->count * 100.0) / $totalMonthlyCount, 1)
-                    : 0.0;
-                return $row;
-            });
+            ->get();
 
         return response()->json([
             'success' => true,

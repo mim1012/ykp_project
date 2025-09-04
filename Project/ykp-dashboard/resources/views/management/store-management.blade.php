@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>매장 관리 - YKP ERP</title>
-    @vite(['resources/css/app.css'])
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css" rel="stylesheet">
 </head>
 <body class="bg-gray-50">
     <!-- 헤더 -->
@@ -1458,7 +1459,7 @@
                 password: password
             };
             
-            fetch(`/api/stores/${storeId}/create-user`, {
+            fetch(`/test-api/stores/${storeId}/create-user`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

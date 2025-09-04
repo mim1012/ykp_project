@@ -5,8 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>대시보드</title>
-    @vite(['resources/css/app.css','resources/js/app.js'])
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css" rel="stylesheet">
     <style>
         * {
             margin: 0;
@@ -313,12 +314,12 @@
                 <span class="tooltip-text">사용자 관리</span>
             </div>
             <div class="sidebar-icon tooltip" onclick="openMonthlySettlement()">
-                
+                💼
                 <span class="tooltip-text">전체 통계</span>
             </div>
             <div class="sidebar-icon tooltip" onclick="openManagement()">
-                
-                <span class="tooltip-text">시스템 관리</span>
+                📋
+                <span class="tooltip-text">완전한 판매관리</span>
             </div>
             <div class="sidebar-icon tooltip" onclick="openFixedExpenses()">
                 💰
@@ -340,7 +341,7 @@
                 <span class="tooltip-text">지사 정산</span>
             </div>
             <div class="sidebar-icon tooltip" onclick="openMonthlySettlement()">
-                
+                📊
                 <span class="tooltip-text">지사 통계</span>
             </div>
             <div class="sidebar-icon tooltip" onclick="openDailyExpenses()">
@@ -751,8 +752,8 @@
         }
         
         function openManagement() {
-            // 완전한 판매관리 시스템
-            window.location.href = '/test/complete-aggrid';
+            // 완전한 판매관리 시스템 (인증 경로)
+            window.location.href = '/sales/complete-aggrid';
         }
         
         function openDailyExpenses() {

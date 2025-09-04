@@ -53,7 +53,7 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('login') }}" class="space-y-6">
+            <form method="POST" action="https://{{ request()->getHost() }}/login" class="space-y-6">
                 @csrf
                 <div>
                     <label for="email" class="block text-sm font-medium text-gray-700 mb-1">이메일 주소</label>
@@ -61,7 +61,7 @@
                         id="email" 
                         name="email" 
                         type="email" 
-                        autocomplete="email" 
+                        autocomplete="username email" 
                         required 
                         value="{{ old('email') }}"
                         class="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm @error('email') border-red-300 @enderror" 
