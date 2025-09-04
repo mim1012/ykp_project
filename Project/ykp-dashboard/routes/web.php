@@ -292,8 +292,8 @@ Route::middleware(['auth'])->get('/role-dashboard', function () {
     return view('role-based-dashboard');
 })->name('role.dashboard');
 
-// 테스트/개발용 임시 API (운영 비활성화)
-if (config('app.env') !== 'production') {
+// 매장/지사 관리 API (모든 환경에서 사용)
+// if (config('app.env') !== 'production') { // Production에서도 사용 가능하도록 주석 처리
 Route::get('/test-api/stores', function (Illuminate\Http\Request $request) {
     // 세션에서 사용자 정보 확인
     $user = auth()->user();
@@ -818,7 +818,7 @@ if (config('app.env') !== 'production') {
             ]
         ]);
     })->name('dashboard.test.noauth');
-}
+// } // Production에서도 API 사용 가능하도록 주석 처리
 
 /*
 |--------------------------------------------------------------------------
@@ -826,29 +826,7 @@ if (config('app.env') !== 'production') {
 |--------------------------------------------------------------------------
 */
 
-// 매장별 사용자 생성 API
-Route::post('/test-api/stores/{id}/create-user', function (Illuminate\Http\Request $request, $id) {
-    try {
-        $store = App\Models\Store::findOrFail($id);
-        
-        $user = App\Models\User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => 'store',
-            'store_id' => $store->id,
-            'branch_id' => $store->branch_id
-        ]);
-        
-        return response()->json([
-            'success' => true,
-            'data' => $user,
-            'message' => '매장 사용자 계정이 생성되었습니다.'
-        ]);
-    } catch (Exception $e) {
-        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
-    }
-});
+// 중복 StoreController 라우팅 제거됨 (기존 클로저 함수 사용)
 
 // API route to get current user info (for AJAX requests)
 Route::middleware('auth')->get('/api/user', [AuthController::class, 'user'])->name('api.user');
