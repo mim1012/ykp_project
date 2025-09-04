@@ -1038,24 +1038,41 @@
         }
         
         // 지사/본사용: 간단한 매장 추가
-        function addStore() {
+        async function addStore() {
             const name = prompt('매장명을 입력하세요 (예: 강남점):');
             if (!name) return;
             
             let branchId;
             if (window.userData.role === 'headquarters') {
-                const branchName = prompt('지사명을 입력하세요 (서울지점/경기지점/인천지점/부산지점/대구지점):');
+                const branchName = prompt('지사명을 입력하세요:');
                 if (!branchName) return;
                 
-                // 지사명으로 ID 찾기 (간단한 매핑)
-                const branchMap = {
-                    '서울지점': 1, '서울': 1,
-                    '경기지점': 2, '경기': 2,
-                    '인천지점': 3, '인천': 3,
-                    '부산지점': 4, '부산': 4,
-                    '대구지점': 5, '대구': 5
-                };
-                branchId = branchMap[branchName] || 1;
+                // API에서 지사 목록을 가져와서 동적으로 ID 찾기
+                try {
+                    const branchResponse = await fetch('/test-api/branches');
+                    const branchData = await branchResponse.json();
+                    
+                    if (branchData.success) {
+                        const branch = branchData.data.find(b => 
+                            b.name.includes(branchName) || branchName.includes(b.name)
+                        );
+                        branchId = branch ? branch.id : null;
+                        
+                        if (!branchId) {
+                            alert(`❌ "${branchName}" 지사를 찾을 수 없습니다.\n\n등록된 지사 목록:\n${branchData.data.map(b => `• ${b.name}`).join('\n')}`);
+                            return;
+                        }
+                        
+                        console.log(`✅ 지사 매핑 완료: ${branchName} → ID ${branchId}`);
+                    } else {
+                        alert('지사 목록을 불러올 수 없습니다.');
+                        return;
+                    }
+                } catch (error) {
+                    console.error('지사 검색 오류:', error);
+                    alert('지사 검색 중 오류가 발생했습니다.');
+                    return;
+                }
                 
             } else {
                 // 지사는 자기 지사로 자동 설정
