@@ -829,7 +829,7 @@ if (config('app.env') !== 'production') {
 
 } // if (config('app.env') !== 'production') 블록 닫기
 
-// 매장 계정 생성 API (누락된 라우팅 복구)
+// 매장 계정 생성 API
 Route::post('/test-api/stores/{id}/create-user', function (Illuminate\Http\Request $request, $id) {
     try {
         $store = App\Models\Store::findOrFail($id);
@@ -847,6 +847,82 @@ Route::post('/test-api/stores/{id}/create-user', function (Illuminate\Http\Reque
             'success' => true,
             'data' => $user,
             'message' => '매장 사용자 계정이 생성되었습니다.'
+        ]);
+    } catch (Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+// 매장 삭제 API
+Route::delete('/test-api/stores/{id}', function ($id) {
+    try {
+        $store = App\Models\Store::findOrFail($id);
+        
+        // 매장 사용자들도 함께 삭제
+        App\Models\User::where('store_id', $id)->delete();
+        
+        // 매장 삭제
+        $store->delete();
+        
+        return response()->json([
+            'success' => true,
+            'message' => '매장이 삭제되었습니다.'
+        ]);
+    } catch (Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+// 지사 계정 생성 API
+Route::post('/test-api/branches/{id}/create-user', function (Illuminate\Http\Request $request, $id) {
+    try {
+        $branch = App\Models\Branch::findOrFail($id);
+        
+        $user = App\Models\User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'role' => 'branch',
+            'store_id' => null,
+            'branch_id' => $branch->id
+        ]);
+        
+        return response()->json([
+            'success' => true,
+            'data' => $user,
+            'message' => '지사 관리자 계정이 생성되었습니다.'
+        ]);
+    } catch (Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+// 사용자 삭제 API
+Route::delete('/test-api/users/{id}', function ($id) {
+    try {
+        $currentUser = auth()->user();
+        $targetUser = App\Models\User::findOrFail($id);
+        
+        // 권한 검증: 본사만 모든 계정 삭제 가능, 지사는 소속 매장 계정만
+        if ($currentUser->role === 'headquarters') {
+            // 본사는 모든 계정 삭제 가능 (단, 자기 자신 제외)
+            if ($currentUser->id === $targetUser->id) {
+                return response()->json(['success' => false, 'error' => '본인 계정은 삭제할 수 없습니다.'], 403);
+            }
+        } elseif ($currentUser->role === 'branch') {
+            // 지사는 자신의 소속 매장 계정만 삭제 가능
+            if ($targetUser->branch_id !== $currentUser->branch_id || $targetUser->role !== 'store') {
+                return response()->json(['success' => false, 'error' => '권한이 없습니다.'], 403);
+            }
+        } else {
+            return response()->json(['success' => false, 'error' => '권한이 없습니다.'], 403);
+        }
+        
+        $targetUser->delete();
+        
+        return response()->json([
+            'success' => true,
+            'message' => '사용자 계정이 삭제되었습니다.'
         ]);
     } catch (Exception $e) {
         return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
