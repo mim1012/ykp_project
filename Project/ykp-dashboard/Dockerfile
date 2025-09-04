@@ -58,8 +58,12 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 # 권한
 RUN chown -R www-data:www-data storage bootstrap/cache && chmod -R 775 storage bootstrap/cache
 
-# 오토로드 최적화(설치된 vendor 기준)
-RUN composer dump-autoload -o
+# 오토로드 최적화 및 Laravel 캐시 클리어
+RUN composer dump-autoload -o && \
+    php artisan config:clear && \
+    php artisan cache:clear && \
+    php artisan route:clear && \
+    php artisan view:clear
 
 # 헬스체크(정적 엔드포인트)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 CMD curl -fsS http://localhost/healthz.php || exit 1
