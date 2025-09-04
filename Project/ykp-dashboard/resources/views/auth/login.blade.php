@@ -63,9 +63,9 @@
                         type="email" 
                         autocomplete="username email" 
                         required 
-                        value="{{ old('email', 'hq@ykp.com') }}"
+                        value="{{ old('email') }}"
                         class="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm @error('email') border-red-300 @enderror" 
-                        placeholder="hq@ykp.com (본사 관리자)"
+                        placeholder="이메일을 입력하세요"
                     >
                 </div>
 
@@ -78,7 +78,7 @@
                         autocomplete="current-password" 
                         required 
                         class="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm @error('password') border-red-300 @enderror" 
-                        placeholder="password (본사 관리자 비밀번호)"
+                        placeholder="비밀번호를 입력하세요"
                     >
                 </div>
 
