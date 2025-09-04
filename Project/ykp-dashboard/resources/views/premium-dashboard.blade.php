@@ -313,12 +313,12 @@
                 <span class="tooltip-text">사용자 관리</span>
             </div>
             <div class="sidebar-icon tooltip" onclick="openMonthlySettlement()">
-                
+                💼
                 <span class="tooltip-text">전체 통계</span>
             </div>
             <div class="sidebar-icon tooltip" onclick="openManagement()">
-                
-                <span class="tooltip-text">시스템 관리</span>
+                📋
+                <span class="tooltip-text">완전한 판매관리</span>
             </div>
             <div class="sidebar-icon tooltip" onclick="openFixedExpenses()">
                 💰
@@ -340,7 +340,7 @@
                 <span class="tooltip-text">지사 정산</span>
             </div>
             <div class="sidebar-icon tooltip" onclick="openMonthlySettlement()">
-                
+                📊
                 <span class="tooltip-text">지사 통계</span>
             </div>
             <div class="sidebar-icon tooltip" onclick="openDailyExpenses()">
