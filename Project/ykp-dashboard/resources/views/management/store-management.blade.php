@@ -1459,7 +1459,7 @@
                 password: password
             };
             
-            fetch(`/api/stores/${storeId}/create-user`, {
+            fetch(`/test-api/stores/${storeId}/create-user`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
