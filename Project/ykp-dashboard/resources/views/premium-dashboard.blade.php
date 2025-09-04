@@ -309,10 +309,6 @@
                 🏪
                 <span class="tooltip-text">매장 관리</span>
             </div>
-            <div class="sidebar-icon tooltip" onclick="openAdmin()">
-                👥
-                <span class="tooltip-text">사용자 관리</span>
-            </div>
             <div class="sidebar-icon tooltip" onclick="openMonthlySettlement()">
                 💼
                 <span class="tooltip-text">전체 통계</span>
@@ -321,14 +317,6 @@
                 📋
                 <span class="tooltip-text">완전한 판매관리</span>
             </div>
-            <div class="sidebar-icon tooltip" onclick="openFixedExpenses()">
-                💰
-                <span class="tooltip-text">재무 관리</span>
-            </div>
-            <div class="sidebar-icon tooltip" onclick="openAdmin()">
-                ⚙️
-                <span class="tooltip-text">시스템 설정</span>
-            </div>
 
         @elseif(auth()->user()->role === 'branch')
             <!-- 지사 전용 메뉴 -->
@@ -336,36 +324,16 @@
                 🏪
                 <span class="tooltip-text">소속 매장 관리</span>
             </div>
-            <div class="sidebar-icon tooltip" onclick="openSettlement()">
-                💼
-                <span class="tooltip-text">지사 정산</span>
-            </div>
-            <div class="sidebar-icon tooltip" onclick="openMonthlySettlement()">
-                📊
-                <span class="tooltip-text">지사 통계</span>
-            </div>
-            <div class="sidebar-icon tooltip" onclick="openDailyExpenses()">
-                💳
-                <span class="tooltip-text">지사 지출</span>
+            <div class="sidebar-icon tooltip" onclick="openManagement()">
+                📋
+                <span class="tooltip-text">완전한 판매관리</span>
             </div>
 
         @elseif(auth()->user()->role === 'store')
             <!-- 매장 전용 메뉴 -->
-            <div class="sidebar-icon tooltip" onclick="openSimpleInput()">
-                
+            <div class="sidebar-icon tooltip" onclick="openManagement()">
+                📋
                 <span class="tooltip-text">개통표 입력</span>
-            </div>
-            <div class="sidebar-icon tooltip" onclick="openSettlement()">
-                💼
-                <span class="tooltip-text">매장 정산</span>
-            </div>
-            <div class="sidebar-icon tooltip" onclick="openMonthlySettlement()">
-                
-                <span class="tooltip-text">매장 통계</span>
-            </div>
-            <div class="sidebar-icon tooltip" onclick="openDailyExpenses()">
-                💳
-                <span class="tooltip-text">매장 지출</span>
             </div>
 
         @else
