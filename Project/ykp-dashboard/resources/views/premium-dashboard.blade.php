@@ -317,6 +317,10 @@
                 📋
                 <span class="tooltip-text">완전한 판매관리</span>
             </div>
+            <div class="sidebar-icon tooltip" onclick="openAccountManagement()">
+                👥
+                <span class="tooltip-text">계정 관리</span>
+            </div>
 
         @elseif(auth()->user()->role === 'branch')
             <!-- 지사 전용 메뉴 -->
@@ -722,6 +726,11 @@
         function openManagement() {
             // 완전한 판매관리 시스템 (인증 경로)
             window.location.href = '/sales/complete-aggrid';
+        }
+        
+        function openAccountManagement() {
+            // 본사 전용 계정 관리 페이지
+            window.location.href = '/admin/accounts';
         }
         
         function openDailyExpenses() {

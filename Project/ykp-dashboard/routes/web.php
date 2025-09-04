@@ -929,5 +929,110 @@ Route::delete('/test-api/users/{id}', function ($id) {
     }
 });
 
+// 본사 전용 계정 관리 API
+Route::get('/test-api/accounts/all', function () {
+    $user = auth()->user();
+    
+    // 본사 관리자만 접근 가능
+    if ($user->role !== 'headquarters') {
+        return response()->json(['success' => false, 'error' => '권한이 없습니다.'], 403);
+    }
+    
+    $accounts = App\Models\User::with(['store', 'branch'])
+        ->orderBy('role')
+        ->orderBy('created_at')
+        ->get()
+        ->map(function($account) {
+            return [
+                'id' => $account->id,
+                'name' => $account->name,
+                'email' => $account->email,
+                'role' => $account->role,
+                'store_id' => $account->store_id,
+                'branch_id' => $account->branch_id,
+                'status' => $account->status ?? 'active',
+                'created_at' => $account->created_at ? $account->created_at->format('Y-m-d H:i') : null,
+                'store_name' => $account->store->name ?? null,
+                'branch_name' => $account->branch->name ?? null
+            ];
+        });
+    
+    return response()->json(['success' => true, 'data' => $accounts]);
+});
+
+// 비밀번호 리셋 API
+Route::post('/test-api/users/{id}/reset-password', function (Illuminate\Http\Request $request, $id) {
+    $user = auth()->user();
+    
+    // 본사 관리자만 접근 가능
+    if ($user->role !== 'headquarters') {
+        return response()->json(['success' => false, 'error' => '권한이 없습니다.'], 403);
+    }
+    
+    try {
+        $targetUser = App\Models\User::findOrFail($id);
+        
+        // 본인 계정 리셋 방지
+        if ($user->id === $targetUser->id) {
+            return response()->json(['success' => false, 'error' => '본인 계정은 리셋할 수 없습니다.'], 403);
+        }
+        
+        $targetUser->update([
+            'password' => Hash::make($request->password)
+        ]);
+        
+        return response()->json([
+            'success' => true,
+            'user' => $targetUser,
+            'message' => '비밀번호가 성공적으로 리셋되었습니다.'
+        ]);
+    } catch (Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+// 계정 활성/비활성화 API
+Route::post('/test-api/users/{id}/toggle-status', function (Illuminate\Http\Request $request, $id) {
+    $user = auth()->user();
+    
+    // 본사 관리자만 접근 가능
+    if ($user->role !== 'headquarters') {
+        return response()->json(['success' => false, 'error' => '권한이 없습니다.'], 403);
+    }
+    
+    try {
+        $targetUser = App\Models\User::findOrFail($id);
+        
+        // 본인 계정 상태 변경 방지
+        if ($user->id === $targetUser->id) {
+            return response()->json(['success' => false, 'error' => '본인 계정은 변경할 수 없습니다.'], 403);
+        }
+        
+        $targetUser->update([
+            'status' => $request->status
+        ]);
+        
+        return response()->json([
+            'success' => true,
+            'user' => $targetUser,
+            'message' => '계정 상태가 변경되었습니다.'
+        ]);
+    } catch (Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+// 본사 전용 계정 관리 페이지
+Route::middleware(['auth'])->get('/admin/accounts', function () {
+    $user = auth()->user();
+    
+    // 본사 관리자만 접근 가능
+    if ($user->role !== 'headquarters') {
+        abort(403, '본사 관리자만 접근할 수 있습니다.');
+    }
+    
+    return view('admin.account-management');
+})->name('admin.accounts');
+
 // API route to get current user info (for AJAX requests)
 Route::middleware('auth')->get('/api/user', [AuthController::class, 'user'])->name('api.user');
