@@ -20,14 +20,14 @@ try {
     
     echo "<p>✅ Supabase 연결 성공</p>";
     
-    // sessions 테이블 생성 SQL
+    // sessions 테이블 생성 SQL (PostgreSQL 호환)
     $createSessionsTable = "
     CREATE TABLE IF NOT EXISTS sessions (
         id VARCHAR(255) NOT NULL PRIMARY KEY,
         user_id BIGINT NULL,
         ip_address VARCHAR(45) NULL,
         user_agent TEXT NULL,
-        payload LONGTEXT NOT NULL,
+        payload TEXT NOT NULL,
         last_activity INT NOT NULL
     );
     
@@ -39,11 +39,11 @@ try {
     $pdo->exec($createSessionsTable);
     echo "<p>✅ sessions 테이블 생성 완료</p>";
     
-    // cache 테이블도 생성
+    // cache 테이블도 생성 (PostgreSQL 호환)
     $createCacheTable = "
     CREATE TABLE IF NOT EXISTS cache (
         key VARCHAR(255) NOT NULL PRIMARY KEY,
-        value MEDIUMTEXT NOT NULL,
+        value TEXT NOT NULL,
         expiration INT NOT NULL
     );
     
