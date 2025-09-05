@@ -597,9 +597,11 @@
                 });
         }
         
-        // 본사용: 지사별 트리 구조 표시 (모든 지사 포함)
+        // 본사용: 지사별 트리 구조 표시 (간소화된 버전)
         function renderStoreTreeView(stores) {
-            // 지사별로 매장 그룹화 (기존 방식으로 복원)
+            console.log('매장 렌더링 시작:', stores.length, '개');
+            
+            // 지사별로 매장 그룹화
             const storesByBranch = {};
             stores.forEach(store => {
                 const branchName = store.branch?.name || '미배정';
@@ -609,63 +611,78 @@
                 storesByBranch[branchName].push(store);
             });
             
+            console.log('지사별 그룹화 완료:', Object.keys(storesByBranch));
+            
             let html = '<div class="space-y-4">';
             
-            Object.entries(storesByBranch).forEach(([branchName, branchStores]) => {
-                html += `
-                    <div class="border border-gray-200 rounded-lg">
-                        <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
-                            <div class="flex justify-between items-center">
-                                <h3 class="text-lg font-medium text-gray-900">
-                                    🏢 ${branchName} (${branchStores.length}개 매장)
-                                </h3>
-                                <button onclick="addStoreForBranch(${branchStores[0]?.branch_id || 1})" 
-                                        class="text-sm bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600">
-                                    ➕ ${branchName} 매장 추가
-                                </button>
+            try {
+                Object.entries(storesByBranch).forEach(([branchName, branchStores]) => {
+                    html += `
+                        <div class="border border-gray-200 rounded-lg">
+                            <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                                <div class="flex justify-between items-center">
+                                    <h3 class="text-lg font-medium text-gray-900">
+                                        🏢 ${branchName} (${branchStores.length}개 매장)
+                                    </h3>
+                                    <button onclick="addStoreForBranch(${branchStores[0]?.branch_id || 1})" 
+                                            class="text-sm bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600">
+                                        ➕ ${branchName} 매장 추가
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                        <div class="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div class="p-4">
+                    `;
+                    
+                    if (branchStores.length > 0) {
+                        html += '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">';
+                        branchStores.forEach(store => {
+                            html += `
+                                <div class="bg-white border border-gray-200 rounded-lg p-4">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <h4 class="text-base font-medium text-gray-900">${store.name}</h4>
+                                        <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">운영중</span>
+                                    </div>
+                                    <div class="space-y-1 text-sm text-gray-500">
+                                        <div>👤 점주: ${store.owner_name || '미등록'}</div>
+                                        <div>📞 연락처: ${store.phone || store.contact_number || '-'}</div>
+                                    </div>
+                                    <div class="mt-3 flex space-x-1">
+                                        <button onclick="editStore(${store.id})" 
+                                                class="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600">
+                                            수정
+                                        </button>
+                                        <button onclick="createUserForStore(${store.id})" 
+                                                class="text-xs bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600">
+                                            계정생성
+                                        </button>
+                                        <button onclick="viewStoreStats(${store.id})" 
+                                                class="text-xs bg-purple-500 text-white px-2 py-1 rounded hover:bg-purple-600">
+                                            성과보기
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        html += '</div>';
+                    } else {
+                        html += '<div class="text-center text-gray-500 py-8"><div class="text-4xl mb-2">🏪</div><p>이 지사에는 매장이 없습니다.</p></div>';
+                    }
+                    
+                    html += '</div></div>'; // 지사 블록 닫기
+                });
+                
+                html += '</div>';
+                document.getElementById('stores-grid').innerHTML = html;
+                console.log('매장 렌더링 완료');
+                
+            } catch (error) {
+                console.error('렌더링 오류:', error);
+                document.getElementById('stores-grid').innerHTML = `
+                    <div class="p-4 text-center text-red-500">
+                        ❌ 매장 목록을 표시할 수 없습니다: ${error.message}
+                    </div>
                 `;
-                
-                if (branchStores.length > 0) {
-                    branchStores.forEach(store => {
-                        html += `
-                            <div class="bg-white border border-gray-200 rounded-lg p-4">
-                                <div class="flex justify-between items-start mb-2">
-                                    <h4 class="text-base font-medium text-gray-900">${store.name}</h4>
-                                    <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">운영중</span>
-                                </div>
-                                <div class="space-y-1 text-sm text-gray-500">
-                                    <div>👤 점주: ${store.owner_name || '김사장'}</div>
-                                    <div>📞 연락처: ${store.phone || store.contact_number || '010-1111-1111'}</div>
-                                </div>
-                                <div class="mt-3 flex space-x-1">
-                                    <button onclick="editStore(${store.id})" 
-                                            class="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600">
-                                        수정
-                                    </button>
-                                    <button onclick="createUserForStore(${store.id})" 
-                                            class="text-xs bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600">
-                                        계정생성
-                                    </button>
-                                    <button onclick="viewStoreStats(${store.id})" 
-                                            class="text-xs bg-purple-500 text-white px-2 py-1 rounded hover:bg-purple-600">
-                                        성과보기
-                                    </button>
-                                </div>
-                            </div>
-                        `;
-                    });
-                } else {
-                    html += '<div class="text-center text-gray-500 py-4">이 지사에는 매장이 없습니다.</div>';
-                }
-                
-                html += '</div></div>';
-            });
-            
-            html += '</div>';
-            document.getElementById('stores-grid').innerHTML = html;
+            }
         }
                             <div class="flex justify-between items-center">
                                 <h3 class="text-lg font-medium text-gray-900">
