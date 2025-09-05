@@ -775,18 +775,9 @@
         
         // 로그아웃 함수
         function logout() {
-            if (confirm('로그아웃 하시겠습니까?')) {
-                fetch('/logout', {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
-                    }
-                }).then(() => {
-                    window.location.href = '/';
-                }).catch(() => {
-                    // CSRF 문제 시 직접 이동
-                    window.location.href = '/';
-                });
+            if (confirm('로그아웃 하시겠습니까?\n\n완전한 로그아웃을 위해 세션을 초기화합니다.')) {
+                // 강제 로그아웃 페이지로 이동 (세션 완전 초기화)
+                window.location.href = '/force-logout.php';
             }
         }
 
