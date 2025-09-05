@@ -60,32 +60,122 @@
             loadStoresGrouped();
         });
 
-        // 지사별 매장 목록 로드
+        // 지사별 매장 목록 로드 (모든 지사 표시)
         function loadStoresGrouped() {
             console.log('매장 목록 로딩 시작...');
             
-            fetch('/test-api/stores')
-                .then(response => {
-                    console.log('매장 API 응답:', response.status);
-                    return response.json();
-                })
-                .then(data => {
-                    console.log('매장 데이터:', data);
-                    
-                    if (data.success && data.data) {
-                        renderStoresByBranch(data.data);
-                        updateStoreStatistics(data.data);
-                    } else {
-                        showError('매장 목록을 불러올 수 없습니다.');
-                    }
-                })
-                .catch(error => {
-                    console.error('매장 로딩 오류:', error);
-                    showError('매장 목록 로드 중 오류가 발생했습니다.');
-                });
+            // 지사와 매장 데이터를 동시에 로드
+            Promise.all([
+                fetch('/test-api/branches').then(r => r.json()),
+                fetch('/test-api/stores').then(r => r.json())
+            ])
+            .then(([branchData, storeData]) => {
+                console.log('지사 데이터:', branchData.data?.length, '개');
+                console.log('매장 데이터:', storeData.data?.length, '개');
+                
+                if (branchData.success && storeData.success) {
+                    renderAllBranchesWithStores(branchData.data, storeData.data);
+                    updateStoreStatistics(storeData.data);
+                } else {
+                    showError('지사 또는 매장 목록을 불러올 수 없습니다.');
+                }
+            })
+            .catch(error => {
+                console.error('데이터 로딩 오류:', error);
+                showError('데이터 로드 중 오류가 발생했습니다.');
+            });
         }
 
-        // 지사별 매장 렌더링
+        // 모든 지사와 매장 렌더링 (누락 지사 해결)
+        function renderAllBranchesWithStores(allBranches, allStores) {
+            const container = document.getElementById('stores-container');
+            
+            console.log('모든 지사 렌더링 시작:', allBranches.length, '개');
+            
+            let html = '<div class="space-y-6">';
+            
+            // 모든 지사를 순회 (매장이 없어도 표시)
+            allBranches.forEach(branch => {
+                const branchStores = allStores.filter(store => store.branch_id === branch.id);
+                
+                html += `
+                    <div class="bg-white rounded-lg shadow">
+                        <div class="px-6 py-4 border-b border-gray-200 ${branchStores.length > 0 ? 'bg-blue-50' : 'bg-gray-50'}">
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-lg font-medium text-gray-900">
+                                    🏢 ${branch.name} (${branchStores.length}개 매장)
+                                </h3>
+                                <div class="flex space-x-2">
+                                    <button onclick="addStoreForBranch('${branch.name}')" 
+                                            class="bg-green-500 text-white px-3 py-1 text-sm rounded hover:bg-green-600">
+                                        ➕ 매장 추가
+                                    </button>
+                                    <span class="text-xs text-gray-500">ID: ${branch.id}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-6">
+                `;
+                
+                if (branchStores.length > 0) {
+                    html += '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">';
+                    
+                    branchStores.forEach(store => {
+                        html += `
+                            <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                                <div class="flex justify-between items-start mb-3">
+                                    <h4 class="text-base font-semibold text-gray-900">${store.name}</h4>
+                                    <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">운영중</span>
+                                </div>
+                                <div class="space-y-2 text-sm text-gray-600">
+                                    <div>👤 <strong>점주:</strong> ${store.owner_name || store.manager_name || '미등록'}</div>
+                                    <div>📞 <strong>연락처:</strong> ${store.phone || store.contact_number || '-'}</div>
+                                    <div>🏷️ <strong>코드:</strong> ${store.code || '-'}</div>
+                                </div>
+                                <div class="mt-4 flex space-x-2">
+                                    <button onclick="editStore(${store.id})" 
+                                            class="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600">
+                                        ✏️ 수정
+                                    </button>
+                                    <button onclick="createAccount(${store.id})" 
+                                            class="text-xs bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600">
+                                        👤 계정생성
+                                    </button>
+                                    <button onclick="viewStats(${store.id})" 
+                                            class="text-xs bg-purple-500 text-white px-2 py-1 rounded hover:bg-purple-600">
+                                        📊 성과
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    
+                    html += '</div>'; // grid 닫기
+                } else {
+                    // 매장이 없는 경우
+                    html += `
+                        <div class="text-center text-gray-500 py-12">
+                            <div class="text-5xl mb-3">🏪</div>
+                            <h4 class="text-lg font-medium text-gray-700 mb-2">등록된 매장이 없습니다</h4>
+                            <p class="text-sm text-gray-500 mb-4">이 지사에 새 매장을 추가해보세요</p>
+                            <button onclick="addStoreForBranch('${branch.name}')" 
+                                    class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                                ➕ 첫 번째 매장 추가
+                            </button>
+                        </div>
+                    `;
+                }
+                
+                html += '</div></div>'; // p-6, bg-white 닫기
+            });
+            
+            html += '</div>'; // space-y-6 닫기
+            
+            container.innerHTML = html;
+            console.log('모든 지사 렌더링 완료:', allBranches.length, '개');
+        }
+
+        // 기존 지사별 매장 렌더링 (백업용)
         function renderStoresByBranch(stores) {
             const container = document.getElementById('stores-container');
             
