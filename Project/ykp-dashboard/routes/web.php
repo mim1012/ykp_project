@@ -78,7 +78,7 @@ Route::middleware(['auth', 'rbac'])->group(function () {
         if (!in_array($userRole, ['headquarters', 'branch'])) {
             abort(403, '본사 또는 지사 관리자만 접근 가능합니다.');
         }
-        return view('management.store-management-simple'); // 간단한 버전으로 변경
+        return view('management.store-management'); // 기존 작동하던 버전으로 복귀
     })->name('management.stores');
     
     // 별도 지사 관리 페이지
