@@ -598,127 +598,75 @@
         }
         
         // 본사용: 지사별 트리 구조 표시 (모든 지사 포함)
-        async function renderStoreTreeView(stores) {
-            try {
-                // 모든 지사 목록을 먼저 가져오기
-                const branchResponse = await fetch('/test-api/branches');
-                const branchData = await branchResponse.json();
-                
-                if (!branchData.success) {
-                    throw new Error('지사 목록을 불러올 수 없습니다.');
+        function renderStoreTreeView(stores) {
+            // 지사별로 매장 그룹화 (기존 방식으로 복원)
+            const storesByBranch = {};
+            stores.forEach(store => {
+                const branchName = store.branch?.name || '미배정';
+                if (!storesByBranch[branchName]) {
+                    storesByBranch[branchName] = [];
                 }
-                
-                const allBranches = branchData.data;
-                let html = '<div class="space-y-4">';
-                
-                // 모든 지사를 순회하면서 해당 지사의 매장들 표시
-                allBranches.forEach(branch => {
-                    const branchStores = stores.filter(store => store.branch_id === branch.id);
-                    
-                    html += `
-                        <div class="border border-gray-200 rounded-lg">
-                            <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
-                                <div class="flex justify-between items-center">
-                                    <h3 class="text-lg font-medium text-gray-900">
-                                        🏢 ${branch.name} (${branchStores.length}개 매장)
-                                    </h3>
-                                    <button onclick="addStoreForBranch(${branch.id})" 
-                                            class="text-sm bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600">
-                                        ➕ ${branch.name} 매장 추가
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="p-4">
-                    `;
-                    
-                    if (branchStores.length > 0) {
-                        // 매장이 있는 경우
-                        const maxVisible = 6; // 최대 6개까지 표시
-                        const visibleStores = branchStores.slice(0, maxVisible);
-                        const hasMore = branchStores.length > maxVisible;
-                        
-                        html += '<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="branch-stores-' + branch.id + '">';
-                        
-                        visibleStores.forEach(store => {
-                            html += `
-                                <div class="bg-white border border-gray-200 rounded-lg p-4">
-                                    <div class="flex justify-between items-start mb-2">
-                                        <h4 class="text-base font-medium text-gray-900">${store.name}</h4>
-                                        <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">${store.status || '운영중'}</span>
-                                    </div>
-                                    <div class="space-y-1 text-sm text-gray-500">
-                                        <div>👤 점주: ${store.owner_name || store.manager_name || '미등록'}</div>
-                                        <div>📞 연락처: ${store.phone || store.contact_number || '-'}</div>
-                                    </div>
-                                    <div class="mt-3 flex space-x-1">
-                                        <button onclick="editStore(${store.id})" 
-                                                class="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600">
-                                            수정
-                                        </button>
-                                        <button onclick="createUserForStore(${store.id})" 
-                                                class="text-xs bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600">
-                                            계정생성
-                                        </button>
-                                        <button onclick="viewStoreStats(${store.id})" 
-                                                class="text-xs bg-purple-500 text-white px-2 py-1 rounded hover:bg-purple-600">
-                                            성과보기
-                                        </button>
-                                    </div>
-                                </div>
-                            `;
-                        });
-                        
-                        html += '</div>'; // grid 닫기
-                        
-                        // 6개 초과 시 페이지네이션 버튼 추가
-                        if (hasMore) {
-                            html += `
-                                <div class="flex justify-between items-center mt-4 pt-4 border-t border-gray-200">
-                                    <button onclick="showPrevStores(${branch.id})" 
-                                            class="text-sm bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600" 
-                                            style="display: none;" id="prev-btn-${branch.id}">
-                                        ← 이전 매장
-                                    </button>
-                                    <span class="text-sm text-gray-500" id="page-info-${branch.id}">
-                                        1-${Math.min(6, branchStores.length)} / ${branchStores.length}개 매장
-                                    </span>
-                                    <button onclick="showNextStores(${branch.id})" 
-                                            class="text-sm bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600" 
-                                            id="next-btn-${branch.id}">
-                                        다음 매장 →
-                                    </button>
-                                </div>
-                            `;
-                        }
-                    } else {
-                        // 매장이 없는 경우
-                        html += `
-                            <div class="text-center text-gray-500 py-8">
-                                <div class="text-4xl mb-2">🏪</div>
-                                <p class="text-lg font-medium">등록된 매장이 없습니다</p>
-                                <p class="text-sm text-gray-400 mt-1">새 매장을 추가해보세요</p>
-                            </div>
-                        `;
-                    }
-                    
-                    html += '</div></div>'; // 지사 블록 닫기
-                });
-                
-                html += '</div>'; // 전체 div 닫기
-                document.getElementById('stores-grid').innerHTML = html;
-                
-            } catch (error) {
-                console.error('지사별 트리뷰 렌더링 오류:', error);
-                document.getElementById('stores-grid').innerHTML = `
-                    <div class="p-4 text-center text-red-500">
-                        ❌ 매장 목록을 표시할 수 없습니다.
-                    </div>
-                `;
-            }
-        }
+                storesByBranch[branchName].push(store);
+            });
+            
+            let html = '<div class="space-y-4">';
+            
+            Object.entries(storesByBranch).forEach(([branchName, branchStores]) => {
                 html += `
                     <div class="border border-gray-200 rounded-lg">
                         <div class="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-lg font-medium text-gray-900">
+                                    🏢 ${branchName} (${branchStores.length}개 매장)
+                                </h3>
+                                <button onclick="addStoreForBranch(${branchStores[0]?.branch_id || 1})" 
+                                        class="text-sm bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600">
+                                    ➕ ${branchName} 매장 추가
+                                </button>
+                            </div>
+                        </div>
+                        <div class="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                `;
+                
+                if (branchStores.length > 0) {
+                    branchStores.forEach(store => {
+                        html += `
+                            <div class="bg-white border border-gray-200 rounded-lg p-4">
+                                <div class="flex justify-between items-start mb-2">
+                                    <h4 class="text-base font-medium text-gray-900">${store.name}</h4>
+                                    <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">운영중</span>
+                                </div>
+                                <div class="space-y-1 text-sm text-gray-500">
+                                    <div>👤 점주: ${store.owner_name || '김사장'}</div>
+                                    <div>📞 연락처: ${store.phone || store.contact_number || '010-1111-1111'}</div>
+                                </div>
+                                <div class="mt-3 flex space-x-1">
+                                    <button onclick="editStore(${store.id})" 
+                                            class="text-xs bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600">
+                                        수정
+                                    </button>
+                                    <button onclick="createUserForStore(${store.id})" 
+                                            class="text-xs bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600">
+                                        계정생성
+                                    </button>
+                                    <button onclick="viewStoreStats(${store.id})" 
+                                            class="text-xs bg-purple-500 text-white px-2 py-1 rounded hover:bg-purple-600">
+                                        성과보기
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    html += '<div class="text-center text-gray-500 py-4">이 지사에는 매장이 없습니다.</div>';
+                }
+                
+                html += '</div></div>';
+            });
+            
+            html += '</div>';
+            document.getElementById('stores-grid').innerHTML = html;
+        }
                             <div class="flex justify-between items-center">
                                 <h3 class="text-lg font-medium text-gray-900">
                                     🏢 ${branchName} (${branchStores.length}개 매장)
