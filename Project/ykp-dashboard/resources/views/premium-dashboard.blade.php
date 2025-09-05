@@ -301,7 +301,7 @@
 
         @if(auth()->user()->role === 'headquarters')
             <!-- 본사 전용 메뉴 -->
-            <div class="sidebar-icon tooltip" onclick="openStoreManagement()">
+            <div class="sidebar-icon tooltip" onclick="openBranchManagement()">
                 🏢
                 <span class="tooltip-text">지사 관리</span>
             </div>
@@ -763,6 +763,11 @@
             window.location.href = '/management/stores';
         }
         
+        function openBranchManagement() {
+            // 지사 관리 (본사 전용)
+            window.location.href = '/management/branches';
+        }
+        
         function openAdmin() {
             // 관리자 패널
             window.location.href = '/admin';
@@ -878,9 +883,9 @@
         async function loadSystemStatus() {
             try {
                 const [usersRes, storesRes, salesRes, branchesRes] = await Promise.all([
-                    fetch('/api/users/count'),
-                    fetch('/api/stores/count'),  
-                    fetch('/api/sales/count'),
+                    fetch('/test-api/users/count'),
+                    fetch('/test-api/stores/count'),  
+                    fetch('/test-api/sales/count'),
                     fetch('/test-api/branches')
                 ]);
                 

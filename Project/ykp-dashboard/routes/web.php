@@ -78,8 +78,17 @@ Route::middleware(['auth', 'rbac'])->group(function () {
         if (!in_array($userRole, ['headquarters', 'branch'])) {
             abort(403, '본사 또는 지사 관리자만 접근 가능합니다.');
         }
-        return view('management.store-management');
+        return view('management.store-management-simple'); // 간단한 버전으로 변경
     })->name('management.stores');
+    
+    // 별도 지사 관리 페이지
+    Route::get('/management/branches', function () {
+        $userRole = auth()->user()->role;
+        if ($userRole !== 'headquarters') {
+            abort(403, '본사 관리자만 접근 가능합니다.');
+        }
+        return view('management.branch-management');
+    })->name('management.branches');
 
     // 권한별 통계 페이지 라우팅
     Route::get('/statistics', function () {
