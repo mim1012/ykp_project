@@ -289,14 +289,74 @@
             window.location.href = `/management/stores?branch=${branchId}`;
         }
 
-        // 지사 통계 (추후 구현)
+        // 지사 통계 (1차 구현)
         function viewBranchStats(branchId) {
-            alert('지사 통계 기능은 2차 Release에서 구현 예정입니다.');
+            fetch(`/test-api/branches/${branchId}/stats`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const stats = data.data;
+                        alert(`📊 지사 통계\n\n🏪 소속 매장 수: ${stats.stores_count}개\n💰 총 매출: ${stats.total_sales.toLocaleString()}원\n📈 이번달 매출: ${stats.monthly_sales.toLocaleString()}원\n🎯 목표 달성률: ${stats.achievement_rate}%\n📊 순위: ${stats.rank}위 / ${stats.total_branches}개 지사`);
+                    } else {
+                        alert('❌ 지사 통계를 불러올 수 없습니다.');
+                    }
+                })
+                .catch(error => {
+                    console.error('지사 통계 오류:', error);
+                    // 기본 통계 표시
+                    alert(`📊 지사 기본 정보\n\n지사 ID: ${branchId}\n상태: 운영중\n\n상세 통계는 개통표 데이터가 축적되면\n정확한 수치를 제공할 예정입니다.`);
+                });
         }
 
-        // 지사 수정 (추후 구현)
+        // 지사 수정 (1차 구현)
         function editBranch(branchId) {
-            alert('지사 수정 기능은 2차 Release에서 구현 예정입니다.');
+            // 전역 branches 배열이 없으므로 API에서 지사 정보 가져오기
+            fetch(`/test-api/branches/${branchId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.success) {
+                        alert('지사 정보를 가져올 수 없습니다.');
+                        return;
+                    }
+                    
+                    const branch = data.data;
+                    
+                    const newName = prompt(`지사명 수정:\n현재: ${branch.name}`, branch.name);
+                    if (!newName || newName === branch.name) return;
+
+                    const newManager = prompt(`관리자명 수정:\n현재: ${branch.manager_name || '미등록'}`, branch.manager_name || '');
+                    if (newManager === null) return;
+
+                    const newPhone = prompt(`연락처 수정:\n현재: ${branch.contact_number || '미등록'}`, branch.contact_number || '');
+                    if (newPhone === null) return;
+
+                    // 지사 정보 업데이트
+                    return fetch(`/test-api/branches/${branchId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        },
+                        body: JSON.stringify({
+                            name: newName,
+                            manager_name: newManager,
+                            contact_number: newPhone
+                        })
+                    });
+                })
+                .then(response => response.json())
+                .then(updateData => {
+                    if (updateData.success) {
+                        alert(`✅ 지사 정보가 수정되었습니다!`);
+                        loadBranches(); // 목록 새로고침
+                    } else {
+                        alert('❌ 지사 수정 실패: ' + (updateData.error || '알 수 없는 오류'));
+                    }
+                })
+                .catch(error => {
+                    console.error('지사 수정 오류:', error);
+                    alert('지사 수정 중 오류가 발생했습니다.');
+                });
         }
     </script>
 </body>

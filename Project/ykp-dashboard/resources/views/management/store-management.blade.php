@@ -659,6 +659,10 @@
                                                 class="text-xs bg-purple-500 text-white px-2 py-1 rounded hover:bg-purple-600">
                                             성과보기
                                         </button>
+                                        <button onclick="deleteStore(${store.id})" 
+                                                class="text-xs bg-red-500 text-white px-2 py-1 rounded hover:bg-red-600">
+                                            🗑️ 삭제
+                                        </button>
                                     </div>
                                 </div>
                             `;
@@ -1659,9 +1663,56 @@
             loadUsers(); // 목록 새로고침
         }
 
-        // 초기 로드
+        // 초기 로드 (디버깅 로그 추가)
         document.addEventListener('DOMContentLoaded', function() {
-            showTab('stores');
+            console.log('DOM 로드 완료, showTab 함수 실행');
+            console.log('userData:', window.userData);
+            console.log('permissionManager:', window.permissionManager);
+            
+            // 권한 체크 후 탭 로드
+            if (typeof showTab === 'function') {
+                showTab('stores');
+            } else {
+                console.error('showTab 함수가 정의되지 않았습니다.');
+            }
+        });
+        
+        // 매장 삭제 기능 (1차 구현)
+        function deleteStore(storeId) {
+            const store = allStores?.find(s => s.id === storeId);
+            const storeName = store?.name || `매장 ID ${storeId}`;
+            
+            if (!confirm(`⚠️ 정말로 "${storeName}" 매장을 삭제하시겠습니까?\n\n삭제하면 다음 항목들이 함께 삭제됩니다:\n• 매장 정보\n• 매장 사용자 계정\n• 매장 관련 데이터\n\n이 작업은 되돌릴 수 없습니다.`)) {
+                return;
+            }
+
+            fetch(`/test-api/stores/${storeId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`✅ "${storeName}" 매장이 삭제되었습니다.`);
+                    loadStores(); // 목록 새로고침
+                } else {
+                    alert('❌ 매장 삭제 실패: ' + (data.error || '알 수 없는 오류'));
+                }
+            })
+            .catch(error => {
+                console.error('매장 삭제 오류:', error);
+                alert('매장 삭제 중 오류가 발생했습니다.');
+            });
+        }
+
+        // 전역 오류 처리
+        window.addEventListener('error', function(e) {
+            console.error('JavaScript 오류:', e.error);
+            console.error('파일:', e.filename);
+            console.error('라인:', e.lineno);
         });
     </script>
 </body>
