@@ -678,17 +678,53 @@
             showStatus('전체 재계산 완료!', 'success');
         }
         
-        // 엑셀 내보내기 (기본 구현)
+        // 엑셀 내보내기 (한글 깨짐 방지)
         function exportToExcel() {
-            const csvContent = "data:text/csv;charset=utf-8," 
-                + "판매일,판매자,대리점,통신사,개통방식,모델명,고객명,전화번호,액면가,구두1,구두2,그레이드,부가추가,서류상현금,유심비,MNP할인,차감,리베총계,정산금,세금,현금받음,페이백,세전마진,세후마진,월정액,메모\n"
-                + completeTableData.map(row => 
-                    `${row.sale_date},${row.salesperson},${row.dealer_code},${row.carrier},${row.activation_type},${row.model_name},${row.customer_name},${row.phone_number},${row.base_price},${row.verbal1},${row.verbal2},${row.grade_amount},${row.additional_amount},${row.cash_activation},${row.usim_fee},${row.new_mnp_discount},${row.deduction},${row.rebate_total},${row.settlement_amount},${row.tax},${row.cash_received},${row.payback},${row.margin_before_tax},${row.margin_after_tax},${row.monthly_fee},"${row.memo}"`
-                ).join("\n");
-                
-            const encodedUri = encodeURI(csvContent);
+            const today = new Date().toISOString().split('T')[0];
+            
+            // CSV 헤더
+            const headers = ['판매일','판매자','대리점','통신사','개통방식','모델명','고객명','전화번호','액면가','구두1','구두2','그레이드','부가추가','서류상현금','유심비','MNP할인','차감','리베총계','정산금','세금','현금받음','페이백','세전마진','세후마진','월정액','메모'];
+            
+            // CSV 데이터
+            const csvRows = [headers];
+            completeTableData.forEach(row => {
+                csvRows.push([
+                    row.sale_date || '',
+                    row.salesperson || '',
+                    row.dealer_code || '',
+                    row.carrier || '',
+                    row.activation_type || '',
+                    row.model_name || '',
+                    row.customer_name || '',
+                    row.phone_number || '',
+                    row.base_price || 0,
+                    row.verbal1 || 0,
+                    row.verbal2 || 0,
+                    row.grade_amount || 0,
+                    row.additional_amount || 0,
+                    row.cash_activation || 0,
+                    row.usim_fee || 0,
+                    row.new_mnp_discount || 0,
+                    row.deduction || 0,
+                    row.rebate_total || 0,
+                    row.settlement_amount || 0,
+                    row.tax || 0,
+                    row.cash_received || 0,
+                    row.payback || 0,
+                    row.margin_before_tax || 0,
+                    row.margin_after_tax || 0,
+                    row.monthly_fee || 0,
+                    row.memo || ''
+                ]);
+            });
+            
+            // CSV 문자열 생성
+            const csvContent = csvRows.map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+            
+            // UTF-8 BOM 추가로 한글 깨짐 방지
+            const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
+            link.href = URL.createObjectURL(blob);
             link.setAttribute("download", `개통표_${new Date().toISOString().split('T')[0]}.csv`);
             document.body.appendChild(link);
             link.click();
