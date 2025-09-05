@@ -584,7 +584,7 @@
                     
                     if (window.userData.role === 'headquarters') {
                         // 본사: 지사별 트리 구조로 표시
-                        await renderStoreTreeView(accessibleStores);
+                        renderStoreTreeView(accessibleStores);
                     } else {
                         // 지사: 테이블 형태로 표시 
                         renderStoreTableView(accessibleStores);
