@@ -64,7 +64,11 @@
       "Bash(git remote:*)",
       "Bash(git stash push:*)",
       "Bash(git pull:*)",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "WebFetch(domain:ykpproject-production.up.railway.app)",
+      "mcp__microsoft-playwright-mcp__browser_console_messages",
+      "mcp__microsoft-playwright-mcp__browser_fill_form",
+      "mcp__microsoft-playwright-mcp__browser_network_requests"
     ],
     "defaultMode": "acceptEdits",
     "additionalDirectories": [

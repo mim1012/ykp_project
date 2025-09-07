@@ -377,6 +377,23 @@ Route::get('/test-api/sales/count', function () {
     return response()->json(['count' => App\Models\Sale::count()]);
 });
 
+// 누락된 API 엔드포인트들 추가 (404, 405 오류 해결)
+Route::get('/test-api/stores/count', function () {
+    try {
+        return response()->json(['success' => true, 'count' => App\Models\Store::count()]);
+    } catch (\Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+Route::get('/test-api/users/count', function () {
+    try {
+        return response()->json(['success' => true, 'count' => App\Models\User::count()]);
+    } catch (\Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
 // 간단한 그래프 데이터 API (웹용)
 Route::middleware(['web'])->get('/api/dashboard/sales-trend', function (Illuminate\Http\Request $request) {
     try {
@@ -614,8 +631,13 @@ Route::get('/test-api/users', function () {
 });
 
 Route::get('/test-api/branches', function () {
-    $branches = App\Models\Branch::withCount('stores')->get();
-    return response()->json(['success' => true, 'data' => $branches]);
+    try {
+        $branches = App\Models\Branch::withCount('stores')->get();
+        return response()->json(['success' => true, 'data' => $branches]);
+    } catch (\Exception $e) {
+        \Log::error('test-api/branches error: ' . $e->getMessage());
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
 });
 
 // 지사 추가 API

@@ -1,0 +1,90 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3] [cursor=pointer]: "Y"
+    - generic [ref=e4] [cursor=pointer]: 🏢
+    - generic [ref=e5] [cursor=pointer]: 🏪
+    - generic [ref=e6] [cursor=pointer]: 💼
+    - generic [ref=e7] [cursor=pointer]: 📋
+    - generic [ref=e8] [cursor=pointer]: 👥
+  - generic [ref=e9]:
+    - generic [ref=e10]:
+      - generic [ref=e11]:
+        - heading "대시보드" [level=1] [ref=e12]
+        - generic [ref=e14]:
+          - strong [ref=e16]: 본사 관리자
+          - generic [ref=e17]: 🏢 본사 관리자
+          - generic [ref=e18]: 전체 매장 관리 권한
+      - generic [ref=e19]:
+        - button "+ 새 지사 추가" [ref=e20] [cursor=pointer]
+        - button "+ 새 매장 추가" [ref=e21] [cursor=pointer]
+        - button "전체 리포트" [ref=e22] [cursor=pointer]
+        - button "🔄 새로고침" [ref=e23] [cursor=pointer]
+        - button "로그아웃" [ref=e24] [cursor=pointer]
+    - generic [ref=e25]:
+      - generic [ref=e26]: ✅
+      - generic [ref=e27]:
+        - strong [ref=e28]: YKP ERP 시스템 정상 운영 중
+        - text: 지사 14개, 매장 57개, 사용자 69명, 개통 53건 관리 중
+    - generic [ref=e29]:
+      - generic [ref=e30]:
+        - generic [ref=e31]:
+          - generic [ref=e32]:
+            - generic [ref=e33]: 🏢 전체 지사 수
+            - generic [ref=e34]: + 2개
+          - generic [ref=e35]: 8개 지사
+          - generic [ref=e36]: 전국 지사 관리
+        - generic [ref=e37]:
+          - generic [ref=e38]:
+            - generic [ref=e39]: 🏪 전체 매장 수
+            - generic [ref=e40]: + 1개
+          - generic [ref=e41]: 3개 매장
+          - generic [ref=e42]: 전국 매장 관리
+        - generic [ref=e43]:
+          - generic [ref=e44]:
+            - generic [ref=e45]: 👥 전체 사용자
+            - generic [ref=e46]: + 1명
+          - generic [ref=e47]: 5명 관리
+          - generic [ref=e48]: 시스템 사용자
+        - generic [ref=e49]:
+          - generic [ref=e51]: 🎯 시스템 목표
+          - generic [ref=e52]: 3.4% 달성
+          - generic [ref=e53]: 월 5천만원 목표
+      - generic [ref=e54]:
+        - generic [ref=e56]: 30일 매출 추이
+        - generic [ref=e60]: 시장별 매출
+      - generic [ref=e63]:
+        - generic [ref=e64]:
+          - generic [ref=e65]: 최근 활동
+          - generic [ref=e67]:
+            - generic [ref=e68]:
+              - generic [ref=e69]: ✅
+              - generic [ref=e70]: 매장별 통계 분리 검증 완료
+              - generic [ref=e71]: 방금 전
+            - generic [ref=e72]:
+              - generic [ref=e73]: ✅
+              - generic [ref=e74]: 지사별 권한 제어 확인 완료
+              - generic [ref=e75]: 5분 전
+            - generic [ref=e76]:
+              - generic [ref=e77]: 🔄
+              - generic [ref=e78]: CRUD 기능 정상 작동
+              - generic [ref=e79]: 10분 전
+            - generic [ref=e80]:
+              - generic [ref=e81]: ⚙️
+              - generic [ref=e82]: API 엔드포인트 수정 완료
+              - generic [ref=e83]: 15분 전
+        - generic [ref=e84]:
+          - generic [ref=e85]: 공지사항
+          - generic [ref=e87]:
+            - generic [ref=e88]:
+              - generic [ref=e89]: 📢 시스템 검증 완료
+              - generic [ref=e90]: 모든 통계 연동이 정상 작동합니다
+            - generic [ref=e91]:
+              - generic [ref=e92]: 🎯 정밀 테스트 통과
+              - generic [ref=e93]: 권한별 데이터 분리가 완벽합니다
+            - generic [ref=e94]:
+              - generic [ref=e95]: ⚡ 실시간 업데이트
+              - generic [ref=e96]: 모든 기능이 정상 운영 중입니다
+```

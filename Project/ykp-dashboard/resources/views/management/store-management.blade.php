@@ -541,19 +541,44 @@
             setTimeout(() => window.location.href = '/dashboard', 2000);
         }
 
-        // 탭 전환
-        function showTab(tabName) {
-            // 모든 탭 비활성화
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+        // 탭 전환 함수 (안전성 강화)
+        window.showTab = function(tabName) {
+            console.log('✅ showTab 호출됨:', tabName);
             
-            // 선택된 탭 활성화
-            document.getElementById(tabName + '-tab').classList.add('active');
-            document.getElementById(tabName + '-content').classList.remove('hidden');
-            
-            // 해당 데이터 로드
-            loadTabData(tabName);
-        }
+            try {
+                // 모든 탭 비활성화
+                document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+                
+                // 선택된 탭 활성화
+                const tab = document.getElementById(tabName + '-tab');
+                const content = document.getElementById(tabName + '-content');
+                
+                if (tab) {
+                    tab.classList.add('active');
+                    console.log('✅ 탭 활성화:', tabName);
+                } else {
+                    console.error('❌ 탭을 찾을 수 없음:', tabName + '-tab');
+                }
+                
+                if (content) {
+                    content.classList.remove('hidden');
+                    console.log('✅ 컨텐츠 표시:', tabName);
+                } else {
+                    console.error('❌ 컨텐츠를 찾을 수 없음:', tabName + '-content');
+                }
+                
+                // 데이터 로드
+                if (typeof loadTabData === 'function') {
+                    loadTabData(tabName);
+                } else if (tabName === 'stores' && typeof window.loadStores === 'function') {
+                    window.loadStores();
+                }
+                
+            } catch (error) {
+                console.error('❌ showTab 오류:', error);
+            }
+        };
 
         // 탭별 데이터 로드
         function loadTabData(tabName) {
@@ -570,32 +595,65 @@
             }
         }
 
-        // 클린코드: 매장 목록 로드 (권한 필터링 적용)
-        async function loadStores() {
-            document.getElementById('stores-grid').innerHTML = '<div class="p-4 text-center text-gray-500">매장 목록 로딩 중...</div>';
+        // 매장 목록 로드 (최대한 단순화)
+        window.loadStores = async function() {
+            console.log('🔄 loadStores 시작');
             
-            fetch('/test-api/stores')
-                .then(response => response.json())
-                .then(data => {
-                    // 권한별 데이터 필터링 적용
-                    const accessibleStores = window.permissionManager.filterAccessibleStores(data.data);
+            try {
+                // 로딩 메시지 표시
+                const gridElement = document.getElementById('stores-grid');
+                if (!gridElement) {
+                    console.error('❌ stores-grid 요소를 찾을 수 없음');
+                    return;
+                }
+                
+                gridElement.innerHTML = '<div class="p-4 text-center text-gray-500">🔄 매장 목록 로딩 중...</div>';
+                
+                // API 호출
+                const response = await fetch('/test-api/stores');
+                console.log('✅ API 응답 상태:', response.status);
+                
+                const data = await response.json();
+                console.log('✅ 받은 데이터:', data.data?.length + '개 매장');
+                
+                if (data.success && data.data && Array.isArray(data.data)) {
+                    // 매장 카드 생성 (매우 단순한 HTML)
+                    const html = data.data.map(store => `
+                        <div class="bg-white p-4 rounded-lg border shadow-sm mb-4">
+                            <h3 class="font-bold text-lg mb-2">${store.name}</h3>
+                            <div class="text-sm text-gray-600 space-y-1">
+                                <p>📍 ${store.code}</p>
+                                <p>👤 ${store.owner_name}</p>
+                                <p>📞 ${store.phone || '미등록'}</p>
+                                <p>🏢 ${store.branch?.name || '미지정'}</p>
+                            </div>
+                            <div class="mt-3 flex gap-2">
+                                <button class="px-2 py-1 bg-blue-500 text-white rounded text-xs">✏️ 수정</button>
+                                <button class="px-2 py-1 bg-red-500 text-white rounded text-xs">🗑️ 삭제</button>
+                                <button class="px-2 py-1 bg-green-500 text-white rounded text-xs">👤 계정</button>
+                            </div>
+                        </div>
+                    `).join('');
                     
-                    console.log(`권한별 접근 가능 매장: ${accessibleStores.length}개`);
-                    
-                    if (window.userData.role === 'headquarters') {
-                        // 본사: 지사별 트리 구조로 표시
-                        renderStoreTreeView(accessibleStores);
-                    } else {
-                        // 지사: 테이블 형태로 표시 
-                        renderStoreTableView(accessibleStores);
-                    }
-                })
-                .catch(error => {
-                    console.error('매장 목록 로드 오류:', error);
-                    showToast('❌ 매장 목록을 불러올 수 없습니다.', 'error');
-                    document.getElementById('stores-grid').innerHTML = '<div class="p-4 text-center text-red-500">매장 목록 로드 실패</div>';
-                });
-        }
+                    gridElement.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">${html}</div>`;
+                    console.log('✅ 매장 목록 표시 완료');
+                } else {
+                    throw new Error('유효하지 않은 API 응답');
+                }
+                
+            } catch (error) {
+                console.error('❌ loadStores 오류:', error);
+                const gridElement = document.getElementById('stores-grid');
+                if (gridElement) {
+                    gridElement.innerHTML = `
+                        <div class="p-4 text-center text-red-500">
+                            <p>❌ 매장 목록 로딩 실패</p>
+                            <button onclick="window.loadStores()" class="mt-2 px-4 py-2 bg-blue-500 text-white rounded">🔄 재시도</button>
+                        </div>
+                    `;
+                }
+            }
+        };
         
         // 본사용: 지사별 트리 구조 표시 (간소화된 버전)
         function renderStoreTreeView(stores) {
@@ -1663,17 +1721,23 @@
             loadUsers(); // 목록 새로고침
         }
 
-        // 초기 로드 (디버깅 로그 추가)
+        // 초기 로드 (안전성 강화)
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM 로드 완료, showTab 함수 실행');
+            console.log('✅ DOM 로드 완료');
             console.log('userData:', window.userData);
             console.log('permissionManager:', window.permissionManager);
             
-            // 권한 체크 후 탭 로드
-            if (typeof showTab === 'function') {
-                showTab('stores');
+            // showTab 함수가 정의되어 있는지 확인하고 없으면 기본 로딩
+            if (typeof window.showTab === 'function') {
+                console.log('✅ showTab 함수 발견, stores 탭 로드');
+                window.showTab('stores');
             } else {
-                console.error('showTab 함수가 정의되지 않았습니다.');
+                console.warn('⚠️ showTab 함수 없음, 직접 loadStores 호출');
+                if (typeof window.loadStores === 'function') {
+                    window.loadStores();
+                } else {
+                    console.error('❌ loadStores 함수도 없음');
+                }
             }
         });
         
