@@ -25,24 +25,9 @@
     </header>
 
     <main class="max-w-7xl mx-auto py-6 px-4">
-        <!-- 탭 메뉴 -->
+        <!-- 매장 관리 메인 콘텐츠 -->
         <div class="bg-white rounded-lg shadow mb-6">
-            <div class="border-b border-gray-200">
-                <nav class="flex space-x-8 px-6">
-                    <button onclick="showTab('stores')" class="tab-btn active" id="stores-tab">
-                        🏪 매장 관리
-                    </button>
-                    <button onclick="showTab('branches')" class="tab-btn" id="branches-tab">
-                        🏢 지사 관리  
-                    </button>
-                    <button onclick="showTab('users')" class="tab-btn" id="users-tab">
-                        👥 사용자 관리
-                    </button>
-                </nav>
-            </div>
-            
-            <!-- 매장 관리 탭 -->
-            <div id="stores-content" class="tab-content p-6">
+            <div class="p-6">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-lg font-medium">매장 목록</h2>
                     <button onclick="addStore()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
@@ -50,32 +35,6 @@
                     </button>
                 </div>
                 <div id="stores-grid" class="bg-white rounded border">
-                    <div class="p-4 text-center text-gray-500">로딩 중...</div>
-                </div>
-            </div>
-            
-            <!-- 지사 관리 탭 -->
-            <div id="branches-content" class="tab-content p-6 hidden">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-lg font-medium">지사 목록</h2>
-                    <button onclick="addBranch()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
-                        ➕ 지사 추가
-                    </button>
-                </div>
-                <div id="branches-grid" class="bg-white rounded border">
-                    <div class="p-4 text-center text-gray-500">로딩 중...</div>
-                </div>
-            </div>
-            
-            <!-- 사용자 관리 탭 -->
-            <div id="users-content" class="tab-content p-6 hidden">
-                <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-lg font-medium">사용자 목록</h2>
-                    <button onclick="addUser()" class="bg-purple-500 text-white px-4 py-2 rounded hover:bg-purple-600">
-                        ➕ 사용자 추가
-                    </button>
-                </div>
-                <div id="users-grid" class="bg-white rounded border">
                     <div class="p-4 text-center text-gray-500">로딩 중...</div>
                 </div>
             </div>
@@ -429,21 +388,8 @@
     </div>
 
     <style>
-        .tab-btn {
-            padding: 12px 16px;
-            border-bottom: 2px solid transparent;
-            font-medium: 500;
-            color: #6b7280;
-            transition: all 0.2s;
-        }
-        .tab-btn:hover {
-            color: #374151;
-        }
-        .tab-btn.active {
-            color: #2563eb;
-            border-bottom-color: #2563eb;
-        }
-        .tab-content {
+        /* 탭 스타일 제거됨 - 단순한 매장 관리 페이지로 변경 */
+        .stores-main-content {
             min-height: 400px;
         }
     </style>
@@ -541,59 +487,7 @@
             setTimeout(() => window.location.href = '/dashboard', 2000);
         }
 
-        // 탭 전환 함수 (안전성 강화)
-        window.showTab = function(tabName) {
-            console.log('✅ showTab 호출됨:', tabName);
-            
-            try {
-                // 모든 탭 비활성화
-                document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
-                
-                // 선택된 탭 활성화
-                const tab = document.getElementById(tabName + '-tab');
-                const content = document.getElementById(tabName + '-content');
-                
-                if (tab) {
-                    tab.classList.add('active');
-                    console.log('✅ 탭 활성화:', tabName);
-                } else {
-                    console.error('❌ 탭을 찾을 수 없음:', tabName + '-tab');
-                }
-                
-                if (content) {
-                    content.classList.remove('hidden');
-                    console.log('✅ 컨텐츠 표시:', tabName);
-                } else {
-                    console.error('❌ 컨텐츠를 찾을 수 없음:', tabName + '-content');
-                }
-                
-                // 데이터 로드
-                if (typeof loadTabData === 'function') {
-                    loadTabData(tabName);
-                } else if (tabName === 'stores' && typeof window.loadStores === 'function') {
-                    window.loadStores();
-                }
-                
-            } catch (error) {
-                console.error('❌ showTab 오류:', error);
-            }
-        };
-
-        // 탭별 데이터 로드
-        function loadTabData(tabName) {
-            switch(tabName) {
-                case 'stores':
-                    loadStores();
-                    break;
-                case 'branches':
-                    loadBranches();
-                    break;
-                case 'users':
-                    loadUsers();
-                    break;
-            }
-        }
+        // 탭 시스템 제거됨 - 직접 매장 관리만 표시
 
         // 매장 목록 로드 (최대한 단순화)
         window.loadStores = async function() {
@@ -609,8 +503,8 @@
                 
                 gridElement.innerHTML = '<div class="p-4 text-center text-gray-500">🔄 매장 목록 로딩 중...</div>';
                 
-                // API 호출
-                const response = await fetch('/test-api/stores');
+                // Supabase 실제 API 호출
+                const response = await fetch('/api/dev/stores/list');
                 console.log('✅ API 응답 상태:', response.status);
                 
                 const data = await response.json();
@@ -1721,23 +1615,18 @@
             loadUsers(); // 목록 새로고침
         }
 
-        // 초기 로드 (안전성 강화)
+        // 초기 로드 - 탭 시스템 제거되어 바로 매장 목록 로드
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('✅ DOM 로드 완료');
+            console.log('✅ 매장관리 페이지 로드 완료');
             console.log('userData:', window.userData);
             console.log('permissionManager:', window.permissionManager);
             
-            // showTab 함수가 정의되어 있는지 확인하고 없으면 기본 로딩
-            if (typeof window.showTab === 'function') {
-                console.log('✅ showTab 함수 발견, stores 탭 로드');
-                window.showTab('stores');
+            // 바로 매장 목록 로드
+            if (typeof window.loadStores === 'function') {
+                console.log('✅ Supabase에서 매장 데이터 로드 시작');
+                window.loadStores();
             } else {
-                console.warn('⚠️ showTab 함수 없음, 직접 loadStores 호출');
-                if (typeof window.loadStores === 'function') {
-                    window.loadStores();
-                } else {
-                    console.error('❌ loadStores 함수도 없음');
-                }
+                console.error('❌ loadStores 함수를 찾을 수 없음');
             }
         });
         
