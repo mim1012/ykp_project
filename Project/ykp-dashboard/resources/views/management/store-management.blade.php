@@ -489,7 +489,7 @@
 
         // 탭 시스템 제거됨 - 직접 매장 관리만 표시
 
-        // 매장 목록 로드 (최대한 단순화)
+        // ✨ 최고 우선순위: loadStores 함수 정의 (다른 모든 것보다 먼저)
         window.loadStores = async function() {
             console.log('🔄 loadStores 시작');
             
@@ -1613,22 +1613,57 @@
             showToast(`${userData.email} 계정이 생성되었습니다!`, 'success');
             closeAddUserModal();
             loadUsers(); // 목록 새로고침
-        }
-
-        // 초기 로드 - 탭 시스템 제거되어 바로 매장 목록 로드
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('✅ 매장관리 페이지 로드 완료');
-            console.log('userData:', window.userData);
-            console.log('permissionManager:', window.permissionManager);
+        };
+        
+        // 🔒 전역 상태 초기화
+        window.storesPageInitialized = false;
+        
+        // ✨ 안전한 초기화 함수 - 중복 실행 방지
+        function initializeStoresPage() {
+            // 중복 방지 플래그
+            if (window.storesPageInitialized) {
+                console.log('ℹ️ 이미 초기화됨 - 스킵');
+                return false;
+            }
             
-            // 바로 매장 목록 로드
+            console.log('✅ 매장관리 페이지 초기화 시작');
+            
+            // loadStores 함수 존재 여부 재체크
             if (typeof window.loadStores === 'function') {
-                console.log('✅ Supabase에서 매장 데이터 로드 시작');
+                console.log('✅ loadStores 함수 존재 - 정상 실행');
                 window.loadStores();
+                window.storesPageInitialized = true;
+                return true;
             } else {
-                console.error('❌ loadStores 함수를 찾을 수 없음');
+                console.error('❌ loadStores 함수 미정의 - 위에서 정의했는데 없음!');
+                return false;
+            }
+        }
+        
+        // 3가지 초기화 전략 (안전성 강화)
+        document.addEventListener('DOMContentLoaded', initializeStoresPage);
+        
+        // 대안 1: 즉시 실행 (이미 DOM이 로드된 경우)
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            console.log('✅ DOM 이미 로드됨 - 즉시 초기화');
+            setTimeout(initializeStoresPage, 100);
+        }
+        
+        // 대안 2: 윈도우 로드 이벤트 (최후 수단)
+        window.addEventListener('load', function() {
+            if (!window.storesPageInitialized) {
+                console.log('⚠️ 최후 수단: window.onload로 초기화');
+                initializeStoresPage();
             }
         });
+        
+        // 대안 3: 지연 실행 (모든 것이 실패한 경우)
+        setTimeout(function() {
+            if (!window.storesPageInitialized) {
+                console.log('🚑 긴급 지연 초기화 (3초 후)');
+                initializeStoresPage();
+            }
+        }, 3000);
         
         // 매장 삭제 기능 (1차 구현)
         function deleteStore(storeId) {
@@ -1661,11 +1696,51 @@
             });
         }
 
+        // 🚀 4단계 초기화 전략 실행
+        
+        // 1단계: 즉시 실행
+        if (document.readyState === 'complete' || document.readyState === 'interactive') {
+            console.log('🚀 1단계: DOM 이미 준비됨 - 즉시 초기화');
+            setTimeout(initializeStoresPage, 50);
+        }
+        
+        // 2단계: DOMContentLoaded
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 2단계: DOMContentLoaded 이벤트');
+            initializeStoresPage();
+        });
+        
+        // 3단계: window.load
+        window.addEventListener('load', function() {
+            console.log('🚑 3단계: window.load 이벤트');
+            if (!window.storesPageInitialized) {
+                initializeStoresPage();
+            }
+        });
+        
+        // 4단계: 최종 안전장치 (3초 뒤)
+        setTimeout(function() {
+            if (!window.storesPageInitialized) {
+                console.log('🎆 4단계: 최종 안전장치 가동');
+                initializeStoresPage();
+            }
+        }, 3000);
+        
         // 전역 오류 처리
         window.addEventListener('error', function(e) {
             console.error('JavaScript 오류:', e.error);
             console.error('파일:', e.filename);
             console.error('라인:', e.lineno);
+            
+            // 오류 시 긴급 복구 시도
+            if (!window.storesPageInitialized) {
+                console.log('🚑 오류 감지 - 긴급 복구 시도');
+                setTimeout(() => {
+                    if (typeof initializeStoresPage === 'function') {
+                        initializeStoresPage();
+                    }
+                }, 1000);
+            }
         });
     </script>
 </body>
