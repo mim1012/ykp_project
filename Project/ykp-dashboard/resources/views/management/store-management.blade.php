@@ -35,7 +35,62 @@
                     </button>
                 </div>
                 <div id="stores-grid" class="bg-white rounded border">
-                    <div class="p-4 text-center text-gray-500">로딩 중...</div>
+                    @if(isset($stores) && $stores->count() > 0)
+                        {{-- 🚀 서버사이드 렌더링으로 즉시 표시 (로딩 없음!) --}}
+                        <div class="mb-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                            <p class="text-green-800 font-bold">🎉 서버사이드 렌더링 성공!</p>
+                            <p class="text-green-600 text-sm">즐시 로딩 완료 - JavaScript 없이도 작동 (총 {{ $stores->count() }}개 매장)</p>
+                            @if(isset($branchFilter))
+                                <p class="text-green-600 text-sm">🎯 지사 필터: ID {{ $branchFilter }}</p>
+                                <a href="/management/stores" class="text-blue-500 hover:text-blue-700 text-sm font-medium">← 전체 매장 보기</a>
+                            @endif
+                        </div>
+                        
+                        <div class="space-y-6">
+                            @php
+                                $storesByBranch = $stores->groupBy('branch.name');
+                            @endphp
+                            
+                            @foreach($storesByBranch as $branchName => $branchStores)
+                                <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                                    <div class="bg-gradient-to-r from-blue-500 to-indigo-600 px-6 py-4">
+                                        <h3 class="text-xl font-bold text-white">🏢 {{ $branchName ?: '미배정 지사' }} ({{ $branchStores->count() }}개 매장)</h3>
+                                    </div>
+                                    <div class="p-6">
+                                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                            @foreach($branchStores as $store)
+                                                <div class="bg-gray-50 rounded-lg p-4 hover:bg-white hover:shadow-md transition-all border">
+                                                    <div class="flex justify-between items-start mb-3">
+                                                        <h4 class="font-bold text-lg">{{ $store->name }}</h4>
+                                                        <span class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">✅ 운영중</span>
+                                                    </div>
+                                                    <div class="text-sm text-gray-600 space-y-1">
+                                                        <p><span class="font-medium">코드:</span> {{ $store->code }}</p>
+                                                        <p><span class="font-medium">점주:</span> {{ $store->owner_name ?: '미등록' }}</p>
+                                                        <p><span class="font-medium">연락처:</span> {{ $store->phone ?: '미등록' }}</p>
+                                                        @if($store->opened_at)
+                                                            <p><span class="font-medium">개점일:</span> {{ $store->opened_at->format('Y. m. d.') }}</p>
+                                                        @endif
+                                                    </div>
+                                                    <div class="mt-3 flex gap-2">
+                                                        <button class="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600">✏️ 수정</button>
+                                                        <button class="px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600">👤 계정</button>
+                                                        <button class="px-3 py-1 bg-purple-500 text-white text-xs rounded hover:bg-purple-600">📈 성과</button>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="p-8 text-center text-gray-500">
+                            <div class="text-4xl mb-4">🏪</div>
+                            <p class="text-lg font-medium">매장이 없습니다</p>
+                            <p class="text-sm text-gray-400 mt-2">새 매장을 추가해보세요</p>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>

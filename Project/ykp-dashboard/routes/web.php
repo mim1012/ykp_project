@@ -72,13 +72,35 @@ Route::middleware(['auth', 'rbac'])->group(function () {
         return view('sales.excel-input');
     })->name('sales.excel-input');
 
-    // 본사/지사용 매장 관리 (권한 체크 포함)
-    Route::get('/management/stores', function () {
+    // 본사/지사용 매장 관리 (권한 체크 + 서버사이드 데이터 주입)
+    Route::get('/management/stores', function (Illuminate\Http\Request $request) {
         $userRole = auth()->user()->role;
         if (!in_array($userRole, ['headquarters', 'branch'])) {
             abort(403, '본사 또는 지사 관리자만 접근 가능합니다.');
         }
-        return view('management.store-management'); // 기존 작동하던 버전으로 복귀
+        
+        // 🚀 서버사이드에서 직접 매장 데이터 로드 (JavaScript 타이밍 이슈 완전 해결)
+        $query = \App\Models\Store::with(['branch']);
+        
+        // 권한별 필터링
+        if ($userRole === 'branch') {
+            $query->where('branch_id', auth()->user()->branch_id);
+        } elseif ($userRole === 'store') {
+            $query->where('id', auth()->user()->store_id);
+        }
+        
+        // URL 파라미터로 지사 필터링
+        if ($request->has('branch')) {
+            $query->where('branch_id', $request->get('branch'));
+        }
+        
+        $stores = $query->orderBy('name')->get();
+        
+        return view('management.store-management', [
+            'stores' => $stores,
+            'branchFilter' => $request->get('branch'),
+            'userRole' => $userRole
+        ]);
     })->name('management.stores');
     
     // 별도 지사 관리 페이지
