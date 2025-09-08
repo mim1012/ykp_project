@@ -1089,3 +1089,38 @@ Route::middleware(['auth'])->get('/admin/accounts', function () {
 
 // API route to get current user info (for AJAX requests)
 Route::middleware('auth')->get('/api/user', [AuthController::class, 'user'])->name('api.user');
+
+// 🔒 세션 안정성 강화 API
+Route::middleware(['web'])->group(function () {
+    // CSRF 토큰 갱신
+    Route::get('/api/csrf-token', function () {
+        return response()->json([
+            'token' => csrf_token(),
+            'timestamp' => now()->toISOString()
+        ]);
+    })->name('api.csrf-token');
+    
+    // 세션 연장
+    Route::post('/api/extend-session', function () {
+        if (auth()->check()) {
+            session()->regenerate();
+            return response()->json([
+                'success' => true,
+                'message' => '세션이 연장되었습니다.',
+                'expires_at' => now()->addMinutes(config('session.lifetime'))->toISOString()
+            ]);
+        }
+        
+        return response()->json(['error' => '로그인이 필요합니다.'], 401);
+    })->name('api.extend-session');
+    
+    // 세션 상태 확인
+    Route::get('/api/session-status', function () {
+        return response()->json([
+            'authenticated' => auth()->check(),
+            'user' => auth()->user(),
+            'csrf_token' => csrf_token(),
+            'session_id' => session()->getId()
+        ]);
+    })->name('api.session-status');
+});

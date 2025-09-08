@@ -7,6 +7,9 @@
     <title>매장 관리 - YKP ERP</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css" rel="stylesheet">
+    
+    {{-- 🔒 세션 안정성 강화 스크립트 --}}
+    <script src="/js/session-stability.js"></script>
 </head>
 <body class="bg-gray-50">
     <!-- 헤더 -->

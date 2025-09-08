@@ -140,16 +140,16 @@ Route::prefix('dev/stores')->group(function () {
     });
 });
 
-// 매장 관리 API (운영용 - 인증 필요)
-Route::middleware(['auth'])->prefix('stores')->group(function () {
+// 매장 관리 API (운영용 - 세션 기반 인증)
+Route::middleware(['web', 'auth'])->prefix('stores')->group(function () {
     Route::get('/', [App\Http\Controllers\Api\StoreController::class, 'index'])->name('api.stores.index');
     Route::post('/', [App\Http\Controllers\Api\StoreController::class, 'store'])->name('api.stores.store');
     Route::post('/{store}/create-user', [App\Http\Controllers\Api\StoreController::class, 'createStoreUser'])->name('api.stores.create-user');
     Route::get('/branches', [App\Http\Controllers\Api\StoreController::class, 'branches'])->name('api.stores.branches');
 });
 
-// Sales Data API - 인증 및 RBAC 보호
-Route::middleware(['web','auth','rbac'])->prefix('sales')->group(function () {
+// Sales Data API - 통일된 인증 및 RBAC 보호
+Route::middleware(['web', 'auth', 'rbac'])->prefix('sales')->group(function () {
     // Read operations (GET)
     Route::get('/', [SalesApiController::class, 'index'])->name('api.sales.index');
     Route::get('/statistics', [SalesApiController::class, 'statistics'])->name('api.sales.statistics');
@@ -166,7 +166,7 @@ Route::middleware(['web','auth','rbac'])->prefix('sales')->group(function () {
 });
 
 // Report API - Requires authentication and RBAC
-Route::middleware(['auth', 'rbac'])->prefix('report')->group(function () {
+Route::middleware(['web', 'auth', 'rbac'])->prefix('report')->group(function () {
     Route::get('/summary', [App\Http\Controllers\ReportController::class, 'summary'])
         ->name('api.report.summary');
     Route::get('/export.xlsx', [App\Http\Controllers\ReportController::class, 'exportExcel'])
@@ -307,7 +307,7 @@ Route::prefix('batch-jobs')->group(function () {
 | 대리점별 일일지출 내역 관리 (상담비, 메일접수비, 기타 운영비)
 */
 
-Route::middleware(['auth:sanctum'])->prefix('daily-expenses')->group(function () {
+Route::middleware(['web', 'auth'])->prefix('daily-expenses')->group(function () {
     Route::get('/', [App\Http\Controllers\Api\DailyExpenseController::class, 'index'])->name('api.daily-expenses.index');
     Route::post('/', [App\Http\Controllers\Api\DailyExpenseController::class, 'store'])->name('api.daily-expenses.store');
     Route::get('/{id}', [App\Http\Controllers\Api\DailyExpenseController::class, 'show'])->name('api.daily-expenses.show');
@@ -325,7 +325,7 @@ Route::middleware(['auth:sanctum'])->prefix('daily-expenses')->group(function ()
 | 월별 고정비용 관리 (임대료, 인건비, 통신비 등)
 */
 
-Route::middleware(['auth:sanctum'])->prefix('fixed-expenses')->group(function () {
+Route::middleware(['web', 'auth'])->prefix('fixed-expenses')->group(function () {
     Route::get('/', [App\Http\Controllers\Api\FixedExpenseController::class, 'index'])->name('api.fixed-expenses.index');
     Route::post('/', [App\Http\Controllers\Api\FixedExpenseController::class, 'store'])->name('api.fixed-expenses.store');
     Route::get('/{id}', [App\Http\Controllers\Api\FixedExpenseController::class, 'show'])->name('api.fixed-expenses.show');
@@ -346,7 +346,7 @@ Route::middleware(['auth:sanctum'])->prefix('fixed-expenses')->group(function ()
 | 고객 환불 및 통신사 환수 관리
 */
 
-Route::middleware(['auth:sanctum'])->prefix('refunds')->group(function () {
+Route::middleware(['web', 'auth'])->prefix('refunds')->group(function () {
     Route::get('/', [App\Http\Controllers\Api\RefundController::class, 'index'])->name('api.refunds.index');
     Route::post('/', [App\Http\Controllers\Api\RefundController::class, 'store'])->name('api.refunds.store');
     Route::get('/{id}', [App\Http\Controllers\Api\RefundController::class, 'show'])->name('api.refunds.show');
@@ -364,7 +364,7 @@ Route::middleware(['auth:sanctum'])->prefix('refunds')->group(function () {
 | 월별 급여 관리 - 수기입력 + 인센티브 자동계산
 */
 
-Route::middleware(['auth:sanctum'])->prefix('payroll')->group(function () {
+Route::middleware(['web', 'auth'])->prefix('payroll')->group(function () {
     Route::get('/', [App\Http\Controllers\Api\PayrollController::class, 'index'])->name('api.payroll.index');
     Route::post('/', [App\Http\Controllers\Api\PayrollController::class, 'store'])->name('api.payroll.store');
     Route::get('/{id}', [App\Http\Controllers\Api\PayrollController::class, 'show'])->name('api.payroll.show');
