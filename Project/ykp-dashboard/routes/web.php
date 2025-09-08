@@ -1090,6 +1090,37 @@ Route::middleware(['auth'])->get('/admin/accounts', function () {
 // API route to get current user info (for AJAX requests)
 Route::middleware('auth')->get('/api/user', [AuthController::class, 'user'])->name('api.user');
 
+// 🚑 긴급 정산 테스트 API (인증 없이 접근 가능)
+Route::get('/test-api/monthly-settlements/generate-sample', function () {
+    try {
+        // 샘플 정산 데이터 생성
+        $settlement = \App\Models\MonthlySettlement::create([
+            'year_month' => '2025-09',
+            'dealer_code' => '이앤티',
+            'settlement_status' => 'draft',
+            'total_sales_amount' => 415000,
+            'total_sales_count' => 2,
+            'average_margin_rate' => 100.0,
+            'total_vat_amount' => 37727,
+            'gross_profit' => 415000,
+            'net_profit' => 415000,
+            'profit_rate' => 100.0,
+            'calculated_at' => now()
+        ]);
+        
+        return response()->json([
+            'success' => true,
+            'message' => '샘플 정산 데이터 생성 완료',
+            'data' => $settlement
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage()
+        ], 500);
+    }
+});
+
 // 🔒 세션 안정성 강화 API
 Route::middleware(['web'])->group(function () {
     // CSRF 토큰 갱신
