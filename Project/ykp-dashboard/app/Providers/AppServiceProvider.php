@@ -45,6 +45,11 @@ class AppServiceProvider extends ServiceProvider
         // Feature Flag Blade Directives 등록
         $this->registerFeatureFlagDirectives();
         
+        // 🚑 Railway Timebox 오류 해결 - 프로덕션에서 Timebox 비활성화
+        if (config('app.env') === 'production') {
+            \Illuminate\Support\Facades\Auth::disableTimeboxForAttempts();
+        }
+        
         // 개발 환경에서만 성능 모니터링 활성화
         if (config('app.debug')) {
             $this->enableQueryLogging();

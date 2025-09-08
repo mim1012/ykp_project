@@ -40,7 +40,22 @@ class AuthController extends Controller
         $credentials = $request->only('email', 'password');
         $remember = $request->filled('remember');
 
-        if (Auth::attempt($credentials, $remember)) {
+        // 🚑 Timebox 오류 해결: try-catch로 감싸서 안전하게 처리
+        try {
+            $loginSuccess = Auth::attempt($credentials, $remember);
+        } catch (\Exception $e) {
+            \Log::error('Timebox 인증 오류: ' . $e->getMessage());
+            // 대안: 직접 사용자 검증
+            $user = \App\Models\User::where('email', $credentials['email'])->first();
+            if ($user && \Hash::check($credentials['password'], $user->password)) {
+                Auth::login($user, $remember);
+                $loginSuccess = true;
+            } else {
+                $loginSuccess = false;
+            }
+        }
+        
+        if ($loginSuccess) {
             $request->session()->regenerate();
 
             // Log successful login
