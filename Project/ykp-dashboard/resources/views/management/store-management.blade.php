@@ -75,10 +75,10 @@
                                                         @endif
                                                     </div>
                                                     <div class="mt-3 flex gap-2">
-                                                        <button onclick="editStore({{ $store->id }})" class="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600">✏️ 수정</button>
-                                                        <button onclick="createUserForStore({{ $store->id }})" class="px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600">👤 계정</button>
-                                                        <button onclick="viewStoreStats({{ $store->id }})" class="px-3 py-1 bg-purple-500 text-white text-xs rounded hover:bg-purple-600">📊 성과</button>
-                                                        <button onclick="deleteStore({{ $store->id }})" class="px-2 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600">🗑️ 삭제</button>
+                                                        <button data-store-id="{{ $store->id }}" data-store-name="{{ $store->name }}" class="store-edit-btn px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600">✏️ 수정</button>
+                                                        <button data-store-id="{{ $store->id }}" data-store-name="{{ $store->name }}" class="store-account-btn px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600">👤 계정</button>
+                                                        <button data-store-id="{{ $store->id }}" data-store-name="{{ $store->name }}" class="store-stats-btn px-3 py-1 bg-purple-500 text-white text-xs rounded hover:bg-purple-600">📊 성과</button>
+                                                        <button data-store-id="{{ $store->id }}" data-store-name="{{ $store->name }}" class="store-delete-btn px-2 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600">🗑️ 삭제</button>
                                                     </div>
                                                 </div>
                                             @endforeach
@@ -1710,9 +1710,8 @@
             }
         };
         
-        // ✨ 안전한 초기화 함수 - 중복 실행 방지
+        // ✨ 안전한 초기화 함수 + 버튼 이벤트 등록
         function initializeStoresPage() {
-            // 중복 방지 플래그
             if (window.storesPageInitialized) {
                 console.log('ℹ️ 이미 초기화됨 - 스킵');
                 return false;
@@ -1720,16 +1719,80 @@
             
             console.log('✅ 매장관리 페이지 초기화 시작');
             
-            // loadStores 함수 존재 여부 재체크
+            // 🛠️ 매장 액션 버튼 이벤트 리스너 등록
+            setupStoreActionButtons();
+            
+            // loadStores 함수 실행
             if (typeof window.loadStores === 'function') {
-                console.log('✅ loadStores 함수 존재 - 정상 실행');
+                console.log('✅ loadStores 함수 실행');
                 window.loadStores();
                 window.storesPageInitialized = true;
                 return true;
             } else {
-                console.error('❌ loadStores 함수 미정의 - 위에서 정의했는데 없음!');
+                console.error('❌ loadStores 함수 미정의');
                 return false;
             }
+        }
+        
+        // 🛠️ 매장 버튼 이벤트 리스너 설정
+        function setupStoreActionButtons() {
+            console.log('🛠️ 매장 버튼 이벤트 등록 시작');
+            
+            // 이벤트 위임 사용 (동적 요소에도 작동)
+            document.addEventListener('click', function(e) {
+                const target = e.target;
+                const storeId = target.dataset.storeId;
+                const storeName = target.dataset.storeName;
+                
+                if (!storeId) return;
+                
+                if (target.classList.contains('store-edit-btn')) {
+                    console.log('✏️ 매장 수정 클릭:', storeId, storeName);
+                    alert('매장 수정: ' + storeName + ' (ID: ' + storeId + ')');
+                } else if (target.classList.contains('store-account-btn')) {
+                    console.log('👤 계정 생성 클릭:', storeId, storeName);
+                    if (confirm(storeName + ' 매장의 사용자 계정을 생성하시겠습니까?')) {
+                        // TODO: 계정 생성 API 호출
+                        alert('계정 생성 기능이 구현될 예정입니다.');
+                    }
+                } else if (target.classList.contains('store-stats-btn')) {
+                    console.log('📊 성과 보기 클릭:', storeId, storeName);
+                    alert('매장 성과: ' + storeName + ' (ID: ' + storeId + ')');
+                } else if (target.classList.contains('store-delete-btn')) {
+                    console.log('🗑️ 매장 삭제 클릭:', storeId, storeName);
+                    if (confirm('정말로 "' + storeName + '" 매장을 삭제하시겠습니까?')) {
+                        deleteStoreAPI(storeId, storeName);
+                    }
+                }
+            });
+            
+            console.log('✅ 매장 버튼 이벤트 등록 완료');
+        }
+        
+        // 🗑️ 매장 삭제 API 호출
+        function deleteStoreAPI(storeId, storeName) {
+            console.log('🗑️ 매장 삭제 API 호출:', storeId);
+            
+            fetch('/api/dev/stores/' + storeId, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('✅ "' + storeName + '" 매장이 삭제되었습니다.');
+                    location.reload(); // 페이지 새로고침
+                } else {
+                    alert('❌ 삭제 실패: ' + (data.error || '알 수 없는 오류'));
+                }
+            })
+            .catch(error => {
+                console.error('매장 삭제 오류:', error);
+                alert('매장 삭제 중 오류가 발생했습니다.');
+            });
         }
         
         // 3가지 초기화 전략 (안전성 강화)
