@@ -39,15 +39,14 @@
                 </div>
                 <div id="stores-grid" class="bg-white rounded border">
                     @if(isset($stores) && $stores->count() > 0)
-                        {{-- 🚀 서버사이드 렌더링으로 즉시 표시 (로딩 없음!) --}}
-                        <div class="mb-4 p-4 bg-green-50 rounded-lg border border-green-200">
-                            <p class="text-green-800 font-bold">🎉 서버사이드 렌더링 성공!</p>
-                            <p class="text-green-600 text-sm">즐시 로딩 완료 - JavaScript 없이도 작동 (총 {{ $stores->count() }}개 매장)</p>
-                            @if(isset($branchFilter))
-                                <p class="text-green-600 text-sm">🎯 지사 필터: ID {{ $branchFilter }}</p>
+                        {{-- 지사별 필터 안내 --}}
+                        @if(isset($branchFilter))
+                            <div class="mb-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                                <p class="text-blue-800 font-semibold">🎯 지사별 매장 보기</p>
+                                <p class="text-blue-600 text-sm">선택된 지사의 매장만 표시 중</p>
                                 <a href="/management/stores" class="text-blue-500 hover:text-blue-700 text-sm font-medium">← 전체 매장 보기</a>
-                            @endif
-                        </div>
+                            </div>
+                        @endif
                         
                         <div class="space-y-6">
                             @php
@@ -76,9 +75,10 @@
                                                         @endif
                                                     </div>
                                                     <div class="mt-3 flex gap-2">
-                                                        <button class="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600">✏️ 수정</button>
-                                                        <button class="px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600">👤 계정</button>
-                                                        <button class="px-3 py-1 bg-purple-500 text-white text-xs rounded hover:bg-purple-600">📈 성과</button>
+                                                        <button onclick="editStore({{ $store->id }})" class="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600">✏️ 수정</button>
+                                                        <button onclick="createUserForStore({{ $store->id }})" class="px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600">👤 계정</button>
+                                                        <button onclick="viewStoreStats({{ $store->id }})" class="px-3 py-1 bg-purple-500 text-white text-xs rounded hover:bg-purple-600">📊 성과</button>
+                                                        <button onclick="deleteStore({{ $store->id }})" class="px-2 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600">🗑️ 삭제</button>
                                                     </div>
                                                 </div>
                                             @endforeach
@@ -1675,6 +1675,40 @@
         
         // 🔒 전역 상태 초기화
         window.storesPageInitialized = false;
+        
+        // 🛠️ 매장별 액션 버튼 함수들 정의
+        window.editStore = function(storeId) {
+            alert('매장 수정 기능: 매장 ID ' + storeId);
+            // TODO: 편집 모달 구현
+        };
+        
+        window.viewStoreStats = function(storeId) {
+            alert('매장 성과 보기: 매장 ID ' + storeId);
+            // TODO: 성과 대시보드 구현
+        };
+        
+        window.deleteStore = function(storeId) {
+            if (confirm('정말로 이 매장을 삭제하시겠습니까?')) {
+                fetch('/api/dev/stores/' + storeId, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('매장이 삭제되었습니다.');
+                        location.reload();
+                    } else {
+                        alert('삭제 실패: ' + (data.error || '알 수 없는 오류'));
+                    }
+                })
+                .catch(error => {
+                    alert('삭제 중 오류가 발생했습니다.');
+                });
+            }
+        };
         
         // ✨ 안전한 초기화 함수 - 중복 실행 방지
         function initializeStoresPage() {
