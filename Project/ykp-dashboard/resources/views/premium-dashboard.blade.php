@@ -383,6 +383,31 @@
                     <button class="btn btn-outline" onclick="location.reload()">새로고침</button>
                 @endif
                 <button class="btn btn-outline" onclick="logout()" style="background: #ef4444; color: white;">로그아웃</button>
+                
+                <script>
+                // 🚑 로그아웃 함수 정의 (누락되어 있었음!)
+                function logout() {
+                    console.log('🚑 로그아웃 시도');
+                    
+                    // POST 요청으로 로그아웃
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = '/logout';
+                    
+                    // CSRF 토큰 추가
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+                    if (csrfToken) {
+                        const csrfInput = document.createElement('input');
+                        csrfInput.type = 'hidden';
+                        csrfInput.name = '_token';
+                        csrfInput.value = csrfToken;
+                        form.appendChild(csrfInput);
+                    }
+                    
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+                </script>
             </div>
         </div>
 
