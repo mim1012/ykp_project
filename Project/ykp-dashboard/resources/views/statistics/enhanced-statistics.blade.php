@@ -303,7 +303,8 @@
         // KPI 데이터 로드
         async function loadKPIData() {
             try {
-                const response = await fetch(`/api/statistics/kpi?days=${currentPeriod}`);
+                const storeParam = storeFilter ? `&store=${storeFilter.id}` : '';
+                const response = await fetch(`/api/statistics/kpi?days=${currentPeriod}${storeParam}`);
                 const result = await response.json();
                 
                 if (result.success) {
@@ -352,7 +353,8 @@
             const chartType = document.getElementById('chart-type').value;
             
             try {
-                const response = await fetch(`/api/statistics/revenue-trend?days=${currentPeriod}&type=${chartType}`);
+                const storeParam = storeFilter ? `&store=${storeFilter.id}` : '';
+                const response = await fetch(`/api/statistics/revenue-trend?days=${currentPeriod}&type=${chartType}${storeParam}`);
                 const result = await response.json();
                 
                 if (result.success) {
@@ -451,7 +453,8 @@
         // 통신사 차트 업데이트
         async function updateCarrierChart() {
             try {
-                const response = await fetch(`/api/statistics/carrier-breakdown?days=${currentPeriod}`);
+                const storeParam = storeFilter ? `&store=${storeFilter.id}` : '';
+                const response = await fetch(`/api/statistics/carrier-breakdown?days=${currentPeriod}${storeParam}`);
                 const result = await response.json();
                 
                 if (result.success) {
@@ -504,7 +507,8 @@
         // 지사별 성과 로드
         async function loadBranchPerformance() {
             try {
-                const response = await fetch(`/api/statistics/branch-performance?days=${currentPeriod}`);
+                const storeParam = storeFilter ? `&store=${storeFilter.id}` : '';
+                const response = await fetch(`/api/statistics/branch-performance?days=${currentPeriod}${storeParam}`);
                 const result = await response.json();
                 
                 if (result.success) {
@@ -546,7 +550,8 @@
         // Top 매장 로드
         async function loadTopStores() {
             try {
-                const response = await fetch(`/api/statistics/top-stores?days=${currentPeriod}`);
+                const storeParam = storeFilter ? `&store=${storeFilter.id}` : '';
+                const response = await fetch(`/api/statistics/top-stores?days=${currentPeriod}${storeParam}`);
                 const result = await response.json();
                 
                 if (result.success) {
@@ -592,7 +597,8 @@
         // 목표 진척도 로드
         async function loadGoalProgress() {
             try {
-                const response = await fetch('/api/statistics/goal-progress');
+                const storeParam = storeFilter ? `?store=${storeFilter.id}` : '';
+                const response = await fetch(`/api/statistics/goal-progress${storeParam}`);
                 const result = await response.json();
                 
                 if (result.success) {
