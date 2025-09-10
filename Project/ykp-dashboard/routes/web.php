@@ -1302,29 +1302,23 @@ Route::middleware(['web'])->group(function () {
             // 캐시 키 생성
             $cacheKey = "kpi.{$storeId}.{$days}." . now()->format('Y-m-d-H');
             
-            // Redis 캐싱 (5분 TTL)
+            // Redis 캐싱 (5분 TTL) - PostgreSQL 완전 호환
             $kpiData = \Cache::remember($cacheKey, 300, function () use ($days, $storeId) {
-                // 기간 설정
-                $startDate = now()->subDays($days)->startOfDay();
-                $endDate = now()->endOfDay();
+                // Carbon으로 날짜 처리 (DB 함수 최소화)
+                $startDate = now()->subDays($days)->startOfDay()->format('Y-m-d H:i:s');
+                $endDate = now()->endOfDay()->format('Y-m-d H:i:s');
                 
-                // 단일 쿼리로 집계 (성능 최적화)
+                // PostgreSQL 완전 호환 집계 쿼리
                 $query = \App\Models\Sale::whereBetween('sale_date', [$startDate, $endDate]);
                 
                 if ($storeId) {
                     $query->where('store_id', $storeId);
                 }
                 
-                $stats = $query->selectRaw('
-                    COALESCE(SUM(settlement_amount), 0) as total_revenue,
-                    COALESCE(SUM(margin_after_tax), 0) as net_profit,
-                    COUNT(*) as total_activations,
-                    COALESCE(AVG(settlement_amount), 0) as avg_settlement
-                ')->first();
-                
-                $totalRevenue = floatval($stats->total_revenue);
-                $netProfit = floatval($stats->net_profit);
-                $totalActivations = intval($stats->total_activations);
+                // PostgreSQL 100% 호환 집계 (DB 함수 최소화)
+                $totalRevenue = floatval($query->sum('settlement_amount') ?? 0);
+                $netProfit = floatval($query->sum('margin_after_tax') ?? 0);
+                $totalActivations = intval($query->count());
                 $avgDaily = $days > 0 ? round($totalActivations / $days, 1) : 0;
                 $profitMargin = $totalRevenue > 0 ? round(($netProfit / $totalRevenue) * 100, 1) : 0;
             
@@ -1398,12 +1392,20 @@ Route::middleware(['web'])->group(function () {
             if ($type === 'daily') {
                 // 일별 매출 추이
                 for ($i = $days - 1; $i >= 0; $i--) {
-                    $date = now()->subDays($i)->format('Y-m-d');
-                    $dailySales = (clone $query)->whereDate('sale_date', $date)->sum('settlement_amount') ?: 0;
+                    $targetDate = now()->subDays($i);
+                    $dayStart = $targetDate->startOfDay()->format('Y-m-d H:i:s');
+                    $dayEnd = $targetDate->endOfDay()->format('Y-m-d H:i:s');
+                    
+                    $dailyRevenue = \App\Models\Sale::whereBetween('sale_date', [$dayStart, $dayEnd]);
+                    if ($storeId) {
+                        $dailyRevenue->where('store_id', $storeId);
+                    }
+                    $revenue = $dailyRevenue->sum('settlement_amount') ?? 0;
+                    
                     $trendData[] = [
-                        'date' => $date,
-                        'value' => $dailySales,
-                        'label' => now()->subDays($i)->format('m/d')
+                        'date' => $targetDate->format('Y-m-d'),
+                        'value' => floatval($revenue),
+                        'label' => $targetDate->format('m/d')
                     ];
                 }
             } elseif ($type === 'weekly') {
@@ -1412,10 +1414,19 @@ Route::middleware(['web'])->group(function () {
                 for ($i = $weeks - 1; $i >= 0; $i--) {
                     $weekStart = now()->subWeeks($i)->startOfWeek();
                     $weekEnd = now()->subWeeks($i)->endOfWeek();
-                    $weeklySales = (clone $query)->whereBetween('sale_date', [$weekStart, $weekEnd])->sum('settlement_amount') ?: 0;
+                    
+                    $weeklyQuery = \App\Models\Sale::whereBetween('sale_date', [
+                        $weekStart->format('Y-m-d H:i:s'),
+                        $weekEnd->format('Y-m-d H:i:s')
+                    ]);
+                    if ($storeId) {
+                        $weeklyQuery->where('store_id', $storeId);
+                    }
+                    $weeklySales = $weeklyQuery->sum('settlement_amount') ?? 0;
+                    
                     $trendData[] = [
                         'date' => $weekStart->format('Y-m-d'),
-                        'value' => $weeklySales,
+                        'value' => floatval($weeklySales),
                         'label' => $weekStart->format('m/d') . '-' . $weekEnd->format('m/d')
                     ];
                 }
@@ -1441,9 +1452,9 @@ Route::middleware(['web'])->group(function () {
                 $query->where('store_id', $storeId);
             }
             
+            // PostgreSQL 완전 호환 집계 (COALESCE 적용)
             $carriers = $query->select('carrier')
-                           ->selectRaw('COUNT(*) as count')
-                           ->selectRaw('SUM(settlement_amount) as revenue')
+                           ->selectRaw('COUNT(*) as count, COALESCE(SUM(settlement_amount), 0) as revenue')
                            ->groupBy('carrier')
                            ->orderBy('count', 'desc')
                            ->get();
@@ -1487,14 +1498,14 @@ Route::middleware(['web'])->group(function () {
             $startDate = now()->subDays($days)->startOfDay();
             $endDate = now()->endOfDay();
             
-            // 단일 쿼리로 현재 기간 지사별 집계 (N+1 해결)
+            // PostgreSQL 완전 호환 지사별 집계 (N+1 해결 + COALESCE)
             $currentQuery = \App\Models\Sale::with('branch:id,name')
-                ->whereBetween('sale_date', [$startDate, $endDate])
+                ->whereBetween('sale_date', [$startDate->format('Y-m-d H:i:s'), $endDate->format('Y-m-d H:i:s')])
                 ->select('branch_id')
                 ->selectRaw('
-                    SUM(settlement_amount) as revenue,
+                    COALESCE(SUM(settlement_amount), 0) as revenue,
                     COUNT(*) as activations,
-                    AVG(settlement_amount) as avg_price
+                    COALESCE(AVG(settlement_amount), 0) as avg_price
                 ')
                 ->groupBy('branch_id');
             
@@ -1509,9 +1520,12 @@ Route::middleware(['web'])->group(function () {
             $prevStartDate = now()->subDays($days * 2)->startOfDay();
             $prevEndDate = now()->subDays($days)->endOfDay();
             
-            $prevQuery = \App\Models\Sale::whereBetween('sale_date', [$prevStartDate, $prevEndDate])
+            $prevQuery = \App\Models\Sale::whereBetween('sale_date', [
+                    $prevStartDate->format('Y-m-d H:i:s'), 
+                    $prevEndDate->format('Y-m-d H:i:s')
+                ])
                 ->select('branch_id')
-                ->selectRaw('SUM(settlement_amount) as prev_revenue')
+                ->selectRaw('COALESCE(SUM(settlement_amount), 0) as prev_revenue')
                 ->groupBy('branch_id');
                 
             if ($storeId) {
@@ -1586,12 +1600,14 @@ Route::middleware(['web'])->group(function () {
             $startDate = now()->subDays($days)->startOfDay();
             $endDate = now()->endOfDay();
             
-            $query = \App\Models\Sale::whereBetween('sale_date', [$startDate, $endDate])
-                                   ->select('store_id')
-                                   ->selectRaw('SUM(settlement_amount) as revenue')
-                                   ->selectRaw('COUNT(*) as activations')
-                                   ->groupBy('store_id')
-                                   ->orderBy('revenue', 'desc');
+            $query = \App\Models\Sale::whereBetween('sale_date', [
+                    $startDate->format('Y-m-d H:i:s'), 
+                    $endDate->format('Y-m-d H:i:s')
+                ])
+                ->select('store_id')
+                ->selectRaw('COALESCE(SUM(settlement_amount), 0) as revenue, COUNT(*) as activations')
+                ->groupBy('store_id')
+                ->orderBy('revenue', 'desc');
             
             // 매장 필터가 있으면 해당 매장만
             if ($storeId) {
