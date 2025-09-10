@@ -111,10 +111,10 @@
                                                         @endif
                                                     </div>
                                                     <div class="mt-3 flex gap-2">
-                                                        <button data-store-id="{{ $store->id }}" data-store-name="{{ $store->name }}" class="store-edit-btn px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600">✏️ 수정</button>
-                                                        <button data-store-id="{{ $store->id }}" data-store-name="{{ $store->name }}" class="store-account-btn px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600">👤 계정</button>
-                                                        <button data-store-id="{{ $store->id }}" data-store-name="{{ $store->name }}" class="store-stats-btn px-3 py-1 bg-purple-500 text-white text-xs rounded hover:bg-purple-600">📊 성과</button>
-                                                        <button data-store-id="{{ $store->id }}" data-store-name="{{ $store->name }}" class="store-delete-btn px-2 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600">🗑️ 삭제</button>
+                                                        <button onclick="editStore({{ $store->id }}, '{{ $store->name }}')" class="store-edit-btn px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600">✏️ 수정</button>
+                                                        <button onclick="createStoreAccount({{ $store->id }}, '{{ $store->name }}')" class="store-account-btn px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600">👤 계정</button>
+                                                        <button onclick="viewStoreStats({{ $store->id }}, '{{ $store->name }}')" class="store-stats-btn px-3 py-1 bg-purple-500 text-white text-xs rounded hover:bg-purple-600">📊 성과</button>
+                                                        <button onclick="deleteStore({{ $store->id }}, '{{ $store->name }}')" class="store-delete-btn px-2 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600">🗑️ 삭제</button>
                                                     </div>
                                                 </div>
                                             @endforeach
@@ -1770,6 +1770,82 @@
             }
         }
         
+        // 매장 관리 버튼 함수들
+        function editStore(storeId, storeName) {
+            console.log('✏️ 매장 수정:', storeId, storeName);
+            if (confirm(`"${storeName}" 매장 정보를 수정하시겠습니까?`)) {
+                window.location.href = `/management/stores/enhanced?edit=${storeId}`;
+            }
+        }
+        
+        function createStoreAccount(storeId, storeName) {
+            console.log('👤 계정 생성:', storeId, storeName);
+            const name = prompt(`${storeName} 매장의 관리자 이름을 입력하세요:`, `${storeName} 관리자`);
+            if (!name) return;
+            
+            const email = prompt('이메일을 입력하세요:', `${storeName.replace(/[^가-힣a-zA-Z0-9]/g, '').toLowerCase()}@ykp.com`);
+            if (!email) return;
+            
+            const password = prompt('비밀번호를 입력하세요 (6자리 이상):', '123456');
+            if (!password || password.length < 6) {
+                alert('비밀번호는 6자리 이상이어야 합니다');
+                return;
+            }
+            
+            // API 호출
+            fetch(`/test-api/stores/${storeId}/create-user`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({ name, email, password })
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    alert(`✅ ${storeName} 계정이 생성되었습니다!\n이메일: ${email}\n비밀번호: ${password}`);
+                } else {
+                    alert('❌ 계정 생성 실패: ' + (result.error || '알 수 없는 오류'));
+                }
+            })
+            .catch(error => {
+                alert('❌ 네트워크 오류: ' + error.message);
+            });
+        }
+        
+        function viewStoreStats(storeId, storeName) {
+            console.log('📊 성과 보기:', storeId, storeName);
+            window.open(`/test-api/stores/${storeId}/stats`, '_blank');
+        }
+        
+        function deleteStore(storeId, storeName) {
+            console.log('🗑️ 매장 삭제:', storeId, storeName);
+            if (!confirm(`⚠️ 정말로 "${storeName}" 매장을 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`)) {
+                return;
+            }
+            
+            // API 호출
+            fetch(`/test-api/stores/${storeId}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    alert(`✅ ${storeName} 매장이 삭제되었습니다.`);
+                    location.reload(); // 페이지 새로고침
+                } else {
+                    alert('❌ 삭제 실패: ' + (result.error || '알 수 없는 오류'));
+                }
+            })
+            .catch(error => {
+                alert('❌ 네트워크 오류: ' + error.message);
+            });
+        }
+        
         // 🛠️ 매장 버튼 이벤트 리스너 설정
         function setupStoreActionButtons() {
             console.log('🛠️ 매장 버튼 이벤트 등록 시작');
@@ -1777,10 +1853,17 @@
             // 이벤트 위임 사용 (동적 요소에도 작동)
             document.addEventListener('click', function(e) {
                 const target = e.target;
+                console.log('클릭 이벤트 감지:', target.className, target.tagName);
+                
                 const storeId = target.dataset.storeId;
                 const storeName = target.dataset.storeName;
                 
-                if (!storeId) return;
+                console.log('Store 데이터:', { storeId, storeName });
+                
+                if (!storeId) {
+                    console.log('storeId가 없어서 종료');
+                    return;
+                }
                 
                 if (target.classList.contains('store-edit-btn')) {
                     console.log('✏️ 매장 수정 클릭:', storeId, storeName);
