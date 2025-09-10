@@ -35,19 +35,16 @@
     </header>
 
     <main class="max-w-7xl mx-auto py-6 px-4">
-        <!-- 긴급 업데이트 알림 -->
-        <div class="bg-red-500 text-white p-4 mb-6 rounded-lg shadow-lg">
+        <!-- 업그레이드 안내 -->
+        <div class="bg-blue-500 text-white p-4 mb-6 rounded-lg shadow-lg">
             <div class="flex items-center justify-between">
                 <div class="flex items-center">
-                    <div class="text-3xl mr-4">🚨</div>
+                    <div class="text-2xl mr-3">✨</div>
                     <div>
-                        <h2 class="text-xl font-bold">중요: 매장 추가 기능이 업데이트되었습니다!</h2>
-                        <p class="text-red-100 mt-1">기존 버튼 클릭 시 오류가 발생할 수 있습니다.</p>
+                        <h3 class="text-lg font-semibold">매장 관리 기능이 개선되었습니다</h3>
+                        <p class="text-blue-100 text-sm mt-1">새로운 계정 생성 및 일괄 처리 기능을 이용해보세요</p>
                     </div>
                 </div>
-                <a href="/management/stores/enhanced" class="bg-white text-red-500 px-6 py-3 rounded-lg font-bold hover:bg-red-50 transition-colors">
-                    ➤ 새 매장관리 페이지 이동
-                </a>
             </div>
         </div>
         
@@ -72,8 +69,8 @@
             <div class="p-6">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-lg font-medium">매장 목록</h2>
-                    <a href="/management/stores/enhanced" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 inline-block text-decoration-none" style="background-color: #10b981 !important;">
-                        🚀 새로운 매장관리 페이지로 이동
+                    <a href="/management/stores/enhanced" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 inline-block text-decoration-none">
+                        ➕ 매장 추가
                     </a>
                 </div>
                 <div id="stores-grid" class="bg-white rounded border">
