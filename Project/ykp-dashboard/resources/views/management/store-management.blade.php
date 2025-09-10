@@ -111,10 +111,35 @@
                                                         @endif
                                                     </div>
                                                     <div class="mt-3 flex gap-2">
-                                                        <button onclick="editStore({{ $store->id }}, '{{ $store->name }}')" class="store-edit-btn px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600">✏️ 수정</button>
-                                                        <button onclick="createStoreAccount({{ $store->id }}, '{{ $store->name }}')" class="store-account-btn px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600">👤 계정</button>
-                                                        <button onclick="viewStoreStats({{ $store->id }}, '{{ $store->name }}')" class="store-stats-btn px-3 py-1 bg-purple-500 text-white text-xs rounded hover:bg-purple-600">📊 성과</button>
-                                                        <button onclick="deleteStore({{ $store->id }}, '{{ $store->name }}')" class="store-delete-btn px-2 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600">🗑️ 삭제</button>
+                                                        <button onclick="alert('매장 수정: {{ $store->name }}'); window.location.href='/management/stores/enhanced?edit={{ $store->id }}';" class="store-edit-btn px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600">✏️ 수정</button>
+                                                        <button onclick="
+                                                            const name = prompt('{{ $store->name }} 매장 관리자 이름:', '{{ $store->name }} 관리자');
+                                                            if (!name) return;
+                                                            const email = prompt('이메일:', '{{ strtolower(preg_replace('/[^가-힣a-zA-Z0-9]/', '', $store->name)) }}@ykp.com');
+                                                            if (!email) return;
+                                                            const password = prompt('비밀번호 (6자리 이상):', '123456');
+                                                            if (!password || password.length < 6) { alert('비밀번호는 6자리 이상'); return; }
+                                                            fetch('/test-api/stores/{{ $store->id }}/create-user', {
+                                                                method: 'POST',
+                                                                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                                                                body: JSON.stringify({name, email, password})
+                                                            }).then(r => r.json()).then(result => {
+                                                                if (result.success) alert('✅ 계정 생성 완료!\n이메일: ' + email + '\n비밀번호: ' + password);
+                                                                else alert('❌ 생성 실패: ' + (result.error || '오류'));
+                                                            }).catch(e => alert('❌ 네트워크 오류'));
+                                                        " class="store-account-btn px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600">👤 계정</button>
+                                                        <button onclick="window.location.href='/statistics/enhanced?store={{ $store->id }}&name={{ urlencode($store->name) }}';" class="store-stats-btn px-3 py-1 bg-purple-500 text-white text-xs rounded hover:bg-purple-600">📊 성과</button>
+                                                        <button onclick="
+                                                            if (confirm('⚠️ {{ $store->name }} 매장을 삭제하시겠습니까?\\n\\n되돌릴 수 없습니다.')) {
+                                                                fetch('/test-api/stores/{{ $store->id }}', {
+                                                                    method: 'DELETE',
+                                                                    headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+                                                                }).then(r => r.json()).then(result => {
+                                                                    if (result.success) { alert('✅ {{ $store->name }} 삭제됨'); location.reload(); }
+                                                                    else alert('❌ 삭제 실패: ' + (result.error || '오류'));
+                                                                }).catch(e => alert('❌ 네트워크 오류'));
+                                                            }
+                                                        " class="store-delete-btn px-2 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600">🗑️ 삭제</button>
                                                     </div>
                                                 </div>
                                             @endforeach
