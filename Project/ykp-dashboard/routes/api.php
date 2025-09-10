@@ -144,7 +144,11 @@ Route::prefix('dev/stores')->group(function () {
 Route::middleware(['web', 'auth'])->prefix('stores')->group(function () {
     Route::get('/', [App\Http\Controllers\Api\StoreController::class, 'index'])->name('api.stores.index');
     Route::post('/', [App\Http\Controllers\Api\StoreController::class, 'store'])->name('api.stores.store');
+    Route::put('/{store}', [App\Http\Controllers\Api\StoreController::class, 'update'])->name('api.stores.update');
+    Route::delete('/{store}', [App\Http\Controllers\Api\StoreController::class, 'destroy'])->name('api.stores.destroy');
     Route::post('/{store}/create-user', [App\Http\Controllers\Api\StoreController::class, 'createStoreUser'])->name('api.stores.create-user');
+    Route::post('/{store}/create-account', [App\Http\Controllers\Api\StoreController::class, 'createAccount'])->name('api.stores.create-account');
+    Route::get('/{store}/performance', [App\Http\Controllers\Api\StoreController::class, 'performance'])->name('api.stores.performance');
     Route::get('/branches', [App\Http\Controllers\Api\StoreController::class, 'branches'])->name('api.stores.branches');
 });
 

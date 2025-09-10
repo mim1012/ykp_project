@@ -135,6 +135,191 @@ class StoreController extends Controller
     }
     
     /**
+     * 매장 정보 수정 (본사/지사)
+     */
+    public function update(Request $request, Store $store): JsonResponse
+    {
+        $user = Auth::user();
+        
+        // 권한 확인: 본사 또는 해당 지사 관리자만 수정 가능
+        if ($user->role === 'branch' && $store->branch_id !== $user->branch_id) {
+            return response()->json(['error' => '권한이 없습니다.'], 403);
+        } elseif ($user->role === 'store') {
+            return response()->json(['error' => '매장 사용자는 매장 정보를 수정할 수 없습니다.'], 403);
+        }
+        
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'owner_name' => 'nullable|string|max:255',
+            'phone' => 'nullable|string|max:20',
+            'address' => 'nullable|string|max:500',
+            'status' => 'nullable|in:active,inactive,maintenance'
+        ]);
+        
+        $store->update($request->only([
+            'name', 'owner_name', 'phone', 'address', 'status'
+        ]));
+        
+        Log::info('Store updated', [
+            'store_id' => $store->id,
+            'updated_by' => Auth::id(),
+            'changes' => $request->only(['name', 'owner_name', 'phone', 'address', 'status'])
+        ]);
+        
+        return response()->json([
+            'success' => true,
+            'message' => '매장 정보가 성공적으로 수정되었습니다.',
+            'data' => $store->fresh()->load('branch')
+        ]);
+    }
+    
+    /**
+     * 매장 계정 생성 (본사/지사)
+     */
+    public function createAccount(Request $request, Store $store): JsonResponse
+    {
+        $user = Auth::user();
+        
+        // 권한 확인
+        if ($user->role === 'branch' && $store->branch_id !== $user->branch_id) {
+            return response()->json(['error' => '권한이 없습니다.'], 403);
+        } elseif ($user->role === 'store') {
+            return response()->json(['error' => '매장 사용자는 계정을 생성할 수 없습니다.'], 403);
+        }
+        
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:6',
+            'role' => 'required|in:store,branch'
+        ]);
+        
+        // 지사 관리자는 매장 계정만 생성 가능
+        if ($user->role === 'branch' && $request->role !== 'store') {
+            return response()->json(['error' => '지사 관리자는 매장 계정만 생성할 수 있습니다.'], 403);
+        }
+        
+        $newUser = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'role' => $request->role,
+            'store_id' => $request->role === 'store' ? $store->id : null,
+            'branch_id' => $store->branch_id,
+            'created_by_user_id' => Auth::id()
+        ]);
+        
+        Log::info('Store account created', [
+            'store_id' => $store->id,
+            'new_user_id' => $newUser->id,
+            'role' => $newUser->role,
+            'created_by' => Auth::id()
+        ]);
+        
+        return response()->json([
+            'success' => true,
+            'message' => '계정이 성공적으로 생성되었습니다.',
+            'data' => $newUser
+        ], 201);
+    }
+    
+    /**
+     * 매장 삭제/비활성화 (본사만)
+     */
+    public function destroy(Store $store): JsonResponse
+    {
+        if (Auth::user()->role !== 'headquarters') {
+            return response()->json(['error' => '본사 관리자만 매장을 삭제할 수 있습니다.'], 403);
+        }
+        
+        return DB::transaction(function () use ($store) {
+            // 연관된 판매 데이터가 있는 경우 소프트 삭제 (상태를 비활성화)
+            $hasSales = $store->sales()->exists();
+            
+            if ($hasSales) {
+                $store->update([
+                    'status' => 'deleted',
+                    'deleted_at' => now()
+                ]);
+                
+                // 매장 사용자들도 비활성화
+                $store->users()->update(['is_active' => false]);
+                
+                $message = '판매 데이터가 있어 매장이 비활성화되었습니다.';
+            } else {
+                // 판매 데이터가 없으면 완전 삭제
+                $store->users()->delete();
+                $store->delete();
+                
+                $message = '매장이 완전히 삭제되었습니다.';
+            }
+            
+            Log::info('Store deleted/deactivated', [
+                'store_id' => $store->id,
+                'store_name' => $store->name,
+                'had_sales' => $hasSales,
+                'deleted_by' => Auth::id(),
+                'action' => $hasSales ? 'deactivated' : 'deleted'
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => $message
+            ]);
+        });
+    }
+    
+    /**
+     * 매장 성과 조회 (본사/지사/해당 매장)
+     */
+    public function performance(Store $store): JsonResponse
+    {
+        $user = Auth::user();
+        
+        // 권한 확인
+        if ($user->role === 'store' && $store->id !== $user->store_id) {
+            return response()->json(['error' => '권한이 없습니다.'], 403);
+        } elseif ($user->role === 'branch' && $store->branch_id !== $user->branch_id) {
+            return response()->json(['error' => '권한이 없습니다.'], 403);
+        }
+        
+        // 이번 달 성과
+        $thisMonth = $store->sales()
+            ->whereYear('sale_date', now()->year)
+            ->whereMonth('sale_date', now()->month)
+            ->selectRaw('
+                COUNT(*) as total_count,
+                COALESCE(SUM(settlement_amount), 0) as total_settlement,
+                COALESCE(SUM(margin_after_tax), 0) as total_margin,
+                COALESCE(AVG(settlement_amount), 0) as avg_settlement
+            ')
+            ->first();
+        
+        // 지난달 성과 (비교용)
+        $lastMonth = $store->sales()
+            ->whereYear('sale_date', now()->subMonth()->year)
+            ->whereMonth('sale_date', now()->subMonth()->month)
+            ->selectRaw('
+                COUNT(*) as total_count,
+                COALESCE(SUM(settlement_amount), 0) as total_settlement,
+                COALESCE(SUM(margin_after_tax), 0) as total_margin
+            ')
+            ->first();
+        
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'store' => $store->only(['id', 'name', 'status']),
+                'this_month' => $thisMonth,
+                'last_month' => $lastMonth,
+                'growth_rate' => $lastMonth->total_settlement > 0 
+                    ? (($thisMonth->total_settlement - $lastMonth->total_settlement) / $lastMonth->total_settlement) * 100 
+                    : 0
+            ]
+        ]);
+    }
+    
+    /**
      * 지사 목록 조회
      */
     public function branches(): JsonResponse
