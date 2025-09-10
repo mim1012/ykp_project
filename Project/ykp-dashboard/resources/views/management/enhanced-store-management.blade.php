@@ -31,7 +31,7 @@
 
     <main class="max-w-7xl mx-auto py-6 px-4">
         <!-- 빠른 작업 카드 -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-lg shadow-lg cursor-pointer hover:shadow-xl transition-all" onclick="console.log('카드 클릭됨'); if(typeof openStoreModal === 'function') { openStoreModal(); } else { alert('openStoreModal 함수를 찾을 수 없습니다'); }">
                 <div class="flex items-center">
                     <div class="text-3xl mr-4">🏪</div>
@@ -58,6 +58,16 @@
                     <div>
                         <h3 class="text-lg font-semibold">현황 보기</h3>
                         <p class="text-purple-100 text-sm">매장 및 계정 현황</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-gradient-to-r from-orange-500 to-red-500 text-white p-6 rounded-lg shadow-lg cursor-pointer hover:shadow-xl transition-all" onclick="goToBranchManagement()">
+                <div class="flex items-center">
+                    <div class="text-3xl mr-4">🏢</div>
+                    <div>
+                        <h3 class="text-lg font-semibold">지사 관리</h3>
+                        <p class="text-orange-100 text-sm">지사 추가 및 관리자 계정</p>
                     </div>
                 </div>
             </div>
@@ -274,6 +284,7 @@
             window.createStoreAccount = createStoreAccount;
             window.editStore = editStore;
             window.checkStoreAccount = checkStoreAccount;
+            window.goToBranchManagement = goToBranchManagement;
             
             loadBranches();
             loadStores();
@@ -775,6 +786,18 @@
         // 매장 계정 확인
         function checkStoreAccount(storeId) {
             showToast('계정 확인 기능은 준비 중입니다', 'info');
+        }
+
+        // 지사 관리 페이지로 이동
+        function goToBranchManagement() {
+            const userRole = '{{ auth()->user()->role ?? "guest" }}';
+            
+            if (userRole !== 'headquarters') {
+                showToast('지사 관리는 본사 관리자만 접근 가능합니다', 'warning');
+                return;
+            }
+            
+            window.location.href = '/management/branches';
         }
     </script>
 </body>
