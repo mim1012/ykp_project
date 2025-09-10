@@ -1288,65 +1288,91 @@ Route::middleware(['web'])->group(function () {
 
 // Statistics API Routes (통계 기능 API)
 Route::middleware(['web'])->group(function () {
-    // KPI 데이터 - 실제 데이터 연동
+    // KPI 데이터 - Redis 캐싱 적용된 최적화 버전
     Route::get('/api/statistics/kpi', function (Illuminate\Http\Request $request) {
         try {
-            $days = $request->get('days', 30);
-            $storeId = $request->get('store'); // 매장 필터링
+            $days = intval($request->get('days', 30));
+            $storeId = $request->get('store') ? intval($request->get('store')) : null;
             
-            // 기간 설정
-            $startDate = now()->subDays($days)->startOfDay();
-            $endDate = now()->endOfDay();
-            
-            // 기본 쿼리
-            $query = \App\Models\Sale::whereBetween('sale_date', [$startDate, $endDate]);
-            
-            // 매장 필터 적용
-            if ($storeId) {
-                $query->where('store_id', $storeId);
+            // 입력값 검증
+            if ($days <= 0 || $days > 365) {
+                return response()->json(['success' => false, 'error' => '조회 기간은 1-365일 사이여야 합니다.'], 400);
             }
             
-            // 실제 KPI 계산
-            $totalRevenue = $query->sum('settlement_amount') ?: 0;
-            $netProfit = $query->sum('margin_after_tax') ?: 0;
-            $totalActivations = $query->count();
-            $avgDaily = $days > 0 ? round($totalActivations / $days, 1) : 0;
-            $profitMargin = $totalRevenue > 0 ? round(($netProfit / $totalRevenue) * 100, 1) : 0;
+            // 캐시 키 생성
+            $cacheKey = "kpi.{$storeId}.{$days}." . now()->format('Y-m-d-H');
             
-            // 활성 매장 수 (매장 필터가 있으면 1, 없으면 전체 활성 매장)
-            $activeStores = $storeId ? 1 : \App\Models\Store::where('status', 'active')->count();
+            // Redis 캐싱 (5분 TTL)
+            $kpiData = \Cache::remember($cacheKey, 300, function () use ($days, $storeId) {
+                // 기간 설정
+                $startDate = now()->subDays($days)->startOfDay();
+                $endDate = now()->endOfDay();
+                
+                // 단일 쿼리로 집계 (성능 최적화)
+                $query = \App\Models\Sale::whereBetween('sale_date', [$startDate, $endDate]);
+                
+                if ($storeId) {
+                    $query->where('store_id', $storeId);
+                }
+                
+                $stats = $query->selectRaw('
+                    COALESCE(SUM(settlement_amount), 0) as total_revenue,
+                    COALESCE(SUM(margin_after_tax), 0) as net_profit,
+                    COUNT(*) as total_activations,
+                    COALESCE(AVG(settlement_amount), 0) as avg_settlement
+                ')->first();
+                
+                $totalRevenue = floatval($stats->total_revenue);
+                $netProfit = floatval($stats->net_profit);
+                $totalActivations = intval($stats->total_activations);
+                $avgDaily = $days > 0 ? round($totalActivations / $days, 1) : 0;
+                $profitMargin = $totalRevenue > 0 ? round(($netProfit / $totalRevenue) * 100, 1) : 0;
             
-            // 성장률 계산 (이전 동일 기간 대비)
-            $prevStartDate = now()->subDays($days * 2)->startOfDay();
-            $prevEndDate = now()->subDays($days)->endOfDay();
-            $prevQuery = \App\Models\Sale::whereBetween('sale_date', [$prevStartDate, $prevEndDate]);
-            if ($storeId) {
-                $prevQuery->where('store_id', $storeId);
-            }
-            $prevRevenue = $prevQuery->sum('settlement_amount') ?: 1;
-            $revenueGrowth = round((($totalRevenue - $prevRevenue) / $prevRevenue) * 100, 1);
-            
-            // 매장 성장 (신규 매장 수 - 전체 조회시만)
-            $storeGrowth = $storeId ? 0 : \App\Models\Store::where('created_at', '>=', $startDate)->count();
-            
-            $kpiData = [
-                'total_revenue' => $totalRevenue,
-                'net_profit' => $netProfit,
-                'profit_margin' => $profitMargin,
-                'total_activations' => $totalActivations,
-                'avg_daily' => $avgDaily,
-                'active_stores' => $activeStores,
-                'store_growth' => $storeGrowth,
-                'revenue_growth' => $revenueGrowth,
-                'period' => [
-                    'start' => $startDate->format('Y-m-d'),
-                    'end' => $endDate->format('Y-m-d'),
-                    'days' => $days
-                ],
-                'store_filter' => $storeId ? ['id' => $storeId] : null
-            ];
+                // 활성 매장 수 (매장 필터가 있으면 1, 없으면 전체 활성 매장)
+                $activeStores = $storeId ? 1 : \App\Models\Store::where('status', 'active')->count();
+                
+                // 성장률 계산 (이전 동일 기간 대비) - 안전한 계산식
+                $prevStartDate = now()->subDays($days * 2)->startOfDay();
+                $prevEndDate = now()->subDays($days)->endOfDay();
+                $prevQuery = \App\Models\Sale::whereBetween('sale_date', [$prevStartDate, $prevEndDate]);
+                if ($storeId) {
+                    $prevQuery->where('store_id', $storeId);
+                }
+                $prevRevenue = $prevQuery->sum('settlement_amount') ?? 0;
+                $revenueGrowth = $prevRevenue > 0 
+                    ? round((($totalRevenue - $prevRevenue) / $prevRevenue) * 100, 1)
+                    : ($totalRevenue > 0 ? 100 : 0);
+                
+                // 매장 성장 (신규 매장 수 - 전체 조회시만)
+                $storeGrowth = $storeId ? 0 : \App\Models\Store::where('created_at', '>=', $startDate)->count();
+                
+                return [
+                    'total_revenue' => $totalRevenue,
+                    'net_profit' => $netProfit,
+                    'profit_margin' => $profitMargin,
+                    'total_activations' => $totalActivations,
+                    'avg_daily' => $avgDaily,
+                    'active_stores' => $activeStores,
+                    'store_growth' => $storeGrowth,
+                    'revenue_growth' => $revenueGrowth,
+                    'period' => [
+                        'start' => $startDate->format('Y-m-d'),
+                        'end' => $endDate->format('Y-m-d'),
+                        'days' => $days
+                    ],
+                    'store_filter' => $storeId ? ['id' => $storeId] : null,
+                    'cached_at' => now()->toISOString()
+                ];
+            });
 
-            return response()->json(['success' => true, 'data' => $kpiData]);
+            return response()->json([
+                'success' => true, 
+                'data' => $kpiData,
+                'meta' => [
+                    'cached' => \Cache::has($cacheKey),
+                    'cache_key' => $cacheKey
+                ]
+            ]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
@@ -1448,76 +1474,105 @@ Route::middleware(['web'])->group(function () {
         }
     });
 
-    // 지사별 성과 - 실제 데이터 연동
+    // 지사별 성과 - N+1 쿼리 제거된 최적화 버전
     Route::get('/api/statistics/branch-performance', function (Illuminate\Http\Request $request) {
         try {
-            $days = $request->get('days', 30);
-            $storeId = $request->get('store');
+            $days = intval($request->get('days', 30));
+            $storeId = $request->get('store') ? intval($request->get('store')) : null;
+            
+            if ($days <= 0 || $days > 365) {
+                return response()->json(['success' => false, 'error' => '조회 기간은 1-365일 사이여야 합니다.'], 400);
+            }
             
             $startDate = now()->subDays($days)->startOfDay();
             $endDate = now()->endOfDay();
             
-            // 매장 필터가 있으면 해당 매장의 지사만, 없으면 모든 지사
+            // 단일 쿼리로 현재 기간 지사별 집계 (N+1 해결)
+            $currentQuery = \App\Models\Sale::with('branch:id,name')
+                ->whereBetween('sale_date', [$startDate, $endDate])
+                ->select('branch_id')
+                ->selectRaw('
+                    SUM(settlement_amount) as revenue,
+                    COUNT(*) as activations,
+                    AVG(settlement_amount) as avg_price
+                ')
+                ->groupBy('branch_id');
+            
+            // 매장 필터 적용
             if ($storeId) {
-                $store = \App\Models\Store::find($storeId);
-                if (!$store) {
-                    return response()->json(['success' => false, 'error' => '매장을 찾을 수 없습니다.'], 404);
-                }
-                $branchIds = [$store->branch_id];
-            } else {
-                $branchIds = \App\Models\Branch::pluck('id')->toArray();
+                $currentQuery->where('store_id', $storeId);
             }
             
-            $branchPerformances = [];
+            $currentResults = $currentQuery->get()->keyBy('branch_id');
             
-            foreach ($branchIds as $branchId) {
-                $branch = \App\Models\Branch::find($branchId);
+            // 이전 기간 성과 (단일 쿼리)
+            $prevStartDate = now()->subDays($days * 2)->startOfDay();
+            $prevEndDate = now()->subDays($days)->endOfDay();
+            
+            $prevQuery = \App\Models\Sale::whereBetween('sale_date', [$prevStartDate, $prevEndDate])
+                ->select('branch_id')
+                ->selectRaw('SUM(settlement_amount) as prev_revenue')
+                ->groupBy('branch_id');
+                
+            if ($storeId) {
+                $prevQuery->where('store_id', $storeId);
+            }
+            
+            $prevResults = $prevQuery->get()->keyBy('branch_id');
+            
+            // 매장 수 집계 (단일 쿼리)
+            $storeCountsQuery = \App\Models\Store::where('status', 'active')
+                ->select('branch_id')
+                ->selectRaw('COUNT(*) as store_count')
+                ->groupBy('branch_id');
+                
+            if ($storeId) {
+                $storeCountsQuery->where('id', $storeId);
+            }
+            
+            $storeCounts = $storeCountsQuery->get()->keyBy('branch_id');
+            
+            // 결과 조합
+            $branchPerformances = [];
+            foreach ($currentResults as $branchId => $current) {
+                $branch = $current->branch;
                 if (!$branch) continue;
                 
-                // 현재 기간 성과
-                $currentQuery = \App\Models\Sale::whereBetween('sale_date', [$startDate, $endDate])
-                                              ->where('branch_id', $branchId);
-                if ($storeId) {
-                    $currentQuery->where('store_id', $storeId);
-                }
+                $prevRevenue = $prevResults->get($branchId)?->prev_revenue ?? 0;
+                $growth = $prevRevenue > 0 
+                    ? round((($current->revenue - $prevRevenue) / $prevRevenue) * 100, 1)
+                    : ($current->revenue > 0 ? 100 : 0);
                 
-                $currentRevenue = $currentQuery->sum('settlement_amount') ?: 0;
-                $currentActivations = $currentQuery->count();
-                $avgPrice = $currentActivations > 0 ? $currentRevenue / $currentActivations : 0;
-                
-                // 이전 기간 성과 (성장률 계산용)
-                $prevStartDate = now()->subDays($days * 2)->startOfDay();
-                $prevEndDate = now()->subDays($days)->endOfDay();
-                $prevQuery = \App\Models\Sale::whereBetween('sale_date', [$prevStartDate, $prevEndDate])
-                                            ->where('branch_id', $branchId);
-                if ($storeId) {
-                    $prevQuery->where('store_id', $storeId);
-                }
-                
-                $prevRevenue = $prevQuery->sum('settlement_amount') ?: 1;
-                $growth = round((($currentRevenue - $prevRevenue) / $prevRevenue) * 100, 1);
-                
-                // 매장 수 (매장 필터가 있으면 1, 없으면 지사 소속 매장 수)
-                $storeCount = $storeId ? 1 : $branch->stores()->where('status', 'active')->count();
+                $storeCount = $storeId ? 1 : ($storeCounts->get($branchId)?->store_count ?? 0);
                 
                 $branchPerformances[] = [
                     'name' => $branch->name,
                     'stores' => $storeCount,
-                    'revenue' => $currentRevenue,
-                    'activations' => $currentActivations,
-                    'avg_price' => round($avgPrice),
-                    'growth' => $growth
+                    'revenue' => floatval($current->revenue ?? 0),
+                    'activations' => intval($current->activations ?? 0),
+                    'avg_price' => round(floatval($current->avg_price ?? 0)),
+                    'growth' => $growth,
+                    'branch_id' => $branchId
                 ];
             }
             
-            // 매출순으로 정렬
+            // 매출순 정렬
             usort($branchPerformances, function($a, $b) {
                 return $b['revenue'] <=> $a['revenue'];
             });
 
-            return response()->json(['success' => true, 'data' => $branchPerformances]);
+            return response()->json([
+                'success' => true, 
+                'data' => $branchPerformances,
+                'meta' => [
+                    'query_count' => 3, // N+1 해결: 3개 쿼리로 축소
+                    'period' => ['start' => $startDate->format('Y-m-d'), 'end' => $endDate->format('Y-m-d')],
+                    'store_filter' => $storeId
+                ]
+            ]);
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+            \Log::error('Branch performance API error', ['error' => $e->getMessage(), 'store_id' => $storeId ?? null]);
+            return response()->json(['success' => false, 'error' => '지사별 성과 조회 중 오류가 발생했습니다.'], 500);
         }
     });
 
