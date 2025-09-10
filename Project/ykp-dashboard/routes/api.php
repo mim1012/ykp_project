@@ -401,12 +401,16 @@ Route::prefix('dashboard')->group(function () {
             $activeBranches = \App\Models\Branch::where('status', 'active')->count();
             $totalUsers = \App\Models\User::count();
             
-            // 매출 데이터가 있는 매장 수 (실제 활동 매장) - SQLite 호환
+            // 매출 데이터가 있는 매장 수 (실제 활동 매장) - PostgreSQL/SQLite 호환
             $thisMonth = now()->format('Y-m');
-            $salesActiveStores = \App\Models\Sale::whereRaw("strftime('%Y-%m', sale_date) = ?", [$thisMonth])
+            $dateFunction = config('database.default') === 'pgsql' 
+                ? "TO_CHAR(sale_date, 'YYYY-MM')" 
+                : "strftime('%Y-%m', sale_date)";
+                
+            $salesActiveStores = \App\Models\Sale::whereRaw("{$dateFunction} = ?", [$thisMonth])
                                ->distinct('store_id')->count();
             
-            $thisMonthSales = \App\Models\Sale::whereRaw("strftime('%Y-%m', sale_date) = ?", [$thisMonth])->sum('settlement_amount');
+            $thisMonthSales = \App\Models\Sale::whereRaw("{$dateFunction} = ?", [$thisMonth])->sum('settlement_amount');
             $monthlyTarget = 50000000;
             $achievementRate = $thisMonthSales > 0 ? round(($thisMonthSales / $monthlyTarget) * 100, 1) : 0;
             

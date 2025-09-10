@@ -29,14 +29,18 @@ class DashboardController extends Controller
             $totalUsers = User::count();
             $activeUsers = User::where('status', 'active')->count();
             
-            // 매출 데이터가 있는 매장 수 (실제 활동 매장) - SQLite 호환
+            // 매출 데이터가 있는 매장 수 (실제 활동 매장) - PostgreSQL/SQLite 호환
             $thisMonth = now()->format('Y-m');
-            $salesActiveStores = Sale::whereRaw("strftime('%Y-%m', sale_date) = ?", [$thisMonth])
+            $dateFunction = config('database.default') === 'pgsql' 
+                ? "TO_CHAR(sale_date, 'YYYY-MM')" 
+                : "strftime('%Y-%m', sale_date)";
+                
+            $salesActiveStores = Sale::whereRaw("{$dateFunction} = ?", [$thisMonth])
                                    ->distinct('store_id')
                                    ->count();
             
-            // 이번달 매출 (실제 데이터) - SQLite 호환
-            $thisMonthSales = Sale::whereRaw("strftime('%Y-%m', sale_date) = ?", [$thisMonth])
+            // 이번달 매출 (실제 데이터) - PostgreSQL/SQLite 호환
+            $thisMonthSales = Sale::whereRaw("{$dateFunction} = ?", [$thisMonth])
                                 ->sum('settlement_amount');
             
             // 오늘 개통 건수
