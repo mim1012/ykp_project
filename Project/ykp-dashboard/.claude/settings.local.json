@@ -68,7 +68,10 @@
       "WebFetch(domain:ykpproject-production.up.railway.app)",
       "mcp__microsoft-playwright-mcp__browser_console_messages",
       "mcp__microsoft-playwright-mcp__browser_fill_form",
-      "mcp__microsoft-playwright-mcp__browser_network_requests"
+      "mcp__microsoft-playwright-mcp__browser_network_requests",
+      "mcp__microsoft-playwright-mcp__browser_take_screenshot",
+      "mcp__microsoft-playwright-mcp__browser_press_key",
+      "mcp__microsoft-playwright-mcp__browser_select_option"
     ],
     "defaultMode": "acceptEdits",
     "additionalDirectories": [

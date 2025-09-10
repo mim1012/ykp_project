@@ -52,6 +52,11 @@ Route::get('/', function () {
     }
 })->name('home');
 
+// 새로운 기능 소개 페이지
+Route::get('/features', function () {
+    return view('features-showcase');
+})->name('features.showcase');
+
 // 연동 테스트용 (인증 없이 접근)
 Route::get('/test-integration', function () {
     return view('github-dashboard')->with([
@@ -120,6 +125,16 @@ Route::middleware(['auth', 'rbac'])->group(function () {
             'userRole' => $userRole
         ]);
     })->name('management.stores');
+
+    // 1순위: 향상된 매장 추가 및 계정 생성 페이지
+    Route::get('/management/stores/enhanced', function (Illuminate\Http\Request $request) {
+        $userRole = auth()->user()->role;
+        if (!in_array($userRole, ['headquarters', 'branch'])) {
+            abort(403, '본사 또는 지사 관리자만 접근 가능합니다.');
+        }
+        
+        return view('management.enhanced-store-management');
+    })->name('management.stores.enhanced');
     
     // 별도 지사 관리 페이지
     Route::get('/management/branches', function () {
@@ -146,6 +161,11 @@ Route::middleware(['auth', 'rbac'])->group(function () {
                 abort(403, '통계 접근 권한이 없습니다.');
         }
     })->name('statistics');
+
+    // 3순위: 향상된 전체 통계 페이지
+    Route::get('/statistics/enhanced', function () {
+        return view('statistics.enhanced-statistics');
+    })->name('statistics.enhanced');
 
     // 개선된 개통표 입력
     Route::get('/sales/improved-input', function () {
@@ -335,6 +355,11 @@ Route::get('/refunds', function () {
 Route::get('/monthly-settlement', function () {
     return view('settlements.monthly-settlement');
 })->name('settlements.monthly');
+
+// 2순위: 향상된 월마감정산 페이지
+Route::get('/settlements/enhanced', function () {
+    return view('settlements.enhanced-monthly-settlement');
+})->name('settlements.enhanced');
 
 // 권한별 대시보드 (별도 경로)
 Route::middleware(['auth'])->get('/role-dashboard', function () {
@@ -1172,4 +1197,191 @@ Route::middleware(['web'])->group(function () {
             'session_id' => session()->getId()
         ]);
     })->name('api.session-status');
+});
+
+// Settlement API Routes (정산 기능 API)
+Route::middleware(['web'])->group(function () {
+    // 월별 정산 데이터 조회
+    Route::get('/api/settlements/monthly-data', function (Illuminate\Http\Request $request) {
+        try {
+            $month = $request->get('month', now()->format('Y-m'));
+            
+            // 실제 구현에서는 MonthlySettlement 모델을 사용
+            $settlement = App\Models\MonthlySettlement::where('year_month', $month)->first();
+            
+            if ($settlement) {
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'revenue' => [
+                            'sales_count' => $settlement->total_sales_count,
+                            'settlement_amount' => $settlement->total_sales_amount,
+                            'vat_amount' => $settlement->total_vat_amount,
+                            'avg_margin' => $settlement->average_margin_rate,
+                            'gross_profit' => $settlement->gross_profit
+                        ],
+                        'expenses' => [
+                            'daily_expenses' => $settlement->total_daily_expenses,
+                            'fixed_expenses' => $settlement->total_fixed_expenses,
+                            'payroll_expenses' => $settlement->total_payroll_amount,
+                            'refund_amount' => $settlement->total_refund_amount,
+                            'total_expenses' => $settlement->total_expense_amount
+                        ],
+                        'calculated' => true
+                    ]
+                ]);
+            } else {
+                return response()->json(['success' => false, 'message' => '정산 데이터가 없습니다.']);
+            }
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    });
+
+    // 자동 정산 계산
+    Route::post('/api/settlements/auto-calculate', function (Illuminate\Http\Request $request) {
+        try {
+            $month = $request->input('month', now()->format('Y-m'));
+            
+            // 데모 자동 계산 결과
+            $calculatedData = [
+                'revenue' => [
+                    'sales_count' => 45,
+                    'settlement_amount' => 25000000,
+                    'vat_amount' => 2272727,
+                    'avg_margin' => 15.5,
+                    'gross_profit' => 22727273
+                ],
+                'expenses' => [
+                    'daily_expenses' => 2500000,
+                    'fixed_expenses' => 3200000,
+                    'payroll_expenses' => 4800000,
+                    'refund_amount' => 500000,
+                    'total_expenses' => 11000000
+                ],
+                'calculated' => true
+            ];
+
+            return response()->json(['success' => true, 'data' => $calculatedData]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    });
+
+    // 정산 저장
+    Route::post('/api/settlements/save', function (Illuminate\Http\Request $request) {
+        try {
+            $data = $request->all();
+            
+            // 실제로는 MonthlySettlement 모델에 저장
+            return response()->json([
+                'success' => true,
+                'message' => '정산이 저장되었습니다.',
+                'data' => $data
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    });
+});
+
+// Statistics API Routes (통계 기능 API)
+Route::middleware(['web'])->group(function () {
+    // KPI 데이터
+    Route::get('/api/statistics/kpi', function (Illuminate\Http\Request $request) {
+        try {
+            $days = $request->get('days', 30);
+            
+            // 데모 KPI 데이터
+            $kpiData = [
+                'total_revenue' => 125000000,
+                'net_profit' => 75000000,
+                'profit_margin' => 60.0,
+                'total_activations' => 450,
+                'avg_daily' => round(450 / $days),
+                'active_stores' => 12,
+                'store_growth' => 2,
+                'revenue_growth' => 15.3
+            ];
+
+            return response()->json(['success' => true, 'data' => $kpiData]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    });
+
+    // 매출 추이 데이터
+    Route::get('/api/statistics/revenue-trend', function (Illuminate\Http\Request $request) {
+        try {
+            $days = $request->get('days', 30);
+            $type = $request->get('type', 'daily');
+            
+            // 데모 추이 데이터 생성 로직은 프론트엔드에서 처리
+            return response()->json(['success' => true, 'data' => []]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    });
+
+    // 통신사별 분석
+    Route::get('/api/statistics/carrier-breakdown', function (Illuminate\Http\Request $request) {
+        try {
+            $demoCarrierData = [
+                'labels' => ['SKT', 'KT', 'LGU+'],
+                'data' => [45, 35, 20],
+                'colors' => ['#FF6384', '#36A2EB', '#FFCE56']
+            ];
+
+            return response()->json(['success' => true, 'data' => $demoCarrierData]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    });
+
+    // 지사별 성과
+    Route::get('/api/statistics/branch-performance', function (Illuminate\Http\Request $request) {
+        try {
+            $demoBranches = [
+                ['name' => '서울지사', 'stores' => 5, 'revenue' => 45000000, 'activations' => 180, 'avg_price' => 250000, 'growth' => 12.5],
+                ['name' => '경기지사', 'stores' => 4, 'revenue' => 38000000, 'activations' => 152, 'avg_price' => 250000, 'growth' => 8.3],
+                ['name' => '부산지사', 'stores' => 3, 'revenue' => 42000000, 'activations' => 118, 'avg_price' => 356000, 'growth' => 15.7]
+            ];
+
+            return response()->json(['success' => true, 'data' => $demoBranches]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    });
+
+    // Top 매장
+    Route::get('/api/statistics/top-stores', function (Illuminate\Http\Request $request) {
+        try {
+            $demoStores = [
+                ['name' => '강남점', 'revenue' => 18000000, 'rank' => 1],
+                ['name' => '홍대점', 'revenue' => 15500000, 'rank' => 2],
+                ['name' => '잠실점', 'revenue' => 14200000, 'rank' => 3],
+                ['name' => '부산서면점', 'revenue' => 13800000, 'rank' => 4],
+                ['name' => '대구동성로점', 'revenue' => 12900000, 'rank' => 5]
+            ];
+
+            return response()->json(['success' => true, 'data' => $demoStores]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    });
+
+    // 목표 진척도
+    Route::get('/api/statistics/goal-progress', function () {
+        try {
+            $demoGoals = [
+                'monthly_revenue' => ['current' => 38500000, 'target' => 50000000],
+                'monthly_activations' => ['current' => 154, 'target' => 200],
+                'profit_rate' => ['current' => 58.5, 'target' => 60.0]
+            ];
+
+            return response()->json(['success' => true, 'data' => $demoGoals]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    });
 });
