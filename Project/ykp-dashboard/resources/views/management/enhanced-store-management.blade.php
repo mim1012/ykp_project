@@ -33,7 +33,7 @@
     <main class="max-w-7xl mx-auto py-6 px-4">
         <!-- 빠른 작업 카드 -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-lg shadow-lg cursor-pointer hover:shadow-xl transition-all" onclick="openStoreModal()">
+            <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-lg shadow-lg cursor-pointer hover:shadow-xl transition-all" onclick="console.log('카드 클릭됨'); if(typeof openStoreModal === 'function') { openStoreModal(); } else { alert('openStoreModal 함수를 찾을 수 없습니다'); }">
                 <div class="flex items-center">
                     <div class="text-3xl mr-4">🏪</div>
                     <div>
@@ -100,6 +100,9 @@
                         </select>
                         <button onclick="loadStores()" class="bg-gray-100 text-gray-700 px-3 py-1 rounded text-sm hover:bg-gray-200">
                             새로고침
+                        </button>
+                        <button onclick="openStoreModal()" class="bg-blue-500 text-white px-4 py-1 rounded text-sm hover:bg-blue-600">
+                            ➕ 매장 추가
                         </button>
                     </div>
                 </div>
@@ -252,10 +255,41 @@
         
         // 페이지 로드시 초기화
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('페이지 로드 완료');
+            
+            // 전역 함수들을 window에 명시적으로 등록
+            window.openStoreModal = openStoreModal;
+            window.closeStoreModal = closeStoreModal;
+            window.loadStores = loadStores;
+            window.openBulkAccountModal = openBulkAccountModal;
+            window.closeBulkAccountModal = closeBulkAccountModal;
+            window.createBulkAccounts = createBulkAccounts;
+            window.showStatistics = showStatistics;
+            window.createStoreAccount = createStoreAccount;
+            window.editStore = editStore;
+            window.checkStoreAccount = checkStoreAccount;
+            
             loadBranches();
             loadStores();
             setupEventListeners();
+            
+            // 5초 후 테스트 버튼 추가
+            setTimeout(() => {
+                addTestButton();
+            }, 5000);
         });
+
+        // 테스트 버튼 추가 (디버그용)
+        function addTestButton() {
+            const testButton = document.createElement('button');
+            testButton.innerText = '🔧 테스트 모달';
+            testButton.className = 'fixed bottom-4 right-4 bg-red-500 text-white px-4 py-2 rounded z-50';
+            testButton.onclick = function() {
+                console.log('테스트 버튼 클릭됨');
+                openStoreModal();
+            };
+            document.body.appendChild(testButton);
+        }
 
         // 이벤트 리스너 설정
         function setupEventListeners() {
@@ -405,10 +439,33 @@
 
         // 매장 추가 모달 열기
         function openStoreModal() {
-            document.getElementById('store-modal').classList.remove('hidden');
-            document.getElementById('store-modal').classList.add('flex', 'fade-in');
-            document.getElementById('store-form').reset();
-            document.getElementById('account-fields').style.display = 'none';
+            console.log('openStoreModal 함수 호출됨'); // 디버그 로그
+            try {
+                const modal = document.getElementById('store-modal');
+                if (!modal) {
+                    console.error('store-modal 요소를 찾을 수 없습니다');
+                    alert('모달 요소를 찾을 수 없습니다. 페이지를 새로고침하세요.');
+                    return;
+                }
+                
+                modal.classList.remove('hidden');
+                modal.classList.add('flex', 'fade-in');
+                
+                const form = document.getElementById('store-form');
+                if (form) {
+                    form.reset();
+                }
+                
+                const accountFields = document.getElementById('account-fields');
+                if (accountFields) {
+                    accountFields.style.display = 'none';
+                }
+                
+                console.log('모달이 성공적으로 열렸습니다');
+            } catch (error) {
+                console.error('모달 열기 중 오류:', error);
+                alert('모달 열기 중 오류가 발생했습니다: ' + error.message);
+            }
         }
 
         // 매장 추가 모달 닫기
