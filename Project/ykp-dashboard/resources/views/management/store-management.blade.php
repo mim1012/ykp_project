@@ -1770,15 +1770,15 @@
             }
         }
         
-        // 매장 관리 버튼 함수들
-        function editStore(storeId, storeName) {
+        // 매장 관리 버튼 함수들 (전역 등록)
+        window.editStore = function editStore(storeId, storeName) {
             console.log('✏️ 매장 수정:', storeId, storeName);
             if (confirm(`"${storeName}" 매장 정보를 수정하시겠습니까?`)) {
                 window.location.href = `/management/stores/enhanced?edit=${storeId}`;
             }
-        }
+        };
         
-        function createStoreAccount(storeId, storeName) {
+        window.createStoreAccount = function createStoreAccount(storeId, storeName) {
             console.log('👤 계정 생성:', storeId, storeName);
             const name = prompt(`${storeName} 매장의 관리자 이름을 입력하세요:`, `${storeName} 관리자`);
             if (!name) return;
@@ -1812,14 +1812,15 @@
             .catch(error => {
                 alert('❌ 네트워크 오류: ' + error.message);
             });
-        }
+        };
         
-        function viewStoreStats(storeId, storeName) {
+        window.viewStoreStats = function(storeId, storeName) {
             console.log('📊 성과 보기:', storeId, storeName);
-            window.open(`/test-api/stores/${storeId}/stats`, '_blank');
-        }
+            // 실제 매장 통계 페이지로 이동
+            window.location.href = `/statistics/enhanced?store=${storeId}&name=${encodeURIComponent(storeName)}`;
+        };
         
-        function deleteStore(storeId, storeName) {
+        window.deleteStore = function(storeId, storeName) {
             console.log('🗑️ 매장 삭제:', storeId, storeName);
             if (!confirm(`⚠️ 정말로 "${storeName}" 매장을 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`)) {
                 return;
@@ -1844,7 +1845,7 @@
             .catch(error => {
                 alert('❌ 네트워크 오류: ' + error.message);
             });
-        }
+        };
         
         // 🛠️ 매장 버튼 이벤트 리스너 설정
         function setupStoreActionButtons() {

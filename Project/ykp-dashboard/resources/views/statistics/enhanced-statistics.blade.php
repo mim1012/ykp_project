@@ -23,7 +23,7 @@
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
                     <h1 class="text-xl font-semibold text-gray-900">전체 통계 및 분석</h1>
-                    <span class="ml-2 px-2 py-1 text-xs bg-orange-100 text-orange-800 rounded">3순위 기능</span>
+                    <span class="ml-2 px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded" id="store-filter-badge" style="display: none;">매장별 보기</span>
                 </div>
                 <div class="flex items-center space-x-4">
                     <select id="period-selector" class="border rounded px-3 py-1 text-sm">
@@ -243,9 +243,22 @@
         let currentPeriod = 30;
         let charts = {};
         let updateInterval;
+        let storeFilter = null; // 매장 필터
 
         // 페이지 로드시 초기화
         document.addEventListener('DOMContentLoaded', function() {
+            // URL 파라미터에서 매장 필터 확인
+            const urlParams = new URLSearchParams(window.location.search);
+            const storeId = urlParams.get('store');
+            const storeName = urlParams.get('name');
+            
+            if (storeId && storeName) {
+                storeFilter = { id: storeId, name: storeName };
+                document.getElementById('store-filter-badge').style.display = 'inline-block';
+                document.getElementById('store-filter-badge').textContent = `${storeName} 매장 통계`;
+                document.querySelector('h1').textContent = `${storeName} 매장 통계 분석`;
+            }
+            
             initializePage();
             setupEventListeners();
             startRealTimeUpdates();
