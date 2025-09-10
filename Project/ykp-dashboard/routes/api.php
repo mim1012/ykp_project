@@ -387,23 +387,49 @@ Route::middleware(['web', 'auth'])->prefix('payroll')->group(function () {
 
 // 웹 대시보드용 API (클로저 함수로 직접 구현)
 Route::prefix('dashboard')->group(function () {
-    // 대시보드 개요 (통계 페이지 메인)
+    // 대시보드 개요 (통계 페이지 메인) - 통일된 응답 구조
     Route::get('/overview', function() {
         try {
+            // 전체/활성 구분된 통계
             $totalStores = \App\Models\Store::count();
+            $activeStores = \App\Models\Store::where('status', 'active')->count();
             $totalBranches = \App\Models\Branch::count();
+            $activeBranches = \App\Models\Branch::where('status', 'active')->count();
+            $totalUsers = \App\Models\User::count();
+            
+            // 매출 데이터가 있는 매장 수 (실제 활동 매장) - SQLite 호환
             $thisMonth = now()->format('Y-m');
-            $thisMonthSales = \App\Models\Sale::whereRaw("DATE_FORMAT(sale_date, '%Y-%m') = ?", [$thisMonth])->sum('settlement_amount');
+            $salesActiveStores = \App\Models\Sale::whereRaw("strftime('%Y-%m', sale_date) = ?", [$thisMonth])
+                               ->distinct('store_id')->count();
+            
+            $thisMonthSales = \App\Models\Sale::whereRaw("strftime('%Y-%m', sale_date) = ?", [$thisMonth])->sum('settlement_amount');
             $monthlyTarget = 50000000;
             $achievementRate = $thisMonthSales > 0 ? round(($thisMonthSales / $monthlyTarget) * 100, 1) : 0;
             
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'total_stores' => $totalStores,
-                    'total_branches' => $totalBranches,
+                    'stores' => [
+                        'total' => $totalStores,
+                        'active' => $activeStores,
+                        'with_sales' => $salesActiveStores
+                    ],
+                    'branches' => [
+                        'total' => $totalBranches, 
+                        'active' => $activeBranches
+                    ],
+                    'users' => [
+                        'total' => $totalUsers,
+                        'headquarters' => \App\Models\User::where('role', 'headquarters')->count(),
+                        'branch_managers' => \App\Models\User::where('role', 'branch')->count(),
+                        'store_staff' => \App\Models\User::where('role', 'store')->count()
+                    ],
                     'this_month_sales' => floatval($thisMonthSales),
-                    'achievement_rate' => $achievementRate
+                    'achievement_rate' => $achievementRate,
+                    'meta' => [
+                        'generated_at' => now()->toISOString(),
+                        'period' => $thisMonth
+                    ]
                 ]
             ]);
         } catch (\Exception $e) {

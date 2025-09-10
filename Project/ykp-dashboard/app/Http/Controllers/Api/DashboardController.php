@@ -21,14 +21,22 @@ class DashboardController extends Controller
         try {
             Log::info('Dashboard overview API called', ['user_id' => auth()->id()]);
             
-            // 기본 통계
+            // 전체/활성 구분된 통계
             $totalStores = Store::count();
+            $activeStores = Store::where('status', 'active')->count();
             $totalBranches = Branch::count();
+            $activeBranches = Branch::where('status', 'active')->count();
             $totalUsers = User::count();
+            $activeUsers = User::where('status', 'active')->count();
             
-            // 이번달 매출 (실제 데이터)
+            // 매출 데이터가 있는 매장 수 (실제 활동 매장) - SQLite 호환
             $thisMonth = now()->format('Y-m');
-            $thisMonthSales = Sale::whereRaw("DATE_FORMAT(sale_date, '%Y-%m') = ?", [$thisMonth])
+            $salesActiveStores = Sale::whereRaw("strftime('%Y-%m', sale_date) = ?", [$thisMonth])
+                                   ->distinct('store_id')
+                                   ->count();
+            
+            // 이번달 매출 (실제 데이터) - SQLite 호환
+            $thisMonthSales = Sale::whereRaw("strftime('%Y-%m', sale_date) = ?", [$thisMonth])
                                 ->sum('settlement_amount');
             
             // 오늘 개통 건수
@@ -39,8 +47,11 @@ class DashboardController extends Controller
             $achievementRate = $thisMonthSales > 0 ? round(($thisMonthSales / $monthlyTarget) * 100, 1) : 0;
             
             Log::info('Dashboard overview calculated', [
-                'stores' => $totalStores,
-                'branches' => $totalBranches,
+                'total_stores' => $totalStores,
+                'active_stores' => $activeStores,
+                'sales_active_stores' => $salesActiveStores,
+                'total_branches' => $totalBranches,
+                'active_branches' => $activeBranches,
                 'this_month_sales' => $thisMonthSales,
                 'achievement_rate' => $achievementRate
             ]);
@@ -48,14 +59,31 @@ class DashboardController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'total_stores' => $totalStores,
-                    'total_branches' => $totalBranches,
-                    'total_users' => $totalUsers,
+                    'stores' => [
+                        'total' => $totalStores,
+                        'active' => $activeStores,
+                        'with_sales' => $salesActiveStores
+                    ],
+                    'branches' => [
+                        'total' => $totalBranches,
+                        'active' => $activeBranches
+                    ],
+                    'users' => [
+                        'total' => $totalUsers,
+                        'active' => $activeUsers,
+                        'headquarters' => User::where('role', 'headquarters')->count(),
+                        'branch_managers' => User::where('role', 'branch')->count(),
+                        'store_staff' => User::where('role', 'store')->count()
+                    ],
                     'this_month_sales' => floatval($thisMonthSales),
                     'today_activations' => $todaySales,
                     'monthly_target' => $monthlyTarget,
                     'achievement_rate' => $achievementRate,
-                    'currency' => 'KRW'
+                    'currency' => 'KRW',
+                    'meta' => [
+                        'generated_at' => now()->toISOString(),
+                        'period' => $thisMonth
+                    ]
                 ]
             ]);
             
