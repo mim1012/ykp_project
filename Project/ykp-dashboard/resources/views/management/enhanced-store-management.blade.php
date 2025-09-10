@@ -20,7 +20,6 @@
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
                     <h1 class="text-xl font-semibold text-gray-900">매장 추가 및 계정 관리</h1>
-                    <span class="ml-2 px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">1순위 기능</span>
                 </div>
                 <div class="flex items-center space-x-4">
                     <a href="/dashboard" class="text-gray-600 hover:text-gray-900">대시보드</a>
@@ -133,7 +132,13 @@
                 </div>
 
                 <div id="no-data" class="text-center py-8" style="display: none;">
-                    <p class="text-gray-500">매장 데이터가 없습니다.</p>
+                    <div class="text-gray-400 mb-4">
+                        <svg class="mx-auto w-16 h-16" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"></path>
+                        </svg>
+                    </div>
+                    <p class="text-gray-500 mb-2">아직 등록된 매장이 없습니다</p>
+                    <button onclick="openStoreModal()" class="text-blue-600 hover:text-blue-800 underline">첫 번째 매장을 추가해보세요</button>
                 </div>
             </div>
         </div>
@@ -359,26 +364,40 @@
 
         // 매장 목록 로드
         async function loadStores() {
-            document.getElementById('loading').style.display = 'block';
-            document.getElementById('stores-tbody').innerHTML = '';
+            const loadingEl = document.getElementById('loading');
+            const noDataEl = document.getElementById('no-data');
+            const tbodyEl = document.getElementById('stores-tbody');
+            
+            // 로딩 시작
+            loadingEl.style.display = 'block';
+            noDataEl.style.display = 'none';
+            tbodyEl.innerHTML = '';
             
             try {
                 const response = await fetch('/test-api/stores');
                 const result = await response.json();
                 
-                if (result.success) {
+                console.log('매장 데이터 응답:', result);
+                
+                if (result.success && result.data && result.data.length > 0) {
                     stores = result.data;
+                    console.log(`${stores.length}개 매장 로드됨`);
                     renderStoresTable(stores);
                     updateStatistics();
                 } else {
-                    document.getElementById('no-data').style.display = 'block';
+                    stores = [];
+                    console.log('매장 데이터 없음');
+                    noDataEl.style.display = 'block';
                 }
             } catch (error) {
-                showToast('매장 목록 로드 실패', 'error');
-                document.getElementById('no-data').style.display = 'block';
+                console.error('매장 로드 오류:', error);
+                showToast('매장 목록 로드 실패: ' + error.message, 'error');
+                stores = [];
+                noDataEl.style.display = 'block';
             }
             
-            document.getElementById('loading').style.display = 'none';
+            // 로딩 완료
+            loadingEl.style.display = 'none';
         }
 
         // 매장 테이블 렌더링
@@ -386,7 +405,11 @@
             const tbody = document.getElementById('stores-tbody');
             tbody.innerHTML = '';
 
-            storeData.forEach(store => {
+            // 데이터가 있을 때만 렌더링하고 no-data 숨김
+            if (storeData && storeData.length > 0) {
+                document.getElementById('no-data').style.display = 'none';
+                
+                storeData.forEach(store => {
                 const row = document.createElement('tr');
                 row.className = 'hover:bg-gray-50';
                 
@@ -421,7 +444,11 @@
                 `;
                 
                 tbody.appendChild(row);
-            });
+                });
+            } else {
+                // 데이터가 없을 때 no-data 메시지 표시
+                document.getElementById('no-data').style.display = 'block';
+            }
         }
 
         // 지사별 매장 필터링
