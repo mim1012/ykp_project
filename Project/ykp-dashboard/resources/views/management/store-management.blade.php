@@ -4,11 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>매장 관리 - YKP ERP (v2.0)</title>
+    <title>매장 관리 - YKP ERP (v2.1 - {{ now()->format('H:i:s') }})</title>
     <!-- 캐시 무효화용 -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
+    <!-- 강제 새로고침용 타임스탬프 -->
+    <script>console.log('페이지 로드 시간: {{ now()->toISOString() }}');</script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css" rel="stylesheet">
     
@@ -33,6 +35,22 @@
     </header>
 
     <main class="max-w-7xl mx-auto py-6 px-4">
+        <!-- 긴급 업데이트 알림 -->
+        <div class="bg-red-500 text-white p-4 mb-6 rounded-lg shadow-lg">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <div class="text-3xl mr-4">🚨</div>
+                    <div>
+                        <h2 class="text-xl font-bold">중요: 매장 추가 기능이 업데이트되었습니다!</h2>
+                        <p class="text-red-100 mt-1">기존 버튼 클릭 시 오류가 발생할 수 있습니다.</p>
+                    </div>
+                </div>
+                <a href="/management/stores/enhanced" class="bg-white text-red-500 px-6 py-3 rounded-lg font-bold hover:bg-red-50 transition-colors">
+                    ➤ 새 매장관리 페이지 이동
+                </a>
+            </div>
+        </div>
+        
         <!-- 업그레이드 안내 -->
         <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
             <div class="flex items-center">
@@ -54,8 +72,8 @@
             <div class="p-6">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-lg font-medium">매장 목록</h2>
-                    <a href="/management/stores/enhanced" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 inline-block text-decoration-none">
-                        ➕ 매장 추가 (새 기능)
+                    <a href="/management/stores/enhanced" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 inline-block text-decoration-none" style="background-color: #10b981 !important;">
+                        🚀 새로운 매장관리 페이지로 이동
                     </a>
                 </div>
                 <div id="stores-grid" class="bg-white rounded border">
