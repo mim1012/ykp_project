@@ -261,6 +261,7 @@
             window.openStoreModal = openStoreModal;
             window.closeStoreModal = closeStoreModal;
             window.loadStores = loadStores;
+            window.addStore = addStore;
             window.openBulkAccountModal = openBulkAccountModal;
             window.closeBulkAccountModal = closeBulkAccountModal;
             window.createBulkAccounts = createBulkAccounts;

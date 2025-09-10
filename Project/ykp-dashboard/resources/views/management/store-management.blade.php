@@ -21,6 +21,7 @@
                     <span class="ml-2 px-2 py-1 text-xs bg-red-100 text-red-800 rounded" id="user-role">본사 전용</span>
                 </div>
                 <div class="flex items-center space-x-4">
+                    <a href="/management/stores/enhanced" class="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600">✨ 새 매장관리</a>
                     <a href="/dashboard" class="text-gray-600 hover:text-gray-900">대시보드</a>
                 </div>
             </div>
@@ -33,7 +34,7 @@
             <div class="p-6">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-lg font-medium">매장 목록</h2>
-                    <button onclick="addStore()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                    <button onclick="if(typeof addStore === 'function') { addStore(); } else { alert('새 매장 관리 페이지로 이동합니다.'); window.location.href = '/management/stores/enhanced'; }" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
                         ➕ 매장 추가
                     </button>
                 </div>
