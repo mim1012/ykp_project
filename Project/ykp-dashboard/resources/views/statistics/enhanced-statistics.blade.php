@@ -8,7 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendardvariable/dist/web/variable/pretendardvariable.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.umd.min.js"></script>
     <style>
         .stat-card { transition: all 0.3s ease; }
         .stat-card:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1); }
@@ -313,18 +313,20 @@
                     throw new Error('KPI 데이터 로드 실패');
                 }
             } catch (error) {
-                // 데모 데이터 사용
-                const demoKPI = {
-                    total_revenue: 125000000,
-                    net_profit: 75000000,
-                    profit_margin: 60.0,
-                    total_activations: 450,
-                    avg_daily: Math.round(450 / currentPeriod),
-                    active_stores: 12,
-                    store_growth: 2,
-                    revenue_growth: 15.3
+                console.error('KPI API 호출 실패:', error);
+                // 실제 데이터 로드 실패 시 0 값으로 표시 (데모 데이터 제거)
+                const emptyKPI = {
+                    total_revenue: 0,
+                    net_profit: 0,
+                    profit_margin: 0,
+                    total_activations: 0,
+                    avg_daily: 0,
+                    active_stores: 0,
+                    store_growth: 0,
+                    revenue_growth: 0
                 };
-                updateKPICards(demoKPI);
+                updateKPICards(emptyKPI);
+                showToast('통계 데이터를 불러올 수 없습니다. 관리자에게 문의하세요.', 'error');
             }
         }
 
@@ -463,13 +465,14 @@
                     throw new Error('통신사 데이터 로드 실패');
                 }
             } catch (error) {
-                // 데모 데이터
-                const demoCarrierData = {
-                    labels: ['SKT', 'KT', 'LGU+'],
-                    data: [45, 35, 20],
-                    colors: ['#FF6384', '#36A2EB', '#FFCE56']
+                console.error('통신사 데이터 로드 실패:', error);
+                // API 실패 시 빈 차트 표시 (데모 데이터 제거)
+                const emptyCarrierData = {
+                    labels: ['데이터 없음'],
+                    data: [100],
+                    colors: ['#CCCCCC']
                 };
-                renderCarrierChart(demoCarrierData);
+                renderCarrierChart(emptyCarrierData);
             }
         }
 
@@ -517,13 +520,11 @@
                     throw new Error('지사 성과 데이터 로드 실패');
                 }
             } catch (error) {
-                // 데모 데이터
-                const demoBranches = [
-                    { name: '서울지사', stores: 5, revenue: 45000000, activations: 180, avg_price: 250000, growth: 12.5 },
-                    { name: '경기지사', stores: 4, revenue: 38000000, activations: 152, avg_price: 250000, growth: 8.3 },
-                    { name: '부산지사', stores: 3, revenue: 42000000, activations: 118, avg_price: 356000, growth: 15.7 }
-                ];
-                renderBranchPerformance(demoBranches);
+                console.error('지사 성과 데이터 로드 실패:', error);
+                // API 실패 시 빈 테이블 표시 (데모 데이터 제거)
+                const emptyBranches = [];
+                renderBranchPerformance(emptyBranches);
+                showToast('지사별 성과 데이터를 불러올 수 없습니다.', 'error');
             }
         }
 
@@ -560,15 +561,11 @@
                     throw new Error('Top 매장 데이터 로드 실패');
                 }
             } catch (error) {
-                // 데모 데이터
-                const demoStores = [
-                    { name: '강남점', revenue: 18000000, rank: 1 },
-                    { name: '홍대점', revenue: 15500000, rank: 2 },
-                    { name: '잠실점', revenue: 14200000, rank: 3 },
-                    { name: '부산서면점', revenue: 13800000, rank: 4 },
-                    { name: '대구동성로점', revenue: 12900000, rank: 5 }
-                ];
-                renderTopStores(demoStores);
+                console.error('Top 매장 데이터 로드 실패:', error);
+                // API 실패 시 빈 목록 표시 (데모 데이터 제거)
+                const emptyStores = [];
+                renderTopStores(emptyStores);
+                showToast('Top 매장 데이터를 불러올 수 없습니다.', 'error');
             }
         }
 
@@ -607,13 +604,15 @@
                     throw new Error('목표 진척도 데이터 로드 실패');
                 }
             } catch (error) {
-                // 데모 데이터
-                const demoGoals = {
-                    monthly_revenue: { current: 38500000, target: 50000000 },
-                    monthly_activations: { current: 154, target: 200 },
-                    profit_rate: { current: 58.5, target: 60.0 }
+                console.error('목표 진척도 데이터 로드 실패:', error);
+                // API 실패 시 0% 표시 (데모 데이터 제거)
+                const emptyGoals = {
+                    monthly_revenue: { current: 0, target: 50000000 },
+                    monthly_activations: { current: 0, target: 200 },
+                    profit_rate: { current: 0, target: 60.0 }
                 };
-                updateGoalProgress(demoGoals);
+                updateGoalProgress(emptyGoals);
+                showToast('목표 진척도 데이터를 불러올 수 없습니다.', 'error');
             }
         }
 

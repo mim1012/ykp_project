@@ -1628,7 +1628,7 @@ Route::middleware(['web'])->group(function () {
         try {
             $storeId = $request->get('store');
             
-            // 이번 달 실제 데이터
+            // 이번 달 실제 데이터 - PostgreSQL/SQLite 호환
             $thisMonthStart = now()->startOfMonth();
             $thisMonthEnd = now()->endOfMonth();
             
@@ -1637,9 +1637,16 @@ Route::middleware(['web'])->group(function () {
                 $thisMonthQuery->where('store_id', $storeId);
             }
             
-            $currentRevenue = $thisMonthQuery->sum('settlement_amount') ?: 0;
-            $currentActivations = $thisMonthQuery->count();
-            $currentProfit = $thisMonthQuery->sum('margin_after_tax') ?: 0;
+            // 단일 쿼리로 집계 (성능 최적화 + PostgreSQL 호환)
+            $monthlyStats = $thisMonthQuery->selectRaw('
+                COALESCE(SUM(settlement_amount), 0) as current_revenue,
+                COUNT(*) as current_activations,
+                COALESCE(SUM(margin_after_tax), 0) as current_profit
+            ')->first();
+            
+            $currentRevenue = floatval($monthlyStats->current_revenue ?? 0);
+            $currentActivations = intval($monthlyStats->current_activations ?? 0);
+            $currentProfit = floatval($monthlyStats->current_profit ?? 0);
             $currentProfitRate = $currentRevenue > 0 ? round(($currentProfit / $currentRevenue) * 100, 1) : 0;
             
             // 목표 설정 (매장별 vs 전체)
