@@ -15,23 +15,7 @@ Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [AuthController::class, 'login']);
     
-    // 🚑 로그아웃 라우트 추가 (누락되어 있었음!)
-    Route::post('/logout', function (Illuminate\Http\Request $request) {
-        \Illuminate\Support\Facades\Auth::logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-        
-        return redirect('/login')->with('message', '로그아웃되었습니다.');
-    })->name('logout');
-    
-    // GET 로그아웃도 지원 (버튼 클릭용)
-    Route::get('/logout', function (Illuminate\Http\Request $request) {
-        \Illuminate\Support\Facades\Auth::logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-        
-        return redirect('/login')->with('message', '로그아웃되었습니다.');
-    })->name('logout.get');
+    // 로그아웃은 AuthController에서 처리 (중복 제거)
 
     // Only show registration in non-production environments
     if (config('app.env') !== 'production') {

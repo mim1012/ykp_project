@@ -74,7 +74,7 @@ class AuthController extends Controller
     }
 
     /**
-     * Handle logout request
+     * Handle logout request - 즉시 리다이렉트 (UX 개선)
      */
     public function logout(Request $request)
     {
@@ -92,7 +92,8 @@ class AuthController extends Controller
             'ip' => $request->ip(),
         ]);
 
-        return redirect('/login')->with('message', '성공적으로 로그아웃되었습니다.');
+        // 즉시 로그인 페이지로 리다이렉트 (메시지 없이)
+        return redirect('/login');
     }
 
     /**
