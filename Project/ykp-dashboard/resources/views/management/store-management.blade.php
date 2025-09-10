@@ -4,7 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>매장 관리 - YKP ERP</title>
+    <title>매장 관리 - YKP ERP (v2.0)</title>
+    <!-- 캐시 무효화용 -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css" rel="stylesheet">
     
@@ -29,14 +33,30 @@
     </header>
 
     <main class="max-w-7xl mx-auto py-6 px-4">
+        <!-- 업그레이드 안내 -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="text-2xl">🆕</div>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium text-blue-800">새로운 매장 관리 기능 사용 가능</h3>
+                    <div class="mt-2 text-sm text-blue-700">
+                        <p>향상된 매장 추가 및 계정 생성 기능이 준비되었습니다. 
+                        <a href="/management/stores/enhanced" class="font-medium underline hover:text-blue-800">새 매장관리 페이지</a>에서 이용하세요.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         <!-- 매장 관리 메인 콘텐츠 -->
         <div class="bg-white rounded-lg shadow mb-6">
             <div class="p-6">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-lg font-medium">매장 목록</h2>
-                    <button onclick="if(typeof addStore === 'function') { addStore(); } else { alert('새 매장 관리 페이지로 이동합니다.'); window.location.href = '/management/stores/enhanced'; }" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-                        ➕ 매장 추가
-                    </button>
+                    <a href="/management/stores/enhanced" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 inline-block text-decoration-none">
+                        ➕ 매장 추가 (새 기능)
+                    </a>
                 </div>
                 <div id="stores-grid" class="bg-white rounded border">
                     @if(isset($stores) && $stores->count() > 0)
