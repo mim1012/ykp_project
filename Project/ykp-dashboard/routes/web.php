@@ -925,6 +925,7 @@ if (config('app.env') !== 'production') {
 
 } // if (config('app.env') !== 'production') 블록 닫기
 
+// 매장/지사 관리 API (모든 환경에서 사용) - 프로덕션에서도 필요
 // 매장 계정 생성 API
 Route::post('/test-api/stores/{id}/create-user', function (Illuminate\Http\Request $request, $id) {
     try {
