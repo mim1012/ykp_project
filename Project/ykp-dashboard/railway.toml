@@ -1,7 +1,8 @@
 [build]
 builder = "NIXPACKS"
-buildCommand = "npm install && npm run build && composer install --no-dev --optimize-autoloader && php artisan migrate --force && php artisan config:clear && php artisan route:clear && php artisan view:clear && php artisan cache:clear"
+buildCommand = "npm install && npm run build && composer install --no-dev --optimize-autoloader && php artisan migrate:status && php artisan migrate --force && php artisan db:seed --class=DatabaseSeeder --force && php artisan config:clear && php artisan route:clear && php artisan view:clear && php artisan cache:clear"
 
 [deploy]
 healthcheckPath = "/"
 restartPolicyType = "ON_FAILURE"
+startCommand = "php artisan migrate --force && php -S 0.0.0.0:$PORT -t public"
