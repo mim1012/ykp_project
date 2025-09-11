@@ -77,7 +77,8 @@
       "Bash(tree:*)",
       "Bash(dir:*)",
       "Bash(./vendor/bin/phpunit --filter=\"StatisticsApiTest\")",
-      "Bash(./vendor/bin/phpunit:*)"
+      "Bash(./vendor/bin/phpunit:*)",
+      "mcp__microsoft-playwright-mcp__browser_navigate_back"
     ],
     "defaultMode": "acceptEdits",
     "additionalDirectories": [
