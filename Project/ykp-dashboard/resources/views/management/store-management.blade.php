@@ -2055,95 +2055,6 @@
             }
         });
 
-        // 🏪 통합 매장 추가 모달 함수들 (PM 요구사항 반영)
-        
-        // 매장 추가 모달 열기
-        function openQuickStoreModal() {
-            console.log('🏪 통합 매장 추가 모달 열기');
-            
-            const modal = document.createElement('div');
-            modal.id = 'quick-store-modal';
-            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-            
-            const userRole = '{{ auth()->user()->role }}';
-            const branchName = userRole === 'branch' ? '{{ auth()->user()->branch->name ?? "지사" }}' : '';
-            
-            modal.innerHTML = `
-                <div class="bg-white p-6 rounded-xl max-w-md w-full mx-4 shadow-2xl">
-                    <h3 class="text-xl font-bold text-gray-900 mb-6">🏪 새 매장 추가</h3>
-                    
-                    <form id="quick-store-form" class="space-y-4">
-                        ${userRole === 'branch' ? `
-                            <div class="bg-blue-50 p-3 rounded-lg">
-                                <span class="text-sm font-medium text-blue-800">🏢 ${branchName} (자동 지정)</span>
-                                <input type="hidden" id="quick-branch-id" value="{{ auth()->user()->branch_id }}">
-                            </div>
-                        ` : `
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">지사 선택</label>
-                                <select id="quick-branch-id" class="w-full px-3 py-2 border rounded-lg" required>
-                                    <option value="">지사를 선택하세요</option>
-                                </select>
-                            </div>
-                        `}
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">매장명 *</label>
-                            <input type="text" id="quick-store-name" class="w-full px-3 py-2 border rounded-lg" placeholder="예: 강남점" required>
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">사장님 성함</label>
-                            <input type="text" id="quick-owner-name" class="w-full px-3 py-2 border rounded-lg" placeholder="사장님 성함">
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">연락처</label>
-                            <input type="text" id="quick-phone" class="w-full px-3 py-2 border rounded-lg" placeholder="010-1234-5678">
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">주소</label>
-                            <input type="text" id="quick-address" class="w-full px-3 py-2 border rounded-lg" placeholder="매장 주소">
-                        </div>
-                        
-                        <div class="bg-green-50 p-3 rounded-lg">
-                            <div class="flex items-center">
-                                <span class="text-green-600 mr-2">ℹ️</span>
-                                <span class="text-sm font-medium text-green-800">매장 관리자 계정이 자동으로 생성됩니다</span>
-                            </div>
-                        </div>
-                        
-                        <div class="flex space-x-3 pt-4">
-                            <button type="button" onclick="closeQuickStoreModal()" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
-                                취소
-                            </button>
-                            <button type="submit" class="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-semibold">
-                                🏪 매장 추가
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            `;
-            
-            document.body.appendChild(modal);
-            
-            // 본사인 경우 지사 목록 로드
-            if (userRole === 'headquarters') {
-                loadBranchesForModal();
-            }
-            
-            // 폼 제출 이벤트
-            document.getElementById('quick-store-form').addEventListener('submit', handleQuickStoreSubmit);
-        }
-
-        // 매장 추가 모달 닫기
-        function closeQuickStoreModal() {
-            const modal = document.getElementById('quick-store-modal');
-            if (modal) {
-                modal.remove();
-            }
-        }
 
         // 본사용 지사 목록 로드
         function loadBranchesForModal() {
@@ -2192,7 +2103,7 @@
                 
                 if (storeResult.success) {
                     // 매장 생성 성공 - 모달 닫기
-                    closeQuickStoreModal();
+                    closeAddStoreModal();
                     
                     // 계정 자동 생성
                     const accountResult = await createAccountForNewStore(storeResult.data.id);
