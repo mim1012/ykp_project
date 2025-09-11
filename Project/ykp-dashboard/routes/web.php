@@ -352,7 +352,7 @@ Route::middleware(['auth'])->get('/role-dashboard', function () {
 
 // 매장/지사 관리 API (모든 환경에서 사용)
 // if (config('app.env') !== 'production') { // Production에서도 사용 가능하도록 주석 처리
-Route::get('/test-api/stores', function (Illuminate\Http\Request $request) {
+Route::middleware(['web', 'auth'])->get('/test-api/stores', function (Illuminate\Http\Request $request) {
     // 세션에서 사용자 정보 확인
     $user = auth()->user();
     
@@ -379,7 +379,7 @@ Route::get('/test-api/stores', function (Illuminate\Http\Request $request) {
     return response()->json(['success' => true, 'data' => $stores]);
 });
 
-Route::post('/test-api/stores/add', function (Illuminate\Http\Request $request) {
+Route::middleware(['web', 'auth'])->post('/test-api/stores/add', function (Illuminate\Http\Request $request) {
     try {
         $branch = App\Models\Branch::find($request->branch_id);
         $storeCount = App\Models\Store::where('branch_id', $request->branch_id)->count();
@@ -674,7 +674,7 @@ Route::get('/test-api/dashboard-debug', function () {
     }
 });
 
-Route::get('/test-api/users', function () {
+Route::middleware(['web', 'auth'])->get('/test-api/users', function () {
     $users = App\Models\User::with(['store', 'branch'])->get();
     return response()->json(['success' => true, 'data' => $users]);
 });
@@ -834,7 +834,7 @@ Route::put('/test-api/stores/{id}', function (Illuminate\Http\Request $request, 
 });
 
 // 매장 상세 정보 조회 (수정 모달용)
-Route::get('/test-api/stores/{id}', function ($id) {
+Route::middleware(['web', 'auth'])->get('/test-api/stores/{id}', function ($id) {
     try {
         $store = App\Models\Store::with('branch')->findOrFail($id);
         return response()->json(['success' => true, 'data' => $store]);
