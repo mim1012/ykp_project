@@ -53,7 +53,7 @@ class StoreController extends Controller
         
         $validationRules = [
             'name' => 'required|string|max:255',
-            'code' => 'required|string|unique:stores,code',
+            'code' => 'nullable|string|unique:stores,code', // 자동 생성되므로 nullable
             'owner_name' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:20',
             'address' => 'nullable|string|max:500'
@@ -70,9 +70,20 @@ class StoreController extends Controller
         $branchId = $user->role === 'branch' ? $user->branch_id : $request->branch_id;
         
         return DB::transaction(function () use ($request, $user, $branchId) {
+            // 매장 코드 자동 생성 (PM 요구사항 반영)
+            $branch = \App\Models\Branch::find($branchId);
+            $branchCode = $branch ? $branch->code : 'BR' . str_pad($branchId, 3, '0', STR_PAD_LEFT);
+            
+            // 해당 지사의 다음 매장 번호 계산
+            $lastStoreNumber = Store::where('branch_id', $branchId)
+                ->where('code', 'LIKE', $branchCode . '-%')
+                ->count();
+            
+            $storeCode = $request->code ?: $branchCode . '-' . str_pad($lastStoreNumber + 1, 3, '0', STR_PAD_LEFT);
+            
             $store = Store::create([
                 'name' => $request->name,
-                'code' => $request->code,
+                'code' => $storeCode,
                 'branch_id' => $branchId,
                 'owner_name' => $request->owner_name,
                 'phone' => $request->phone,
