@@ -80,7 +80,7 @@
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-lg font-medium">매장 목록</h2>
                     @if(in_array(auth()->user()->role, ['headquarters', 'branch']))
-                        <button onclick="openQuickStoreModal()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 font-semibold">
+                        <button onclick="showAddStoreModal()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 font-semibold">
                             ➕ 매장 추가
                         </button>
                     @endif
