@@ -979,12 +979,28 @@
                         store_id: window.userData.store_id || 1,
                         branch_id: window.userData.branch_id || 1,
                         carrier: row.carrier || 'SK',
+                        dealer_name: row.dealer_name || '이앤티', // PM 요구사항: 대리점명
                         activation_type: row.activation_type || '신규',
                         model_name: row.model_name,
+                        serial_number: row.serial_number || '', // PM 요구사항: 일련번호
                         base_price: parseFloat(row.base_price) || 0,
+                        verbal1: parseFloat(row.verbal1) || 0,
+                        verbal2: parseFloat(row.verbal2) || 0,
+                        grade_amount: parseFloat(row.grade_amount) || 0,
+                        additional_amount: parseFloat(row.additional_amount) || 0,
+                        cash_activation: parseFloat(row.cash_activation) || 0,
+                        usim_fee: parseFloat(row.usim_fee) || 0,
+                        new_mnp_discount: parseFloat(row.new_mnp_discount) || -800,
+                        deduction: parseFloat(row.deduction) || 0,
                         settlement_amount: parseFloat(row.settlement_amount) || 0,
+                        tax: parseFloat(row.tax) || 0,
+                        margin_before_tax: parseFloat(row.margin_before_tax) || 0,
+                        cash_received: parseFloat(row.cash_received) || 0,
+                        payback: parseFloat(row.payback) || 0,
                         margin_after_tax: parseFloat(row.margin_after_tax) || 0,
                         phone_number: row.phone_number || '',
+                        customer_name: row.customer_name || '', // PM 요구사항: 고객명
+                        customer_birth_date: row.customer_birth_date || null, // PM 요구사항: 생년월일
                         salesperson: row.salesperson || '',
                         memo: row.memo || ''
                     }))
