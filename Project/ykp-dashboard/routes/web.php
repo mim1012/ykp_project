@@ -548,8 +548,8 @@ Route::middleware(['web'])->get('/api/dashboard/dealer-performance', function ()
     }
 });
 
-// 간단한 대시보드 실시간 API (웹용)
-Route::middleware(['web'])->get('/api/dashboard/overview', function () {
+// 간단한 대시보드 실시간 API (웹용) - 권한별 필터링 적용
+Route::middleware(['web', 'auth'])->get('/api/dashboard/overview', function () {
     try {
         Log::info('Dashboard overview API called via web route');
         

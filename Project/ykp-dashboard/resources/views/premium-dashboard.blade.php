@@ -470,9 +470,9 @@
                     <div class="kpi-card" id="branchStores" style="border-left: 4px solid #10b981;">
                         <div class="kpi-header">
                             <span class="kpi-title">🏪 관리 매장 수</span>
-                            <span class="kpi-trend trend-stable">= 2개</span>
+                            <span class="kpi-trend trend-stable" id="branch-stores-trend">= 0개</span>
                         </div>
-                        <div class="kpi-value">2개 매장</div>
+                        <div class="kpi-value" id="branch-stores-count">0개 매장</div>
                         <div class="kpi-subtitle">{{ auth()->user()->branch->name ?? '지사' }} 소속</div>
                     </div>
                     <div class="kpi-card" id="branchSales" style="border-left: 4px solid #10b981;">
@@ -480,22 +480,22 @@
                             <span class="kpi-title">💰 지사 매출</span>
                             <span class="kpi-trend trend-up">+ 8.2%</span>
                         </div>
-                        <div class="kpi-value">₩850,000</div>
+                        <div class="kpi-value" id="branch-total-sales">₩0</div>
                         <div class="kpi-subtitle">소속 매장 합계</div>
                     </div>
                     <div class="kpi-card" id="branchRank" style="border-left: 4px solid #10b981;">
                         <div class="kpi-header">
                             <span class="kpi-title">지사 순위</span>
-                            <span class="kpi-trend trend-up">↑ 1위</span>
+                            <span class="kpi-trend trend-up" id="branch-rank-trend">-</span>
                         </div>
-                        <div class="kpi-value">3위 / 8개</div>
+                        <div class="kpi-value" id="branch-rank-position">- / -</div>
                         <div class="kpi-subtitle">전체 지사 중</div>
                     </div>
                     <div class="kpi-card" id="branchGoal" style="border-left: 4px solid #10b981;">
                         <div class="kpi-header">
                             <span class="kpi-title">🎯 지사 목표</span>
                         </div>
-                        <div class="kpi-value">85% 달성</div>
+                        <div class="kpi-value" id="branch-goal-achievement">0% 달성</div>
                         <div class="kpi-subtitle">월 1천만원 목표</div>
                     </div>
                 @elseif(auth()->user()->role === 'store')
@@ -821,6 +821,32 @@
                 
                 if (overviewData.success) {
                     const data = overviewData.data;
+                    
+                    // 지사 계정일 때 매장 수와 매출 업데이트
+                    if (window.userData.role === 'branch') {
+                        const accessibleStores = overviewData.debug?.accessible_stores || 0;
+                        const monthSales = data.month?.sales || 0;
+                        const monthTarget = 10000000; // 지사 목표 1천만원
+                        const achievementRate = monthSales > 0 ? Math.round((monthSales / monthTarget) * 100) : 0;
+                        
+                        // 지사 KPI 업데이트
+                        const branchStoresCount = document.getElementById('branch-stores-count');
+                        if (branchStoresCount) {
+                            branchStoresCount.textContent = `${accessibleStores}개 매장`;
+                        }
+                        
+                        const branchTotalSales = document.getElementById('branch-total-sales');
+                        if (branchTotalSales) {
+                            branchTotalSales.textContent = `₩${monthSales.toLocaleString()}`;
+                        }
+                        
+                        const branchGoalAchievement = document.getElementById('branch-goal-achievement');
+                        if (branchGoalAchievement) {
+                            branchGoalAchievement.textContent = `${achievementRate}% 달성`;
+                        }
+                        
+                        console.log(`지사 데이터 업데이트: ${accessibleStores}개 매장, ₩${monthSales.toLocaleString()}, ${achievementRate}%`);
+                    }
                     
                     // KPI 카드 업데이트
                     document.querySelector('#todaySales .kpi-value').textContent = 
