@@ -959,30 +959,19 @@
             showToast('매장 수정 기능은 준비 중입니다', 'info');
         }
 
-        // 매장 계정 확인
+        // 매장 계정 확인 (새로운 전용 API 사용)
         async function checkStoreAccount(storeId) {
             try {
-                // 매장 정보와 계정 정보 조회
-                const storeResponse = await fetch(`/test-api/stores/${storeId}`);
-                const storeResult = await storeResponse.json();
+                const response = await fetch(`/test-api/stores/${storeId}/account`);
+                const result = await response.json();
                 
-                if (!storeResult.success) {
-                    showToast('매장 정보를 불러올 수 없습니다', 'error');
+                if (!result.success) {
+                    showToast('매장 계정 정보를 불러올 수 없습니다: ' + (result.error || '알 수 없는 오류'), 'error');
                     return;
                 }
                 
-                const store = storeResult.data;
-                
-                // 해당 매장의 사용자 계정 조회 (store_id로 필터링)
-                const usersResponse = await fetch('/test-api/users');
-                const usersResult = await usersResponse.json();
-                
-                let storeAccount = null;
-                if (usersResult.success) {
-                    storeAccount = usersResult.data.find(user => user.store_id === storeId);
-                }
-                
-                openAccountModal(store, storeAccount);
+                const { store, account } = result.data;
+                openAccountModal(store, account);
                 
             } catch (error) {
                 console.error('계정 확인 중 오류:', error);

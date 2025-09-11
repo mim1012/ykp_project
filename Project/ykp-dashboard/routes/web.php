@@ -380,6 +380,17 @@ Route::middleware(['web', 'auth'])->get('/test-api/stores', function (Illuminate
 });
 
 Route::middleware(['web', 'auth'])->post('/test-api/stores/add', function (Illuminate\Http\Request $request) {
+    // 권한 검증: 본사와 지사만 매장 추가 가능
+    $currentUser = auth()->user();
+    if (!in_array($currentUser->role, ['headquarters', 'branch'])) {
+        return response()->json(['success' => false, 'error' => '매장 추가 권한이 없습니다.'], 403);
+    }
+    
+    // 지사 계정은 자기 지사에만 매장 추가 가능
+    if ($currentUser->role === 'branch' && $request->branch_id != $currentUser->branch_id) {
+        return response()->json(['success' => false, 'error' => '다른 지사에 매장을 추가할 권한이 없습니다.'], 403);
+    }
+    
     try {
         $branch = App\Models\Branch::find($request->branch_id);
         $storeCount = App\Models\Store::where('branch_id', $request->branch_id)->count();
@@ -689,8 +700,12 @@ Route::get('/test-api/branches', function () {
     }
 });
 
-// 지사 추가 API
-Route::post('/test-api/branches/add', function (Illuminate\Http\Request $request) {
+// 지사 추가 API (본사 전용)
+Route::middleware(['web', 'auth'])->post('/test-api/branches/add', function (Illuminate\Http\Request $request) {
+    // 본사 관리자만 지사 추가 가능
+    if (auth()->user()->role !== 'headquarters') {
+        return response()->json(['success' => false, 'error' => '지사 추가는 본사 관리자만 가능합니다.'], 403);
+    }
     try {
         // 지사코드 중복 확인
         $existingBranch = App\Models\Branch::where('code', $request->code)->first();
@@ -810,7 +825,12 @@ Route::delete('/test-api/branches/{id}', function ($id) {
 });
 
 // 매장 수정 API
-Route::put('/test-api/stores/{id}', function (Illuminate\Http\Request $request, $id) {
+Route::middleware(['web', 'auth'])->put('/test-api/stores/{id}', function (Illuminate\Http\Request $request, $id) {
+    // 권한 검증: 본사와 지사만 매장 수정 가능
+    $currentUser = auth()->user();
+    if (!in_array($currentUser->role, ['headquarters', 'branch'])) {
+        return response()->json(['success' => false, 'error' => '매장 수정 권한이 없습니다.'], 403);
+    }
     try {
         $store = App\Models\Store::findOrFail($id);
         
@@ -910,8 +930,41 @@ if (config('app.env') !== 'production') {
 } // if (config('app.env') !== 'production') 블록 닫기
 
 // 매장/지사 관리 API (모든 환경에서 사용) - 프로덕션에서도 필요
+// 매장 계정 조회 API
+Route::middleware(['web', 'auth'])->get('/test-api/stores/{id}/account', function ($id) {
+    try {
+        $currentUser = auth()->user();
+        $store = App\Models\Store::with('branch')->findOrFail($id);
+        
+        // 권한 검증: 본사는 모든 매장, 지사는 소속 매장만
+        if ($currentUser->role === 'branch' && $store->branch_id !== $currentUser->branch_id) {
+            return response()->json(['success' => false, 'error' => '접근 권한이 없습니다.'], 403);
+        } elseif ($currentUser->role === 'store' && $store->id !== $currentUser->store_id) {
+            return response()->json(['success' => false, 'error' => '접근 권한이 없습니다.'], 403);
+        }
+        
+        // 매장 계정 조회
+        $storeAccount = App\Models\User::where('store_id', $id)->where('role', 'store')->first();
+        
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'store' => $store,
+                'account' => $storeAccount
+            ]
+        ]);
+    } catch (Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
 // 매장 계정 생성 API
-Route::post('/test-api/stores/{id}/create-user', function (Illuminate\Http\Request $request, $id) {
+Route::middleware(['web', 'auth'])->post('/test-api/stores/{id}/create-user', function (Illuminate\Http\Request $request, $id) {
+    // 권한 검증: 본사와 지사만 매장 계정 생성 가능
+    $currentUser = auth()->user();
+    if (!in_array($currentUser->role, ['headquarters', 'branch'])) {
+        return response()->json(['success' => false, 'error' => '매장 계정 생성 권한이 없습니다.'], 403);
+    }
     try {
         $store = App\Models\Store::findOrFail($id);
         
@@ -935,7 +988,12 @@ Route::post('/test-api/stores/{id}/create-user', function (Illuminate\Http\Reque
 });
 
 // 매장 삭제 API
-Route::delete('/test-api/stores/{id}', function ($id) {
+Route::middleware(['web', 'auth'])->delete('/test-api/stores/{id}', function ($id) {
+    // 권한 검증: 본사만 매장 삭제 가능
+    $currentUser = auth()->user();
+    if ($currentUser->role !== 'headquarters') {
+        return response()->json(['success' => false, 'error' => '매장 삭제는 본사 관리자만 가능합니다.'], 403);
+    }
     try {
         $store = App\Models\Store::findOrFail($id);
         
