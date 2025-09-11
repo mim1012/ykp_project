@@ -189,6 +189,7 @@
                         <input type="text" id="store-address" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="매장 주소">
                     </div>
 
+                    @if(auth()->user()->role === 'headquarters')
                     <div class="border-t pt-4">
                         <div class="flex items-center">
                             <input type="checkbox" id="create-account" class="mr-2">
@@ -197,6 +198,20 @@
                     </div>
 
                     <div id="account-fields" class="space-y-3 pl-4 border-l-2 border-gray-200" style="display: none;">
+                    @else
+                    <!-- 지사 계정: 매장 관리자 계정 항상 생성 -->
+                    <div class="border-t pt-4">
+                        <div class="bg-blue-50 border border-blue-200 rounded p-3">
+                            <div class="flex items-center">
+                                <div class="text-blue-500 mr-2">ℹ️</div>
+                                <span class="text-sm font-medium text-blue-800">매장 관리자 계정이 자동으로 생성됩니다</span>
+                            </div>
+                        </div>
+                        <input type="hidden" id="create-account" value="true">
+                    </div>
+
+                    <div id="account-fields" class="space-y-3 pl-4 border-l-2 border-blue-200">
+                    @endif
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">관리자 이름</label>
                             <input type="text" id="account-name" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="관리자 이름">
@@ -253,6 +268,76 @@
         </div>
     </div>
 
+    <!-- 계정 관리 모달 -->
+    <div id="account-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl max-w-lg w-full mx-4">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-semibold" id="account-modal-title">매장 계정 관리</h3>
+            </div>
+            <div class="px-6 py-4">
+                <!-- 매장 정보 -->
+                <div class="mb-4 p-4 bg-gray-50 rounded">
+                    <h4 class="font-medium text-gray-800 mb-2">매장 정보</h4>
+                    <div class="grid grid-cols-2 gap-2 text-sm">
+                        <div><span class="text-gray-500">매장명:</span> <span id="account-store-name">-</span></div>
+                        <div><span class="text-gray-500">매장코드:</span> <span id="account-store-code">-</span></div>
+                        <div><span class="text-gray-500">지사:</span> <span id="account-branch-name">-</span></div>
+                        <div><span class="text-gray-500">사장님:</span> <span id="account-owner-name">-</span></div>
+                    </div>
+                </div>
+
+                <!-- 계정 정보 -->
+                <div id="account-info-section">
+                    <h4 class="font-medium text-gray-800 mb-3">계정 정보</h4>
+                    <div id="account-exists" style="display: none;">
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">관리자 이름</label>
+                                <input type="text" id="edit-account-name" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">이메일</label>
+                                <input type="email" id="edit-account-email" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">새 비밀번호 (변경 시에만)</label>
+                                <input type="password" id="edit-account-password" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="새 비밀번호 입력">
+                            </div>
+                            <div class="flex items-center">
+                                <span class="text-sm text-gray-500">생성일: </span>
+                                <span id="account-created-date" class="text-sm text-gray-700 ml-1">-</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="account-not-exists" style="display: none;">
+                        <div class="text-center py-4">
+                            <div class="text-gray-400 mb-2">
+                                <svg class="mx-auto w-12 h-12" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3z"></path>
+                                </svg>
+                            </div>
+                            <p class="text-gray-600 mb-3">이 매장에는 아직 계정이 없습니다</p>
+                            <button onclick="createAccountForStore()" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">
+                                계정 생성하기
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+                <button type="button" onclick="closeAccountModal()" class="px-4 py-2 text-gray-600 border border-gray-300 rounded hover:bg-gray-50">
+                    닫기
+                </button>
+                <button type="button" id="save-account-btn" onclick="saveAccountChanges()" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600" style="display: none;">
+                    변경사항 저장
+                </button>
+                <button type="button" id="reset-password-btn" onclick="resetAccountPassword()" class="px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600" style="display: none;">
+                    비밀번호 리셋
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- 메시지 토스트 -->
     <div id="toast" class="fixed top-4 right-4 z-50" style="display: none;">
         <div class="bg-white border border-gray-200 rounded-lg shadow-lg p-4 min-w-64">
@@ -284,6 +369,11 @@
             window.createStoreAccount = createStoreAccount;
             window.editStore = editStore;
             window.checkStoreAccount = checkStoreAccount;
+            window.openAccountModal = openAccountModal;
+            window.closeAccountModal = closeAccountModal;
+            window.saveAccountChanges = saveAccountChanges;
+            window.resetAccountPassword = resetAccountPassword;
+            window.createAccountForStore = createAccountForStore;
             window.goToBranchManagement = goToBranchManagement;
             
             loadBranches();
@@ -310,23 +400,33 @@
 
         // 이벤트 리스너 설정
         function setupEventListeners() {
-            // 계정 생성 체크박스
-            document.getElementById('create-account').addEventListener('change', function() {
-                const accountFields = document.getElementById('account-fields');
-                accountFields.style.display = this.checked ? 'block' : 'none';
-                
-                if (this.checked) {
-                    // 자동으로 이메일 생성
-                    const storeName = document.getElementById('store-name').value;
-                    if (storeName) {
-                        generateDefaultEmail(storeName);
+            const userRole = '{{ auth()->user()->role }}';
+            const createAccountEl = document.getElementById('create-account');
+            
+            if (userRole === 'headquarters') {
+                // 본사 계정: 체크박스 기능 유지
+                createAccountEl.addEventListener('change', function() {
+                    const accountFields = document.getElementById('account-fields');
+                    accountFields.style.display = this.checked ? 'block' : 'none';
+                    
+                    if (this.checked) {
+                        // 자동으로 이메일 생성
+                        const storeName = document.getElementById('store-name').value;
+                        if (storeName) {
+                            generateDefaultEmail(storeName);
+                        }
                     }
-                }
-            });
+                });
+            } else if (userRole === 'branch') {
+                // 지사 계정: 계정 필드 항상 표시
+                const accountFields = document.getElementById('account-fields');
+                accountFields.style.display = 'block';
+            }
 
             // 매장명 입력시 이메일 자동 생성
             document.getElementById('store-name').addEventListener('input', function() {
-                if (document.getElementById('create-account').checked) {
+                const createAccountEl = document.getElementById('create-account');
+                if (userRole === 'branch' || createAccountEl.checked) {
                     generateDefaultEmail(this.value);
                 }
             });
@@ -358,19 +458,34 @@
             }
         }
 
-        // 지사 선택박스 채우기
+        // 지사 선택박스 채우기 (권한별 제한)
         function populateBranchSelects() {
             const storeSelect = document.getElementById('store-branch-id');
             const filterSelect = document.getElementById('branch-filter');
+            
+            // 사용자 권한 정보 확인
+            const userRole = '{{ auth()->user()->role }}';
+            const userBranchId = {{ auth()->user()->branch_id ?? 'null' }};
             
             // 기존 옵션 제거
             storeSelect.innerHTML = '<option value="">지사를 선택하세요</option>';
             filterSelect.innerHTML = '<option value="">모든 지사</option>';
             
-            branches.forEach(branch => {
-                storeSelect.innerHTML += `<option value="${branch.id}">${branch.name} (${branch.code})</option>`;
-                filterSelect.innerHTML += `<option value="${branch.id}">${branch.name}</option>`;
-            });
+            if (userRole === 'branch' && userBranchId) {
+                // 지사 계정: 자기 지사만 선택 가능
+                const userBranch = branches.find(branch => branch.id === userBranchId);
+                if (userBranch) {
+                    storeSelect.innerHTML = `<option value="${userBranch.id}" selected>${userBranch.name} (${userBranch.code})</option>`;
+                    storeSelect.disabled = true; // 선택 불가능하게 설정
+                    filterSelect.innerHTML += `<option value="${userBranch.id}">${userBranch.name}</option>`;
+                }
+            } else {
+                // 본사 계정: 모든 지사 선택 가능
+                branches.forEach(branch => {
+                    storeSelect.innerHTML += `<option value="${branch.id}">${branch.name} (${branch.code})</option>`;
+                    filterSelect.innerHTML += `<option value="${branch.id}">${branch.name}</option>`;
+                });
+            }
         }
 
         // 매장 목록 로드
@@ -495,9 +610,17 @@
                     form.reset();
                 }
                 
+                // 권한별 계정 필드 표시 설정
+                const userRole = '{{ auth()->user()->role }}';
                 const accountFields = document.getElementById('account-fields');
                 if (accountFields) {
-                    accountFields.style.display = 'none';
+                    if (userRole === 'branch') {
+                        // 지사 계정: 계정 필드 항상 표시
+                        accountFields.style.display = 'block';
+                    } else {
+                        // 본사 계정: 체크박스에 따라 표시
+                        accountFields.style.display = 'none';
+                    }
                 }
                 
                 console.log('모달이 성공적으로 열렸습니다');
@@ -784,8 +907,208 @@
         }
 
         // 매장 계정 확인
-        function checkStoreAccount(storeId) {
-            showToast('계정 확인 기능은 준비 중입니다', 'info');
+        async function checkStoreAccount(storeId) {
+            try {
+                // 매장 정보와 계정 정보 조회
+                const storeResponse = await fetch(`/test-api/stores/${storeId}`);
+                const storeResult = await storeResponse.json();
+                
+                if (!storeResult.success) {
+                    showToast('매장 정보를 불러올 수 없습니다', 'error');
+                    return;
+                }
+                
+                const store = storeResult.data;
+                
+                // 해당 매장의 사용자 계정 조회 (store_id로 필터링)
+                const usersResponse = await fetch('/test-api/users');
+                const usersResult = await usersResponse.json();
+                
+                let storeAccount = null;
+                if (usersResult.success) {
+                    storeAccount = usersResult.data.find(user => user.store_id === storeId);
+                }
+                
+                openAccountModal(store, storeAccount);
+                
+            } catch (error) {
+                console.error('계정 확인 중 오류:', error);
+                showToast('계정 확인 중 오류가 발생했습니다', 'error');
+            }
+        }
+
+        // 계정 관리 모달 열기
+        function openAccountModal(store, account) {
+            const modal = document.getElementById('account-modal');
+            
+            // 매장 정보 표시
+            document.getElementById('account-store-name').textContent = store.name;
+            document.getElementById('account-store-code').textContent = store.code;
+            document.getElementById('account-branch-name').textContent = store.branch?.name || '-';
+            document.getElementById('account-owner-name').textContent = store.owner_name || '-';
+            
+            const accountExists = document.getElementById('account-exists');
+            const accountNotExists = document.getElementById('account-not-exists');
+            const saveBtn = document.getElementById('save-account-btn');
+            const resetBtn = document.getElementById('reset-password-btn');
+            
+            if (account) {
+                // 계정이 있는 경우
+                accountExists.style.display = 'block';
+                accountNotExists.style.display = 'none';
+                saveBtn.style.display = 'inline-block';
+                resetBtn.style.display = 'inline-block';
+                
+                // 계정 정보 입력
+                document.getElementById('edit-account-name').value = account.name || '';
+                document.getElementById('edit-account-email').value = account.email || '';
+                document.getElementById('edit-account-password').value = '';
+                document.getElementById('account-created-date').textContent = 
+                    account.created_at ? new Date(account.created_at).toLocaleDateString('ko-KR') : '-';
+                
+                // 전역 변수에 저장 (저장 시 사용)
+                window.currentStoreAccount = { store, account };
+            } else {
+                // 계정이 없는 경우
+                accountExists.style.display = 'none';
+                accountNotExists.style.display = 'block';
+                saveBtn.style.display = 'none';
+                resetBtn.style.display = 'none';
+                
+                // 전역 변수에 저장 (생성 시 사용)
+                window.currentStoreAccount = { store, account: null };
+            }
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex', 'fade-in');
+        }
+
+        // 계정 관리 모달 닫기
+        function closeAccountModal() {
+            const modal = document.getElementById('account-modal');
+            modal.classList.add('hidden');
+            modal.classList.remove('flex', 'fade-in');
+            window.currentStoreAccount = null;
+        }
+
+        // 계정 변경사항 저장
+        async function saveAccountChanges() {
+            if (!window.currentStoreAccount) return;
+            
+            const { store, account } = window.currentStoreAccount;
+            const newName = document.getElementById('edit-account-name').value;
+            const newEmail = document.getElementById('edit-account-email').value;
+            const newPassword = document.getElementById('edit-account-password').value;
+            
+            if (!newName || !newEmail) {
+                showToast('이름과 이메일을 입력해주세요', 'warning');
+                return;
+            }
+            
+            try {
+                const updateData = {
+                    name: newName,
+                    email: newEmail
+                };
+                
+                if (newPassword.trim()) {
+                    updateData.password = newPassword;
+                }
+                
+                // 사용자 정보 업데이트 API 호출 (구현 필요)
+                const response = await fetch(`/test-api/users/${account.id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify(updateData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast('계정 정보가 업데이트되었습니다', 'success');
+                    closeAccountModal();
+                    loadStores(); // 목록 새로고침
+                } else {
+                    showToast('업데이트 실패: ' + (result.error || '알 수 없는 오류'), 'error');
+                }
+                
+            } catch (error) {
+                console.error('계정 업데이트 중 오류:', error);
+                showToast('계정 업데이트 중 오류가 발생했습니다', 'error');
+            }
+        }
+
+        // 비밀번호 리셋
+        async function resetAccountPassword() {
+            if (!window.currentStoreAccount) return;
+            
+            const { account } = window.currentStoreAccount;
+            
+            if (!confirm('이 계정의 비밀번호를 "123456"으로 리셋하시겠습니까?')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/test-api/users/${account.id}/reset-password`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({ password: '123456' })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast('비밀번호가 리셋되었습니다 (새 비밀번호: 123456)', 'success');
+                } else {
+                    showToast('비밀번호 리셋 실패: ' + (result.error || '알 수 없는 오류'), 'error');
+                }
+                
+            } catch (error) {
+                console.error('비밀번호 리셋 중 오류:', error);
+                showToast('비밀번호 리셋 중 오류가 발생했습니다', 'error');
+            }
+        }
+
+        // 매장 계정 생성
+        async function createAccountForStore() {
+            if (!window.currentStoreAccount) return;
+            
+            const { store } = window.currentStoreAccount;
+            
+            try {
+                const response = await fetch(`/test-api/stores/${store.id}/create-user`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({
+                        name: store.name + ' 관리자',
+                        email: store.code.toLowerCase() + '@ykp.com',
+                        password: '123456'
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast('계정이 생성되었습니다', 'success');
+                    closeAccountModal();
+                    loadStores(); // 목록 새로고침
+                } else {
+                    showToast('계정 생성 실패: ' + (result.error || '알 수 없는 오류'), 'error');
+                }
+                
+            } catch (error) {
+                console.error('계정 생성 중 오류:', error);
+                showToast('계정 생성 중 오류가 발생했습니다', 'error');
+            }
         }
 
         // 지사 관리 페이지로 이동
