@@ -88,7 +88,6 @@
             .then(result => {
                 if (result.success) {
                     console.log('✅ 매장 생성 성공');
-                    alert('매장이 성공적으로 생성되었습니다!');
                     
                     // 모달 닫기
                     const modal = document.getElementById('add-store-modal');
@@ -97,8 +96,15 @@
                         modal.style.display = 'none';
                     }
                     
-                    // 페이지 새로고침으로 목록 업데이트
-                    location.reload();
+                    // 🔥 PM 긴급 요구사항: 지사 계정은 자동 계정 생성 + 모달 표시
+                    const userRole = '{{ auth()->user()->role }}';
+                    if (userRole === 'branch') {
+                        console.log('🔥 지사 계정 - 자동 계정 생성 및 모달 표시 시작');
+                        createAccountAndShowCredentials(result.data.id, result.data);
+                    } else {
+                        alert('매장이 성공적으로 생성되었습니다!');
+                        location.reload();
+                    }
                 } else {
                     alert('매장 생성 실패: ' + (result.error || '알 수 없는 오류'));
                 }
@@ -122,6 +128,110 @@
                 submitAddStore: typeof submitAddStore
             });
         });
+        
+        // 🔥 PM 긴급 요구사항: 계정 생성 및 안내 모달 표시
+        window.createAccountAndShowCredentials = async function(storeId, storeData) {
+            console.log('🔥 매장 ID', storeId, '에 대한 자동 계정 생성 시작');
+            
+            try {
+                const response = await fetch(`/api/stores/${storeId}/account`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({})
+                });
+                
+                const accountResult = await response.json();
+                console.log('계정 생성 API 응답:', accountResult);
+                
+                if (accountResult.success && accountResult.data && accountResult.data.account) {
+                    const account = accountResult.data.account;
+                    showPMAccountModal(account, storeData);
+                } else {
+                    alert('매장은 생성되었지만 계정 생성에 실패했습니다: ' + (accountResult.error || '알 수 없는 오류'));
+                    location.reload();
+                }
+            } catch (error) {
+                console.error('계정 생성 오류:', error);
+                alert('매장은 생성되었지만 계정 생성 중 오류가 발생했습니다');
+                location.reload();
+            }
+        };
+        
+        // PM 요구사항: 계정 정보 안내 모달
+        window.showPMAccountModal = function(account, store) {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-white p-8 rounded-xl max-w-lg w-full mx-4 shadow-2xl">
+                    <div class="text-center mb-6">
+                        <div class="text-6xl mb-4">🎉</div>
+                        <h3 class="text-2xl font-bold text-green-600 mb-2">매장과 매장 계정이 생성되었습니다!</h3>
+                    </div>
+                    
+                    <div class="space-y-4 bg-gray-50 p-6 rounded-lg">
+                        <div class="flex items-center space-x-3">
+                            <span class="text-2xl">📍</span>
+                            <div>
+                                <span class="font-semibold text-gray-700">매장명:</span>
+                                <span class="ml-2 font-bold text-blue-600">${store.name} (${store.code})</span>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center space-x-3">
+                            <span class="text-2xl">👤</span>
+                            <div class="flex-1">
+                                <span class="font-semibold text-gray-700">계정:</span>
+                                <div class="flex items-center space-x-2 mt-1">
+                                    <code class="bg-white px-3 py-2 rounded border text-blue-600 font-mono flex-1">${account.email}</code>
+                                    <button onclick="copyToClipboard('${account.email}')" class="px-3 py-2 bg-blue-500 text-white rounded text-sm hover:bg-blue-600">복사</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center space-x-3">
+                            <span class="text-2xl">🔑</span>
+                            <div class="flex-1">
+                                <span class="font-semibold text-gray-700">비밀번호:</span>
+                                <div class="flex items-center space-x-2 mt-1">
+                                    <code class="bg-white px-3 py-2 rounded border text-green-600 font-mono flex-1">${account.password}</code>
+                                    <button onclick="copyToClipboard('${account.password}')" class="px-3 py-2 bg-green-500 text-white rounded text-sm hover:bg-green-600">복사</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start space-x-3 mt-6 p-4 bg-orange-50 rounded-lg border-l-4 border-orange-400">
+                            <span class="text-2xl">⚠️</span>
+                            <div>
+                                <p class="text-orange-800 font-semibold">중요 안내</p>
+                                <p class="text-orange-700 text-sm mt-1">이 비밀번호는 최초 로그인 시 반드시 변경하세요.</p>
+                                <p class="text-orange-600 text-xs mt-1">💡 이 정보는 1회성으로만 표시됩니다.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-8 text-center">
+                        <button onclick="this.closest('.fixed').remove(); location.reload();" class="px-8 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 font-semibold">
+                            ✅ 확인완료
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        };
+        
+        // 클립보드 복사 함수
+        window.copyToClipboard = function(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('복사되었습니다!');
+            }).catch(() => {
+                alert('복사에 실패했습니다');
+            });
+        };
         
         console.log('✅ 헤드 섹션에서 showAddStoreModal 전역 등록 완료');
     </script>
