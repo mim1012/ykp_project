@@ -8,11 +8,19 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css" rel="stylesheet">
     <style>
-        .field-input { @apply w-20 px-1 py-1 border rounded text-xs; }
-        .field-number { @apply w-24 px-1 py-1 border rounded text-xs; }
-        .field-date { @apply w-32 px-1 py-1 border rounded text-xs; }
-        .field-tel { @apply w-28 px-1 py-1 border rounded text-xs; }
-        .field-calculated { @apply text-xs font-bold; }
+        /* PM 요구사항: 각 필드별 최적 width 설정 */
+        .field-name { @apply w-28 px-1 py-1 border rounded text-xs; } /* 판매자, 고객명 */
+        .field-dealer { @apply w-24 px-1 py-1 border rounded text-xs; } /* 대리점 */
+        .field-carrier { @apply w-16 px-1 py-1 border rounded text-xs; } /* 통신사 */
+        .field-activation { @apply w-20 px-1 py-1 border rounded text-xs; } /* 개통방식 */
+        .field-model { @apply w-32 px-1 py-1 border rounded text-xs; } /* 모델명 */
+        .field-date { @apply w-36 px-1 py-1 border rounded text-xs; } /* 개통일, 생년월일 */
+        .field-serial { @apply w-28 px-1 py-1 border rounded text-xs; } /* 일련번호 */
+        .field-phone { @apply w-36 px-1 py-1 border rounded text-xs; } /* 휴대폰번호 */
+        .field-money { @apply w-28 px-1 py-1 border rounded text-xs; } /* 액면가, 구두1/2 */
+        .field-amount { @apply w-24 px-1 py-1 border rounded text-xs; } /* 그레이드, 부가추가 */
+        .field-policy { @apply w-20 px-1 py-1 border rounded text-xs; } /* 유심비, 차감 */
+        .field-calculated { @apply text-xs font-bold min-w-32; } /* 계산 결과 */
         .plus-field { @apply text-green-600; }
         .minus-field { @apply text-red-600; }
         .total-field { @apply bg-yellow-50; }
@@ -172,11 +180,11 @@
                     <td class="px-2 py-2">
                         <input type="text" value="${row.salesperson}" 
                                onchange="updateRowData(${row.id}, 'salesperson', this.value)"
-                               class="field-input" placeholder="판매자명">
+                               class="field-name" placeholder="판매자명">
                     </td>
                     <!-- 3. 대리점 -->
                     <td class="px-2 py-2">
-                        <select onchange="updateRowData(${row.id}, 'dealer_name', this.value)" class="field-input">
+                        <select onchange="updateRowData(${row.id}, 'dealer_name', this.value)" class="field-dealer">
                             <option value="">선택</option>
                             <option value="이앤티" ${row.dealer_name === '이앤티' ? 'selected' : ''}>이앤티</option>
                             <option value="앤투윈" ${row.dealer_name === '앤투윈' ? 'selected' : ''}>앤투윈</option>
@@ -186,7 +194,7 @@
                     </td>
                     <!-- 4. 통신사 -->
                     <td class="px-2 py-2">
-                        <select onchange="updateRowData(${row.id}, 'carrier', this.value)" class="field-input">
+                        <select onchange="updateRowData(${row.id}, 'carrier', this.value)" class="field-carrier">
                             <option value="SK" ${row.carrier === 'SK' ? 'selected' : ''}>SK</option>
                             <option value="KT" ${row.carrier === 'KT' ? 'selected' : ''}>KT</option>
                             <option value="LG" ${row.carrier === 'LG' ? 'selected' : ''}>LG</option>
@@ -194,7 +202,7 @@
                     </td>
                     <!-- 5. 개통방식 -->
                     <td class="px-2 py-2">
-                        <select onchange="updateRowData(${row.id}, 'activation_type', this.value)" class="field-input">
+                        <select onchange="updateRowData(${row.id}, 'activation_type', this.value)" class="field-activation">
                             <option value="신규" ${row.activation_type === '신규' ? 'selected' : ''}>신규</option>
                             <option value="MNP" ${row.activation_type === 'MNP' ? 'selected' : ''}>MNP</option>
                             <option value="기변" ${row.activation_type === '기변' ? 'selected' : ''}>기변</option>
@@ -204,7 +212,7 @@
                     <td class="px-2 py-2">
                         <input type="text" value="${row.model_name}" 
                                onchange="updateRowData(${row.id}, 'model_name', this.value)"
-                               class="field-input" placeholder="iPhone15">
+                               class="field-model" placeholder="iPhone15">
                     </td>
                     <!-- 7. 개통일 -->
                     <td class="px-2 py-2">
@@ -216,19 +224,19 @@
                     <td class="px-2 py-2">
                         <input type="text" value="${row.serial_number}" 
                                onchange="updateRowData(${row.id}, 'serial_number', this.value)"
-                               class="field-input" placeholder="SN123456">
+                               class="field-serial" placeholder="SN123456">
                     </td>
                     <!-- 9. 휴대폰번호 -->
                     <td class="px-2 py-2">
                         <input type="tel" value="${row.phone_number}" 
                                onchange="updateRowData(${row.id}, 'phone_number', this.value)"
-                               class="field-tel" placeholder="010-1234-5678">
+                               class="field-phone" placeholder="010-1234-5678">
                     </td>
                     <!-- 10. 고객명 -->
                     <td class="px-2 py-2">
                         <input type="text" value="${row.customer_name}" 
                                onchange="updateRowData(${row.id}, 'customer_name', this.value)"
-                               class="field-input" placeholder="김고객">
+                               class="field-name" placeholder="김고객">
                     </td>
                     <!-- 11. 생년월일 -->
                     <td class="px-2 py-2">
@@ -240,55 +248,55 @@
                     <td class="px-2 py-2">
                         <input type="number" value="${row.base_price}" 
                                onchange="updateRowData(${row.id}, 'base_price', parseInt(this.value) || 0); calculateRow(${row.id})"
-                               class="field-number" placeholder="300000">
+                               class="field-money" placeholder="300000">
                     </td>
                     <!-- 13. 구두1 -->
                     <td class="px-2 py-2">
                         <input type="number" value="${row.verbal1}" 
                                onchange="updateRowData(${row.id}, 'verbal1', parseInt(this.value) || 0); calculateRow(${row.id})"
-                               class="field-number" placeholder="50000">
+                               class="field-money" placeholder="50000">
                     </td>
                     <!-- 14. 구두2 -->
                     <td class="px-2 py-2">
                         <input type="number" value="${row.verbal2}" 
                                onchange="updateRowData(${row.id}, 'verbal2', parseInt(this.value) || 0); calculateRow(${row.id})"
-                               class="field-number" placeholder="30000">
+                               class="field-money" placeholder="30000">
                     </td>
                     <!-- 15. 그레이드 -->
                     <td class="px-2 py-2">
                         <input type="number" value="${row.grade_amount}" 
                                onchange="updateRowData(${row.id}, 'grade_amount', parseInt(this.value) || 0); calculateRow(${row.id})"
-                               class="field-number" placeholder="10000">
+                               class="field-amount" placeholder="10000">
                     </td>
                     <!-- 16. 부가추가 -->
                     <td class="px-2 py-2">
                         <input type="number" value="${row.additional_amount}" 
                                onchange="updateRowData(${row.id}, 'additional_amount', parseInt(this.value) || 0); calculateRow(${row.id})"
-                               class="field-number" placeholder="5000">
+                               class="field-amount" placeholder="5000">
                     </td>
                     <!-- 17. 서류상현금개통 -->
                     <td class="px-2 py-2">
                         <input type="number" value="${row.cash_activation}" 
                                onchange="updateRowData(${row.id}, 'cash_activation', parseInt(this.value) || 0); calculateRow(${row.id})"
-                               class="field-number" placeholder="0">
+                               class="field-amount" placeholder="0">
                     </td>
                     <!-- 18. 유심비(+) -->
                     <td class="px-2 py-2">
                         <input type="number" value="${row.usim_fee}" 
                                onchange="updateRowData(${row.id}, 'usim_fee', parseInt(this.value) || 0); calculateRow(${row.id})"
-                               class="field-number plus-field" placeholder="0">
+                               class="field-policy plus-field" placeholder="0">
                     </td>
                     <!-- 19. 신규,번이(-800) -->
                     <td class="px-2 py-2">
                         <input type="number" value="${row.new_mnp_discount}" 
                                onchange="updateRowData(${row.id}, 'new_mnp_discount', parseInt(this.value) || 0); calculateRow(${row.id})"
-                               class="field-number minus-field" placeholder="-800">
+                               class="field-policy minus-field" placeholder="-800">
                     </td>
                     <!-- 20. 차감(-) -->
                     <td class="px-2 py-2">
                         <input type="number" value="${row.deduction}" 
                                onchange="updateRowData(${row.id}, 'deduction', parseInt(this.value) || 0); calculateRow(${row.id})"
-                               class="field-number minus-field" placeholder="0">
+                               class="field-policy minus-field" placeholder="0">
                     </td>
                     <!-- 21. 리베총계 (계산) -->
                     <td class="px-2 py-2 total-field">
@@ -306,13 +314,13 @@
                     <td class="px-2 py-2">
                         <input type="number" value="${row.cash_received}" 
                                onchange="updateRowData(${row.id}, 'cash_received', parseInt(this.value) || 0); calculateRow(${row.id})"
-                               class="field-number plus-field" placeholder="0">
+                               class="field-money plus-field" placeholder="0">
                     </td>
                     <!-- 25. 페이백(-) -->
                     <td class="px-2 py-2">
                         <input type="number" value="${row.payback}" 
                                onchange="updateRowData(${row.id}, 'payback', parseInt(this.value) || 0); calculateRow(${row.id})"
-                               class="field-number minus-field" placeholder="0">
+                               class="field-money minus-field" placeholder="0">
                     </td>
                     <!-- 26. 세전마진 (계산) -->
                     <td class="px-2 py-2 margin-field">
