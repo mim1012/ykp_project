@@ -110,15 +110,7 @@ Route::middleware(['auth', 'rbac'])->group(function () {
         ]);
     })->name('management.stores');
 
-    // 1순위: 향상된 매장 추가 및 계정 생성 페이지
-    Route::get('/management/stores/enhanced', function (Illuminate\Http\Request $request) {
-        $userRole = auth()->user()->role;
-        if (!in_array($userRole, ['headquarters', 'branch'])) {
-            abort(403, '본사 또는 지사 관리자만 접근 가능합니다.');
-        }
-        
-        return view('management.enhanced-store-management');
-    })->name('management.stores.enhanced');
+    // Enhanced 페이지 제거됨 - store-management.blade.php에 통합됨
     
     // 별도 지사 관리 페이지
     Route::get('/management/branches', function () {
