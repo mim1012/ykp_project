@@ -25,8 +25,7 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
-                    <h1 class="text-xl font-semibold text-gray-900">완전한 개통표 (27컬럼)</h1>
-                    <span class="ml-2 px-2 py-1 text-xs bg-green-100 text-green-800 rounded">PM 요구사항</span>
+                    <h1 class="text-xl font-semibold text-gray-900">완전한 개통표</h1>
                 </div>
                 <div class="flex items-center space-x-4">
                     <a href="/dashboard" class="text-gray-600 hover:text-gray-900">대시보드</a>
@@ -66,7 +65,10 @@
                     🔄 전체 재계산
                 </button>
                 <button id="save-btn" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
-                    💾 일괄 저장
+                    💾 전체 저장
+                </button>
+                <button id="bulk-delete-btn" class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">
+                    🗑️ 일괄 삭제
                 </button>
                 <div id="status-indicator" class="px-3 py-2 bg-gray-100 text-gray-600 rounded">
                     시스템 준비 완료
@@ -392,12 +394,29 @@
             showStatus('새 행이 추가되었습니다!', 'success');
         }
         
-        // 행 삭제
+        // 개별 행 삭제
         function deleteRow(id) {
             if (confirm('이 행을 삭제하시겠습니까?')) {
                 salesData = salesData.filter(row => row.id !== id);
                 renderTableRows();
                 showStatus('행이 삭제되었습니다.', 'info');
+            }
+        }
+        
+        // PM 요구사항: 일괄 삭제 기능
+        function bulkDelete() {
+            const checkedBoxes = document.querySelectorAll('.row-select:checked');
+            
+            if (checkedBoxes.length === 0) {
+                showStatus('삭제할 행을 선택해주세요.', 'warning');
+                return;
+            }
+            
+            if (confirm(`선택한 ${checkedBoxes.length}개 행을 삭제하시겠습니까?`)) {
+                const idsToDelete = Array.from(checkedBoxes).map(cb => parseInt(cb.dataset.id));
+                salesData = salesData.filter(row => !idsToDelete.includes(row.id));
+                renderTableRows();
+                showStatus(`${checkedBoxes.length}개 행이 삭제되었습니다.`, 'success');
             }
         }
         
@@ -471,7 +490,7 @@
             })
             .then(data => {
                 if (data.success) {
-                    showStatus(`✅ ${validData.length}건 DB 저장 완료! 지사/본사 대시보드에 실시간 반영됩니다.`, 'success');
+                    showStatus('✅ 전체 개통표가 저장되었습니다', 'success');
                     console.log('🔥 DB 영속화 완료 - 실시간 동기화 시작');
                     console.log('저장된 27개 필드 데이터:', validData);
                 } else {
@@ -507,9 +526,10 @@
             // 기본 행 추가
             addNewRow();
             
-            // 버튼 이벤트
+            // 버튼 이벤트 - Excel 스타일 UX
             document.getElementById('add-row-btn').addEventListener('click', addNewRow);
             document.getElementById('save-btn').addEventListener('click', saveAllData);
+            document.getElementById('bulk-delete-btn').addEventListener('click', bulkDelete);
             document.getElementById('calculate-all-btn').addEventListener('click', () => {
                 salesData.forEach(row => calculateRow(row.id));
                 showStatus('전체 재계산 완료', 'success');
