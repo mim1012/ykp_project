@@ -164,11 +164,6 @@
                 <div class="px-6 py-4 space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">지사 선택 *</label>
-                        @if(auth()->user()->role === 'branch')
-                        <div class="mb-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800">
-                            ℹ️ {{ auth()->user()->branch->name ?? '소속 지사' }}에 매장이 추가됩니다.
-                        </div>
-                        @endif
                         <select id="store-branch-id" required class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <option value="">지사를 선택하세요</option>
                         </select>
@@ -480,9 +475,10 @@
                 // 지사 계정: API에서 자기 지사 1개만 받아옴
                 if (branches.length > 0) {
                     const userBranch = branches[0]; // API에서 1개만 반환됨
-                    storeSelect.innerHTML = `<option value="${userBranch.id}" selected>${userBranch.name} (${userBranch.code})</option>`;
+                    storeSelect.innerHTML = `<option value="${userBranch.id}" selected>${userBranch.name} (자동 지정)</option>`;
                     storeSelect.disabled = true; // 선택 불가능하게 설정
-                    storeSelect.style.backgroundColor = '#f3f4f6'; // 비활성화 시각적 표시
+                    storeSelect.style.backgroundColor = '#f9fafb'; // 비활성화 시각적 표시
+                    storeSelect.style.cursor = 'not-allowed'; // 커서 표시
                     
                     filterSelect.innerHTML = `<option value="">모든 지사</option><option value="${userBranch.id}">${userBranch.name}</option>`;
                     
