@@ -740,8 +740,17 @@
                 if (result.success) {
                     showToast('매장이 성공적으로 추가되었습니다!', 'success');
                     
-                    // 계정도 함께 생성하는 경우
-                    if (document.getElementById('create-account').checked) {
+                    const userRole = '{{ auth()->user()->role }}';
+                    
+                    // 계정 생성 로직: 본사는 체크박스, 지사는 무조건 생성
+                    let shouldCreateAccount = false;
+                    if (userRole === 'headquarters') {
+                        shouldCreateAccount = document.getElementById('create-account').checked;
+                    } else if (userRole === 'branch') {
+                        shouldCreateAccount = true; // 지사는 항상 계정 생성
+                    }
+                    
+                    if (shouldCreateAccount) {
                         await createAccountForStore(result.data.id);
                     }
                     
@@ -757,14 +766,24 @@
 
         // 매장 계정 생성
         async function createAccountForStore(storeId) {
-            const accountData = {
-                name: document.getElementById('account-name').value,
-                email: document.getElementById('account-email').value,
-                password: document.getElementById('account-password').value
-            };
+            const userRole = '{{ auth()->user()->role }}';
+            
+            let accountData;
+            if (userRole === 'headquarters') {
+                // 본사: 사용자가 입력한 계정 정보 사용
+                accountData = {
+                    name: document.getElementById('account-name').value,
+                    email: document.getElementById('account-email').value,
+                    password: document.getElementById('account-password').value
+                };
+            } else {
+                // 지사: 자동 생성된 계정 정보 사용 (서버에서 생성)
+                accountData = {};
+            }
 
             try {
-                const response = await fetch(`/test-api/stores/${storeId}/create-user`, {
+                // 우선 정식 API 엔드포인트 시도
+                let response = await fetch(`/api/stores/${storeId}/account`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -773,16 +792,81 @@
                     body: JSON.stringify(accountData)
                 });
 
+                // API 엔드포인트 실패 시 fallback
+                if (!response.ok && response.status === 404) {
+                    console.log('정식 API 실패, fallback으로 test-api 사용');
+                    response = await fetch(`/test-api/stores/${storeId}/create-user`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify(accountData)
+                    });
+                }
+
                 const result = await response.json();
 
                 if (result.success) {
-                    showToast('매장 계정도 생성되었습니다!', 'success');
+                    // 계정 정보가 있으면 모달로 표시
+                    if (result.data && result.data.account) {
+                        const account = result.data.account;
+                        showAccountCreatedModal(account.email, account.password);
+                    } else {
+                        showToast('매장 계정이 생성되었습니다!', 'success');
+                    }
                 } else {
                     showToast('매장 계정 생성 실패: ' + result.error, 'warning');
                 }
             } catch (error) {
+                console.error('계정 생성 오류:', error);
                 showToast('계정 생성 중 오류 발생', 'warning');
             }
+        }
+
+        // 생성된 계정 정보 표시 모달
+        function showAccountCreatedModal(email, password) {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-white p-6 rounded-lg max-w-md w-full mx-4">
+                    <h3 class="text-lg font-semibold mb-4 text-green-600">✅ 매장 계정이 생성되었습니다</h3>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-sm font-medium text-gray-700">이메일</label>
+                            <div class="flex items-center space-x-2">
+                                <input type="text" value="${email}" readonly class="flex-1 px-3 py-2 border rounded bg-gray-50">
+                                <button onclick="copyToClipboard('${email}')" class="px-3 py-2 bg-blue-500 text-white rounded text-sm">복사</button>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-sm font-medium text-gray-700">비밀번호</label>
+                            <div class="flex items-center space-x-2">
+                                <input type="text" value="${password}" readonly class="flex-1 px-3 py-2 border rounded bg-gray-50">
+                                <button onclick="copyToClipboard('${password}')" class="px-3 py-2 bg-blue-500 text-white rounded text-sm">복사</button>
+                            </div>
+                        </div>
+                        <div class="text-sm text-gray-600">
+                            💡 이 정보는 1회성으로만 표시됩니다. 반드시 복사해두세요.
+                        </div>
+                    </div>
+                    <div class="mt-6 flex space-x-3">
+                        <button onclick="this.closest('.fixed').remove()" class="flex-1 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
+                            확인
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        // 클립보드 복사 함수
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('복사되었습니다!', 'success');
+            }).catch(() => {
+                showToast('복사에 실패했습니다', 'error');
+            });
         }
 
         // 매장 계정 직접 생성

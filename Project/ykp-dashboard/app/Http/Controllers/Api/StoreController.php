@@ -331,4 +331,126 @@ class StoreController extends Controller
             'data' => $branches
         ]);
     }
+    
+    /**
+     * 매장 계정 정보 조회
+     */
+    public function getAccount(Store $store): JsonResponse
+    {
+        $user = Auth::user();
+        
+        // 권한 확인
+        if ($user->role === 'store' && $store->id !== $user->store_id) {
+            return response()->json(['error' => '권한이 없습니다.'], 403);
+        } elseif ($user->role === 'branch' && $store->branch_id !== $user->branch_id) {
+            return response()->json(['error' => '권한이 없습니다.'], 403);
+        }
+        
+        $storeUser = User::where('store_id', $store->id)
+                        ->where('role', 'store')
+                        ->first();
+        
+        if (!$storeUser) {
+            return response()->json([
+                'success' => false,
+                'error' => '매장 계정이 존재하지 않습니다.'
+            ], 404);
+        }
+        
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'account' => [
+                    'id' => $storeUser->id,
+                    'name' => $storeUser->name,
+                    'email' => $storeUser->email,
+                    'created_at' => $storeUser->created_at
+                ]
+            ]
+        ]);
+    }
+    
+    /**
+     * 매장 계정 생성 (개선된 버전)
+     */
+    public function createStoreAccount(Request $request, Store $store): JsonResponse
+    {
+        $user = Auth::user();
+        
+        // 권한 확인: 본사 또는 해당 지사 관리자만 가능
+        if ($user->role === 'branch' && $store->branch_id !== $user->branch_id) {
+            return response()->json(['error' => '권한이 없습니다.'], 403);
+        } elseif ($user->role === 'store') {
+            return response()->json(['error' => '매장 사용자는 계정을 생성할 수 없습니다.'], 403);
+        }
+        
+        // 기존 계정 확인
+        $existingUser = User::where('store_id', $store->id)
+                           ->where('role', 'store')
+                           ->first();
+        
+        if ($existingUser) {
+            return response()->json([
+                'success' => false,
+                'error' => '이미 매장 계정이 존재합니다.'
+            ], 409);
+        }
+        
+        return DB::transaction(function () use ($request, $user, $store) {
+            // 계정 정보 설정
+            if ($user->role === 'headquarters' && $request->filled(['name', 'email', 'password'])) {
+                // 본사: 사용자 입력 정보 사용
+                $name = $request->name;
+                $email = $request->email;
+                $password = $request->password;
+            } else {
+                // 지사: 자동 생성
+                $cleanName = preg_replace('/[^가-힣a-zA-Z0-9]/', '', $store->owner_name ?: $store->name);
+                $name = $store->owner_name ? "{$store->owner_name} ({$store->code} 매장장)" : "매장관리자 ({$store->code})";
+                $email = strtolower($store->code) . "@ykp.com";
+                $password = 'store' . substr(md5($store->code . time()), 0, 6); // 6자리 랜덤 비밀번호
+            }
+            
+            // 이메일 중복 확인
+            $emailExists = User::where('email', $email)->exists();
+            if ($emailExists) {
+                $email = strtolower($store->code) . time() . "@ykp.com"; // 타임스탬프 추가
+            }
+            
+            // 사용자 생성
+            $newUser = User::create([
+                'name' => $name,
+                'email' => $email,
+                'password' => Hash::make($password),
+                'role' => 'store',
+                'store_id' => $store->id,
+                'branch_id' => $store->branch_id,
+                'created_by_user_id' => Auth::id()
+            ]);
+            
+            Log::info('Store account created via new endpoint', [
+                'store_id' => $store->id,
+                'store_code' => $store->code,
+                'new_user_id' => $newUser->id,
+                'new_user_email' => $email,
+                'created_by' => Auth::id(),
+                'created_by_role' => $user->role
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => '매장 계정이 성공적으로 생성되었습니다.',
+                'data' => [
+                    'store' => $store->only(['id', 'name', 'code']),
+                    'account' => [
+                        'id' => $newUser->id,
+                        'name' => $name,
+                        'email' => $email,
+                        'password' => $password, // 1회성 반환
+                        'created_at' => $newUser->created_at
+                    ]
+                ]
+            ], 201);
+        });
+    }
 }

@@ -148,6 +148,9 @@ Route::middleware(['web', 'auth'])->prefix('stores')->group(function () {
     Route::delete('/{store}', [App\Http\Controllers\Api\StoreController::class, 'destroy'])->name('api.stores.destroy');
     Route::post('/{store}/create-user', [App\Http\Controllers\Api\StoreController::class, 'createStoreUser'])->name('api.stores.create-user');
     Route::post('/{store}/create-account', [App\Http\Controllers\Api\StoreController::class, 'createAccount'])->name('api.stores.create-account');
+    // 새로운 계정 관리 엔드포인트
+    Route::get('/{store}/account', [App\Http\Controllers\Api\StoreController::class, 'getAccount'])->name('api.stores.get-account');
+    Route::post('/{store}/account', [App\Http\Controllers\Api\StoreController::class, 'createStoreAccount'])->name('api.stores.account');
     Route::get('/{store}/performance', [App\Http\Controllers\Api\StoreController::class, 'performance'])->name('api.stores.performance');
     Route::get('/branches', [App\Http\Controllers\Api\StoreController::class, 'branches'])->name('api.stores.branches');
 });
