@@ -2,7 +2,7 @@
 builder = "NIXPACKS"
 buildCommand = "npm install && npm run build && composer install --no-dev --optimize-autoloader"
 
-[deploy] 
+[deploy]
 healthcheckPath = "/"
-restartPolicyType = "ON_FAILURE"
-startCommand = "php artisan migrate --force && php artisan config:clear && php artisan route:clear && php artisan view:clear && php artisan cache:clear"
+restartPolicyType = "ON_FAILURE" 
+startCommand = "mkdir -p storage/logs && php artisan migrate --force 2>&1 | tee storage/logs/deploy-migration.log && php artisan config:clear && php artisan route:clear && php artisan view:clear && php artisan cache:clear"
