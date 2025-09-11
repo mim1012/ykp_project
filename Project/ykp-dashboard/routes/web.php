@@ -938,6 +938,10 @@ Route::middleware(['web', 'auth'])->prefix('api')->group(function () {
     Route::get('users', [App\Http\Controllers\Api\UserManagementController::class, 'index']);
     Route::put('users/{id}', [App\Http\Controllers\Api\UserManagementController::class, 'update']);
     Route::post('users/{id}/reset-password', [App\Http\Controllers\Api\UserManagementController::class, 'resetPassword']);
+    
+    // 대시보드 순위 및 TOP N 시스템
+    Route::get('dashboard/rankings', [App\Http\Controllers\Api\DashboardController::class, 'rankings']);
+    Route::get('dashboard/top-list', [App\Http\Controllers\Api\DashboardController::class, 'topList']);
 });
 
 /*

@@ -251,4 +251,171 @@ class DashboardController extends Controller
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
     }
+
+    /**
+     * 지사/매장 순위 데이터 (권한별 필터링)
+     */
+    public function rankings(Request $request)
+    {
+        try {
+            $user = auth()->user();
+            
+            // 이번 달 기준 매출 데이터
+            $salesQuery = Sale::whereMonth('sale_date', now()->month)
+                            ->whereYear('sale_date', now()->year);
+            
+            // 1. 지사 순위 계산
+            $branchRankings = $salesQuery->clone()
+                ->select('branch_id', DB::raw('SUM(settlement_amount) as total'))
+                ->groupBy('branch_id')
+                ->orderByDesc('total')
+                ->get();
+            
+            $branchRank = null;
+            $branchTotal = $branchRankings->count();
+            
+            if ($user->branch_id) {
+                $branchRank = $branchRankings->search(function($ranking) use ($user) {
+                    return $ranking->branch_id == $user->branch_id;
+                }) + 1;
+                
+                if ($branchRank === 0) $branchRank = null; // 데이터 없으면 null
+            }
+            
+            // 2. 매장 순위 계산 (권한별 필터링)
+            $storeQuery = $salesQuery->clone()
+                ->select('store_id', DB::raw('SUM(settlement_amount) as total'));
+            
+            // 지사/매장 계정은 자기 지사 내부 순위만
+            if ($user->isBranch() || $user->isStore()) {
+                $storeQuery->where('branch_id', $user->branch_id);
+            }
+            
+            $storeRankings = $storeQuery->groupBy('store_id')
+                ->orderByDesc('total')
+                ->get();
+            
+            $storeRank = null;
+            $storeTotal = $storeRankings->count();
+            
+            if ($user->store_id) {
+                $storeRank = $storeRankings->search(function($ranking) use ($user) {
+                    return $ranking->store_id == $user->store_id;
+                }) + 1;
+                
+                if ($storeRank === 0) $storeRank = null; // 데이터 없으면 null
+            }
+            
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'branch' => [
+                        'rank' => $branchRank,
+                        'total' => $branchTotal,
+                        'user_branch_id' => $user->branch_id
+                    ],
+                    'store' => [
+                        'rank' => $storeRank,
+                        'total' => $storeTotal,
+                        'user_store_id' => $user->store_id,
+                        'scope' => $user->isHeadquarters() ? 'nationwide' : 'branch_only'
+                    ]
+                ],
+                'meta' => [
+                    'user_role' => $user->role,
+                    'period' => now()->format('Y-m'),
+                    'generated_at' => now()->toISOString()
+                ]
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Rankings API error', ['error' => $e->getMessage(), 'user_id' => auth()->id()]);
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * TOP N 지사/매장 리스트 (권한별 필터링)
+     */
+    public function topList(Request $request)
+    {
+        try {
+            $type = $request->query('type', 'store'); // branch|store
+            $limit = min($request->query('limit', 5), 20); // 최대 20개
+            $user = auth()->user();
+            
+            $salesQuery = Sale::whereMonth('sale_date', now()->month)
+                            ->whereYear('sale_date', now()->year);
+            
+            if ($type === 'branch') {
+                // TOP N 지사 리스트
+                $rankings = $salesQuery->select('branch_id', DB::raw('SUM(settlement_amount) as total'))
+                    ->groupBy('branch_id')
+                    ->orderByDesc('total')
+                    ->limit($limit)
+                    ->get();
+                
+                $topList = [];
+                foreach ($rankings as $index => $ranking) {
+                    $branch = Branch::find($ranking->branch_id);
+                    if ($branch) {
+                        $topList[] = [
+                            'rank' => $index + 1,
+                            'id' => $branch->id,
+                            'name' => $branch->name,
+                            'code' => $branch->code,
+                            'total_sales' => floatval($ranking->total),
+                            'is_current_user' => $user->branch_id == $branch->id
+                        ];
+                    }
+                }
+                
+            } else { // store
+                // TOP N 매장 리스트
+                $storeQuery = $salesQuery->select('store_id', DB::raw('SUM(settlement_amount) as total'));
+                
+                // 지사/매장 계정은 자기 지사 내부만
+                if ($user->isBranch() || $user->isStore()) {
+                    $storeQuery->where('branch_id', $user->branch_id);
+                }
+                
+                $rankings = $storeQuery->groupBy('store_id')
+                    ->orderByDesc('total')
+                    ->limit($limit)
+                    ->get();
+                
+                $topList = [];
+                foreach ($rankings as $index => $ranking) {
+                    $store = Store::with('branch')->find($ranking->store_id);
+                    if ($store) {
+                        $topList[] = [
+                            'rank' => $index + 1,
+                            'id' => $store->id,
+                            'name' => $store->name,
+                            'code' => $store->code,
+                            'branch_name' => $store->branch->name ?? '미지정',
+                            'total_sales' => floatval($ranking->total),
+                            'is_current_user' => $user->store_id == $store->id
+                        ];
+                    }
+                }
+            }
+            
+            return response()->json([
+                'success' => true,
+                'data' => $topList,
+                'meta' => [
+                    'type' => $type,
+                    'limit' => $limit,
+                    'scope' => $user->isHeadquarters() ? 'nationwide' : 'branch_only',
+                    'user_role' => $user->role,
+                    'period' => now()->format('Y-m')
+                ]
+            ]);
+            
+        } catch (\Exception $e) {
+            Log::error('Top list API error', ['error' => $e->getMessage(), 'type' => $request->query('type')]);
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    }
 }

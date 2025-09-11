@@ -498,6 +498,22 @@
                         <div class="kpi-value" id="branch-goal-achievement">0% 달성</div>
                         <div class="kpi-subtitle">월 1천만원 목표</div>
                     </div>
+                    <div class="kpi-card" id="branchRanking" style="border-left: 4px solid #8b5cf6;">
+                        <div class="kpi-header">
+                            <span class="kpi-title">🏆 지사 순위</span>
+                            <span class="kpi-trend trend-stable" id="branch-ranking-trend">-</span>
+                        </div>
+                        <div class="kpi-value" id="branch-ranking-position">- / -</div>
+                        <div class="kpi-subtitle">전체 지사 중</div>
+                    </div>
+                    <div class="kpi-card" id="storeRankingBranch" style="border-left: 4px solid #06b6d4;">
+                        <div class="kpi-header">
+                            <span class="kpi-title">🏪 매장 순위</span>
+                            <span class="kpi-trend trend-stable" id="store-ranking-trend">-</span>
+                        </div>
+                        <div class="kpi-value" id="store-ranking-position">- / -</div>
+                        <div class="kpi-subtitle">지사 내 매장 중</div>
+                    </div>
                 @elseif(auth()->user()->role === 'store')
                     <!-- 매장: 개인 성과 관점 -->
                     <div class="kpi-card" id="storeToday" style="border-left: 4px solid #f59e0b;">
@@ -558,6 +574,47 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- TOP 성과자 섹션 (권한별 표시) -->
+            @if(auth()->user()->role === 'headquarters')
+            <div class="top-performers-section" style="margin: 30px 0;">
+                <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 20px; color: #1f2937;">🏆 전국 TOP 5 성과</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                        <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #3b82f6;">🏢 TOP 지사</h4>
+                        <ul id="top-branches-list" style="list-style: none; padding: 0; margin: 0;">
+                            <li style="padding: 8px 0; color: #6b7280;">데이터 로딩 중...</li>
+                        </ul>
+                    </div>
+                    <div style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                        <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #10b981;">🏪 TOP 매장</h4>
+                        <ul id="top-stores-list" style="list-style: none; padding: 0; margin: 0;">
+                            <li style="padding: 8px 0; color: #6b7280;">데이터 로딩 중...</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            @elseif(auth()->user()->role === 'branch')
+            <div class="top-performers-section" style="margin: 30px 0;">
+                <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 20px; color: #1f2937;">🏪 {{ auth()->user()->branch->name ?? '지사' }} TOP 5 매장</h3>
+                <div style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                    <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #10b981;">🏆 지사 내 매장 순위</h4>
+                    <ul id="top-stores-list" style="list-style: none; padding: 0; margin: 0;">
+                        <li style="padding: 8px 0; color: #6b7280;">데이터 로딩 중...</li>
+                    </ul>
+                </div>
+            </div>
+            @elseif(auth()->user()->role === 'store')
+            <div class="top-performers-section" style="margin: 30px 0;">
+                <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 20px; color: #1f2937;">🏪 {{ auth()->user()->branch->name ?? '지사' }} 매장 현황</h3>
+                <div style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                    <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #f59e0b;">🏆 지사 내 TOP 5</h4>
+                    <ul id="top-stores-list" style="list-style: none; padding: 0; margin: 0;">
+                        <li style="padding: 8px 0; color: #6b7280;">데이터 로딩 중...</li>
+                    </ul>
+                </div>
+            </div>
+            @endif
 
             <!-- 하단 섹션 -->
             <div class="bottom-grid">
@@ -848,6 +905,12 @@
                         console.log(`지사 데이터 업데이트: ${accessibleStores}개 매장, ₩${monthSales.toLocaleString()}, ${achievementRate}%`);
                     }
                     
+                    // 순위 데이터 로드
+                    await loadRankings();
+                    
+                    // TOP N 리스트 로드  
+                    await loadTopLists();
+                    
                     // KPI 카드 업데이트
                     document.querySelector('#todaySales .kpi-value').textContent = 
                         '₩' + Number(data.today.sales).toLocaleString();
@@ -976,6 +1039,142 @@
                 // 🚑 API 오류 시 실제 데이터로 대체
                 console.log('⚠️ 시스템 API 오류 - 대체 데이터 사용');
                 return '전체 시스템 관리 중 - 실시간 데이터 연동 완료';
+            }
+        }
+
+        // 순위 데이터 로드
+        async function loadRankings() {
+            try {
+                const response = await fetch('/api/dashboard/rankings');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const { branch, store } = result.data;
+                    
+                    // 지사 순위 업데이트
+                    if (branch.rank && window.userData.role !== 'headquarters') {
+                        const branchRankingEl = document.getElementById('branch-ranking-position');
+                        if (branchRankingEl) {
+                            branchRankingEl.textContent = `${branch.rank}위 / ${branch.total}개`;
+                        }
+                    }
+                    
+                    // 매장 순위 업데이트  
+                    if (store.rank) {
+                        const storeRankingEl = document.getElementById('store-ranking-position') || 
+                                             document.getElementById('my-store-ranking-position');
+                        if (storeRankingEl) {
+                            const scope = store.scope === 'nationwide' ? '전국' : '지사 내';
+                            storeRankingEl.textContent = `${store.rank}위 / ${store.total}개 (${scope})`;
+                        }
+                    }
+                    
+                    console.log('순위 데이터 로드 완료:', { branch: branch.rank, store: store.rank });
+                }
+            } catch (error) {
+                console.error('순위 데이터 로드 실패:', error);
+            }
+        }
+
+        // TOP N 리스트 로드
+        async function loadTopLists() {
+            try {
+                const userRole = window.userData.role;
+                
+                // 본사: 지사 + 매장 TOP 5
+                if (userRole === 'headquarters') {
+                    await loadTopBranches();
+                    await loadTopStores();
+                } else {
+                    // 지사/매장: 매장 TOP 5만
+                    await loadTopStores();
+                }
+            } catch (error) {
+                console.error('TOP 리스트 로드 실패:', error);
+            }
+        }
+
+        // TOP 지사 로드 (본사 전용)
+        async function loadTopBranches() {
+            try {
+                const response = await fetch('/api/dashboard/top-list?type=branch&limit=5');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const listEl = document.getElementById('top-branches-list');
+                    if (listEl) {
+                        listEl.innerHTML = '';
+                        
+                        result.data.forEach(branch => {
+                            const li = document.createElement('li');
+                            li.style.cssText = `
+                                padding: 12px 0; 
+                                border-bottom: 1px solid #f1f5f9; 
+                                display: flex; 
+                                justify-content: space-between;
+                                align-items: center;
+                                ${branch.is_current_user ? 'background: #dbeafe; margin: 0 -20px; padding: 12px 20px;' : ''}
+                            `;
+                            li.innerHTML = `
+                                <div>
+                                    <span style="font-weight: 600; color: #1f2937;">${branch.rank}위</span>
+                                    <span style="margin-left: 8px; color: #374151;">${branch.name}</span>
+                                    ${branch.is_current_user ? '<span style="margin-left: 8px; background: #3b82f6; color: white; padding: 2px 6px; border-radius: 4px; font-size: 12px;">내 지사</span>' : ''}
+                                </div>
+                                <span style="font-weight: 600; color: #10b981;">₩${branch.total_sales.toLocaleString()}</span>
+                            `;
+                            listEl.appendChild(li);
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('TOP 지사 로드 실패:', error);
+            }
+        }
+
+        // TOP 매장 로드 (권한별)
+        async function loadTopStores() {
+            try {
+                const response = await fetch('/api/dashboard/top-list?type=store&limit=5');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const listEl = document.getElementById('top-stores-list');
+                    if (listEl) {
+                        listEl.innerHTML = '';
+                        
+                        if (result.data.length === 0) {
+                            listEl.innerHTML = '<li style="padding: 20px; text-align: center; color: #6b7280;">아직 매출 데이터가 없습니다</li>';
+                            return;
+                        }
+                        
+                        result.data.forEach(store => {
+                            const li = document.createElement('li');
+                            li.style.cssText = `
+                                padding: 12px 0; 
+                                border-bottom: 1px solid #f1f5f9; 
+                                display: flex; 
+                                justify-content: space-between;
+                                align-items: center;
+                                ${store.is_current_user ? 'background: #fef3c7; margin: 0 -20px; padding: 12px 20px; border-radius: 8px;' : ''}
+                            `;
+                            li.innerHTML = `
+                                <div>
+                                    <span style="font-weight: 600; color: #1f2937;">${store.rank}위</span>
+                                    <span style="margin-left: 8px; color: #374151;">${store.name}</span>
+                                    ${store.branch_name ? `<span style="margin-left: 8px; color: #6b7280; font-size: 12px;">(${store.branch_name})</span>` : ''}
+                                    ${store.is_current_user ? '<span style="margin-left: 8px; background: #f59e0b; color: white; padding: 2px 6px; border-radius: 4px; font-size: 12px;">내 매장</span>' : ''}
+                                </div>
+                                <span style="font-weight: 600; color: #10b981;">₩${store.total_sales.toLocaleString()}</span>
+                            `;
+                            listEl.appendChild(li);
+                        });
+                        
+                        console.log(`TOP 매장 로드 완료: ${result.data.length}개`);
+                    }
+                }
+            } catch (error) {
+                console.error('TOP 매장 로드 실패:', error);
             }
         }
 
