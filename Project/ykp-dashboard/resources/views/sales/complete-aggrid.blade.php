@@ -8,12 +8,15 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css" rel="stylesheet">
     <style>
-        .field-group-basic { background-color: #f8fafc; }
-        .field-group-amount { background-color: #eff6ff; }
-        .field-group-policy { background-color: #f3e8ff; }
-        .field-group-calculated { background-color: #fef3c7; font-weight: bold; }
-        .field-group-margin { background-color: #ecfdf5; font-weight: bold; }
-        .field-group-meta { background-color: #fdf2f8; }
+        .field-input { @apply w-20 px-1 py-1 border rounded text-xs; }
+        .field-number { @apply w-24 px-1 py-1 border rounded text-xs; }
+        .field-date { @apply w-32 px-1 py-1 border rounded text-xs; }
+        .field-tel { @apply w-28 px-1 py-1 border rounded text-xs; }
+        .field-calculated { @apply text-xs font-bold; }
+        .plus-field { @apply text-green-600; }
+        .minus-field { @apply text-red-600; }
+        .total-field { @apply bg-yellow-50; }
+        .margin-field { @apply bg-green-50; }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -22,134 +25,61 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex items-center">
-                    <h1 class="text-xl font-semibold text-gray-900">완전한 개통표 AgGrid</h1>
-                    <span class="ml-2 px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">ALL FIELDS</span>
+                    <h1 class="text-xl font-semibold text-gray-900">완전한 개통표 (27컬럼)</h1>
+                    <span class="ml-2 px-2 py-1 text-xs bg-green-100 text-green-800 rounded">PM 요구사항</span>
                 </div>
                 <div class="flex items-center space-x-4">
-                    <a href="/sales/excel-input" class="text-gray-600 hover:text-gray-900">엑셀입력</a>
-                    <a href="/sales/advanced-input-pro" class="text-gray-600 hover:text-gray-900">고급입력</a>
                     <a href="/dashboard" class="text-gray-600 hover:text-gray-900">대시보드</a>
                 </div>
             </div>
         </div>
     </header>
 
-    <!-- 메인 컨텐츠 -->
     <main class="max-w-full mx-auto py-6 px-4">
-        <!-- 캘린더 형태 날짜 선택 -->
-        <div class="bg-white p-4 rounded-lg shadow mb-6">
-            <div class="flex items-center justify-between mb-4">
-                <div class="flex items-center gap-4">
-                    <h3 class="text-lg font-medium text-gray-900">📅 개통표 날짜 선택</h3>
-                    <span class="text-sm text-gray-500">선택된 날짜:</span>
-                    <span id="current-date" class="text-sm font-medium text-blue-600 bg-blue-50 px-2 py-1 rounded">2025-09-01</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <button onclick="loadTodayData()" class="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600">오늘</button>
-                    <button onclick="toggleCalendar()" class="px-3 py-1 bg-purple-500 text-white rounded text-sm hover:bg-purple-600">📅 달력</button>
-                </div>
-            </div>
-            
-            <!-- 미니 캘린더 -->
-            <div id="mini-calendar" class="hidden">
-                <div class="flex items-center justify-between mb-2">
-                    <button onclick="changeMonth(-1)" class="px-2 py-1 text-gray-600 hover:bg-gray-100 rounded">◀</button>
-                    <span id="calendar-title" class="font-medium text-gray-900">2025년 9월</span>
-                    <button onclick="changeMonth(1)" class="px-2 py-1 text-gray-600 hover:bg-gray-100 rounded">▶</button>
-                </div>
-                <div class="grid grid-cols-7 gap-1 text-center text-xs">
-                    <div class="p-2 text-gray-500 font-medium">일</div>
-                    <div class="p-2 text-gray-500 font-medium">월</div>
-                    <div class="p-2 text-gray-500 font-medium">화</div>
-                    <div class="p-2 text-gray-500 font-medium">수</div>
-                    <div class="p-2 text-gray-500 font-medium">목</div>
-                    <div class="p-2 text-gray-500 font-medium">금</div>
-                    <div class="p-2 text-gray-500 font-medium">토</div>
-                </div>
-                <div id="calendar-days" class="grid grid-cols-7 gap-1 text-center text-sm">
-                    <!-- 동적 생성 -->
-                </div>
-            </div>
-        </div>
-        
         <!-- 통계 카드 -->
-        <div class="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
-            <div class="bg-white p-4 rounded-lg shadow">
-                <div class="text-sm font-medium text-gray-500">총 건수</div>
-                <div class="text-xl font-bold text-gray-900" id="total-count">2</div>
+        <div class="grid grid-cols-4 gap-4 mb-6">
+            <div class="bg-blue-500 text-white p-4 rounded-lg">
+                <div class="text-sm">총 개통건수</div>
+                <div class="text-2xl font-bold" id="total-count">0</div>
             </div>
-            <div class="bg-white p-4 rounded-lg shadow">
-                <div class="text-sm font-medium text-gray-500">총 정산금</div>
-                <div class="text-xl font-bold text-blue-600" id="total-settlement">415,000원</div>
+            <div class="bg-green-500 text-white p-4 rounded-lg">
+                <div class="text-sm">총 정산금</div>
+                <div class="text-2xl font-bold" id="total-settlement">₩0</div>
             </div>
-            <div class="bg-white p-4 rounded-lg shadow">
-                <div class="text-sm font-medium text-gray-500">총 세금</div>
-                <div class="text-xl font-bold text-red-600" id="total-tax">55,195원</div>
+            <div class="bg-purple-500 text-white p-4 rounded-lg">
+                <div class="text-sm">총 마진</div>
+                <div class="text-2xl font-bold" id="total-margin">₩0</div>
             </div>
-            <div class="bg-white p-4 rounded-lg shadow">
-                <div class="text-sm font-medium text-gray-500">총 마진</div>
-                <div class="text-xl font-bold text-green-600" id="total-margin">415,000원</div>
-            </div>
-            <div class="bg-white p-4 rounded-lg shadow">
-                <div class="text-sm font-medium text-gray-500">평균 마진율</div>
-                <div class="text-xl font-bold text-purple-600" id="avg-margin">100.0%</div>
-            </div>
-            <div class="bg-white p-4 rounded-lg shadow">
-                <div class="text-sm font-medium text-gray-500">월정액 합계</div>
-                <div class="text-xl font-bold text-indigo-600" id="total-monthly">0원</div>
+            <div class="bg-yellow-500 text-white p-4 rounded-lg">
+                <div class="text-sm">평균 마진율</div>
+                <div class="text-2xl font-bold" id="average-margin">0%</div>
             </div>
         </div>
 
         <!-- 컨트롤 패널 -->
-        <div class="bg-white rounded-lg shadow mb-6">
-            <div class="p-4 border-b">
-                <div class="flex justify-between items-center">
-                    <div class="flex space-x-4">
-                        <select id="dealer-select" class="px-3 py-2 border rounded-md">
-                            <option value="">전체 대리점</option>
-                            <option value="ENT">이앤티</option>
-                            <option value="WIN">앤투윈</option>
-                            <option value="CHOSI">초시대</option>
-                            <option value="AMT">아엠티</option>
-                        </select>
-                        
-                        <button id="add-row-btn" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-                            ➕ 새 개통 등록
-                        </button>
-                        
-                        <button id="calculate-all-btn" class="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600">
-                            🔄 전체 재계산
-                        </button>
-                        
-                        <button id="save-btn" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
-                            💾 일괄 저장
-                        </button>
-                        
-                        <button id="export-btn" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600">
-                            📤 엑셀 내보내기
-                        </button>
-                    </div>
-                    
-                    <div class="flex items-center space-x-2">
-                        <div id="status-indicator" class="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded">
-                            준비됨
-                        </div>
-                        
-                        <button id="help-btn" class="px-3 py-2 text-gray-600 hover:text-gray-800" title="도움말 (F1)">
-                            ❓
-                        </button>
-                    </div>
+        <div class="bg-white rounded-lg shadow mb-6 p-4">
+            <div class="flex space-x-4">
+                <button id="add-row-btn" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                    ➕ 새 개통 등록
+                </button>
+                <button id="calculate-all-btn" class="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600">
+                    🔄 전체 재계산
+                </button>
+                <button id="save-btn" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
+                    💾 일괄 저장
+                </button>
+                <div id="status-indicator" class="px-3 py-2 bg-gray-100 text-gray-600 rounded">
+                    시스템 준비 완료
                 </div>
             </div>
         </div>
 
-        <!-- 완전한 개통표 테이블 (가로 스크롤) -->
+        <!-- PM 요구사항: 27개 컬럼 완전한 개통표 테이블 -->
         <div class="bg-white rounded-lg shadow overflow-hidden">
             <div class="overflow-x-auto" style="max-height: 600px; overflow-y: auto;">
-                <table class="min-w-full divide-y divide-gray-200" style="min-width: 3000px;">
+                <table class="min-w-full divide-y divide-gray-200" style="min-width: 4000px;">
                     <thead class="bg-gray-50 sticky top-0 z-10">
                         <tr>
-                            <!-- PM 요구사항: 정확한 컬럼 순서 (27개) -->
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">선택</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">판매자</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">대리점</th>
@@ -167,893 +97,425 @@
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">그레이드</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">부가추가</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">서류상현금개통</th>
-                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase text-green-600">유심비(+)</th>
-                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase text-red-600">신규,번이(-800)</th>
-                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase text-red-600">차감(-)</th>
-                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase bg-yellow-50">리베총계</th>
-                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase bg-yellow-50">정산금</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase plus-field">유심비(+)</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase minus-field">신규,번이(-800)</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase minus-field">차감(-)</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase total-field">리베총계</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase total-field">정산금</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase bg-red-50">부/소세</th>
-                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase text-green-600">현금받음(+)</th>
-                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase text-red-600">페이백(-)</th>
-                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase bg-green-50">세전마진</th>
-                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase bg-green-50">세후마진</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase plus-field">현금받음(+)</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase minus-field">페이백(-)</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase margin-field">세전마진</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase margin-field">세후마진</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">액션</th>
-                            
-                            <!-- 금액 정보 (입력) -->
-                            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase field-group-amount">액면가</th>
-                            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase field-group-amount">구두1</th>
-                            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase field-group-amount">구두2</th>
-                            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase field-group-amount">그레이드</th>
-                            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase field-group-amount">부가추가</th>
-                            
-                            <!-- 정책 정보 -->
-                            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase field-group-policy">서류상현금</th>
-                            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase field-group-policy">유심비</th>
-                            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase field-group-policy">MNP할인</th>
-                            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase field-group-policy">차감</th>
-                            
-                            <!-- 계산 결과 -->
-                            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase field-group-calculated">리베총계</th>
-                            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase field-group-calculated">정산금</th>
-                            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase field-group-calculated">세금</th>
-                            
-                            <!-- 마진 계산 -->
-                            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase field-group-margin">현금받음</th>
-                            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase field-group-margin">페이백</th>
-                            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase field-group-margin">세전마진</th>
-                            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase field-group-margin">세후마진</th>
-                            
-                            <!-- 기타 -->
-                            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase field-group-meta">월정액</th>
-                            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase field-group-meta">메모</th>
-                            <th class="px-2 py-3 text-left text-xs font-medium text-gray-500 uppercase">액션</th>
                         </tr>
                     </thead>
                     <tbody id="data-table-body" class="bg-white divide-y divide-gray-200">
-                        <!-- 데이터 행들이 여기에 동적으로 추가됩니다 -->
+                        <!-- 27컬럼 데이터가 여기에 동적으로 추가됩니다 -->
                     </tbody>
                 </table>
-            </div>
-        </div>
-        
-        <!-- 필드 설명 -->
-        <div class="bg-white rounded-lg shadow p-4 mt-6">
-            <h3 class="text-lg font-semibold mb-4">필드 그룹 설명</h3>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                <div class="field-group-basic p-3 rounded">
-                    <strong>기본 정보</strong>: 판매일, 판매자, 대리점, 통신사, 개통방식, 모델명
-                </div>
-                <div class="field-group-amount p-3 rounded">
-                    <strong>금액 정보</strong>: 액면가, 구두1/2, 그레이드, 부가추가 (입력 항목)
-                </div>
-                <div class="field-group-policy p-3 rounded">
-                    <strong>정책 정보</strong>: 서류상현금, 유심비, MNP할인, 차감 (정책 항목)
-                </div>
-                <div class="field-group-calculated p-3 rounded">
-                    <strong>계산 결과</strong>: 리베총계, 정산금, 세금 (자동 계산)
-                </div>
-                <div class="field-group-margin p-3 rounded">
-                    <strong>마진 계산</strong>: 현금받음, 페이백, 세전/세후마진 (자동 계산)
-                </div>
-                <div class="field-group-meta p-3 rounded">
-                    <strong>기타 정보</strong>: 고객명, 전화번호, 월정액, 메모
-                </div>
             </div>
         </div>
     </main>
 
     <script>
-        // 완전한 데이터 구조 (Sales 모델의 모든 필드)
-        let completeTableData = [
-            {
-                id: 1,
-                // 기본 정보
-                sale_date: '2025-01-21',
-                salesperson: '김대리',
-                dealer_code: 'ENT',
-                store_id: 1,
-                branch_id: 1,
+        // PM 요구사항: 27개 필드 완전 매핑된 데이터 구조
+        let salesData = [];
+        let nextId = 1;
+        
+        // 새로운 행 데이터 구조 (DB 스키마와 1:1 매핑)
+        function createNewRow() {
+            return {
+                id: nextId++,
+                salesperson: '',
+                dealer_name: '',
                 carrier: 'SK',
                 activation_type: '신규',
-                model_name: 'iPhone 15',
-                
-                // 고객 정보
-                customer_name: '홍길동',
-                phone_number: '010-1234-5678',
-                
-                // 금액 정보 (입력)
-                base_price: 100000,
-                verbal1: 30000,
-                verbal2: 20000,
-                grade_amount: 15000,
-                additional_amount: 5000,
-                
-                // 정책 정보
+                model_name: '',
+                sale_date: new Date().toISOString().split('T')[0],
+                serial_number: '',
+                phone_number: '',
+                customer_name: '',
+                customer_birth_date: '',
+                base_price: 0,
+                verbal1: 0,
+                verbal2: 0,
+                grade_amount: 0,
+                additional_amount: 0,
                 cash_activation: 0,
                 usim_fee: 0,
-                new_mnp_discount: 800,
+                new_mnp_discount: -800,
                 deduction: 0,
-                
-                // 계산 결과
-                rebate_total: 170000,
-                settlement_amount: 170800,
-                tax: 22716,
-                
-                // 마진 계산
+                rebate_total: 0,
+                settlement_amount: 0,
+                tax: 0,
                 cash_received: 0,
                 payback: 0,
-                margin_before_tax: 148084,
-                margin_after_tax: 170800,
-                
-                // 기타
-                monthly_fee: 89000,
-                memo: '신규 고객'
-            },
-            {
-                id: 2,
-                // 기본 정보
-                sale_date: '2025-01-21',
-                salesperson: '박과장',
-                dealer_code: 'WIN',
-                store_id: 2,
-                branch_id: 1,
-                carrier: 'KT',
-                activation_type: 'MNP',
-                model_name: 'Galaxy S24',
-                
-                // 고객 정보
-                customer_name: '이순신',
-                phone_number: '010-9876-5432',
-                
-                // 금액 정보 (입력)
-                base_price: 150000,
-                verbal1: 40000,
-                verbal2: 25000,
-                grade_amount: 20000,
-                additional_amount: 10000,
-                
-                // 정책 정보
-                cash_activation: 5000,
-                usim_fee: 0,
-                new_mnp_discount: 800,
-                deduction: 1000,
-                
-                // 계산 결과
-                rebate_total: 245000,
-                settlement_amount: 239200,
-                tax: 31815,
-                
-                // 마진 계산
-                cash_received: 10000,
-                payback: 5000,
-                margin_before_tax: 212385,
-                margin_after_tax: 244200,
-                
-                // 기타
-                monthly_fee: 119000,
-                memo: 'MNP 고객, 프리미엄 플랜'
-            }
-        ];
+                margin_before_tax: 0,
+                margin_after_tax: 0,
+                memo: ''
+            };
+        }
         
-        // 테이블 업데이트 (완전한 필드)
-        function updateCompleteTable() {
+        // 27개 컬럼 순서대로 테이블 행 생성
+        function renderTableRows() {
             const tbody = document.getElementById('data-table-body');
-            tbody.innerHTML = completeTableData.map(row => `
+            tbody.innerHTML = salesData.map(row => `
                 <tr data-id="${row.id}" class="hover:bg-gray-50">
-                    <!-- 기본 정보 -->
-                    <td class="px-2 py-2 field-group-basic">
-                        <input type="checkbox" class="row-select">
+                    <!-- 1. 선택 -->
+                    <td class="px-2 py-2">
+                        <input type="checkbox" class="row-select" data-id="${row.id}">
                     </td>
-                    <td class="px-2 py-2 field-group-basic">
-                        <input type="date" value="${row.sale_date || ''}" 
-                               onchange="updateRowData(${row.id}, 'sale_date', this.value)"
-                               class="w-full px-1 py-1 border rounded text-xs">
-                    </td>
-                    <td class="px-2 py-2 field-group-basic">
-                        <input type="text" value="${row.salesperson || ''}" 
+                    <!-- 2. 판매자 -->
+                    <td class="px-2 py-2">
+                        <input type="text" value="${row.salesperson}" 
                                onchange="updateRowData(${row.id}, 'salesperson', this.value)"
-                               class="w-20 px-1 py-1 border rounded text-xs">
+                               class="field-input" placeholder="판매자명">
                     </td>
-                    <td class="px-2 py-2 field-group-basic">
-                        <select onchange="updateRowData(${row.id}, 'dealer_code', this.value)"
-                                class="w-20 px-1 py-1 border rounded text-xs">
-                            <option value="" ${!row.dealer_code ? 'selected' : ''}>선택</option>
-                            <option value="ENT" ${row.dealer_code === 'ENT' ? 'selected' : ''}>이앤티</option>
-                            <option value="WIN" ${row.dealer_code === 'WIN' ? 'selected' : ''}>앤투윈</option>
-                            <option value="CHOSI" ${row.dealer_code === 'CHOSI' ? 'selected' : ''}>초시대</option>
-                            <option value="AMT" ${row.dealer_code === 'AMT' ? 'selected' : ''}>아엠티</option>
+                    <!-- 3. 대리점 -->
+                    <td class="px-2 py-2">
+                        <select onchange="updateRowData(${row.id}, 'dealer_name', this.value)" class="field-input">
+                            <option value="">선택</option>
+                            <option value="이앤티" ${row.dealer_name === '이앤티' ? 'selected' : ''}>이앤티</option>
+                            <option value="앤투윈" ${row.dealer_name === '앤투윈' ? 'selected' : ''}>앤투윈</option>
+                            <option value="초시대" ${row.dealer_name === '초시대' ? 'selected' : ''}>초시대</option>
+                            <option value="아엠티" ${row.dealer_name === '아엠티' ? 'selected' : ''}>아엠티</option>
                         </select>
                     </td>
-                    <td class="px-2 py-2 field-group-basic">
-                        <input type="number" value="${row.store_id || 1}" 
-                               onchange="updateRowData(${row.id}, 'store_id', parseInt(this.value) || 1)"
-                               class="w-16 px-1 py-1 border rounded text-xs">
-                    </td>
-                    <td class="px-2 py-2 field-group-basic">
-                        <input type="number" value="${row.branch_id || 1}" 
-                               onchange="updateRowData(${row.id}, 'branch_id', parseInt(this.value) || 1)"
-                               class="w-16 px-1 py-1 border rounded text-xs">
-                    </td>
-                    <td class="px-2 py-2 field-group-basic">
-                        <select onchange="updateRowData(${row.id}, 'carrier', this.value)"
-                                class="w-16 px-1 py-1 border rounded text-xs">
+                    <!-- 4. 통신사 -->
+                    <td class="px-2 py-2">
+                        <select onchange="updateRowData(${row.id}, 'carrier', this.value)" class="field-input">
                             <option value="SK" ${row.carrier === 'SK' ? 'selected' : ''}>SK</option>
                             <option value="KT" ${row.carrier === 'KT' ? 'selected' : ''}>KT</option>
                             <option value="LG" ${row.carrier === 'LG' ? 'selected' : ''}>LG</option>
                         </select>
                     </td>
-                    <td class="px-2 py-2 field-group-basic">
-                        <select onchange="updateRowData(${row.id}, 'activation_type', this.value)"
-                                class="w-20 px-1 py-1 border rounded text-xs">
+                    <!-- 5. 개통방식 -->
+                    <td class="px-2 py-2">
+                        <select onchange="updateRowData(${row.id}, 'activation_type', this.value)" class="field-input">
                             <option value="신규" ${row.activation_type === '신규' ? 'selected' : ''}>신규</option>
                             <option value="MNP" ${row.activation_type === 'MNP' ? 'selected' : ''}>MNP</option>
                             <option value="기변" ${row.activation_type === '기변' ? 'selected' : ''}>기변</option>
                         </select>
                     </td>
-                    <td class="px-2 py-2 field-group-basic">
-                        <input type="text" value="${row.model_name || ''}" 
-                               onchange="updateRowData(${row.id}, 'model_name', this.value)"
-                               class="w-24 px-1 py-1 border rounded text-xs">
-                    </td>
-                    
-                    <!-- 고객 정보 -->
-                    <td class="px-2 py-2 field-group-meta">
-                        <input type="text" value="${row.customer_name || ''}" 
-                               onchange="updateRowData(${row.id}, 'customer_name', this.value)"
-                               class="w-20 px-1 py-1 border rounded text-xs">
-                    </td>
-                    <td class="px-2 py-2 field-group-meta">
-                        <input type="tel" value="${row.phone_number || ''}" 
-                               onchange="updateRowData(${row.id}, 'phone_number', this.value)"
-                               class="w-28 px-1 py-1 border rounded text-xs">
-                    </td>
-                    
-                    <!-- 금액 정보 (입력) -->
-                    <td class="px-2 py-2 field-group-amount">
-                        <input type="number" value="${row.base_price || 0}" 
-                               onchange="updateRowData(${row.id}, 'base_price', parseInt(this.value) || 0); calculateCompleteRow(${row.id})"
-                               class="w-24 px-1 py-1 border rounded text-xs">
-                    </td>
-                    <td class="px-2 py-2 field-group-amount">
-                        <input type="number" value="${row.verbal1 || 0}" 
-                               onchange="updateRowData(${row.id}, 'verbal1', parseInt(this.value) || 0); calculateCompleteRow(${row.id})"
-                               class="w-20 px-1 py-1 border rounded text-xs">
-                    </td>
-                    <td class="px-2 py-2 field-group-amount">
-                        <input type="number" value="${row.verbal2 || 0}" 
-                               onchange="updateRowData(${row.id}, 'verbal2', parseInt(this.value) || 0); calculateCompleteRow(${row.id})"
-                               class="w-20 px-1 py-1 border rounded text-xs">
-                    </td>
-                    <td class="px-2 py-2 field-group-amount">
-                        <input type="number" value="${row.grade_amount || 0}" 
-                               onchange="updateRowData(${row.id}, 'grade_amount', parseInt(this.value) || 0); calculateCompleteRow(${row.id})"
-                               class="w-20 px-1 py-1 border rounded text-xs">
-                    </td>
-                    <td class="px-2 py-2 field-group-amount">
-                        <input type="number" value="${row.additional_amount || 0}" 
-                               onchange="updateRowData(${row.id}, 'additional_amount', parseInt(this.value) || 0); calculateCompleteRow(${row.id})"
-                               class="w-20 px-1 py-1 border rounded text-xs">
-                    </td>
-                    
-                    <!-- 정책 정보 -->
-                    <td class="px-2 py-2 field-group-policy">
-                        <input type="number" value="${row.cash_activation || 0}" 
-                               onchange="updateRowData(${row.id}, 'cash_activation', parseInt(this.value) || 0); calculateCompleteRow(${row.id})"
-                               class="w-20 px-1 py-1 border rounded text-xs">
-                    </td>
-                    <td class="px-2 py-2 field-group-policy">
-                        <input type="number" value="${row.usim_fee || 0}" 
-                               onchange="updateRowData(${row.id}, 'usim_fee', parseInt(this.value) || 0); calculateCompleteRow(${row.id})"
-                               class="w-20 px-1 py-1 border rounded text-xs">
-                    </td>
-                    <td class="px-2 py-2 field-group-policy">
-                        <input type="number" value="${row.new_mnp_discount || 0}" 
-                               onchange="updateRowData(${row.id}, 'new_mnp_discount', parseInt(this.value) || 0); calculateCompleteRow(${row.id})"
-                               class="w-20 px-1 py-1 border rounded text-xs">
-                    </td>
-                    <td class="px-2 py-2 field-group-policy">
-                        <input type="number" value="${row.deduction || 0}" 
-                               onchange="updateRowData(${row.id}, 'deduction', parseInt(this.value) || 0); calculateCompleteRow(${row.id})"
-                               class="w-20 px-1 py-1 border rounded text-xs">
-                    </td>
-                    
-                    <!-- 계산 결과 (읽기 전용) -->
-                    <td class="px-2 py-2 field-group-calculated">
-                        <span class="text-xs font-bold text-yellow-800" id="rebate-${row.id}">${row.rebate_total?.toLocaleString() || '0'}원</span>
-                    </td>
-                    <td class="px-2 py-2 field-group-calculated">
-                        <span class="text-xs font-bold text-yellow-800" id="settlement-${row.id}">${row.settlement_amount?.toLocaleString() || '0'}원</span>
-                    </td>
-                    <td class="px-2 py-2 field-group-calculated">
-                        <span class="text-xs font-bold text-red-800" id="tax-${row.id}">${row.tax?.toLocaleString() || '0'}원</span>
-                    </td>
-                    
-                    <!-- 마진 계산 -->
-                    <td class="px-2 py-2 field-group-margin">
-                        <input type="number" value="${row.cash_received || 0}" 
-                               onchange="updateRowData(${row.id}, 'cash_received', parseInt(this.value) || 0); calculateCompleteRow(${row.id})"
-                               class="w-20 px-1 py-1 border rounded text-xs">
-                    </td>
-                    <td class="px-2 py-2 field-group-margin">
-                        <input type="number" value="${row.payback || 0}" 
-                               onchange="updateRowData(${row.id}, 'payback', parseInt(this.value) || 0); calculateCompleteRow(${row.id})"
-                               class="w-20 px-1 py-1 border rounded text-xs">
-                    </td>
-                    <td class="px-2 py-2 field-group-margin">
-                        <span class="text-xs font-bold text-green-800" id="margin-before-${row.id}">${row.margin_before_tax?.toLocaleString() || '0'}원</span>
-                    </td>
-                    <td class="px-2 py-2 field-group-margin">
-                        <span class="text-xs font-bold text-green-800" id="margin-after-${row.id}">${row.margin_after_tax?.toLocaleString() || '0'}원</span>
-                    </td>
-                    
-                    <!-- 기타 -->
-                    <td class="px-2 py-2 field-group-meta">
-                        <input type="number" value="${row.monthly_fee || 0}" 
-                               onchange="updateRowData(${row.id}, 'monthly_fee', parseInt(this.value) || 0)"
-                               class="w-20 px-1 py-1 border rounded text-xs">
-                    </td>
-                    <td class="px-2 py-2 field-group-meta">
-                        <input type="text" value="${row.memo || ''}" 
-                               onchange="updateRowData(${row.id}, 'memo', this.value)"
-                               class="w-32 px-1 py-1 border rounded text-xs">
-                    </td>
-                    
-                    <!-- 액션 -->
+                    <!-- 6. 모델명 -->
                     <td class="px-2 py-2">
-                        <button onclick="deleteCompleteRow(${row.id})" 
-                                class="px-2 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs">
-                            🗑️
+                        <input type="text" value="${row.model_name}" 
+                               onchange="updateRowData(${row.id}, 'model_name', this.value)"
+                               class="field-input" placeholder="iPhone15">
+                    </td>
+                    <!-- 7. 개통일 -->
+                    <td class="px-2 py-2">
+                        <input type="date" value="${row.sale_date}" 
+                               onchange="updateRowData(${row.id}, 'sale_date', this.value)"
+                               class="field-date">
+                    </td>
+                    <!-- 8. 일련번호 -->
+                    <td class="px-2 py-2">
+                        <input type="text" value="${row.serial_number}" 
+                               onchange="updateRowData(${row.id}, 'serial_number', this.value)"
+                               class="field-input" placeholder="SN123456">
+                    </td>
+                    <!-- 9. 휴대폰번호 -->
+                    <td class="px-2 py-2">
+                        <input type="tel" value="${row.phone_number}" 
+                               onchange="updateRowData(${row.id}, 'phone_number', this.value)"
+                               class="field-tel" placeholder="010-1234-5678">
+                    </td>
+                    <!-- 10. 고객명 -->
+                    <td class="px-2 py-2">
+                        <input type="text" value="${row.customer_name}" 
+                               onchange="updateRowData(${row.id}, 'customer_name', this.value)"
+                               class="field-input" placeholder="김고객">
+                    </td>
+                    <!-- 11. 생년월일 -->
+                    <td class="px-2 py-2">
+                        <input type="date" value="${row.customer_birth_date}" 
+                               onchange="updateRowData(${row.id}, 'customer_birth_date', this.value)"
+                               class="field-date">
+                    </td>
+                    <!-- 12. 액면/셋팅가 -->
+                    <td class="px-2 py-2">
+                        <input type="number" value="${row.base_price}" 
+                               onchange="updateRowData(${row.id}, 'base_price', parseInt(this.value) || 0); calculateRow(${row.id})"
+                               class="field-number" placeholder="300000">
+                    </td>
+                    <!-- 13. 구두1 -->
+                    <td class="px-2 py-2">
+                        <input type="number" value="${row.verbal1}" 
+                               onchange="updateRowData(${row.id}, 'verbal1', parseInt(this.value) || 0); calculateRow(${row.id})"
+                               class="field-number" placeholder="50000">
+                    </td>
+                    <!-- 14. 구두2 -->
+                    <td class="px-2 py-2">
+                        <input type="number" value="${row.verbal2}" 
+                               onchange="updateRowData(${row.id}, 'verbal2', parseInt(this.value) || 0); calculateRow(${row.id})"
+                               class="field-number" placeholder="30000">
+                    </td>
+                    <!-- 15. 그레이드 -->
+                    <td class="px-2 py-2">
+                        <input type="number" value="${row.grade_amount}" 
+                               onchange="updateRowData(${row.id}, 'grade_amount', parseInt(this.value) || 0); calculateRow(${row.id})"
+                               class="field-number" placeholder="10000">
+                    </td>
+                    <!-- 16. 부가추가 -->
+                    <td class="px-2 py-2">
+                        <input type="number" value="${row.additional_amount}" 
+                               onchange="updateRowData(${row.id}, 'additional_amount', parseInt(this.value) || 0); calculateRow(${row.id})"
+                               class="field-number" placeholder="5000">
+                    </td>
+                    <!-- 17. 서류상현금개통 -->
+                    <td class="px-2 py-2">
+                        <input type="number" value="${row.cash_activation}" 
+                               onchange="updateRowData(${row.id}, 'cash_activation', parseInt(this.value) || 0); calculateRow(${row.id})"
+                               class="field-number" placeholder="0">
+                    </td>
+                    <!-- 18. 유심비(+) -->
+                    <td class="px-2 py-2">
+                        <input type="number" value="${row.usim_fee}" 
+                               onchange="updateRowData(${row.id}, 'usim_fee', parseInt(this.value) || 0); calculateRow(${row.id})"
+                               class="field-number plus-field" placeholder="0">
+                    </td>
+                    <!-- 19. 신규,번이(-800) -->
+                    <td class="px-2 py-2">
+                        <input type="number" value="${row.new_mnp_discount}" 
+                               onchange="updateRowData(${row.id}, 'new_mnp_discount', parseInt(this.value) || 0); calculateRow(${row.id})"
+                               class="field-number minus-field" placeholder="-800">
+                    </td>
+                    <!-- 20. 차감(-) -->
+                    <td class="px-2 py-2">
+                        <input type="number" value="${row.deduction}" 
+                               onchange="updateRowData(${row.id}, 'deduction', parseInt(this.value) || 0); calculateRow(${row.id})"
+                               class="field-number minus-field" placeholder="0">
+                    </td>
+                    <!-- 21. 리베총계 (계산) -->
+                    <td class="px-2 py-2 total-field">
+                        <span class="field-calculated text-yellow-800" id="rebate-${row.id}">${(row.rebate_total || 0).toLocaleString()}원</span>
+                    </td>
+                    <!-- 22. 정산금 (계산) -->
+                    <td class="px-2 py-2 total-field">
+                        <span class="field-calculated text-yellow-800" id="settlement-${row.id}">${(row.settlement_amount || 0).toLocaleString()}원</span>
+                    </td>
+                    <!-- 23. 부/소세 (계산) -->
+                    <td class="px-2 py-2 bg-red-50">
+                        <span class="field-calculated text-red-800" id="tax-${row.id}">${(row.tax || 0).toLocaleString()}원</span>
+                    </td>
+                    <!-- 24. 현금받음(+) -->
+                    <td class="px-2 py-2">
+                        <input type="number" value="${row.cash_received}" 
+                               onchange="updateRowData(${row.id}, 'cash_received', parseInt(this.value) || 0); calculateRow(${row.id})"
+                               class="field-number plus-field" placeholder="0">
+                    </td>
+                    <!-- 25. 페이백(-) -->
+                    <td class="px-2 py-2">
+                        <input type="number" value="${row.payback}" 
+                               onchange="updateRowData(${row.id}, 'payback', parseInt(this.value) || 0); calculateRow(${row.id})"
+                               class="field-number minus-field" placeholder="0">
+                    </td>
+                    <!-- 26. 세전마진 (계산) -->
+                    <td class="px-2 py-2 margin-field">
+                        <span class="field-calculated text-green-800" id="margin-before-${row.id}">${(row.margin_before_tax || 0).toLocaleString()}원</span>
+                    </td>
+                    <!-- 27. 세후마진 (계산) -->
+                    <td class="px-2 py-2 margin-field">
+                        <span class="field-calculated text-green-800" id="margin-after-${row.id}">${(row.margin_after_tax || 0).toLocaleString()}원</span>
+                    </td>
+                    <!-- 28. 액션 -->
+                    <td class="px-2 py-2">
+                        <button onclick="deleteRow(${row.id})" class="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600">
+                            🗑️ 삭제
                         </button>
                     </td>
                 </tr>
             `).join('');
+            
+            updateStatistics();
         }
         
-        // 새 행 추가 (완전한 필드)
-        function addCompleteNewRow() {
-            const newId = Math.max(...completeTableData.map(r => r.id || 0)) + 1;
-            const newRow = {
-                id: newId,
-                // 기본 정보
-                sale_date: new Date().toISOString().split('T')[0],
-                salesperson: '',
-                dealer_code: '',
-                store_id: 1,
-                branch_id: 1,
-                carrier: 'SK',
-                activation_type: '신규',
-                model_name: '',
-                
-                // 고객 정보
-                customer_name: '',
-                phone_number: '',
-                
-                // 금액 정보
-                base_price: 0,
-                verbal1: 0,
-                verbal2: 0,
-                grade_amount: 0,
-                additional_amount: 0,
-                
-                // 정책 정보
-                cash_activation: 0,
-                usim_fee: 0,
-                new_mnp_discount: 800, // 기본값
-                deduction: 0,
-                
-                // 계산 결과
-                rebate_total: 0,
-                settlement_amount: 0,
-                tax: 0,
-                
-                // 마진 계산
-                cash_received: 0,
-                payback: 0,
-                margin_before_tax: 0,
-                margin_after_tax: 0,
-                
-                // 기타
-                monthly_fee: 0,
-                memo: ''
-            };
-            
-            completeTableData.push(newRow);
-            updateCompleteTable();
-            updateCompleteStats();
-            
-            showStatus(`새 개통 등록이 추가되었습니다! (ID: ${newId})`, 'success');
-        }
-        
-        // 행 데이터 업데이트
+        // DB 필드명과 1:1 매핑된 행 데이터 업데이트
         function updateRowData(id, field, value) {
-            const row = completeTableData.find(r => r.id === id);
+            const row = salesData.find(r => r.id === id);
             if (row) {
                 row[field] = value;
-                console.log(`행 ${id} 업데이트:`, field, '=', value);
+                console.log(`행 ${id} 업데이트: ${field} = ${value}`);
             }
         }
         
-        // 완전한 실시간 계산
-        async function calculateCompleteRow(id) {
-            const row = completeTableData.find(r => r.id === id);
+        // 실시간 계산 로직 (PM 요구사항 반영)
+        function calculateRow(id) {
+            const row = salesData.find(r => r.id === id);
             if (!row) return;
             
-            try {
-                showStatus('계산 중...', 'loading');
-                
-                const response = await fetch('/api/calculation/row', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        price_setting: row.base_price || 0,
-                        verbal1: row.verbal1 || 0,
-                        verbal2: row.verbal2 || 0,
-                        grade_amount: row.grade_amount || 0,
-                        addon_amount: row.additional_amount || 0,
-                        paper_cash: row.cash_activation || 0,
-                        usim_fee: row.usim_fee || 0,
-                        new_mnp_disc: row.new_mnp_discount || 0,
-                        deduction: row.deduction || 0,
-                        cash_in: row.cash_received || 0,
-                        payback: row.payback || 0
-                    })
-                });
-                
-                const result = await response.json();
-                if (result.success) {
-                    // 모든 계산 결과 반영
-                    row.rebate_total = result.data.total_rebate;
-                    row.settlement_amount = result.data.settlement;
-                    row.tax = result.data.tax;
-                    row.margin_before_tax = result.data.margin_before;
-                    row.margin_after_tax = result.data.margin_after;
-                    
-                    // UI 업데이트
-                    document.getElementById(`rebate-${id}`).textContent = row.rebate_total.toLocaleString() + '원';
-                    document.getElementById(`settlement-${id}`).textContent = row.settlement_amount.toLocaleString() + '원';
-                    document.getElementById(`tax-${id}`).textContent = row.tax.toLocaleString() + '원';
-                    document.getElementById(`margin-before-${id}`).textContent = row.margin_before_tax.toLocaleString() + '원';
-                    document.getElementById(`margin-after-${id}`).textContent = row.margin_after_tax.toLocaleString() + '원';
-                    
-                    updateCompleteStats();
-                    showStatus('계산 완료!', 'success');
-                    
-                    console.log('완전한 실시간 계산 완료:', result.data);
-                } else {
-                    showStatus('계산 실패: ' + result.message, 'error');
-                }
-            } catch (error) {
-                console.error('계산 API 호출 실패:', error);
-                showStatus('계산 실패: 네트워크 오류', 'error');
-            }
+            // 리베이트 총계 계산
+            const rebateTotal = (row.base_price || 0) + (row.verbal1 || 0) + (row.verbal2 || 0) + 
+                               (row.grade_amount || 0) + (row.additional_amount || 0) + (row.cash_activation || 0) + 
+                               (row.usim_fee || 0) + (row.new_mnp_discount || 0) - (row.deduction || 0);
+            
+            row.rebate_total = rebateTotal;
+            row.settlement_amount = rebateTotal;
+            
+            // 세금 계산 (10%)
+            row.tax = Math.round(rebateTotal * 0.1);
+            
+            // 마진 계산
+            row.margin_before_tax = rebateTotal + (row.cash_received || 0) - (row.payback || 0);
+            row.margin_after_tax = row.margin_before_tax - row.tax;
+            
+            // UI 업데이트
+            document.getElementById(`rebate-${id}`).textContent = rebateTotal.toLocaleString() + '원';
+            document.getElementById(`settlement-${id}`).textContent = rebateTotal.toLocaleString() + '원';
+            document.getElementById(`tax-${id}`).textContent = row.tax.toLocaleString() + '원';
+            document.getElementById(`margin-before-${id}`).textContent = row.margin_before_tax.toLocaleString() + '원';
+            document.getElementById(`margin-after-${id}`).textContent = row.margin_after_tax.toLocaleString() + '원';
+            
+            updateStatistics();
+        }
+        
+        // 통계 업데이트
+        function updateStatistics() {
+            const totalCount = salesData.length;
+            const totalSettlement = salesData.reduce((sum, row) => sum + (row.settlement_amount || 0), 0);
+            const totalMargin = salesData.reduce((sum, row) => sum + (row.margin_after_tax || 0), 0);
+            const avgMarginRate = totalSettlement > 0 ? ((totalMargin / totalSettlement) * 100).toFixed(1) : 0;
+            
+            document.getElementById('total-count').textContent = totalCount;
+            document.getElementById('total-settlement').textContent = '₩' + totalSettlement.toLocaleString();
+            document.getElementById('total-margin').textContent = '₩' + totalMargin.toLocaleString();
+            document.getElementById('average-margin').textContent = avgMarginRate + '%';
+        }
+        
+        // 새 행 추가
+        function addNewRow() {
+            const newRow = createNewRow();
+            salesData.push(newRow);
+            renderTableRows();
+            showStatus('새 행이 추가되었습니다!', 'success');
         }
         
         // 행 삭제
-        function deleteCompleteRow(id) {
-            if (confirm('이 개통 데이터를 삭제하시겠습니까?')) {
-                completeTableData = completeTableData.filter(row => row.id !== id);
-                updateCompleteTable();
-                updateCompleteStats();
-                showStatus('개통 데이터가 삭제되었습니다.', 'success');
+        function deleteRow(id) {
+            if (confirm('이 행을 삭제하시겠습니까?')) {
+                salesData = salesData.filter(row => row.id !== id);
+                renderTableRows();
+                showStatus('행이 삭제되었습니다.', 'info');
             }
         }
         
-        // 완전한 통계 업데이트
-        function updateCompleteStats() {
-            const totalCount = completeTableData.length;
-            const totalSettlement = completeTableData.reduce((sum, row) => sum + (row.settlement_amount || 0), 0);
-            const totalTax = completeTableData.reduce((sum, row) => sum + (row.tax || 0), 0);
-            const totalMargin = completeTableData.reduce((sum, row) => sum + (row.margin_after_tax || 0), 0);
-            const totalMonthly = completeTableData.reduce((sum, row) => sum + (row.monthly_fee || 0), 0);
-            const avgMargin = totalSettlement > 0 ? (totalMargin / totalSettlement * 100) : 0;
-            
-            document.getElementById('total-count').textContent = totalCount.toLocaleString();
-            document.getElementById('total-settlement').textContent = totalSettlement.toLocaleString() + '원';
-            document.getElementById('total-tax').textContent = totalTax.toLocaleString() + '원';
-            document.getElementById('total-margin').textContent = totalMargin.toLocaleString() + '원';
-            document.getElementById('total-monthly').textContent = totalMonthly.toLocaleString() + '원';
-            document.getElementById('avg-margin').textContent = avgMargin.toFixed(1) + '%';
-        }
-        
-        // 상태 표시
-        function showStatus(message, type = 'info') {
-            const indicator = document.getElementById('status-indicator');
-            indicator.textContent = message;
-            
-            indicator.className = 'px-2 py-1 text-xs rounded';
-            
-            if (type === 'success') {
-                indicator.className += ' bg-green-100 text-green-800';
-            } else if (type === 'error') {
-                indicator.className += ' bg-red-100 text-red-800';
-            } else if (type === 'loading') {
-                indicator.className += ' bg-blue-100 text-blue-800';
-            } else {
-                indicator.className += ' bg-gray-100 text-gray-600';
-            }
-            
-            if (type !== 'loading') {
-                setTimeout(() => {
-                    indicator.textContent = '준비됨';
-                    indicator.className = 'px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded';
-                }, 3000);
-            }
-        }
-        
-        // 전체 재계산
-        async function calculateAll() {
-            showStatus('전체 재계산 중...', 'loading');
-            
-            for (const row of completeTableData) {
-                await calculateCompleteRow(row.id);
-                await new Promise(resolve => setTimeout(resolve, 200)); // 200ms 딜레이
-            }
-            
-            showStatus('전체 재계산 완료!', 'success');
-        }
-        
-        // 엑셀 내보내기 (한글 깨짐 방지)
-        function exportToExcel() {
-            const today = new Date().toISOString().split('T')[0];
-            
-            // CSV 헤더
-            const headers = ['판매일','판매자','대리점','통신사','개통방식','모델명','고객명','전화번호','액면가','구두1','구두2','그레이드','부가추가','서류상현금','유심비','MNP할인','차감','리베총계','정산금','세금','현금받음','페이백','세전마진','세후마진','월정액','메모'];
-            
-            // CSV 데이터
-            const csvRows = [headers];
-            completeTableData.forEach(row => {
-                csvRows.push([
-                    row.sale_date || '',
-                    row.salesperson || '',
-                    row.dealer_code || '',
-                    row.carrier || '',
-                    row.activation_type || '',
-                    row.model_name || '',
-                    row.customer_name || '',
-                    row.phone_number || '',
-                    row.base_price || 0,
-                    row.verbal1 || 0,
-                    row.verbal2 || 0,
-                    row.grade_amount || 0,
-                    row.additional_amount || 0,
-                    row.cash_activation || 0,
-                    row.usim_fee || 0,
-                    row.new_mnp_discount || 0,
-                    row.deduction || 0,
-                    row.rebate_total || 0,
-                    row.settlement_amount || 0,
-                    row.tax || 0,
-                    row.cash_received || 0,
-                    row.payback || 0,
-                    row.margin_before_tax || 0,
-                    row.margin_after_tax || 0,
-                    row.monthly_fee || 0,
-                    row.memo || ''
-                ]);
-            });
-            
-            // CSV 문자열 생성
-            const csvContent = csvRows.map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
-            
-            // UTF-8 BOM 추가로 한글 깨짐 방지
-            const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.setAttribute("download", `개통표_${new Date().toISOString().split('T')[0]}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            showStatus('엑셀 파일이 다운로드되었습니다!', 'success');
-        }
-        
-        // DOM 로드 후 초기화
-        document.addEventListener('DOMContentLoaded', function() {
-            // 버튼 이벤트
-            document.getElementById('add-row-btn').addEventListener('click', addCompleteNewRow);
-            document.getElementById('calculate-all-btn').addEventListener('click', calculateAll);
-            document.getElementById('export-btn').addEventListener('click', exportToExcel);
-            
-            // 키보드 단축키
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Insert') {
-                    e.preventDefault();
-                    addCompleteNewRow();
-                }
-                if (e.key === 'F5') {
-                    e.preventDefault();
-                    calculateAll();
-                }
-                if (e.ctrlKey && e.key === 's') {
-                    e.preventDefault();
-                    showStatus('저장 기능 준비 중...', 'info');
-                }
-            });
-            
-            // 초기 날짜 설정
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('current-date').textContent = today;
-            currentCalendarDate = new Date(); // 캘린더 초기 날짜
-            
-            // 초기 테이블 렌더링
-            updateCompleteTable();
-            updateCompleteStats();
-            
-            console.log('완전한 개통표 AgGrid 시스템 초기화 완료');
-            showStatus('모든 필드 준비 완료 (40개 필드)', 'success');
-        });
-        
-        // 캘린더 관련 변수
-        let currentCalendarDate = new Date();
-        let datesWithData = new Set(); // 데이터가 있는 날짜들
-        
-        // 캘린더 토글
-        function toggleCalendar() {
-            const calendar = document.getElementById('mini-calendar');
-            calendar.classList.toggle('hidden');
-            if (!calendar.classList.contains('hidden')) {
-                loadDataDates(); // 데이터 있는 날짜 로드
-                renderCalendar();
-            }
-        }
-        
-        // 월 변경
-        function changeMonth(direction) {
-            currentCalendarDate.setMonth(currentCalendarDate.getMonth() + direction);
-            renderCalendar();
-            loadDataDates(); // 해당 월의 데이터 날짜 로드
-        }
-        
-        // 캘린더 렌더링
-        function renderCalendar() {
-            const year = currentCalendarDate.getFullYear();
-            const month = currentCalendarDate.getMonth();
-            
-            document.getElementById('calendar-title').textContent = `${year}년 ${month + 1}월`;
-            
-            const firstDay = new Date(year, month, 1).getDay();
-            const daysInMonth = new Date(year, month + 1, 0).getDate();
-            
-            let calendarHTML = '';
-            
-            // 빈 셀 (이전 달)
-            for (let i = 0; i < firstDay; i++) {
-                calendarHTML += '<div class="p-2"></div>';
-            }
-            
-            // 해당 월의 날짜들
-            for (let day = 1; day <= daysInMonth; day++) {
-                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                const isToday = dateStr === new Date().toISOString().split('T')[0];
-                const hasData = datesWithData.has(dateStr);
-                const isSelected = dateStr === document.getElementById('current-date').textContent;
-                
-                let classes = 'p-2 cursor-pointer hover:bg-blue-100 rounded';
-                if (isToday) classes += ' bg-blue-100 font-bold';
-                if (hasData) classes += ' bg-green-50 border border-green-200';
-                if (isSelected) classes += ' bg-blue-500 text-white';
-                
-                calendarHTML += `<div class="${classes}" onclick="selectDate('${dateStr}')">${day}</div>`;
-            }
-            
-            document.getElementById('calendar-days').innerHTML = calendarHTML;
-        }
-        
-        // 날짜 선택
-        function selectDate(dateStr) {
-            document.getElementById('current-date').textContent = dateStr;
-            loadDateData(dateStr);
-            document.getElementById('mini-calendar').classList.add('hidden');
-        }
-        
-        // 데이터 있는 날짜들 로드
-        function loadDataDates() {
-            const year = currentCalendarDate.getFullYear();
-            const month = currentCalendarDate.getMonth() + 1;
-            const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
-            const endDate = `${year}-${String(month).padStart(2, '0')}-${new Date(year, month, 0).getDate()}`;
-            
-            fetch(`/api/sales?start_date=${startDate}&end_date=${endDate}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success && data.data) {
-                        datesWithData.clear();
-                        data.data.forEach(sale => {
-                            if (sale.sale_date) {
-                                datesWithData.add(sale.sale_date.split(' ')[0]); // 날짜 부분만
-                            }
-                        });
-                        renderCalendar(); // 데이터 표시 업데이트
-                    }
-                })
-                .catch(error => console.log('날짜 데이터 로드 중 오류:', error));
-        }
-        
-        // 오늘 데이터 로드
-        function loadTodayData() {
-            const today = new Date().toISOString().split('T')[0];
-            selectDate(today);
-        }
-        
-        function loadDateData(selectedDate = null) {
-            if (!selectedDate) {
-                selectedDate = document.getElementById('current-date').textContent;
-            }
-            
-            if (!selectedDate) {
-                alert('날짜를 선택해주세요.');
+        // PM 요구사항: 완전한 27개 필드 DB 저장
+        function saveAllData() {
+            if (salesData.length === 0) {
+                showStatus('저장할 데이터가 없습니다.', 'warning');
                 return;
             }
             
-            document.getElementById('current-date').textContent = selectedDate;
-            showStatus(`${selectedDate} 데이터 로딩 중...`, 'info');
-            
-            // API 호출로 해당 날짜 데이터 로드
-            fetch(`/api/sales?sale_date=${selectedDate}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // 해당 날짜 데이터로 테이블 업데이트
-                        completeTableData = data.sales || [];
-                        updateCompleteTable();
-                        updateCompleteStats();
-                        showStatus(`${selectedDate} 데이터 로드 완료 (${completeTableData.length}건)`, 'success');
-                    } else {
-                        // 새로운 날짜인 경우 빈 템플릿 제공
-                        initializeNewDateData(selectedDate);
-                        showStatus(`${selectedDate} 새로운 개통표 생성`, 'info');
-                    }
-                })
-                .catch(error => {
-                    console.error('데이터 로드 오류:', error);
-                    initializeNewDateData(selectedDate);
-                    showStatus(`${selectedDate} 새로운 개통표 생성`, 'info');
-                });
-        }
-        
-        // 새로운 날짜의 빈 데이터 초기화
-        function initializeNewDateData(date) {
-            completeTableData = Array.from({length: 10}, () => ({
-                id: null,
-                sale_date: date,
-                salesperson: '',
-                dealer_code: '',
-                store_id: window.userData?.store_id || null,
-                branch_id: window.userData?.branch_id || null,
-                carrier: 'SK',
-                activation_type: '신규',
-                model_name: '',
-                customer_name: '',
-                phone_number: '',
-                base_price: 0,
-                verbal1: 0,
-                verbal2: 0,
-                grade_amount: 0,
-                additional_amount: 0,
-                cash_activation: 0,
-                usim_fee: 0,
-                new_mnp_discount: 0,
-                deduction: 0,
-                cash_received: 0,
-                payback: 0,
-                monthly_fee: 0,
-                memo: ''
-            }));
-            
-            updateCompleteTable();
-            updateCompleteStats();
-        }
-        
-        // 사용자 정보 설정
-        window.userData = {
-            id: {{ auth()->user()->id ?? 1 }},
-            name: '{{ auth()->user()->name ?? "테스트 사용자" }}',
-            role: '{{ auth()->user()->role ?? "headquarters" }}',
-            store_id: {{ auth()->user()->store_id ?? 'null' }},
-            branch_id: {{ auth()->user()->branch_id ?? 'null' }},
-            store_name: '{{ auth()->user()->store->name ?? "본사" }}',
-            branch_name: '{{ auth()->user()->branch->name ?? "본사" }}'
-        };
-        
-        console.log('사용자 정보:', window.userData);
-        
-        // 일괄 저장 함수
-        function bulkSave() {
-            if (!completeTableData || completeTableData.length === 0) {
-                alert('저장할 데이터가 없습니다.');
-                return;
-            }
-            
-            // 유효한 데이터만 필터링 (model_name이 있는 행만)
-            const validData = completeTableData.filter(row => 
-                row.model_name && row.model_name.trim()
-            );
+            // 유효한 데이터만 필터링 (모델명 필수)
+            const validData = salesData.filter(row => row.model_name && row.model_name.trim());
             
             if (validData.length === 0) {
-                alert('저장할 유효한 데이터가 없습니다. 모델명을 입력해주세요.');
+                showStatus('저장할 유효한 데이터가 없습니다. 모델명을 입력해주세요.', 'warning');
                 return;
             }
             
             showStatus('저장 중...', 'info');
             
-            // DB 저장 (웹 라우트 API) - PM 요구사항: DB 영속화 + 실시간 동기화
+            // PM 요구사항: 27개 필드 완전 매핑으로 DB 저장
             fetch('/test-api/sales/save', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest'
                 },
                 credentials: 'same-origin',
                 body: JSON.stringify({
                     sales: validData.map(row => ({
+                        // PM 요구사항: DB 스키마와 1:1 매핑
+                        store_id: {{ auth()->user()->store_id ?? 1 }},
+                        branch_id: {{ auth()->user()->branch_id ?? 1 }},
                         sale_date: row.sale_date,
-                        store_id: window.userData.store_id || 1,
-                        branch_id: window.userData.branch_id || 1,
-                        carrier: row.carrier || 'SK',
-                        dealer_name: row.dealer_name || '이앤티', // PM 요구사항: 대리점명
-                        activation_type: row.activation_type || '신규',
+                        salesperson: row.salesperson,
+                        dealer_name: row.dealer_name,
+                        carrier: row.carrier,
+                        activation_type: row.activation_type,
                         model_name: row.model_name,
-                        serial_number: row.serial_number || '', // PM 요구사항: 일련번호
-                        base_price: parseFloat(row.base_price) || 0,
-                        verbal1: parseFloat(row.verbal1) || 0,
-                        verbal2: parseFloat(row.verbal2) || 0,
-                        grade_amount: parseFloat(row.grade_amount) || 0,
-                        additional_amount: parseFloat(row.additional_amount) || 0,
-                        cash_activation: parseFloat(row.cash_activation) || 0,
-                        usim_fee: parseFloat(row.usim_fee) || 0,
-                        new_mnp_discount: parseFloat(row.new_mnp_discount) || -800,
-                        deduction: parseFloat(row.deduction) || 0,
-                        settlement_amount: parseFloat(row.settlement_amount) || 0,
-                        tax: parseFloat(row.tax) || 0,
-                        margin_before_tax: parseFloat(row.margin_before_tax) || 0,
-                        cash_received: parseFloat(row.cash_received) || 0,
-                        payback: parseFloat(row.payback) || 0,
-                        margin_after_tax: parseFloat(row.margin_after_tax) || 0,
-                        phone_number: row.phone_number || '',
-                        customer_name: row.customer_name || '', // PM 요구사항: 고객명
-                        customer_birth_date: row.customer_birth_date || null, // PM 요구사항: 생년월일
-                        salesperson: row.salesperson || '',
+                        serial_number: row.serial_number,
+                        phone_number: row.phone_number,
+                        customer_name: row.customer_name,
+                        customer_birth_date: row.customer_birth_date,
+                        base_price: row.base_price,
+                        verbal1: row.verbal1,
+                        verbal2: row.verbal2,
+                        grade_amount: row.grade_amount,
+                        additional_amount: row.additional_amount,
+                        cash_activation: row.cash_activation,
+                        usim_fee: row.usim_fee,
+                        new_mnp_discount: row.new_mnp_discount,
+                        deduction: row.deduction,
+                        rebate_total: row.rebate_total,
+                        settlement_amount: row.settlement_amount,
+                        tax: row.tax,
+                        cash_received: row.cash_received,
+                        payback: row.payback,
+                        margin_before_tax: row.margin_before_tax,
+                        margin_after_tax: row.margin_after_tax,
                         memo: row.memo || ''
                     }))
                 })
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
             .then(data => {
                 if (data.success) {
                     showStatus(`✅ ${validData.length}건 DB 저장 완료! 지사/본사 대시보드에 실시간 반영됩니다.`, 'success');
-                    updateCompleteStats(); // 로컬 통계 업데이트
-                    
-                    // PM 요구사항: 실시간 동기화 확인
                     console.log('🔥 DB 영속화 완료 - 실시간 동기화 시작');
-                    console.log('저장된 데이터:', {
-                        count: validData.length,
-                        store_id: window.userData.store_id,
-                        branch_id: window.userData.branch_id,
-                        total_amount: validData.reduce((sum, row) => sum + (row.settlement_amount || 0), 0)
-                    });
+                    console.log('저장된 27개 필드 데이터:', validData);
                 } else {
                     showStatus('❌ 저장 실패: ' + (data.message || '알 수 없는 오류'), 'error');
                 }
             })
             .catch(error => {
                 console.error('저장 오류:', error);
-                showStatus('❌ 저장 중 오류 발생', 'error');
+                showStatus('❌ 저장 중 오류 발생: ' + error.message, 'error');
             });
         }
         
-        // 일괄저장 버튼 이벤트 연결
+        // 상태 메시지 표시
+        function showStatus(message, type = 'info') {
+            const indicator = document.getElementById('status-indicator');
+            indicator.textContent = message;
+            indicator.className = `px-3 py-2 rounded text-xs ${
+                type === 'success' ? 'bg-green-100 text-green-800' :
+                type === 'error' ? 'bg-red-100 text-red-800' :
+                type === 'warning' ? 'bg-yellow-100 text-yellow-800' :
+                'bg-gray-100 text-gray-600'
+            }`;
+            
+            // 3초 후 기본 상태로 복원
+            setTimeout(() => {
+                indicator.textContent = '시스템 준비 완료';
+                indicator.className = 'px-3 py-2 bg-gray-100 text-gray-600 rounded text-xs';
+            }, 3000);
+        }
+        
+        // 이벤트 리스너 등록
         document.addEventListener('DOMContentLoaded', function() {
-            const saveBtn = document.getElementById('save-btn');
-            if (saveBtn) {
-                saveBtn.addEventListener('click', bulkSave);
-                console.log('일괄저장 버튼 이벤트 연결 완료');
-            } else {
-                console.log('일괄저장 버튼을 찾을 수 없습니다');
-            }
+            // 기본 행 추가
+            addNewRow();
+            
+            // 버튼 이벤트
+            document.getElementById('add-row-btn').addEventListener('click', addNewRow);
+            document.getElementById('save-btn').addEventListener('click', saveAllData);
+            document.getElementById('calculate-all-btn').addEventListener('click', () => {
+                salesData.forEach(row => calculateRow(row.id));
+                showStatus('전체 재계산 완료', 'success');
+            });
+            
+            console.log('✅ PM 요구사항 27컬럼 완전한 개통표 시스템 초기화 완료');
         });
     </script>
 </body>
