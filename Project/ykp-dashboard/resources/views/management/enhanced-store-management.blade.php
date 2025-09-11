@@ -811,7 +811,8 @@
                     // 계정 정보가 있으면 모달로 표시
                     if (result.data && result.data.account) {
                         const account = result.data.account;
-                        showAccountCreatedModal(account.email, account.password);
+                        const store = result.data.store;
+                        showAccountCreatedModal(account.email, account.password, store);
                     } else {
                         showToast('매장 계정이 생성되었습니다!', 'success');
                     }
@@ -824,35 +825,64 @@
             }
         }
 
-        // 생성된 계정 정보 표시 모달
-        function showAccountCreatedModal(email, password) {
+        // 생성된 계정 정보 표시 모달 (PM 요구사항 반영)
+        function showAccountCreatedModal(email, password, storeData) {
             const modal = document.createElement('div');
             modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
             modal.innerHTML = `
-                <div class="bg-white p-6 rounded-lg max-w-md w-full mx-4">
-                    <h3 class="text-lg font-semibold mb-4 text-green-600">✅ 매장 계정이 생성되었습니다</h3>
-                    <div class="space-y-3">
-                        <div>
-                            <label class="text-sm font-medium text-gray-700">이메일</label>
-                            <div class="flex items-center space-x-2">
-                                <input type="text" value="${email}" readonly class="flex-1 px-3 py-2 border rounded bg-gray-50">
-                                <button onclick="copyToClipboard('${email}')" class="px-3 py-2 bg-blue-500 text-white rounded text-sm">복사</button>
+                <div class="bg-white p-8 rounded-xl max-w-lg w-full mx-4 shadow-2xl">
+                    <div class="text-center mb-6">
+                        <div class="text-6xl mb-4">🎉</div>
+                        <h3 class="text-2xl font-bold text-green-600 mb-2">매장과 매장 계정이 생성되었습니다!</h3>
+                    </div>
+                    
+                    <div class="space-y-4 bg-gray-50 p-6 rounded-lg">
+                        <div class="flex items-center space-x-3">
+                            <span class="text-2xl">📍</span>
+                            <div>
+                                <span class="font-semibold text-gray-700">매장명:</span>
+                                <span class="ml-2 font-bold text-blue-600">${storeData?.name || '매장'} (${storeData?.code || 'CODE'})</span>
                             </div>
                         </div>
-                        <div>
-                            <label class="text-sm font-medium text-gray-700">비밀번호</label>
-                            <div class="flex items-center space-x-2">
-                                <input type="text" value="${password}" readonly class="flex-1 px-3 py-2 border rounded bg-gray-50">
-                                <button onclick="copyToClipboard('${password}')" class="px-3 py-2 bg-blue-500 text-white rounded text-sm">복사</button>
+                        
+                        <div class="flex items-center space-x-3">
+                            <span class="text-2xl">👤</span>
+                            <div class="flex-1">
+                                <span class="font-semibold text-gray-700">계정:</span>
+                                <div class="flex items-center space-x-2 mt-1">
+                                    <code class="bg-white px-3 py-2 rounded border text-blue-600 font-mono flex-1">${email}</code>
+                                    <button onclick="copyToClipboard('${email}')" class="px-3 py-2 bg-blue-500 text-white rounded text-sm hover:bg-blue-600">복사</button>
+                                </div>
                             </div>
                         </div>
-                        <div class="text-sm text-gray-600">
-                            💡 이 정보는 1회성으로만 표시됩니다. 반드시 복사해두세요.
+                        
+                        <div class="flex items-center space-x-3">
+                            <span class="text-2xl">🔑</span>
+                            <div class="flex-1">
+                                <span class="font-semibold text-gray-700">비밀번호:</span>
+                                <div class="flex items-center space-x-2 mt-1">
+                                    <code class="bg-white px-3 py-2 rounded border text-green-600 font-mono flex-1">${password}</code>
+                                    <button onclick="copyToClipboard('${password}')" class="px-3 py-2 bg-green-500 text-white rounded text-sm hover:bg-green-600">복사</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start space-x-3 mt-6 p-4 bg-orange-50 rounded-lg border-l-4 border-orange-400">
+                            <span class="text-2xl">⚠️</span>
+                            <div>
+                                <p class="text-orange-800 font-semibold">중요 안내</p>
+                                <p class="text-orange-700 text-sm mt-1">이 비밀번호는 최초 로그인 시 반드시 변경하세요.</p>
+                                <p class="text-orange-600 text-xs mt-1">💡 이 정보는 1회성으로만 표시됩니다.</p>
+                            </div>
                         </div>
                     </div>
-                    <div class="mt-6 flex space-x-3">
-                        <button onclick="this.closest('.fixed').remove()" class="flex-1 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
-                            확인
+                    
+                    <div class="mt-8 flex space-x-3">
+                        <button onclick="this.closest('.fixed').remove()" class="flex-1 px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 font-semibold">
+                            ✅ 확인완료
+                        </button>
+                        <button onclick="window.open('/login', '_blank'); this.closest('.fixed').remove();" class="flex-1 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-semibold">
+                            🔗 바로 로그인
                         </button>
                     </div>
                 </div>
