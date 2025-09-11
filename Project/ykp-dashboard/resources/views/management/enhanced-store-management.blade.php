@@ -448,7 +448,7 @@
         // 지사 목록 로드
         async function loadBranches() {
             try {
-                const response = await fetch('/api/branches');
+                const response = await fetch('/test-api/branches');
                 const result = await response.json();
                 
                 if (result.success) {
