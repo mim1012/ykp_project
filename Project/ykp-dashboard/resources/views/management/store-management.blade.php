@@ -54,16 +54,24 @@
                 return;
             }
             
-            // API 호출
+            // API 호출 (세션 인증 포함)
             fetch('/api/stores', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                    'Accept': 'application/json'
                 },
+                credentials: 'same-origin', // 세션 쿠키 포함
                 body: JSON.stringify(formData)
             })
-            .then(response => response.json())
+            .then(response => {
+                console.log('API 응답 상태:', response.status);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
             .then(result => {
                 if (result.success) {
                     console.log('✅ 매장 생성 성공');
