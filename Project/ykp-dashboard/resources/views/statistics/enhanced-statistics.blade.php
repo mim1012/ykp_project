@@ -365,42 +365,13 @@
                     throw new Error('차트 데이터 로드 실패');
                 }
             } catch (error) {
-                // 데모 차트 데이터 생성
-                const demoData = generateDemoChartData(chartType);
-                renderRevenueChart(demoData);
+                // DB 데이터 로드 실패 시 에러 표시 (demoData 제거)
+                console.error('차트 데이터 로드 실패:', error);
+                document.getElementById('revenue-chart').innerHTML = '<p class="text-red-500 text-center p-4">차트 데이터를 불러올 수 없습니다. 관리자에게 문의하세요.</p>';
             }
         }
 
-        // 데모 차트 데이터 생성
-        function generateDemoChartData(type) {
-            const labels = [];
-            const revenueData = [];
-            const profitData = [];
-            
-            const periods = type === 'daily' ? currentPeriod : 
-                          type === 'weekly' ? Math.ceil(currentPeriod / 7) : 
-                          Math.ceil(currentPeriod / 30);
-
-            for (let i = periods - 1; i >= 0; i--) {
-                if (type === 'daily') {
-                    const date = new Date();
-                    date.setDate(date.getDate() - i);
-                    labels.push(date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' }));
-                    revenueData.push(Math.random() * 2000000 + 1000000);
-                    profitData.push(Math.random() * 1200000 + 600000);
-                } else if (type === 'weekly') {
-                    labels.push(`${periods - i}주차`);
-                    revenueData.push(Math.random() * 14000000 + 7000000);
-                    profitData.push(Math.random() * 8400000 + 4200000);
-                } else {
-                    labels.push(`${periods - i}월`);
-                    revenueData.push(Math.random() * 60000000 + 30000000);
-                    profitData.push(Math.random() * 36000000 + 18000000);
-                }
-            }
-
-            return { labels, revenue_data: revenueData, profit_data: profitData };
-        }
+        // demoData 완전 제거 - PM 요구사항 반영
 
         // 매출 차트 렌더링
         function renderRevenueChart(data) {

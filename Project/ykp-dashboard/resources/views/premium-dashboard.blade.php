@@ -439,7 +439,7 @@
                             <span class="kpi-title">🏢 전체 지사 수</span>
                             <span class="kpi-trend trend-up">+ 2개</span>
                         </div>
-                        <div class="kpi-value">8개 지사</div>
+                        <div class="kpi-value">{{ App\Models\Branch::count() }}개 지사</div>
                         <div class="kpi-subtitle">전국 지사 관리</div>
                     </div>
                     <div class="kpi-card" id="totalStores" style="border-left: 4px solid #3b82f6;">
@@ -447,7 +447,7 @@
                             <span class="kpi-title">🏪 전체 매장 수</span>
                             <span class="kpi-trend trend-up">+ 1개</span>
                         </div>
-                        <div class="kpi-value">3개 매장</div>
+                        <div class="kpi-value">{{ App\Models\Store::count() }}개 매장</div>
                         <div class="kpi-subtitle">전국 매장 관리</div>
                     </div>
                     <div class="kpi-card" id="totalUsers" style="border-left: 4px solid #3b82f6;">
@@ -455,7 +455,7 @@
                             <span class="kpi-title">👥 전체 사용자</span>
                             <span class="kpi-trend trend-up">+ 1명</span>
                         </div>
-                        <div class="kpi-value">5명 관리</div>
+                        <div class="kpi-value">{{ App\Models\User::where('role', 'store')->count() }}명 관리</div>
                         <div class="kpi-subtitle">시스템 사용자</div>
                     </div>
                     <div class="kpi-card" id="systemGoal" style="border-left: 4px solid #3b82f6;">
