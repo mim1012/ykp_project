@@ -963,12 +963,15 @@
             
             showStatus('저장 중...', 'info');
             
-            // Supabase에 저장 (웹 라우트 API)
+            // Supabase에 저장 (웹 라우트 API) - CSRF 토큰 추가
             fetch('/test-api/sales/save', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                    'Accept': 'application/json'
                 },
+                credentials: 'same-origin',
                 body: JSON.stringify({
                     sales: validData.map(row => ({
                         sale_date: row.sale_date,
