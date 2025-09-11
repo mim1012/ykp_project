@@ -962,7 +962,7 @@
         // 매장 계정 확인 (새로운 전용 API 사용)
         async function checkStoreAccount(storeId) {
             try {
-                const response = await fetch(`/api/stores/${storeId}/account`);
+                const response = await fetch(`/test-api/stores/${storeId}/account`);
                 const result = await response.json();
                 
                 if (!result.success) {
