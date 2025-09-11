@@ -397,31 +397,22 @@ class StoreController extends Controller
         }
         
         return DB::transaction(function () use ($request, $user, $store) {
-            // 계정 정보 설정
-            if ($user->role === 'headquarters' && $request->filled(['name', 'email', 'password'])) {
-                // 본사: 사용자 입력 정보 사용
-                $name = $request->name;
-                $email = $request->email;
-                $password = $request->password;
-            } else {
-                // 지사: 자동 생성
-                $cleanName = preg_replace('/[^가-힣a-zA-Z0-9]/', '', $store->owner_name ?: $store->name);
-                $name = $store->owner_name ? "{$store->owner_name} ({$store->code} 매장장)" : "매장관리자 ({$store->code})";
-                $email = strtolower($store->code) . "@ykp.com";
-                $password = 'store' . substr(md5($store->code . time()), 0, 6); // 6자리 랜덤 비밀번호
-            }
+            // 표준 양식으로 계정 정보 생성
+            $standardAccount = $this->generateStandardAccountInfo($store, $user, $request);
             
             // 이메일 중복 확인
-            $emailExists = User::where('email', $email)->exists();
+            $emailExists = User::where('email', $standardAccount['email'])->exists();
             if ($emailExists) {
-                $email = strtolower($store->code) . time() . "@ykp.com"; // 타임스탬프 추가
+                // 중복 시 타임스탬프 추가
+                $timestamp = substr(time(), -4); // 마지막 4자리
+                $standardAccount['email'] = str_replace('@ykp.com', $timestamp . '@ykp.com', $standardAccount['email']);
             }
             
             // 사용자 생성
             $newUser = User::create([
-                'name' => $name,
-                'email' => $email,
-                'password' => Hash::make($password),
+                'name' => $standardAccount['name'],
+                'email' => $standardAccount['email'],
+                'password' => Hash::make($standardAccount['password']),
                 'role' => 'store',
                 'store_id' => $store->id,
                 'branch_id' => $store->branch_id,
@@ -432,9 +423,10 @@ class StoreController extends Controller
                 'store_id' => $store->id,
                 'store_code' => $store->code,
                 'new_user_id' => $newUser->id,
-                'new_user_email' => $email,
+                'new_user_email' => $standardAccount['email'],
                 'created_by' => Auth::id(),
-                'created_by_role' => $user->role
+                'created_by_role' => $user->role,
+                'account_type' => $standardAccount['type']
             ]);
             
             return response()->json([
@@ -444,13 +436,85 @@ class StoreController extends Controller
                     'store' => $store->only(['id', 'name', 'code']),
                     'account' => [
                         'id' => $newUser->id,
-                        'name' => $name,
-                        'email' => $email,
-                        'password' => $password, // 1회성 반환
-                        'created_at' => $newUser->created_at
+                        'name' => $standardAccount['name'],
+                        'email' => $standardAccount['email'],
+                        'password' => $standardAccount['password'], // 1회성 반환
+                        'created_at' => $newUser->created_at,
+                        'type' => $standardAccount['type']
                     ]
                 ]
             ], 201);
         });
+    }
+    
+    /**
+     * 표준 양식으로 계정 정보 생성
+     */
+    private function generateStandardAccountInfo(Store $store, User $creator, Request $request): array
+    {
+        if ($creator->role === 'headquarters' && $request->filled(['name', 'email', 'password'])) {
+            // 본사: 사용자 입력 정보 사용 (하지만 표준 양식 권장)
+            return [
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => $request->password,
+                'type' => 'headquarters_manual'
+            ];
+        }
+        
+        // 표준 자동 생성 양식
+        $branchCode = strtolower($store->branch->code ?? 'BR' . str_pad($store->branch_id, 3, '0', STR_PAD_LEFT));
+        $storeNumber = $this->extractStoreNumber($store->code);
+        
+        // 이메일: {지사코드}-{매장번호}@ykp.com
+        $email = $branchCode . '-' . str_pad($storeNumber, 3, '0', STR_PAD_LEFT) . '@ykp.com';
+        
+        // 계정명: {사장님명} ({매장코드} 매장장)
+        $ownerName = $store->owner_name ?: '매장관리자';
+        $name = "{$ownerName} ({$store->code} 매장장)";
+        
+        // 비밀번호: store{6자리_영숫자}
+        $password = 'store' . $this->generateSecureRandomString(6);
+        
+        return [
+            'name' => $name,
+            'email' => $email,
+            'password' => $password,
+            'type' => 'auto_generated_standard'
+        ];
+    }
+    
+    /**
+     * 매장 코드에서 매장 번호 추출
+     */
+    private function extractStoreNumber(string $storeCode): string
+    {
+        // BR001-001 → 001, DG001-003 → 003
+        if (preg_match('/.*-(\d+)$/', $storeCode, $matches)) {
+            return $matches[1];
+        }
+        
+        // 패턴이 맞지 않으면 마지막 숫자들 추출
+        if (preg_match('/(\d+)$/', $storeCode, $matches)) {
+            return str_pad($matches[1], 3, '0', STR_PAD_LEFT);
+        }
+        
+        // 기본값: 001
+        return '001';
+    }
+    
+    /**
+     * 안전한 랜덤 문자열 생성 (영숫자 조합)
+     */
+    private function generateSecureRandomString(int $length): string
+    {
+        $characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        $result = '';
+        
+        for ($i = 0; $i < $length; $i++) {
+            $result .= $characters[random_int(0, strlen($characters) - 1)];
+        }
+        
+        return $result;
     }
 }
