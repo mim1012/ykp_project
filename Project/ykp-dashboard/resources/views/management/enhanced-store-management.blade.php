@@ -374,6 +374,8 @@
             window.saveAccountChanges = saveAccountChanges;
             window.resetAccountPassword = resetAccountPassword;
             window.createAccountForStore = createAccountForStore;
+            window.deleteStore = deleteStore;
+            window.generateDeleteButton = generateDeleteButton;
             window.goToBranchManagement = goToBranchManagement;
             
             loadBranches();
@@ -565,6 +567,7 @@
                             <button onclick="editStore(${store.id})" class="text-blue-600 hover:text-blue-800 text-sm">
                                 수정
                             </button>
+                            ${generateDeleteButton(store.id)}
                         </div>
                     </td>
                 `;
@@ -574,6 +577,56 @@
             } else {
                 // 데이터가 없을 때 no-data 메시지 표시
                 document.getElementById('no-data').style.display = 'block';
+            }
+        }
+
+        // 권한별 삭제 버튼 생성 (본사만 삭제 가능)
+        function generateDeleteButton(storeId) {
+            const userRole = '{{ auth()->user()->role }}';
+            
+            if (userRole === 'headquarters') {
+                return `<button onclick="deleteStore(${storeId})" class="text-red-600 hover:text-red-800 text-sm">
+                    삭제
+                </button>`;
+            } else {
+                return ''; // 지사 계정에서는 삭제 버튼 숨김
+            }
+        }
+
+        // 매장 삭제 (본사 전용)
+        async function deleteStore(storeId) {
+            const userRole = '{{ auth()->user()->role }}';
+            
+            if (userRole !== 'headquarters') {
+                showToast('삭제 권한이 없습니다. 본사 관리자만 삭제 가능합니다.', 'error');
+                return;
+            }
+            
+            if (!confirm('정말로 이 매장을 삭제하시겠습니까?\n\n삭제된 매장과 관련된 모든 데이터가 삭제됩니다.')) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/test-api/stores/${storeId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showToast('매장이 삭제되었습니다', 'success');
+                    loadStores(); // 목록 새로고침
+                } else {
+                    showToast('매장 삭제 실패: ' + (result.error || '알 수 없는 오류'), 'error');
+                }
+                
+            } catch (error) {
+                console.error('매장 삭제 중 오류:', error);
+                showToast('매장 삭제 중 오류가 발생했습니다', 'error');
             }
         }
 

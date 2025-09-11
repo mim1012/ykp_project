@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Hash;
 // Authentication routes (accessible to guests only)
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
-    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/login', [AuthController::class, 'login'])->name('login.post');
     
     // 로그아웃은 AuthController에서 처리 (중복 제거)
 

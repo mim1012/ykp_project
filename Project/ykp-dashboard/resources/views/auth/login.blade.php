@@ -53,7 +53,7 @@
                 </div>
             @endif
 
-            <form method="POST" action="https://{{ request()->getHost() }}/login" class="space-y-6">
+            <form method="POST" action="{{ route('login') }}" class="space-y-6">
                 @csrf
                 <div>
                     <label for="email" class="block text-sm font-medium text-gray-700 mb-1">이메일 주소</label>
