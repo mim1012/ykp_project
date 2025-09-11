@@ -13,11 +13,13 @@ ARG PORT
 ENV PORT=${PORT}
 RUN sed -i "s/80/${PORT}/g" /etc/apache2/sites-available/000-default.conf \
  && sed -i "s/80/${PORT}/g" /etc/apache2/ports.conf \
+ && sed -i "s|/var/www/html|/var/www/html/public|g" /etc/apache2/sites-available/000-default.conf \
  && echo "ServerName localhost" >> /etc/apache2/apache2.conf
 EXPOSE ${PORT}
 
-# 앱 복사
+# 앱 복사 (프로젝트 루트에서 복사)
 COPY . ./
+RUN ls -la && pwd
 
 # Composer & 빌드
 RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
