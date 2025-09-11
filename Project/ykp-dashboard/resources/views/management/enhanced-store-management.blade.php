@@ -448,7 +448,7 @@
         // 지사 목록 로드
         async function loadBranches() {
             try {
-                const response = await fetch('/test-api/branches');
+                const response = await fetch('/api/branches');
                 const result = await response.json();
                 
                 if (result.success) {
@@ -502,7 +502,7 @@
             tbodyEl.innerHTML = '';
             
             try {
-                const response = await fetch('/test-api/stores');
+                const response = await fetch('/api/stores');
                 const result = await response.json();
                 
                 console.log('매장 데이터 응답:', result);
@@ -709,7 +709,7 @@
             };
 
             try {
-                const response = await fetch('/test-api/stores/add', {
+                const response = await fetch('/api/stores', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -962,7 +962,7 @@
         // 매장 계정 확인 (새로운 전용 API 사용)
         async function checkStoreAccount(storeId) {
             try {
-                const response = await fetch(`/test-api/stores/${storeId}/account`);
+                const response = await fetch(`/api/stores/${storeId}/account`);
                 const result = await response.json();
                 
                 if (!result.success) {
@@ -1058,7 +1058,7 @@
                 }
                 
                 // 사용자 정보 업데이트 API 호출 (구현 필요)
-                const response = await fetch(`/test-api/users/${account.id}`, {
+                const response = await fetch(`/api/users/${account.id}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1094,7 +1094,7 @@
             }
             
             try {
-                const response = await fetch(`/test-api/users/${account.id}/reset-password`, {
+                const response = await fetch(`/api/users/${account.id}/reset-password`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1124,7 +1124,7 @@
             const { store } = window.currentStoreAccount;
             
             try {
-                const response = await fetch(`/test-api/stores/${store.id}/create-user`, {
+                const response = await fetch(`/api/stores/${store.id}/account`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

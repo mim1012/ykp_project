@@ -921,7 +921,28 @@ if (config('app.env') !== 'production') {
 
 /*
 |--------------------------------------------------------------------------
-| API Routes for Authentication
+| Production API Routes (정식 버전)
+|--------------------------------------------------------------------------
+*/
+
+// 지사 관리 API (정식)
+Route::middleware(['web', 'auth'])->prefix('api')->group(function () {
+    Route::apiResource('branches', App\Http\Controllers\Api\BranchController::class);
+    Route::apiResource('stores', App\Http\Controllers\Api\StoreManagementController::class);
+    
+    // 매장 계정 관리 전용 라우트
+    Route::get('stores/{id}/account', [App\Http\Controllers\Api\StoreManagementController::class, 'getAccount']);
+    Route::post('stores/{id}/account', [App\Http\Controllers\Api\StoreManagementController::class, 'createAccount']);
+    
+    // 사용자 관리
+    Route::get('users', [App\Http\Controllers\Api\UserManagementController::class, 'index']);
+    Route::put('users/{id}', [App\Http\Controllers\Api\UserManagementController::class, 'update']);
+    Route::post('users/{id}/reset-password', [App\Http\Controllers\Api\UserManagementController::class, 'resetPassword']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| Legacy API Routes (test-api) - 호환성 유지용
 |--------------------------------------------------------------------------
 */
 
