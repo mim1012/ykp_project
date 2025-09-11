@@ -71,7 +71,13 @@
       "mcp__microsoft-playwright-mcp__browser_network_requests",
       "mcp__microsoft-playwright-mcp__browser_take_screenshot",
       "mcp__microsoft-playwright-mcp__browser_press_key",
-      "mcp__microsoft-playwright-mcp__browser_select_option"
+      "mcp__microsoft-playwright-mcp__browser_select_option",
+      "Bash(./vendor/bin/phpunit --filter=\"SaleStatisticsTest\")",
+      "Bash(python:*)",
+      "Bash(tree:*)",
+      "Bash(dir:*)",
+      "Bash(./vendor/bin/phpunit --filter=\"StatisticsApiTest\")",
+      "Bash(./vendor/bin/phpunit:*)"
     ],
     "defaultMode": "acceptEdits",
     "additionalDirectories": [

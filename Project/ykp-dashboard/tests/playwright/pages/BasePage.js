@@ -124,6 +124,35 @@ export class BasePage {
     }
 
     /**
+     * 요소 대기 (가시성 확인)
+     */
+    async waitForElement(element, description = '', timeout = 10000) {
+        try {
+            await element.waitFor({ state: 'visible', timeout });
+            console.log(`✅ ${description} 로딩 완료`);
+        } catch (error) {
+            console.log(`❌ ${description} 로딩 실패:`, error.message);
+            throw error;
+        }
+    }
+
+    /**
+     * 성공 메시지 대기
+     */
+    async waitForSuccessMessage(expectedMessage = null, timeout = 10000) {
+        try {
+            await this.successMessage.waitFor({ state: 'visible', timeout });
+            if (expectedMessage) {
+                await expect(this.successMessage).toContainText(expectedMessage);
+            }
+            console.log(`✅ 성공 메시지 확인: ${expectedMessage || '일반 성공'}`);
+        } catch (error) {
+            console.log(`❌ 성공 메시지 확인 실패:`, error.message);
+            throw error;
+        }
+    }
+
+    /**
      * 로그아웃 수행
      */
     async logout() {

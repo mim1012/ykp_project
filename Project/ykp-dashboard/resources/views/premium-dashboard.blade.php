@@ -798,13 +798,6 @@
             window.location.href = '/admin';
         }
         
-        // 로그아웃 함수
-        function logout() {
-            if (confirm('로그아웃 하시겠습니까?\n\n완전한 로그아웃을 위해 세션을 초기화합니다.')) {
-                // 강제 로그아웃 페이지로 이동 (세션 완전 초기화)
-                window.location.href = '/force-logout.php';
-            }
-        }
 
         // 실시간 데이터 로드
         async function loadRealTimeData() {
