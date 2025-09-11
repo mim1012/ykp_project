@@ -38,12 +38,68 @@
             }
         };
         
+        window.submitAddStore = function() {
+            console.log('✅ 매장 추가 제출 시작');
+            const formData = {
+                name: document.getElementById('modal-store-name')?.value || '',
+                branch_id: document.getElementById('modal-branch-select')?.value || '',
+                owner_name: document.getElementById('modal-owner-name')?.value || '',
+                phone: document.getElementById('modal-phone')?.value || ''
+            };
+            
+            console.log('매장 데이터:', formData);
+            
+            if (!formData.name) {
+                alert('매장명을 입력해주세요');
+                return;
+            }
+            
+            // API 호출
+            fetch('/api/stores', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                },
+                body: JSON.stringify(formData)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    console.log('✅ 매장 생성 성공');
+                    alert('매장이 성공적으로 생성되었습니다!');
+                    
+                    // 모달 닫기
+                    const modal = document.getElementById('add-store-modal');
+                    if (modal) {
+                        modal.classList.add('hidden');
+                        modal.style.display = 'none';
+                    }
+                    
+                    // 페이지 새로고침으로 목록 업데이트
+                    location.reload();
+                } else {
+                    alert('매장 생성 실패: ' + (result.error || '알 수 없는 오류'));
+                }
+            })
+            .catch(error => {
+                console.error('매장 생성 오류:', error);
+                alert('매장 생성 중 오류가 발생했습니다');
+            });
+        };
+        
         // 즉시 전역 스코프에도 등록
         window.addEventListener('DOMContentLoaded', function() {
             if (typeof showAddStoreModal === 'undefined') {
                 showAddStoreModal = window.showAddStoreModal;
             }
-            console.log('✅ DOMContentLoaded - showAddStoreModal 등록 확인:', typeof showAddStoreModal);
+            if (typeof submitAddStore === 'undefined') {
+                submitAddStore = window.submitAddStore;
+            }
+            console.log('✅ DOMContentLoaded - 함수 등록 확인:', {
+                showAddStoreModal: typeof showAddStoreModal,
+                submitAddStore: typeof submitAddStore
+            });
         });
         
         console.log('✅ 헤드 섹션에서 showAddStoreModal 전역 등록 완료');
