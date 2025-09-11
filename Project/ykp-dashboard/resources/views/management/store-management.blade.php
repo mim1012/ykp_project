@@ -16,6 +16,38 @@
     
     {{-- 🔒 세션 안정성 강화 스크립트 --}}
     <script src="/js/session-stability.js"></script>
+    
+    {{-- 🚨 긴급: 전역 함수 즉시 등록 (ReferenceError 방지) --}}
+    <script>
+        window.showAddStoreModal = function() {
+            console.log('✅ 전역 showAddStoreModal 즉시 실행');
+            const modal = document.getElementById('add-store-modal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                modal.style.display = 'flex';
+                console.log('✅ 모달 표시 성공');
+                
+                // 첫 번째 입력 필드에 포커스
+                const nameInput = document.getElementById('modal-store-name');
+                if (nameInput) {
+                    nameInput.focus();
+                }
+            } else {
+                console.error('❌ add-store-modal 찾을 수 없음');
+                alert('매장 추가 기능을 호출했지만 모달을 찾을 수 없습니다.');
+            }
+        };
+        
+        // 즉시 전역 스코프에도 등록
+        window.addEventListener('DOMContentLoaded', function() {
+            if (typeof showAddStoreModal === 'undefined') {
+                showAddStoreModal = window.showAddStoreModal;
+            }
+            console.log('✅ DOMContentLoaded - showAddStoreModal 등록 확인:', typeof showAddStoreModal);
+        });
+        
+        console.log('✅ 헤드 섹션에서 showAddStoreModal 전역 등록 완료');
+    </script>
 </head>
 <body class="bg-gray-50">
     <!-- 헤더 -->
