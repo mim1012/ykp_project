@@ -16,8 +16,10 @@ class Sale extends Model
         'branch_id',
         'sale_date',
         'carrier',
+        'dealer_name', // PM 요구사항: 대리점명 추가
         'activation_type',
         'model_name',
+        'serial_number', // PM 요구사항: 일련번호 추가
         'base_price',
         'verbal1',
         'verbal2',
@@ -36,12 +38,15 @@ class Sale extends Model
         'margin_after_tax',
         'monthly_fee',
         'phone_number',
+        'customer_name', // PM 요구사항: 고객명 추가
+        'customer_birth_date', // PM 요구사항: 생년월일 추가
         'salesperson',
         'memo',
     ];
 
     protected $casts = [
         'sale_date' => 'date',
+        'customer_birth_date' => 'date', // PM 요구사항: 생년월일 날짜 타입
         'base_price' => 'decimal:2',
         'verbal1' => 'decimal:2',
         'verbal2' => 'decimal:2',
