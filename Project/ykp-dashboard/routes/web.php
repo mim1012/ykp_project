@@ -155,6 +155,11 @@ Route::middleware(['auth', 'rbac'])->group(function () {
     Route::get('/sales/improved-input', function () {
         return view('sales.improved-input');
     })->name('sales.improved-input');
+    
+    // 매장용 개통표 입력 (Production에서 사용)
+    Route::get('/sales/store-input', function () {
+        return view('sales.simple-aggrid');
+    })->name('sales.store-input');
 
     // Additional sales input views
     Route::get('/sales/advanced-input-enhanced', function () {

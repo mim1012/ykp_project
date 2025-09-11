@@ -790,8 +790,8 @@
         }
         
         function openSimpleInput() {
-            // 가장 간단한 입력 시스템으로 이동
-            window.location.href = '/test/simple-aggrid';
+            // 매장용 개통표 입력 시스템으로 이동
+            window.location.href = '/sales/store-input';
         }
         
         function openSettlement() {
