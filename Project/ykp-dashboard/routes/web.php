@@ -942,6 +942,28 @@ Route::middleware(['web', 'auth'])->prefix('api')->group(function () {
     // 대시보드 순위 및 TOP N 시스템
     Route::get('dashboard/rankings', [App\Http\Controllers\Api\DashboardController::class, 'rankings']);
     Route::get('dashboard/top-list', [App\Http\Controllers\Api\DashboardController::class, 'topList']);
+    
+    // 지사 목록 API (권한별 필터링)
+    Route::get('branches', function() {
+        $user = auth()->user();
+        
+        if ($user->isHeadquarters()) {
+            // 본사: 모든 지사
+            $branches = App\Models\Branch::withCount('stores')->get();
+        } elseif ($user->isBranch()) {
+            // 지사: 자기 지사만
+            $branches = App\Models\Branch::withCount('stores')
+                      ->where('id', $user->branch_id)
+                      ->get();
+        } else {
+            // 매장: 소속 지사만
+            $branches = App\Models\Branch::withCount('stores')
+                      ->where('id', $user->branch_id)
+                      ->get();
+        }
+        
+        return response()->json(['success' => true, 'data' => $branches]);
+    });
 });
 
 /*

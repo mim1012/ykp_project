@@ -164,6 +164,11 @@
                 <div class="px-6 py-4 space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">지사 선택 *</label>
+                        @if(auth()->user()->role === 'branch')
+                        <div class="mb-2 p-2 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800">
+                            ℹ️ {{ auth()->user()->branch->name ?? '소속 지사' }}에 매장이 추가됩니다.
+                        </div>
+                        @endif
                         <select id="store-branch-id" required class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <option value="">지사를 선택하세요</option>
                         </select>
@@ -460,7 +465,7 @@
             }
         }
 
-        // 지사 선택박스 채우기 (권한별 제한)
+        // 지사 선택박스 채우기 (권한별 제한 강화)
         function populateBranchSelects() {
             const storeSelect = document.getElementById('store-branch-id');
             const filterSelect = document.getElementById('branch-filter');
@@ -469,24 +474,37 @@
             const userRole = '{{ auth()->user()->role }}';
             const userBranchId = {{ auth()->user()->branch_id ?? 'null' }};
             
-            // 기존 옵션 제거
-            storeSelect.innerHTML = '<option value="">지사를 선택하세요</option>';
-            filterSelect.innerHTML = '<option value="">모든 지사</option>';
+            console.log('사용자 권한:', userRole, 'Branch ID:', userBranchId, 'Branches 수:', branches.length);
             
             if (userRole === 'branch' && userBranchId) {
-                // 지사 계정: 자기 지사만 선택 가능
-                const userBranch = branches.find(branch => branch.id === userBranchId);
-                if (userBranch) {
+                // 지사 계정: API에서 자기 지사 1개만 받아옴
+                if (branches.length > 0) {
+                    const userBranch = branches[0]; // API에서 1개만 반환됨
                     storeSelect.innerHTML = `<option value="${userBranch.id}" selected>${userBranch.name} (${userBranch.code})</option>`;
                     storeSelect.disabled = true; // 선택 불가능하게 설정
-                    filterSelect.innerHTML += `<option value="${userBranch.id}">${userBranch.name}</option>`;
+                    storeSelect.style.backgroundColor = '#f3f4f6'; // 비활성화 시각적 표시
+                    
+                    filterSelect.innerHTML = `<option value="">모든 지사</option><option value="${userBranch.id}">${userBranch.name}</option>`;
+                    
+                    console.log('✅ 지사 계정: 자기 지사 자동 선택됨 -', userBranch.name);
+                } else {
+                    // branches 로드 실패 시 fallback
+                    storeSelect.innerHTML = '<option value="" disabled>지사 정보 로딩 중...</option>';
+                    console.warn('⚠️ 지사 정보 로드 실패 - branches 배열이 비어있음');
                 }
+                
+                filterSelect.innerHTML = '<option value="">모든 지사</option>';
             } else {
                 // 본사 계정: 모든 지사 선택 가능
+                storeSelect.innerHTML = '<option value="">지사를 선택하세요</option>';
+                filterSelect.innerHTML = '<option value="">모든 지사</option>';
+                
                 branches.forEach(branch => {
                     storeSelect.innerHTML += `<option value="${branch.id}">${branch.name} (${branch.code})</option>`;
                     filterSelect.innerHTML += `<option value="${branch.id}">${branch.name}</option>`;
                 });
+                
+                console.log('✅ 본사 계정: 전체 지사 목록 로드됨 -', branches.length, '개');
             }
         }
 
