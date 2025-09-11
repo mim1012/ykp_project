@@ -963,13 +963,14 @@
             
             showStatus('저장 중...', 'info');
             
-            // Supabase에 저장 (웹 라우트 API) - CSRF 토큰 추가
+            // DB 저장 (웹 라우트 API) - PM 요구사항: DB 영속화 + 실시간 동기화
             fetch('/test-api/sales/save', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
-                    'Accept': 'application/json'
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
                 },
                 credentials: 'same-origin',
                 body: JSON.stringify({
@@ -992,8 +993,17 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showStatus(`✅ ${validData.length}건 저장 완료!`, 'success');
-                    updateCompleteStats(); // 통계 업데이트
+                    showStatus(`✅ ${validData.length}건 DB 저장 완료! 지사/본사 대시보드에 실시간 반영됩니다.`, 'success');
+                    updateCompleteStats(); // 로컬 통계 업데이트
+                    
+                    // PM 요구사항: 실시간 동기화 확인
+                    console.log('🔥 DB 영속화 완료 - 실시간 동기화 시작');
+                    console.log('저장된 데이터:', {
+                        count: validData.length,
+                        store_id: window.userData.store_id,
+                        branch_id: window.userData.branch_id,
+                        total_amount: validData.reduce((sum, row) => sum + (row.settlement_amount || 0), 0)
+                    });
                 } else {
                     showStatus('❌ 저장 실패: ' + (data.message || '알 수 없는 오류'), 'error');
                 }
