@@ -92,18 +92,34 @@
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">선택</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">판매자</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">대리점</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">통신사</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">액면가</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">구두1</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">구두2</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-yellow-50">리베총계</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-yellow-50">정산금</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-red-50">세금</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-green-50">세후마진</th>
-                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">액션</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">선택</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">판매자</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">대리점</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">통신사</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">개통방식</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">모델명</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">개통일</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">일련번호</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">휴대폰번호</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">고객명</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">생년월일</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">액면/셋팅가</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">구두1</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">구두2</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">그레이드</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">부가추가</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">서류상현금개통</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase text-green-600">유심비(+)</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase text-red-600">신규,번이(-800)</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase text-red-600">차감(-)</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase bg-yellow-50">리베총계</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase bg-yellow-50">정산금</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase bg-red-50">부/소세</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase text-green-600">현금받음(+)</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase text-red-600">페이백(-)</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase bg-green-50">세전마진</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase bg-green-50">세후마진</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">액션</th>
                         </tr>
                     </thead>
                     <tbody id="data-table-body" class="bg-white divide-y divide-gray-200">
