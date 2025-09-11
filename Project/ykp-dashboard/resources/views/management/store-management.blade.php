@@ -33,11 +33,6 @@
                     @endif
                 </div>
                 <div class="flex items-center space-x-4">
-                    @if(in_array(auth()->user()->role, ['headquarters', 'branch']))
-                        <button onclick="openQuickStoreModal()" class="bg-blue-500 text-white px-4 py-2 rounded text-sm hover:bg-blue-600 font-semibold">
-                            🏪 매장 추가
-                        </button>
-                    @endif
                     <a href="/dashboard" class="text-gray-600 hover:text-gray-900">대시보드</a>
                 </div>
             </div>
@@ -78,30 +73,17 @@
             </div>
         @endif
         
-        <!-- 업그레이드 안내 -->
-        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-            <div class="flex items-center">
-                <div class="flex-shrink-0">
-                    <div class="text-2xl">🆕</div>
-                </div>
-                <div class="ml-3">
-                    <h3 class="text-sm font-medium text-blue-800">새로운 매장 관리 기능 사용 가능</h3>
-                    <div class="mt-2 text-sm text-blue-700">
-                        <p>향상된 매장 추가 및 계정 생성 기능이 준비되었습니다. 
-                        <a href="/management/stores/enhanced" class="font-medium underline hover:text-blue-800">새 매장관리 페이지</a>에서 이용하세요.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
         
         <!-- 매장 관리 메인 콘텐츠 -->
         <div class="bg-white rounded-lg shadow mb-6">
             <div class="p-6">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-lg font-medium">매장 목록</h2>
-                    <a href="/management/stores/enhanced" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 inline-block text-decoration-none">
-                        ➕ 매장 추가
-                    </a>
+                    @if(in_array(auth()->user()->role, ['headquarters', 'branch']))
+                        <button onclick="openQuickStoreModal()" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 font-semibold">
+                            ➕ 매장 추가
+                        </button>
+                    @endif
                 </div>
                 <div id="stores-grid" class="bg-white rounded border">
                     @if(isset($stores) && $stores->count() > 0)
