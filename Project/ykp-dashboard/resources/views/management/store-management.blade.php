@@ -40,17 +40,30 @@
         
         window.submitAddStore = function() {
             console.log('✅ 매장 추가 제출 시작');
+            
+            // 지사 계정인 경우 자동으로 branch_id 설정
+            const userRole = '{{ auth()->user()->role }}';
+            const userBranchId = '{{ auth()->user()->branch_id }}';
+            
             const formData = {
                 name: document.getElementById('modal-store-name')?.value || '',
-                branch_id: document.getElementById('modal-branch-select')?.value || '',
+                branch_id: userRole === 'branch' ? userBranchId : (document.getElementById('modal-branch-select')?.value || ''),
                 owner_name: document.getElementById('modal-owner-name')?.value || '',
-                phone: document.getElementById('modal-phone')?.value || ''
+                phone: document.getElementById('modal-phone')?.value || '',
+                address: '',
+                code: '' // 자동 생성됨
             };
             
             console.log('매장 데이터:', formData);
+            console.log('사용자 역할:', userRole, '지사 ID:', userBranchId);
             
             if (!formData.name) {
                 alert('매장명을 입력해주세요');
+                return;
+            }
+            
+            if (!formData.branch_id) {
+                alert('지사를 선택해주세요');
                 return;
             }
             
