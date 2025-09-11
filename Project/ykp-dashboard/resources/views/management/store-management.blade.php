@@ -1116,7 +1116,9 @@
         }
         
         // 매장 추가 모달 표시
-        function showAddStoreModal() {
+        // PM 지시: 전역 등록으로 ReferenceError 완전 해결
+        window.showAddStoreModal = function() {
+            console.log('✅ showAddStoreModal 전역 함수 호출됨');
             // 지사 목록을 동적으로 로드
             loadBranchOptions('modal-branch-select');
             document.getElementById('add-store-modal').classList.remove('hidden');
