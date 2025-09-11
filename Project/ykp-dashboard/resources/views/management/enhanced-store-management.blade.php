@@ -877,11 +877,11 @@
                         </div>
                     </div>
                     
-                    <div class="mt-8 flex space-x-3">
-                        <button onclick="this.closest('.fixed').remove()" class="flex-1 px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 font-semibold">
+                    <div class="mt-8 flex justify-between">
+                        <button onclick="this.closest('.fixed').remove()" class="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 font-semibold">
                             ✅ 확인완료
                         </button>
-                        <button onclick="window.open('/login', '_blank'); this.closest('.fixed').remove();" class="flex-1 px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-semibold">
+                        <button onclick="window.open('/login', '_blank'); this.closest('.fixed').remove();" class="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-semibold">
                             🔗 바로 로그인
                         </button>
                     </div>
