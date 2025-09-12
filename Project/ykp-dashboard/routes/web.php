@@ -663,16 +663,50 @@ Route::post('/test-api/sales/save', function (Illuminate\Http\Request $request) 
     try {
         $salesData = $request->input('sales', []);
         $savedCount = 0;
+        $store_ids = [];
+        $branch_ids = [];
         
         foreach ($salesData as $sale) {
-            App\Models\Sale::create($sale);
+            $created_sale = App\Models\Sale::create($sale);
             $savedCount++;
+            
+            // 연관 매장/지사 ID 수집
+            if ($created_sale->store_id) {
+                $store_ids[] = $created_sale->store_id;
+                $store = App\Models\Store::find($created_sale->store_id);
+                if ($store && $store->branch_id) {
+                    $branch_ids[] = $store->branch_id;
+                }
+            }
         }
+        
+        // 실시간 통계 업데이트를 위한 캐시 클리어
+        $unique_store_ids = array_unique($store_ids);
+        $unique_branch_ids = array_unique($branch_ids);
+        
+        // 캐시 무효화
+        foreach ($unique_store_ids as $store_id) {
+            \Cache::forget("store_stats_{$store_id}");
+            \Cache::forget("store_daily_stats_{$store_id}");
+        }
+        
+        foreach ($unique_branch_ids as $branch_id) {
+            \Cache::forget("branch_stats_{$branch_id}");
+            \Cache::forget("branch_daily_stats_{$branch_id}");
+        }
+        
+        // 전체 통계 캐시 무효화
+        \Cache::forget('headquarters_stats');
+        \Cache::forget('all_branches_stats');
+        \Cache::forget('all_stores_stats');
         
         return response()->json([
             'success' => true,
             'message' => $savedCount . '건이 저장되었습니다.',
-            'saved_count' => $savedCount
+            'saved_count' => $savedCount,
+            'affected_stores' => $unique_store_ids,
+            'affected_branches' => $unique_branch_ids,
+            'cache_cleared' => true
         ]);
     } catch (Exception $e) {
         return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
