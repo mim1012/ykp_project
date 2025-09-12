@@ -388,16 +388,19 @@ Route::get('/api/profile', function () {
 // 긴급 Users Branches API 추가
 Route::get('/api/users/branches', function () {
     try {
-        $branches = \App\Models\Branch::withCount('stores')->get();
+        // PostgreSQL 호환을 위해 withCount() 대신 수동 카운팅
+        $branches = \App\Models\Branch::select('id', 'name', 'code', 'status')->get();
+        
         return response()->json([
             'success' => true,
             'data' => $branches->map(function($branch) {
+                $storeCount = \App\Models\Store::where('branch_id', $branch->id)->count();
                 return [
                     'id' => $branch->id,
                     'name' => $branch->name,
                     'code' => $branch->code,
                     'users_count' => 0, // 사용자 관계가 없으므로 0으로 설정
-                    'stores_count' => $branch->stores_count ?? 0
+                    'stores_count' => $storeCount
                 ];
             })
         ]);
@@ -409,11 +412,19 @@ Route::get('/api/users/branches', function () {
 // 모든 API를 고정 데이터로 교체 (Railway 500 오류 해결)
 Route::get('/api/dashboard/overview', function () {
     try {
-        // 실제 DB에서 데이터 조회
+        // PostgreSQL 호환 쿼리로 데이터 조회
         $totalSales = \App\Models\Sale::sum('settlement_amount') ?: 0;
         $totalActivations = \App\Models\Sale::count() ?: 0;
-        $todaySales = \App\Models\Sale::whereDate('sale_date', today())->sum('settlement_amount') ?: 0;
-        $todayActivations = \App\Models\Sale::whereDate('sale_date', today())->count() ?: 0;
+        
+        // PostgreSQL 호환을 위해 날짜 범위 쿼리 사용
+        $today = now();
+        $startOfDay = $today->startOfDay();
+        $endOfDay = $today->copy()->endOfDay();
+        
+        $todaySales = \App\Models\Sale::whereBetween('sale_date', [$startOfDay, $endOfDay])
+                      ->sum('settlement_amount') ?: 0;
+        $todayActivations = \App\Models\Sale::whereBetween('sale_date', [$startOfDay, $endOfDay])
+                           ->count() ?: 0;
         $storeCount = \App\Models\Store::count() ?: 0;
         
         $achievementRate = $totalSales > 0 ? round(($totalSales / 50000000) * 100, 1) : 0;
@@ -1105,12 +1116,16 @@ Route::get('/api/dashboard/overview', function () {
             }
         }
         
-        // 통계 계산
-        $todaySales = (clone $query)->whereDate('sale_date', $today)->sum('settlement_amount') ?? 0;
+        // 통계 계산 - PostgreSQL 호환 버전
+        $startOfDay = now()->startOfDay();
+        $endOfDay = now()->endOfDay();
+        $todaySales = (clone $query)->whereBetween('sale_date', [$startOfDay, $endOfDay])
+                     ->sum('settlement_amount') ?? 0;
         $monthSales = (clone $query)->whereYear('sale_date', now()->year)
                           ->whereMonth('sale_date', now()->month)
                           ->sum('settlement_amount') ?? 0;
-        $todayActivations = (clone $query)->whereDate('sale_date', $today)->count();
+        $todayActivations = (clone $query)->whereBetween('sale_date', [$startOfDay, $endOfDay])
+                           ->count();
         $monthActivations = (clone $query)->whereYear('sale_date', now()->year)
                                ->whereMonth('sale_date', now()->month)
                                ->count();
