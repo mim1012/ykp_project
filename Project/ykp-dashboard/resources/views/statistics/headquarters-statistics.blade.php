@@ -189,6 +189,32 @@
             document.getElementById('hq-preset-last-month').addEventListener('click', () => preset('lastMonth'));
         });
 
+        // 안전한 JSON 파싱 함수 (SyntaxError 완전 방지)
+        async function safeJsonParse(response, apiName) {
+            try {
+                if (!response.ok) {
+                    console.warn(`⚠️ ${apiName} API 오류 (${response.status}):`, response.url);
+                    return { success: false, data: {} };
+                }
+                
+                const text = await response.text();
+                
+                // HTML 응답 감지
+                if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
+                    console.warn(`⚠️ ${apiName} API가 HTML을 반환했습니다:`, text.substring(0, 100) + '...');
+                    return { success: false, data: {} };
+                }
+                
+                const json = JSON.parse(text);
+                console.log(`✅ ${apiName} API 성공:`, json);
+                return json;
+                
+            } catch (error) {
+                console.error(`❌ ${apiName} API 파싱 오류:`, error);
+                return { success: false, data: {} };
+            }
+        }
+
         async function loadHeadquartersStatistics() {
             try {
                 console.log('📊 본사 통계 데이터 로딩 중...');
@@ -214,14 +240,13 @@
                     (() => { const ym = endDate.slice(0,7); return fetch(`/api/dashboard/dealer-performance?year_month=${ym}`, { credentials: 'same-origin' }); })()
                 ]);
 
-                const [profile, overview, ranking, branches, fin, carrierPerf] = await Promise.all([
-                    profileRes.json(),
-                    overviewRes.json(),
-                    rankingRes.json(),
-                    branchesRes.json(),
-                    finRes.json(),
-                    carrierRes.json()
-                ]);
+                // 각 응답을 안전하게 파싱 (SyntaxError 방지)
+                const profile = await safeJsonParse(profileRes, 'profile');
+                const overview = await safeJsonParse(overviewRes, 'overview');
+                const ranking = await safeJsonParse(rankingRes, 'ranking');
+                const branches = await safeJsonParse(branchesRes, 'branches');
+                const fin = await safeJsonParse(finRes, 'financial');
+                const carrierPerf = await safeJsonParse(carrierRes, 'carrier');
 
                 // KPI 업데이트
                 // 대시보드 개요 데이터 적용
