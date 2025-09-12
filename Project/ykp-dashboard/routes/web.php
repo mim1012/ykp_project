@@ -94,6 +94,63 @@ Route::get('/debug/users', function () {
     ]);
 })->name('debug.users');
 
+// 긴급 DB 초기화 (Railway 전용)
+Route::get('/emergency/init-db', function () {
+    try {
+        // 1. 마이그레이션 실행
+        \Artisan::call('migrate', ['--force' => true]);
+        $migrate_output = \Artisan::output();
+        
+        // 2. 시드 데이터 실행
+        \Artisan::call('db:seed', ['--force' => true]);
+        $seed_output = \Artisan::output();
+        
+        // 3. 기본 계정들 생성 (시드가 실패했을 경우 대비)
+        $created_users = [];
+        $test_accounts = [
+            ['email' => 'admin@ykp.com', 'name' => '본사 관리자', 'role' => 'headquarters'],
+            ['email' => 'hq@ykp.com', 'name' => '본사 관리자', 'role' => 'headquarters'], 
+            ['email' => 'test@ykp.com', 'name' => '테스트 사용자', 'role' => 'headquarters'],
+            ['email' => 'branch@ykp.com', 'name' => '지사 관리자', 'role' => 'branch'],
+            ['email' => 'store@ykp.com', 'name' => '매장 직원', 'role' => 'store']
+        ];
+        
+        foreach($test_accounts as $account) {
+            $user = \App\Models\User::firstOrCreate(
+                ['email' => $account['email']], 
+                [
+                    'name' => $account['name'],
+                    'role' => $account['role'],
+                    'password' => \Hash::make('123456'),
+                    'branch_id' => $account['role'] === 'branch' ? 1 : null,
+                    'store_id' => $account['role'] === 'store' ? 1 : null
+                ]
+            );
+            $created_users[] = $user->email;
+        }
+        
+        return response()->json([
+            'status' => 'success',
+            'message' => 'DB 초기화 완료',
+            'migrate_output' => $migrate_output,
+            'seed_output' => $seed_output,
+            'created_users' => $created_users,
+            'final_counts' => [
+                'users' => \App\Models\User::count(),
+                'branches' => \App\Models\Branch::count(),
+                'stores' => \App\Models\Store::count()
+            ]
+        ]);
+        
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ], 500);
+    }
+})->name('emergency.init');
+
 // 기존 고급 대시보드 복구 (임시)
 Route::get('/premium-dash', function () {
     return view('premium-dashboard');
