@@ -1017,7 +1017,10 @@ Route::middleware(['web'])->get('/api/dashboard/sales-trend', function (Illumina
         
         for ($i = 0; $i < $days; $i++) {
             $date = $startDate->copy()->addDays($i);
-            $dailyQuery = (clone $query)->whereDate('sale_date', $date->toDateString());
+            // PostgreSQL 호환 날짜 범위 쿼리 
+            $dateStart = $date->startOfDay();
+            $dateEnd = $date->copy()->endOfDay();
+            $dailyQuery = (clone $query)->whereBetween('sale_date', [$dateStart, $dateEnd]);
             $dailySales = $dailyQuery->sum('settlement_amount') ?? 0;
             
             $trendData[] = [
@@ -1207,7 +1210,11 @@ Route::get('/test-api/dashboard-debug', function () {
     try {
         $today = now()->toDateString();
         
-        $todaySales = App\Models\Sale::whereDate('sale_date', $today)->sum('settlement_amount');
+        // PostgreSQL 호환 날짜 쿼리
+        $todayStart = now()->startOfDay();
+        $todayEnd = now()->endOfDay();
+        $todaySales = App\Models\Sale::whereBetween('sale_date', [$todayStart, $todayEnd])
+                     ->sum('settlement_amount');
         $monthSales = App\Models\Sale::whereYear('sale_date', now()->year)
                           ->whereMonth('sale_date', now()->month)
                           ->sum('settlement_amount');
@@ -1419,20 +1426,23 @@ Route::get('/test-api/stores/{id}/stats', function ($id) {
     try {
         $store = App\Models\Store::findOrFail($id);
         
-        // 오늘/이번달 매출
-        $today = now()->toDateString();
-        $currentMonth = now()->format('Y-m');
+        // PostgreSQL 호환 날짜 쿼리
+        $todayStart = now()->startOfDay();
+        $todayEnd = now()->endOfDay();
+        $currentYear = now()->year;
+        $currentMonth = now()->month;
         
         $todaySales = App\Models\Sale::where('store_id', $id)
-            ->whereDate('sale_date', $today)
+            ->whereBetween('sale_date', [$todayStart, $todayEnd])
             ->sum('settlement_amount');
             
         $monthSales = App\Models\Sale::where('store_id', $id)
-            ->where('sale_date', 'like', $currentMonth . '%')
+            ->whereYear('sale_date', $currentYear)
+            ->whereMonth('sale_date', $currentMonth)
             ->sum('settlement_amount');
             
         $todayCount = App\Models\Sale::where('store_id', $id)
-            ->whereDate('sale_date', $today)
+            ->whereBetween('sale_date', [$todayStart, $todayEnd])
             ->count();
             
         // 최근 거래 내역
