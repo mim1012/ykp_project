@@ -230,23 +230,23 @@
                 const startDate = document.getElementById('hq-start-date').value || startDefault;
                 const endDate = document.getElementById('hq-end-date').value || endDefault;
 
-                const [profileRes, overviewRes, rankingRes, branchesRes, finRes, carrierRes] = await Promise.all([
+                // Promise.allSettled()로 안정적 병렬 처리 (타이밍 이슈 해결)
+                const results = await Promise.allSettled([
                     fetch('/api/profile', { credentials: 'same-origin' }),
                     fetch('/api/dashboard/overview', { credentials: 'same-origin' }),
                     fetch(`/api/dashboard/store-ranking?period=${period}&limit=${Math.min(Math.max(limit,3),50)}`, { credentials: 'same-origin' }),
                     fetch('/api/users/branches', { credentials: 'same-origin' }),
                     fetch(`/api/dashboard/financial-summary?start_date=${startDate}&end_date=${endDate}`, { credentials: 'same-origin' }),
-                    // 캐리어 분포: 선택 월 기준(종료일의 연-월)
                     (() => { const ym = endDate.slice(0,7); return fetch(`/api/dashboard/dealer-performance?year_month=${ym}`, { credentials: 'same-origin' }); })()
                 ]);
 
-                // 각 응답을 안전하게 파싱 (SyntaxError 방지)
-                const profile = await safeJsonParse(profileRes, 'profile');
-                const overview = await safeJsonParse(overviewRes, 'overview');
-                const ranking = await safeJsonParse(rankingRes, 'ranking');
-                const branches = await safeJsonParse(branchesRes, 'branches');
-                const fin = await safeJsonParse(finRes, 'financial');
-                const carrierPerf = await safeJsonParse(carrierRes, 'carrier');
+                // 각 결과를 안전하게 처리 (실패한 API가 있어도 계속 진행)
+                const profile = results[0].status === 'fulfilled' ? await safeJsonParse(results[0].value, 'profile') : { success: false, data: {} };
+                const overview = results[1].status === 'fulfilled' ? await safeJsonParse(results[1].value, 'overview') : { success: false, data: {} };
+                const ranking = results[2].status === 'fulfilled' ? await safeJsonParse(results[2].value, 'ranking') : { success: false, data: {} };
+                const branches = results[3].status === 'fulfilled' ? await safeJsonParse(results[3].value, 'branches') : { success: false, data: {} };
+                const fin = results[4].status === 'fulfilled' ? await safeJsonParse(results[4].value, 'financial') : { success: false, data: {} };
+                const carrierPerf = results[5].status === 'fulfilled' ? await safeJsonParse(results[5].value, 'carrier') : { success: false, data: {} };
 
                 // KPI 업데이트
                 // 대시보드 개요 데이터 적용
