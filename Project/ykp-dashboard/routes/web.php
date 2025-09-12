@@ -151,6 +151,70 @@ Route::get('/emergency/init-db', function () {
     }
 })->name('emergency.init');
 
+// 비밀번호 강제 초기화 (로그인 문제 해결용)
+Route::get('/fix/passwords', function () {
+    try {
+        $updated_users = [];
+        $password_hash = \Hash::make('123456');
+        
+        // 모든 사용자의 비밀번호를 123456으로 강제 설정
+        $users = \App\Models\User::all();
+        
+        foreach($users as $user) {
+            $user->password = $password_hash;
+            $user->save();
+            $updated_users[] = [
+                'email' => $user->email,
+                'role' => $user->role,
+                'name' => $user->name
+            ];
+        }
+        
+        // 만약 사용자가 없다면 직접 생성
+        if(count($updated_users) === 0) {
+            $test_accounts = [
+                ['email' => 'admin@ykp.com', 'name' => '본사 관리자', 'role' => 'headquarters'],
+                ['email' => 'hq@ykp.com', 'name' => '본사 관리자', 'role' => 'headquarters'], 
+                ['email' => 'test@ykp.com', 'name' => '테스트 사용자', 'role' => 'headquarters'],
+                ['email' => 'branch@ykp.com', 'name' => '지사 관리자', 'role' => 'branch', 'branch_id' => 1],
+                ['email' => 'store@ykp.com', 'name' => '매장 직원', 'role' => 'store', 'store_id' => 1]
+            ];
+            
+            foreach($test_accounts as $account) {
+                $user = \App\Models\User::create([
+                    'email' => $account['email'],
+                    'name' => $account['name'],
+                    'role' => $account['role'],
+                    'password' => $password_hash,
+                    'branch_id' => $account['branch_id'] ?? null,
+                    'store_id' => $account['store_id'] ?? null
+                ]);
+                $updated_users[] = [
+                    'email' => $user->email,
+                    'role' => $user->role,
+                    'name' => $user->name,
+                    'action' => 'created'
+                ];
+            }
+        }
+        
+        return response()->json([
+            'status' => 'success',
+            'message' => '비밀번호 초기화 완료',
+            'updated_users' => $updated_users,
+            'total_count' => count($updated_users),
+            'password' => '123456'
+        ]);
+        
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ], 500);
+    }
+})->name('fix.passwords');
+
 // 기존 고급 대시보드 복구 (임시)
 Route::get('/premium-dash', function () {
     return view('premium-dashboard');
