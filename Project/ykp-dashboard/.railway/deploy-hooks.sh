@@ -28,5 +28,28 @@ php artisan route:clear
 php artisan view:clear
 php artisan cache:clear
 
+echo "🔐 테스트 계정 비밀번호 초기화..."
+php artisan tinker --execute="
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
+\$test_accounts = [
+    'admin@ykp.com' => '123456',
+    'hq@ykp.com' => '123456', 
+    'test@ykp.com' => '123456',
+    'branch@ykp.com' => '123456',
+    'br001@ykp.com' => '123456',
+    'store@ykp.com' => '123456'
+];
+foreach(\$test_accounts as \$email => \$password) {
+    \$user = User::where('email', \$email)->first();
+    if(\$user) {
+        \$user->password = Hash::make(\$password);
+        \$user->save();
+        echo \$email . ' 비밀번호 설정 완료' . PHP_EOL;
+    }
+}
+echo '✅ 테스트 계정 비밀번호 초기화 완료' . PHP_EOL;
+" 2>&1 | tee -a storage/logs/deploy-migration.log
+
 echo "🎉 Deploy Hook 완료: $(date)"
 echo "📄 로그 파일: storage/logs/deploy-migration.log"
