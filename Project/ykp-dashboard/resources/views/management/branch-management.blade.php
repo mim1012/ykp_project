@@ -218,13 +218,21 @@
             
             for (const branch of branches) {
                 try {
-                    // 실제 지사 계정 조회
-                    const userResponse = await fetch(`/test-api/users?role=branch&branch_id=${branch.id}`);
+                    // 실제 지사 계정 조회 (모든 사용자 중에서 필터링)
+                    const userResponse = await fetch('/test-api/users');
                     let actualAccount = null;
                     
                     if (userResponse.ok) {
-                        const users = await userResponse.json();
-                        actualAccount = Array.isArray(users) ? users.find(u => u.branch_id === branch.id) : null;
+                        const userData = await userResponse.json();
+                        const users = userData.success ? userData.data : userData;
+                        
+                        if (Array.isArray(users)) {
+                            actualAccount = users.find(u => 
+                                u.role === 'branch' && 
+                                u.branch_id === branch.id && 
+                                u.is_active
+                            );
+                        }
                     }
                     
                     const emailElement = document.getElementById(`branch-email-${branch.id}`);
