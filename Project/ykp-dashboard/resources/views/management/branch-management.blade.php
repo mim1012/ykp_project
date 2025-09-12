@@ -188,8 +188,12 @@
                         <span class="text-sm font-medium text-gray-900">${branch.stores_count || 0}개</span>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                        <div class="text-sm text-gray-900 font-mono">branch_${branch.code.toLowerCase()}@ykp.com</div>
-                        <div class="text-xs text-blue-600">비밀번호: 123456</div>
+                        <div class="text-sm text-gray-900 font-mono" id="branch-email-${branch.id}">
+                            branch_${branch.code.toLowerCase()}@ykp.com
+                        </div>
+                        <div class="text-xs text-blue-600" id="branch-password-${branch.id}">
+                            비밀번호: 확인 중...
+                        </div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm space-x-2">
                         <button onclick="editBranch(${branch.id})" 
@@ -203,6 +207,84 @@
             `).join('');
             
             console.log('지사 목록 렌더링 완료:', branches.length, '개');
+            
+            // 실제 계정 정보 업데이트
+            updateBranchAccountInfo(branches);
+        }
+        
+        // 실제 지사 계정 정보 조회 및 업데이트
+        async function updateBranchAccountInfo(branches) {
+            console.log('🔍 실제 지사 계정 정보 업데이트 시작...');
+            
+            for (const branch of branches) {
+                try {
+                    // 실제 지사 계정 조회
+                    const userResponse = await fetch(`/test-api/users?role=branch&branch_id=${branch.id}`);
+                    let actualAccount = null;
+                    
+                    if (userResponse.ok) {
+                        const users = await userResponse.json();
+                        actualAccount = Array.isArray(users) ? users.find(u => u.branch_id === branch.id) : null;
+                    }
+                    
+                    const emailElement = document.getElementById(`branch-email-${branch.id}`);
+                    const passwordElement = document.getElementById(`branch-password-${branch.id}`);
+                    
+                    if (actualAccount) {
+                        // 실제 계정 정보 표시
+                        if (emailElement) {
+                            emailElement.textContent = actualAccount.email;
+                            emailElement.style.color = '#059669'; // 초록색 (실제 계정)
+                        }
+                        
+                        if (passwordElement) {
+                            passwordElement.innerHTML = `
+                                <span class="text-green-600">비밀번호: 123456</span>
+                                <span class="text-xs text-gray-500 ml-2">(확인됨)</span>
+                            `;
+                        }
+                        
+                        console.log(`✅ ${branch.code} 실제 계정: ${actualAccount.email}`);
+                        
+                    } else {
+                        // 계정이 없는 경우
+                        if (emailElement) {
+                            emailElement.textContent = '계정 없음';
+                            emailElement.style.color = '#dc2626'; // 빨간색
+                        }
+                        
+                        if (passwordElement) {
+                            passwordElement.innerHTML = `
+                                <span class="text-red-600">계정을 생성해주세요</span>
+                                <button onclick="createBranchAccount(${branch.id})" 
+                                        class="ml-2 text-xs bg-blue-500 text-white px-2 py-1 rounded">
+                                    생성
+                                </button>
+                            `;
+                        }
+                        
+                        console.log(`⚠️ ${branch.code} 계정 없음`);
+                    }
+                    
+                } catch (error) {
+                    console.error(`❌ ${branch.code} 계정 정보 조회 실패:`, error);
+                    
+                    // 오류 시 기본 정보 표시
+                    const emailElement = document.getElementById(`branch-email-${branch.id}`);
+                    const passwordElement = document.getElementById(`branch-password-${branch.id}`);
+                    
+                    if (emailElement) {
+                        emailElement.textContent = `branch_${branch.code.toLowerCase()}@ykp.com (추정)`;
+                        emailElement.style.color = '#6b7280'; // 회색
+                    }
+                    
+                    if (passwordElement) {
+                        passwordElement.innerHTML = '<span class="text-gray-500">확인 실패</span>';
+                    }
+                }
+            }
+            
+            console.log('✅ 지사 계정 정보 업데이트 완료');
         }
 
         // 통계 업데이트
