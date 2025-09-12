@@ -53,6 +53,24 @@ Route::get('/test-integration', function () {
     ]);
 })->name('test.integration');
 
+// 배포 상태 디버그 (임시)
+Route::get('/debug/users', function () {
+    $users = \App\Models\User::whereIn('role', ['headquarters', 'branch'])
+        ->orderBy('role')
+        ->orderBy('email')
+        ->get(['email', 'name', 'role', 'created_at']);
+    
+    return response()->json([
+        'total_users' => \App\Models\User::count(),
+        'headquarters' => \App\Models\User::where('role', 'headquarters')->count(),
+        'branch' => \App\Models\User::where('role', 'branch')->count(),
+        'store' => \App\Models\User::where('role', 'store')->count(),
+        'sample_users' => $users->take(10),
+        'deploy_log_exists' => file_exists(storage_path('logs/deploy-migration.log')),
+        'deploy_log_size' => file_exists(storage_path('logs/deploy-migration.log')) ? filesize(storage_path('logs/deploy-migration.log')) : 0
+    ]);
+})->name('debug.users');
+
 // 기존 고급 대시보드 복구 (임시)
 Route::get('/premium-dash', function () {
     return view('premium-dashboard');
