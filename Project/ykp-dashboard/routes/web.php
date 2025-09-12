@@ -460,6 +460,18 @@ Route::get('/api/dashboard/dealer-performance', function (Request $request) {
     }
 })->name('web.api.dealer-performance');
 
+// Railway 테스트용 임시 통계 페이지 (인증 없음)
+Route::get('/test-statistics', function () {
+    $fake_user = (object)[
+        'id' => 1,
+        'name' => '본사 관리자', 
+        'email' => 'admin@ykp.com',
+        'role' => 'headquarters'
+    ];
+    
+    return view('statistics.headquarters-statistics')->with(['user' => $fake_user]);
+})->name('test.statistics');
+
 // 기존 고급 대시보드 복구 (임시)
 Route::get('/premium-dash', function () {
     return view('premium-dashboard');
