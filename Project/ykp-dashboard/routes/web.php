@@ -888,15 +888,33 @@ Route::middleware(['web', 'auth'])->post('/test-api/stores/add', function (Illum
     }
 });
 
-Route::post('/test-api/sales/save', function (Illuminate\Http\Request $request) {
+Route::middleware(['web'])->post('/test-api/sales/save', function (Illuminate\Http\Request $request) {
     try {
+        $user = auth()->user();
         $salesData = $request->input('sales', []);
         $savedCount = 0;
         $store_ids = [];
         $branch_ids = [];
         
-        foreach ($salesData as $sale) {
-            $created_sale = App\Models\Sale::create($sale);
+        foreach ($salesData as $saleData) {
+            // 사용자 컨텍스트 기반 자동 설정
+            if ($user) {
+                switch ($user->role) {
+                    case 'store':
+                        $saleData['store_id'] = $user->store_id;
+                        $saleData['branch_id'] = $user->branch_id;
+                        break;
+                    case 'branch':
+                        $saleData['branch_id'] = $user->branch_id;
+                        // store_id는 요청 데이터 사용
+                        break;
+                    case 'headquarters':
+                        // 본사는 요청 데이터 그대로 사용
+                        break;
+                }
+            }
+            
+            $created_sale = App\Models\Sale::create($saleData);
             $savedCount++;
             
             // 연관 매장/지사 ID 수집
