@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\CalculationController;
 use App\Jobs\ProcessBatchCalculationJob;
 use App\Http\Controllers\SalesApiController;
 use App\Http\Controllers\UserManagementController;
+use App\Helpers\DatabaseHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -382,9 +383,25 @@ Route::prefix('dashboard')->group(function () {
             $activeBranches = \App\Models\Branch::where('status', 'active')->count();
             $totalUsers = \App\Models\User::count();
             
-            // Railway PostgreSQL 호환을 위해 단순한 카운트로 대체
-            $salesActiveStores = 2; // 고정 값
-            $thisMonthSales = 1097600; // 고정 값
+            // DatabaseHelper를 사용한 실시간 데이터 조회
+            $currentYear = now()->year;
+            $currentMonth = now()->month;
+            
+            $salesActiveStores = DatabaseHelper::executeWithRetry(function() use ($currentYear, $currentMonth) {
+                return \App\Models\Sale::whereYear('sale_date', $currentYear)
+                                      ->whereMonth('sale_date', $currentMonth)
+                                      ->distinct('store_id')->count();
+            });
+            
+            $thisMonthSales = DatabaseHelper::safeAggregate(
+                'sales', 
+                'sum', 
+                'settlement_amount', 
+                ['sale_date' => [
+                    now()->startOfMonth()->toDateTimeString(),
+                    now()->endOfMonth()->toDateTimeString()
+                ]]
+            );
             $monthlyTarget = 50000000;
             $achievementRate = $thisMonthSales > 0 ? round(($thisMonthSales / $monthlyTarget) * 100, 1) : 0;
             
@@ -483,15 +500,37 @@ Route::prefix('dashboard')->group(function () {
             $yearMonth = $request->get('year_month', now()->format('Y-m'));
             list($year, $month) = explode('-', $yearMonth);
             
-            // Railway PostgreSQL에서 안전한 대체 데이터 반환
-            $performances = [
-                'carrier_breakdown' => [
-                    ['carrier' => 'SK', 'count' => 3, 'total_sales' => '1097600.00', 'percentage' => 100]
-                ],
+            // DatabaseHelper를 사용한 실시간 통신사 성과 데이터 조회
+            $performances = DatabaseHelper::executeWithRetry(function() use ($year, $month) {
+                return \App\Models\Sale::whereYear('sale_date', $year)
+                              ->whereMonth('sale_date', $month)
+                              ->select('agency')
+                              ->selectRaw('COUNT(*) as count')
+                              ->selectRaw('SUM(settlement_amount) as total_amount')
+                              ->groupBy('agency')
+                              ->get();
+            });
+            
+            // 통신사별 데이터를 carrier_breakdown 형식으로 변환
+            $totalCount = $performances->sum('count');
+            $carrierBreakdown = [];
+            
+            foreach ($performances as $performance) {
+                $percentage = $totalCount > 0 ? round(($performance->count / $totalCount) * 100) : 0;
+                $carrierBreakdown[] = [
+                    'carrier' => $performance->agency ?? 'Unknown',
+                    'count' => (int) $performance->count,
+                    'total_sales' => number_format($performance->total_amount, 2),
+                    'percentage' => $percentage
+                ];
+            }
+            
+            $responseData = [
+                'carrier_breakdown' => $carrierBreakdown,
                 'year_month' => $yearMonth
             ];
             
-            return response()->json(['success' => true, 'data' => $performances]);
+            return response()->json(['success' => true, 'data' => $responseData]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
@@ -541,18 +580,28 @@ Route::middleware(['web', 'auth', 'rbac'])->prefix('api/users')->group(function 
     // 지사 목록 (통계 페이지용 - 단순화)
     Route::get('/branches', function() {
         try {
-            // Railway PostgreSQL 안전한 고정 데이터 반환
-            $branches = [
-                [
-                    'id' => 1,
-                    'name' => '테스트지점',
-                    'code' => 'TEST001',
-                    'users_count' => 0,
-                    'stores_count' => 2
-                ]
-            ];
+            // DatabaseHelper를 사용한 실시간 지사 데이터 조회
+            $branches = DatabaseHelper::executeWithRetry(function() {
+                return \App\Models\Branch::select('id', 'name', 'code', 'status')->get();
+            });
             
-            return response()->json(['success' => true, 'data' => $branches]);
+            // 각 지사의 매장 수를 안전하게 조회
+            $branchData = [];
+            foreach ($branches as $branch) {
+                $storeCount = DatabaseHelper::executeWithRetry(function() use ($branch) {
+                    return \App\Models\Store::where('branch_id', $branch->id)->count();
+                });
+                
+                $branchData[] = [
+                    'id' => $branch->id,
+                    'name' => $branch->name,
+                    'code' => $branch->code,
+                    'users_count' => 0, // 사용자 관계는 현재 사용하지 않음
+                    'stores_count' => $storeCount
+                ];
+            }
+            
+            return response()->json(['success' => true, 'data' => $branchData]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
