@@ -585,6 +585,26 @@ Route::middleware(['web', 'auth', 'rbac'])->prefix('api/users')->group(function 
     })->name('api.users.stores');
 });
 
+// Profile API 추가 (누락된 엔드포인트)
+Route::get('/api/profile', function () {
+    $user = auth()->user();
+    if (!$user) {
+        return response()->json(['success' => false, 'error' => 'Unauthorized'], 401);
+    }
+    
+    return response()->json([
+        'success' => true,
+        'data' => [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'role' => $user->role,
+            'branch_id' => $user->branch_id,
+            'store_id' => $user->store_id
+        ]
+    ]);
+})->name('api.profile');
+
 /*
 |--------------------------------------------------------------------------
 | 월마감정산 API (가장 핵심적인 기능)
