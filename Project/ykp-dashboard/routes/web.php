@@ -302,6 +302,58 @@ Route::get('/cleanup/minimal', function () {
     }
 })->name('cleanup.minimal');
 
+// 캐시 클리어 및 API 테스트
+Route::get('/test/api-status', function () {
+    try {
+        // 캐시 클리어
+        \Artisan::call('config:clear');
+        \Artisan::call('route:clear');
+        \Artisan::call('cache:clear');
+        
+        // API 테스트
+        $tests = [];
+        
+        // 1. Dashboard overview 테스트
+        $stores = \App\Models\Store::count();
+        $sales = \App\Models\Sale::count();
+        $branches = \App\Models\Branch::count();
+        
+        $tests['api_data'] = [
+            'stores' => $stores,
+            'sales' => $sales,
+            'branches' => $branches,
+            'total_sales' => \App\Models\Sale::sum('settlement_amount')
+        ];
+        
+        // 2. 라우트 확인
+        $routes = collect(\Route::getRoutes())->filter(function($route) {
+            return str_contains($route->uri, 'api/dashboard') || str_contains($route->uri, 'api/profile');
+        })->map(function($route) {
+            return [
+                'uri' => $route->uri,
+                'methods' => $route->methods,
+                'name' => $route->getName()
+            ];
+        })->values();
+        
+        $tests['available_routes'] = $routes;
+        
+        return response()->json([
+            'status' => 'success',
+            'cache_cleared' => true,
+            'tests' => $tests,
+            'timestamp' => now()
+        ]);
+        
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ], 500);
+    }
+})->name('test.api-status');
+
 // 기존 고급 대시보드 복구 (임시)
 Route::get('/premium-dash', function () {
     return view('premium-dashboard');
