@@ -1288,6 +1288,16 @@ Route::middleware(['web', 'auth'])->post('/test-api/branches/add', function (Ill
             return response()->json(['success' => false, 'error' => '이미 존재하는 지사코드입니다.'], 400);
         }
         
+        // 이메일 중복 확인
+        $managerEmail = 'branch_' . strtolower($request->code) . '@ykp.com';
+        $existingUser = App\Models\User::where('email', $managerEmail)->first();
+        if ($existingUser) {
+            return response()->json(['success' => false, 'error' => '해당 지사 관리자 이메일이 이미 존재합니다.'], 400);
+        }
+        
+        // 트랜잭션으로 안전한 생성
+        DB::beginTransaction();
+        
         // 지사 생성
         $branch = App\Models\Branch::create([
             'name' => $request->name,
@@ -1298,8 +1308,7 @@ Route::middleware(['web', 'auth'])->post('/test-api/branches/add', function (Ill
             'status' => 'active'
         ]);
         
-        // 지사 관리자 계정 자동 생성
-        $managerEmail = 'branch_' . strtolower($request->code) . '@ykp.com';
+        // 지사 관리자 계정 자동 생성 (PostgreSQL boolean 호환)
         $manager = App\Models\User::create([
             'name' => $request->manager_name ?? $request->name . ' 관리자',
             'email' => $managerEmail,
@@ -1307,8 +1316,10 @@ Route::middleware(['web', 'auth'])->post('/test-api/branches/add', function (Ill
             'role' => 'branch',
             'branch_id' => $branch->id,
             'store_id' => null,
-            'is_active' => true
+            'is_active' => true  // User 모델에서 boolean으로 자동 캐스팅됨
         ]);
+        
+        DB::commit();
         
         return response()->json([
             'success' => true,
@@ -1323,6 +1334,7 @@ Route::middleware(['web', 'auth'])->post('/test-api/branches/add', function (Ill
             ]
         ]);
     } catch (Exception $e) {
+        DB::rollBack();
         return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
     }
 });
