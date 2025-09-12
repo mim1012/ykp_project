@@ -61,11 +61,34 @@ Route::get('/debug/users', function () {
         ->get(['email', 'name', 'role', 'created_at']);
     
     return response()->json([
-        'total_users' => \App\Models\User::count(),
-        'headquarters' => \App\Models\User::where('role', 'headquarters')->count(),
-        'branch' => \App\Models\User::where('role', 'branch')->count(),
-        'store' => \App\Models\User::where('role', 'store')->count(),
+        'db_connection' => [
+            'host' => config('database.connections.'.config('database.default').'.host'),
+            'database' => config('database.connections.'.config('database.default').'.database'),
+            'username' => config('database.connections.'.config('database.default').'.username'),
+            'port' => config('database.connections.'.config('database.default').'.port'),
+            'default_connection' => config('database.default')
+        ],
+        'tables_exist' => [
+            'users' => \Schema::hasTable('users'),
+            'branches' => \Schema::hasTable('branches'), 
+            'stores' => \Schema::hasTable('stores'),
+            'sales' => \Schema::hasTable('sales')
+        ],
+        'counts' => [
+            'total_users' => \App\Models\User::count(),
+            'headquarters' => \App\Models\User::where('role', 'headquarters')->count(),
+            'branch' => \App\Models\User::where('role', 'branch')->count(),
+            'store' => \App\Models\User::where('role', 'store')->count(),
+            'branches' => \App\Models\Branch::count(),
+            'stores' => \App\Models\Store::count(),
+            'sales' => \App\Models\Sale::count()
+        ],
         'sample_users' => $users->take(10),
+        'env_check' => [
+            'app_env' => config('app.env'),
+            'app_debug' => config('app.debug'),
+            'db_connection_active' => \DB::connection()->getPdo() ? true : false
+        ],
         'deploy_log_exists' => file_exists(storage_path('logs/deploy-migration.log')),
         'deploy_log_size' => file_exists(storage_path('logs/deploy-migration.log')) ? filesize(storage_path('logs/deploy-migration.log')) : 0
     ]);
