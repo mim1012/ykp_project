@@ -911,17 +911,28 @@
                     // TOP N 리스트 로드  
                     await loadTopLists();
                     
-                    // KPI 카드 업데이트
-                    document.querySelector('#todaySales .kpi-value').textContent = 
-                        '₩' + Number(data.today.sales).toLocaleString();
-                    document.querySelector('#monthSales .kpi-value').textContent = 
-                        '₩' + Number(data.month.sales).toLocaleString();
-                    document.querySelector('#vatSales .kpi-value').textContent = 
-                        '₩' + Number(data.month.vat_included_sales).toLocaleString();
-                    document.querySelector('#goalProgress .kpi-value').textContent = 
-                        Math.round(data.goals.achievement_rate) + ' / 100';
+                    // KPI 카드 업데이트 (null 체크 추가)
+                    const todaySalesElement = document.querySelector('#todaySales .kpi-value');
+                    if (todaySalesElement) {
+                        todaySalesElement.textContent = '₩' + Number(data.today.sales).toLocaleString();
+                    }
                     
-                    // 증감률 업데이트
+                    const monthSalesElement = document.querySelector('#monthSales .kpi-value');
+                    if (monthSalesElement) {
+                        monthSalesElement.textContent = '₩' + Number(data.month.sales).toLocaleString();
+                    }
+                    
+                    const vatSalesElement = document.querySelector('#vatSales .kpi-value');
+                    if (vatSalesElement) {
+                        vatSalesElement.textContent = '₩' + Number(data.month.vat_included_sales).toLocaleString();
+                    }
+                    
+                    const goalProgressElement = document.querySelector('#goalProgress .kpi-value');
+                    if (goalProgressElement) {
+                        goalProgressElement.textContent = Math.round(data.goals.achievement_rate) + ' / 100';
+                    }
+                    
+                    // 증감률 업데이트 (이미 null 체크 있음)
                     const growthElement = document.querySelector('#monthSales .kpi-trend');
                     if (growthElement) {
                         growthElement.textContent = (data.month.growth_rate >= 0 ? '+' : '') + data.month.growth_rate + '%';
@@ -1200,11 +1211,23 @@
                 console.error('시스템 상태 로드 실패:', error);
             }
             
-            // 차트 로드 후 실시간 데이터 적용
-            setTimeout(loadRealTimeData, 1000);
+            // 차트 로드 후 실시간 데이터 적용 (안전한 호출)
+            setTimeout(() => {
+                try {
+                    loadRealTimeData();
+                } catch (error) {
+                    console.error('실시간 데이터 초기 로드 오류:', error);
+                }
+            }, 1000);
             
-            // 5분마다 데이터 새로고침
-            setInterval(loadRealTimeData, 300000);
+            // 5분마다 데이터 새로고침 (안전한 호출)
+            setInterval(() => {
+                try {
+                    loadRealTimeData();
+                } catch (error) {
+                    console.error('실시간 데이터 주기적 로드 오류:', error);
+                }
+            }, 300000);
         });
 
         // 권한별 리포트 다운로드 함수들
