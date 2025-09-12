@@ -28,27 +28,28 @@ php artisan route:clear
 php artisan view:clear
 php artisan cache:clear
 
-echo "🔐 테스트 계정 비밀번호 초기화..."
+echo "🔐 모든 사용자 계정 비밀번호 초기화..."
 php artisan tinker --execute="
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
-\$test_accounts = [
-    'admin@ykp.com' => '123456',
-    'hq@ykp.com' => '123456', 
-    'test@ykp.com' => '123456',
-    'branch@ykp.com' => '123456',
-    'br001@ykp.com' => '123456',
-    'store@ykp.com' => '123456'
-];
-foreach(\$test_accounts as \$email => \$password) {
-    \$user = User::where('email', \$email)->first();
-    if(\$user) {
-        \$user->password = Hash::make(\$password);
+
+// 모든 사용자의 비밀번호를 123456으로 통일
+\$updated_count = 0;
+\$password_hash = Hash::make('123456');
+
+User::chunk(100, function(\$users) use (\$password_hash, &\$updated_count) {
+    foreach(\$users as \$user) {
+        \$user->password = \$password_hash;
         \$user->save();
-        echo \$email . ' 비밀번호 설정 완료' . PHP_EOL;
+        \$updated_count++;
+        echo \$user->email . ' ('. \$user->role .') 비밀번호 업데이트' . PHP_EOL;
     }
-}
-echo '✅ 테스트 계정 비밀번호 초기화 완료' . PHP_EOL;
+});
+
+echo '✅ 총 ' . \$updated_count . '개 계정 비밀번호 초기화 완료 (통일 비밀번호: 123456)' . PHP_EOL;
+echo '📋 본사: admin@ykp.com, hq@ykp.com, test@ykp.com' . PHP_EOL;
+echo '📋 지사: branch@ykp.com, br001@ykp.com ~ br005@ykp.com' . PHP_EOL;
+echo '📋 매장: store@ykp.com, br001-001@ykp.com 등' . PHP_EOL;
 " 2>&1 | tee -a storage/logs/deploy-migration.log
 
 echo "🎉 Deploy Hook 완료: $(date)"
