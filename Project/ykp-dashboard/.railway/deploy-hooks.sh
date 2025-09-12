@@ -13,6 +13,9 @@ php artisan migrate:status 2>&1 | tee -a storage/logs/deploy-migration.log
 echo "⚡ 마이그레이션 강제 실행..."
 php artisan migrate --force 2>&1 | tee -a storage/logs/deploy-migration.log
 
+echo "🌱 시드 데이터 실행..."
+php artisan db:seed --force 2>&1 | tee -a storage/logs/deploy-migration.log
+
 # 실행 결과 확인
 MIGRATION_EXIT_CODE=$?
 if [ $MIGRATION_EXIT_CODE -eq 0 ]; then
