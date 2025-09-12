@@ -215,6 +215,89 @@ Route::get('/fix/passwords', function () {
     }
 })->name('fix.passwords');
 
+// DB 정리 - 테스트용 최소 계정만 남기기
+Route::get('/cleanup/minimal', function () {
+    try {
+        $results = [];
+        
+        // 1. 매출 데이터 모두 삭제
+        $deleted_sales = \App\Models\Sale::count();
+        \App\Models\Sale::truncate();
+        $results['deleted_sales'] = $deleted_sales;
+        
+        // 2. 매장 데이터 모두 삭제 (테스트용 1개만 남김)
+        $deleted_stores = \App\Models\Store::where('id', '>', 1)->count();
+        \App\Models\Store::where('id', '>', 1)->delete();
+        $results['deleted_stores'] = $deleted_stores;
+        
+        // 3. 지사 데이터 모두 삭제 (테스트용 1개만 남김)  
+        $deleted_branches = \App\Models\Branch::where('id', '>', 1)->count();
+        \App\Models\Branch::where('id', '>', 1)->delete();
+        $results['deleted_branches'] = $deleted_branches;
+        
+        // 4. 사용자 계정 정리 (본사3개 + 지사1개 + 매장1개만 남김)
+        $keep_emails = [
+            'admin@ykp.com',
+            'hq@ykp.com', 
+            'test@ykp.com',
+            'branch@ykp.com',
+            'store@ykp.com'
+        ];
+        
+        $deleted_users = \App\Models\User::whereNotIn('email', $keep_emails)->count();
+        \App\Models\User::whereNotIn('email', $keep_emails)->delete();
+        $results['deleted_users'] = $deleted_users;
+        
+        // 5. 남은 테스트용 지사/매장 정보 업데이트
+        $test_branch = \App\Models\Branch::first();
+        if($test_branch) {
+            $test_branch->update([
+                'name' => '테스트지점',
+                'code' => 'TEST001', 
+                'manager_name' => '테스트관리자'
+            ]);
+        }
+        
+        $test_store = \App\Models\Store::first();
+        if($test_store) {
+            $test_store->update([
+                'name' => '테스트매장',
+                'code' => 'TEST-001',
+                'branch_id' => 1
+            ]);
+        }
+        
+        // 6. 사용자 계정 연결 정보 업데이트
+        \App\Models\User::where('email', 'branch@ykp.com')->update(['branch_id' => 1]);
+        \App\Models\User::where('email', 'store@ykp.com')->update(['store_id' => 1, 'branch_id' => 1]);
+        
+        // 7. 최종 현황
+        $final_counts = [
+            'users' => \App\Models\User::count(),
+            'branches' => \App\Models\Branch::count(), 
+            'stores' => \App\Models\Store::count(),
+            'sales' => \App\Models\Sale::count()
+        ];
+        
+        $remaining_users = \App\Models\User::select('email', 'name', 'role')->get();
+        
+        return response()->json([
+            'status' => 'success',
+            'message' => '데이터 정리 완료 - 테스트용 최소 계정만 남김',
+            'deleted' => $results,
+            'final_counts' => $final_counts,
+            'remaining_users' => $remaining_users
+        ]);
+        
+    } catch (\Exception $e) {
+        return response()->json([
+            'status' => 'error',
+            'message' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ], 500);
+    }
+})->name('cleanup.minimal');
+
 // 기존 고급 대시보드 복구 (임시)
 Route::get('/premium-dash', function () {
     return view('premium-dashboard');
