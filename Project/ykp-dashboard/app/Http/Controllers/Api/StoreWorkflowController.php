@@ -62,6 +62,7 @@ class StoreWorkflowController extends Controller
                     'role' => 'store',
                     'store_id' => $store->id,
                     'branch_id' => $store->branch_id,
+                    'is_active' => true,
                     'created_by_user_id' => Auth::id()
                 ]);
             }

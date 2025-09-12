@@ -135,6 +135,7 @@ class StoreController extends Controller
             'role' => 'store',
             'store_id' => $store->id,
             'branch_id' => $store->branch_id,
+            'is_active' => true,
             'created_by_user_id' => Auth::id()
         ]);
         
@@ -217,6 +218,7 @@ class StoreController extends Controller
             'role' => $request->role,
             'store_id' => $request->role === 'store' ? $store->id : null,
             'branch_id' => $store->branch_id,
+            'is_active' => true,
             'created_by_user_id' => Auth::id()
         ]);
         
@@ -427,6 +429,7 @@ class StoreController extends Controller
                 'role' => 'store',
                 'store_id' => $store->id,
                 'branch_id' => $store->branch_id,
+                'is_active' => true,
                 'created_by_user_id' => Auth::id()
             ]);
             

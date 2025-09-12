@@ -37,6 +37,7 @@ class AdvancedSeeder extends Seeder
             'email' => 'hq@ykp.com',
             'password' => Hash::make('password'),
             'role' => 'headquarters',
+            'is_active' => true,
         ]);
 
         // 2. 지사 및 매장 생성
@@ -63,6 +64,7 @@ class AdvancedSeeder extends Seeder
                 'password' => Hash::make('password'),
                 'role' => 'branch',
                 'branch_id' => $branch->id,
+                'is_active' => true,
             ]);
 
             // 각 지사별 5개 매장
@@ -92,6 +94,7 @@ class AdvancedSeeder extends Seeder
                     'role' => 'store',
                     'branch_id' => $branch->id,
                     'store_id' => $store->id,
+                    'is_active' => true,
                 ]);
             }
         }

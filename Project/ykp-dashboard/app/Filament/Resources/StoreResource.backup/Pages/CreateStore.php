@@ -44,7 +44,7 @@ class CreateStore extends CreateRecord
                     'role' => 'store', // 기본적으로 매장 직원으로 생성
                     'branch_id' => $store->branch_id,
                     'store_id' => $store->id,
-                    'status' => 'active',
+                    'is_active' => true,
                 ]);
                 
                 Notification::make()

@@ -118,7 +118,8 @@ class StoreController extends Controller
                 'password' => Hash::make($request->password),
                 'role' => 'store',
                 'store_id' => $store->id,
-                'branch_id' => $store->branch_id
+                'branch_id' => $store->branch_id,
+                'is_active' => true
             ]);
             
             return response()->json([

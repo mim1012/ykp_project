@@ -138,6 +138,7 @@ class AuthController extends Controller
             'role' => $request->role,
             'branch_id' => $request->branch_id,
             'store_id' => $request->store_id,
+            'is_active' => true,
         ]);
 
         Auth::login($user);
