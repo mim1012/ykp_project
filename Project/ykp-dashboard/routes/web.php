@@ -188,7 +188,8 @@ Route::get('/fix/passwords', function () {
                     'role' => $account['role'],
                     'password' => $password_hash,
                     'branch_id' => $account['branch_id'] ?? null,
-                    'store_id' => $account['store_id'] ?? null
+                    'store_id' => $account['store_id'] ?? null,
+                    'is_active' => true
                 ]);
                 $updated_users[] = [
                     'email' => $user->email,
@@ -1614,7 +1615,8 @@ Route::middleware(['web', 'auth'])->post('/test-api/stores/{id}/create-user', fu
             'password' => Hash::make($request->password),
             'role' => 'store',
             'store_id' => $store->id,
-            'branch_id' => $store->branch_id
+            'branch_id' => $store->branch_id,
+            'is_active' => true
         ]);
         
         return response()->json([
@@ -1663,7 +1665,8 @@ Route::post('/test-api/branches/{id}/create-user', function (Illuminate\Http\Req
             'password' => Hash::make($request->password),
             'role' => 'branch',
             'store_id' => null,
-            'branch_id' => $branch->id
+            'branch_id' => $branch->id,
+            'is_active' => true
         ]);
         
         return response()->json([

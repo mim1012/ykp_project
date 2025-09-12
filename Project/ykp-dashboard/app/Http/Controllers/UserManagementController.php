@@ -61,6 +61,7 @@ class UserManagementController extends Controller
         try {
             $userData = $request->validated();
             $userData['password'] = Hash::make($userData['password']);
+            $userData['is_active'] = true; // PostgreSQL boolean compatibility
             
             // 역할별 유효성 검증
             $this->validateRoleAssignment($userData);
