@@ -225,17 +225,7 @@ Route::get('/cleanup/minimal', function () {
         \App\Models\Sale::truncate();
         $results['deleted_sales'] = $deleted_sales;
         
-        // 2. 매장 데이터 모두 삭제 (테스트용 1개만 남김)
-        $deleted_stores = \App\Models\Store::where('id', '>', 1)->count();
-        \App\Models\Store::where('id', '>', 1)->delete();
-        $results['deleted_stores'] = $deleted_stores;
-        
-        // 3. 지사 데이터 모두 삭제 (테스트용 1개만 남김)  
-        $deleted_branches = \App\Models\Branch::where('id', '>', 1)->count();
-        \App\Models\Branch::where('id', '>', 1)->delete();
-        $results['deleted_branches'] = $deleted_branches;
-        
-        // 4. 사용자 계정 정리 (본사3개 + 지사1개 + 매장1개만 남김)
+        // 2. 사용자 계정 정리 먼저 (Foreign Key 제약 해결)
         $keep_emails = [
             'admin@ykp.com',
             'hq@ykp.com', 
@@ -247,6 +237,20 @@ Route::get('/cleanup/minimal', function () {
         $deleted_users = \App\Models\User::whereNotIn('email', $keep_emails)->count();
         \App\Models\User::whereNotIn('email', $keep_emails)->delete();
         $results['deleted_users'] = $deleted_users;
+        
+        // 3. 남은 사용자들의 Foreign Key 연결 해제
+        \App\Models\User::where('store_id', '>', 1)->update(['store_id' => 1]);
+        \App\Models\User::where('branch_id', '>', 1)->update(['branch_id' => 1]);
+        
+        // 4. 매장 데이터 삭제 (테스트용 1개만 남김)
+        $deleted_stores = \App\Models\Store::where('id', '>', 1)->count();
+        \App\Models\Store::where('id', '>', 1)->delete();
+        $results['deleted_stores'] = $deleted_stores;
+        
+        // 5. 지사 데이터 삭제 (테스트용 1개만 남김)  
+        $deleted_branches = \App\Models\Branch::where('id', '>', 1)->count();
+        \App\Models\Branch::where('id', '>', 1)->delete();
+        $results['deleted_branches'] = $deleted_branches;
         
         // 5. 남은 테스트용 지사/매장 정보 업데이트
         $test_branch = \App\Models\Branch::first();
