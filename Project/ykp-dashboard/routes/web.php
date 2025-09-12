@@ -406,6 +406,61 @@ Route::get('/api/users/branches', function () {
     }
 })->name('web.api.users.branches');
 
+// 긴급 Financial Summary API 추가 (500 오류 해결용)
+Route::get('/api/dashboard/financial-summary', function (Request $request) {
+    try {
+        $startDate = $request->get('start_date', now()->startOfMonth()->format('Y-m-d'));
+        $endDate = $request->get('end_date', now()->endOfMonth()->format('Y-m-d'));
+        
+        $sales = \App\Models\Sale::whereBetween('sale_date', [$startDate, $endDate]);
+        
+        $summary = [
+            'total_sales' => $sales->sum('settlement_amount') ?: 0,
+            'total_activations' => $sales->count() ?: 0,
+            'total_margin' => $sales->sum('after_tax_margin') ?: 0,
+            'average_margin_rate' => $sales->count() > 0 ? 
+                round(($sales->sum('after_tax_margin') / $sales->sum('settlement_amount')) * 100, 1) : 0,
+            'period' => ['start' => $startDate, 'end' => $endDate]
+        ];
+        
+        return response()->json(['success' => true, 'data' => $summary]);
+    } catch (\Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+})->name('web.api.financial-summary');
+
+// 긴급 Dealer Performance API 추가  
+Route::get('/api/dashboard/dealer-performance', function (Request $request) {
+    try {
+        $yearMonth = $request->get('year_month', now()->format('Y-m'));
+        
+        $dealers = \App\Models\Sale::where('sale_date', 'like', $yearMonth . '%')
+            ->whereNotNull('dealer_name')
+            ->where('dealer_name', '!=', '')
+            ->select('dealer_name')
+            ->selectRaw('SUM(settlement_amount) as total_sales')
+            ->selectRaw('COUNT(*) as activation_count')
+            ->selectRaw('AVG(after_tax_margin) as avg_margin')
+            ->groupBy('dealer_name')
+            ->orderBy('total_sales', 'desc')
+            ->get();
+            
+        return response()->json([
+            'success' => true,
+            'data' => $dealers->map(function($dealer) {
+                return [
+                    'dealer_name' => $dealer->dealer_name,
+                    'total_sales' => floatval($dealer->total_sales),
+                    'activation_count' => intval($dealer->activation_count),
+                    'avg_margin' => round(floatval($dealer->avg_margin), 0)
+                ];
+            })
+        ]);
+    } catch (\Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+})->name('web.api.dealer-performance');
+
 // 기존 고급 대시보드 복구 (임시)
 Route::get('/premium-dash', function () {
     return view('premium-dashboard');
