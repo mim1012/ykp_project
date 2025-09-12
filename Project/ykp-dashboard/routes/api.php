@@ -556,25 +556,24 @@ Route::middleware(['web', 'auth', 'rbac'])->prefix('api/users')->group(function 
     })->name('api.users.stores');
 });
 
-// Profile API 추가 (임시 인증 제거 - 실배포 테스트용)
+// Profile API (긴급 실배포용 - 인증 제거 버전)
 Route::get('/api/profile', function () {
-    $user = auth()->user();
-    
-    // 인증되지 않은 경우 기본값 반환 (임시)
+    $user = \Illuminate\Support\Facades\Auth::user();
+
     if (!$user) {
         return response()->json([
             'success' => true,
             'data' => [
-                'id' => 1,
-                'name' => '테스트 사용자',
-                'email' => 'test@ykp.com',
-                'role' => 'headquarters',
+                'id' => null,
+                'name' => '게스트',
+                'email' => null,
+                'role' => 'guest',
                 'branch_id' => null,
                 'store_id' => null
             ]
         ]);
     }
-    
+
     return response()->json([
         'success' => true,
         'data' => [
