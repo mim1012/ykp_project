@@ -113,7 +113,14 @@ Route::prefix('dev/stores')->group(function () {
         ], 201);
     });
     Route::get('/branches', function() {
-        $branches = App\Models\Branch::withCount('stores')->get();
+        // Simplified query to avoid PostgreSQL prepared statement issues  
+        $branches = App\Models\Branch::select('id', 'name', 'code', 'status')->get();
+        
+        // Manually add store count to avoid withCount() issues
+        foreach ($branches as $branch) {
+            $branch->stores_count = App\Models\Store::where('branch_id', $branch->id)->count();
+        }
+        
         return response()->json(['success' => true, 'data' => $branches]);
     });
     Route::post('/sales/save', function(Illuminate\Http\Request $request) {
@@ -375,16 +382,17 @@ Route::prefix('dashboard')->group(function () {
             $activeBranches = \App\Models\Branch::where('status', 'active')->count();
             $totalUsers = \App\Models\User::count();
             
-            // 매출 데이터가 있는 매장 수 (실제 활동 매장) - PostgreSQL/SQLite 호환
-            $thisMonth = now()->format('Y-m');
-            $dateFunction = config('database.default') === 'pgsql' 
-                ? "TO_CHAR(sale_date, 'YYYY-MM')" 
-                : "strftime('%Y-%m', sale_date)";
+            // 매출 데이터가 있는 매장 수 (실제 활동 매장) - PostgreSQL 호환
+            $currentYear = now()->year;
+            $currentMonth = now()->month;
                 
-            $salesActiveStores = \App\Models\Sale::whereRaw("{$dateFunction} = ?", [$thisMonth])
+            $salesActiveStores = \App\Models\Sale::whereYear('sale_date', $currentYear)
+                               ->whereMonth('sale_date', $currentMonth)
                                ->distinct('store_id')->count();
             
-            $thisMonthSales = \App\Models\Sale::whereRaw("{$dateFunction} = ?", [$thisMonth])->sum('settlement_amount');
+            $thisMonthSales = \App\Models\Sale::whereYear('sale_date', $currentYear)
+                            ->whereMonth('sale_date', $currentMonth)
+                            ->sum('settlement_amount');
             $monthlyTarget = 50000000;
             $achievementRate = $thisMonthSales > 0 ? round(($thisMonthSales / $monthlyTarget) * 100, 1) : 0;
             
@@ -410,7 +418,7 @@ Route::prefix('dashboard')->group(function () {
                     'achievement_rate' => $achievementRate,
                     'meta' => [
                         'generated_at' => now()->toISOString(),
-                        'period' => $thisMonth
+                        'period' => now()->format('Y-m')
                     ]
                 ]
             ]);
@@ -481,7 +489,10 @@ Route::prefix('dashboard')->group(function () {
     Route::get('/dealer-performance', function(Illuminate\Http\Request $request) {
         try {
             $yearMonth = $request->get('year_month', now()->format('Y-m'));
-            $performances = \App\Models\Sale::whereRaw("DATE_FORMAT(sale_date, '%Y-%m') = ?", [$yearMonth])
+            list($year, $month) = explode('-', $yearMonth);
+            
+            $performances = \App\Models\Sale::whereYear('sale_date', $year)
+                          ->whereMonth('sale_date', $month)
                           ->select('agency')
                           ->selectRaw('COUNT(*) as count')
                           ->selectRaw('SUM(settlement_amount) as total_amount')
@@ -538,7 +549,14 @@ Route::middleware(['web', 'auth', 'rbac'])->prefix('api/users')->group(function 
     // 지사 목록 (통계 페이지용 - 단순화)
     Route::get('/branches', function() {
         try {
-            $branches = \App\Models\Branch::withCount('stores')->get();
+            // Simplified query to avoid PostgreSQL prepared statement issues
+            $branches = \App\Models\Branch::select('id', 'name', 'code', 'status')->get();
+            
+            // Manually add store count to avoid withCount() issues
+            foreach ($branches as $branch) {
+                $branch->stores_count = \App\Models\Store::where('branch_id', $branch->id)->count();
+            }
+            
             return response()->json(['success' => true, 'data' => $branches]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
