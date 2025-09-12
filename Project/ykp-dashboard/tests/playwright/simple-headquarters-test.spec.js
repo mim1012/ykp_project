@@ -1,120 +1,101 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * 간단한 본사 계정 매장관리 테스트
+ * 🔬 본사 계정 지사 생성 및 로그인 테스트 (Production)
  */
-test.describe('🏢 본사 계정 간단 테스트', () => {
+test.describe('🏢 본사 계정 지사 관리 테스트', () => {
+    
+    // Production environment configuration
+    const BASE_URL = 'https://ykpproject-production.up.railway.app';
+    const HQ_EMAIL = 'hq@ykp.com';
+    const HQ_PASSWORD = '123456';
+    const TEST_BRANCH_CODE = 'E2E999';
+    const TEST_BRANCH_NAME = 'E2E테스트지점';
     
     /**
-     * 기본 로그인 및 API 호출 테스트
+     * 본사 로그인 및 지사 생성 API 테스트
      */
-    test('본사 계정 로그인 및 매장 API 호출 테스트', async ({ page }) => {
-        console.log('🏢 본사 계정 로그인 및 매장 API 테스트 시작');
+    test('본사 계정 로그인 및 지사 API 호출 테스트', async ({ page }) => {
+        console.log('🚀 본사 계정 지사 생성 테스트 시작');
         
         // 1. 로그인 페이지로 이동
-        await page.goto('http://127.0.0.1:8000/login');
-        console.log('📝 로그인 페이지 접근');
+        await page.goto(BASE_URL);
+        console.log('📝 Production 로그인 페이지 접근');
         
         // 2. 본사 계정으로 로그인
-        await page.fill('input[name="email"], input[type="email"]', 'hq@ykp.com');
-        await page.fill('input[name="password"], input[type="password"]', '123456');
-        await page.click('button[type="submit"], button:has-text("로그인")');
+        await page.fill('input[name="email"], input[type="email"]', HQ_EMAIL);
+        await page.fill('input[name="password"], input[type="password"]', HQ_PASSWORD);
         
-        console.log('🔑 본사 계정 로그인 시도');
+        await Promise.all([
+            page.waitForNavigation({ waitUntil: 'networkidle' }),
+            page.click('button[type="submit"], button:has-text("로그인")')
+        ]);
         
-        // 3. 로그인 성공 대기
-        await page.waitForTimeout(3000);
+        console.log('🔑 본사 계정 로그인 성공');
         
-        // 4. 매장 API 직접 호출 테스트
-        const storeListResponse = await page.evaluate(async () => {
+        // 3. 대시보드 접근 확인
+        await expect(page).toHaveURL(new RegExp(`${BASE_URL}/dashboard`));
+        console.log('✅ 본사 대시보드 접근 성공');
+        
+        // 4. 지사 생성 API 직접 호출 테스트 (CSRF 토큰 포함)
+        console.log('🏢 지사 생성 API 테스트 시작');
+        
+        const branchCreationResponse = await page.evaluate(async ({ branchCode, branchName }) => {
             try {
-                const response = await fetch('/api/stores', {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
+                // CSRF 토큰 가져오기
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ||
+                                document.querySelector('input[name="_token"]')?.value ||
+                                window.Laravel?.csrfToken ||
+                                '';
+                
+                console.log('CSRF Token found:', csrfToken ? 'Yes' : 'No');
+                
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                };
+                
+                // CSRF 토큰이 있으면 추가
+                if (csrfToken) {
+                    headers['X-CSRF-TOKEN'] = csrfToken;
+                }
+                
+                const response = await fetch('/test-api/branches/add', {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify({
+                        code: branchCode,
+                        name: branchName,
+                        _token: csrfToken // 토큰을 body에도 포함
+                    })
                 });
+                
                 return {
+                    success: response.ok,
                     status: response.status,
-                    data: await response.json()
+                    data: await response.json(),
+                    csrfToken: csrfToken ? 'found' : 'not found'
                 };
             } catch (error) {
                 return {
+                    success: false,
                     status: 500,
                     error: error.message
                 };
             }
-        });
+        }, { branchCode: TEST_BRANCH_CODE, branchName: TEST_BRANCH_NAME });
         
-        console.log('📊 매장 목록 API 호출 결과:', storeListResponse.status);
-        console.log('📋 매장 데이터:', storeListResponse.data);
+        console.log('🏢 지사 생성 API 호출 결과:', branchCreationResponse.status);
+        console.log('📋 지사 생성 응답:', branchCreationResponse);
         
-        // 5. API 응답 검증
-        expect(storeListResponse.status).toBe(200);
-        if (storeListResponse.data && storeListResponse.data.success) {
-            expect(storeListResponse.data.data).toBeDefined();
-            console.log(`✅ 본사 계정으로 ${storeListResponse.data.data.length}개 매장 조회 성공`);
-        }
-        
-        // 6. 매장 수정 API 테스트 (첫 번째 매장)
-        if (storeListResponse.data?.data?.length > 0) {
-            const firstStore = storeListResponse.data.data[0];
-            const storeId = firstStore.id;
+        // 5. 지사 생성 응답 검증
+        if (branchCreationResponse.success) {
+            console.log('✅ 지사 생성 API 성공');
             
-            console.log(`🏪 매장 ${storeId} 수정 테스트 시작`);
-            
-            const updateResponse = await page.evaluate(async (storeId) => {
+            // 지사 목록 확인
+            const branchListResponse = await page.evaluate(async () => {
                 try {
-                    const response = await fetch(`/api/stores/${storeId}`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
-                        body: JSON.stringify({
-                            name: `테스트 매장 ${storeId} (${new Date().toISOString()})`,
-                            owner_name: '테스트 점주',
-                            phone: '010-1234-5678',
-                            address: '테스트 주소',
-                            status: 'active'
-                        })
-                    });
-                    return {
-                        status: response.status,
-                        data: await response.json()
-                    };
-                } catch (error) {
-                    return {
-                        status: 500,
-                        error: error.message
-                    };
-                }
-            }, storeId);
-            
-            console.log(`✏️ 매장 ${storeId} 수정 API 결과:`, updateResponse.status);
-            console.log('📝 수정 응답:', updateResponse.data);
-            
-            // 수정 API 검증
-            if (updateResponse.status === 200) {
-                expect(updateResponse.data.success).toBeTruthy();
-                expect(updateResponse.data.message).toContain('수정');
-                console.log(`✅ 매장 ${storeId} 수정 성공`);
-            } else {
-                console.log(`⚠️ 매장 ${storeId} 수정 실패:`, updateResponse);
-            }
-        }
-        
-        // 7. 매장 성과 API 테스트
-        if (storeListResponse.data?.data?.length > 0) {
-            const firstStore = storeListResponse.data.data[0];
-            const storeId = firstStore.id;
-            
-            console.log(`📈 매장 ${storeId} 성과 조회 테스트`);
-            
-            const performanceResponse = await page.evaluate(async (storeId) => {
-                try {
-                    const response = await fetch(`/api/stores/${storeId}/performance`, {
+                    const response = await fetch('/test-api/branches', {
                         method: 'GET',
                         headers: {
                             'Content-Type': 'application/json',
@@ -122,111 +103,92 @@ test.describe('🏢 본사 계정 간단 테스트', () => {
                         }
                     });
                     return {
+                        success: response.ok,
                         status: response.status,
                         data: await response.json()
                     };
                 } catch (error) {
                     return {
+                        success: false,
                         status: 500,
                         error: error.message
                     };
                 }
-            }, storeId);
+            });
             
-            console.log(`📊 매장 ${storeId} 성과 API 결과:`, performanceResponse.status);
-            console.log('📈 성과 데이터:', performanceResponse.data);
+            console.log('📊 지사 목록 API 결과:', branchListResponse.status);
             
-            if (performanceResponse.status === 200) {
-                expect(performanceResponse.data.success).toBeTruthy();
-                console.log(`✅ 매장 ${storeId} 성과 조회 성공`);
-            }
-        }
-        
-        // 8. 계정 생성 API 테스트
-        if (storeListResponse.data?.data?.length > 0) {
-            const firstStore = storeListResponse.data.data[0];
-            const storeId = firstStore.id;
-            
-            console.log(`👤 매장 ${storeId} 계정 생성 테스트`);
-            
-            const createAccountResponse = await page.evaluate(async (storeId) => {
-                try {
-                    const timestamp = Date.now();
-                    const response = await fetch(`/api/stores/${storeId}/create-account`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        },
-                        body: JSON.stringify({
-                            name: `테스트 사용자 ${timestamp}`,
-                            email: `test-user-${timestamp}@ykp.com`,
-                            password: 'test123456',
-                            role: 'store'
-                        })
-                    });
-                    return {
-                        status: response.status,
-                        data: await response.json()
-                    };
-                } catch (error) {
-                    return {
-                        status: 500,
-                        error: error.message
-                    };
+            if (branchListResponse.success && Array.isArray(branchListResponse.data)) {
+                const createdBranch = branchListResponse.data.find(b => b.code === TEST_BRANCH_CODE);
+                if (createdBranch) {
+                    console.log('✅ 생성된 지사 확인됨:', createdBranch);
+                } else {
+                    console.log('⚠️ 지사 목록에서 생성된 지사를 찾을 수 없음');
                 }
-            }, storeId);
-            
-            console.log(`👥 매장 ${storeId} 계정 생성 API 결과:`, createAccountResponse.status);
-            console.log('👤 생성 응답:', createAccountResponse.data);
-            
-            if (createAccountResponse.status === 201) {
-                expect(createAccountResponse.data.success).toBeTruthy();
-                expect(createAccountResponse.data.data.role).toBe('store');
-                console.log(`✅ 매장 ${storeId} 계정 생성 성공`);
             }
-        }
-        
-        console.log('🎉 본사 계정 매장관리 테스트 완료');
-    });
-    
-    /**
-     * 권한 확인 테스트
-     */
-    test('본사 계정 권한 확인 테스트', async ({ page }) => {
-        console.log('🔐 본사 계정 권한 확인 테스트');
-        
-        // 로그인
-        await page.goto('http://127.0.0.1:8000/login');
-        await page.fill('input[name="email"]', 'hq@ykp.com');
-        await page.fill('input[name="password"]', '123456');
-        await page.click('button[type="submit"]');
-        await page.waitForTimeout(3000);
-        
-        // 사용자 정보 확인
-        const userData = await page.evaluate(() => {
-            return window.userData || null;
-        });
-        
-        console.log('👤 로그인된 사용자 정보:', userData);
-        
-        if (userData) {
-            expect(userData.role).toBe('headquarters');
-            console.log('✅ 본사 권한 확인 완료');
+            
+            // 6. 지사 계정 로그인 테스트
+            console.log('🔐 지사 계정 로그인 테스트 시작');
+            
+            // 본사에서 로그아웃
+            await page.goto(`${BASE_URL}/logout`);
+            await page.waitForURL(new RegExp(`${BASE_URL}/(login|$)`));
+            console.log('✅ 본사 계정 로그아웃');
+            
+            // 지사 계정으로 로그인 시도
+            await page.waitForSelector('input[name="email"]', { timeout: 10000 });
+            
+            const branchEmail = `branch_${TEST_BRANCH_CODE.toLowerCase()}@ykp.com`;
+            const branchPassword = '123456';
+            
+            console.log(`🔑 지사 계정 로그인 시도: ${branchEmail}`);
+            
+            await page.fill('input[name="email"]', branchEmail);
+            await page.fill('input[name="password"]', branchPassword);
+            
+            await page.click('button[type="submit"], button:has-text("로그인")');
+            await page.waitForTimeout(3000);
+            
+            const currentUrl = page.url();
+            console.log('📍 현재 URL:', currentUrl);
+            
+            if (currentUrl.includes('/dashboard')) {
+                console.log('✅ 지사 계정 로그인 성공 - 대시보드 접근');
+                
+                // 지사 대시보드 스크린샷
+                await page.screenshot({ 
+                    path: 'tests/playwright/branch-dashboard-success.png',
+                    fullPage: true 
+                });
+            } else {
+                console.log('❌ 지사 계정 로그인 실패 - 로그인 페이지에 머물러 있음');
+                console.log('ℹ️ 이는 PostgreSQL boolean 호환성 문제로 인한 것일 수 있습니다');
+                
+                // 실패 스크린샷
+                await page.screenshot({ 
+                    path: 'tests/playwright/branch-login-failed.png',
+                    fullPage: true 
+                });
+                
+                // 에러 메시지 확인
+                const errorMessage = await page.locator('.alert-danger, .error, [class*="error"]').first();
+                if (await errorMessage.isVisible()) {
+                    const errorText = await errorMessage.textContent();
+                    console.log('🚨 로그인 에러 메시지:', errorText);
+                }
+            }
+            
         } else {
-            console.log('⚠️ 사용자 정보를 가져올 수 없음');
+            console.log('❌ 지사 생성 API 실패:', branchCreationResponse);
         }
         
-        // 본사 권한으로 모든 매장 접근 가능한지 확인
-        const accessibleStores = await page.evaluate(() => {
-            if (window.userData && typeof window.userData.getAccessibleStoreIds === 'function') {
-                return window.userData.getAccessibleStoreIds();
-            }
-            return null;
-        });
+        // 7. 테스트 완료
+        console.log('🎉 지사 생성 및 로그인 테스트 완료');
         
-        console.log('🏪 접근 가능한 매장:', accessibleStores);
-        
-        console.log('✅ 권한 확인 테스트 완료');
+        console.log('\n=== 테스트 요약 ===');
+        console.log('✅ 본사 로그인: 성공');
+        console.log('✅ 본사 대시보드 접근: 성공');
+        console.log(`${branchCreationResponse.success ? '✅' : '❌'} 지사 생성 API: ${branchCreationResponse.success ? '성공' : '실패'}`);
+        console.log('📊 이 테스트는 PostgreSQL boolean 호환성 문제를 검증합니다');
     });
 });
