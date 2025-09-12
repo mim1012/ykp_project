@@ -1309,16 +1309,32 @@ Route::middleware(['web', 'auth'])->post('/test-api/branches/add', function (Ill
             'status' => 'active'
         ]);
         
-        // 지사 관리자 계정 자동 생성 (PostgreSQL boolean 호환)
-        $manager = App\Models\User::create([
-            'name' => $request->manager_name ?? $request->name . ' 관리자',
-            'email' => $managerEmail,
-            'password' => Hash::make('123456'), // 기본 패스워드
-            'role' => 'branch',
-            'branch_id' => $branch->id,
-            'store_id' => null,
-            'is_active' => true  // User 모델에서 boolean으로 자동 캐스팅됨
+        // 지사 관리자 계정 자동 생성 (PostgreSQL boolean 호환성 최종 해결)
+        // 문제: Laravel이 boolean true를 integer 1로 변환하여 PostgreSQL에서 타입 오류 발생
+        // 해결: DB::raw()를 사용하여 PostgreSQL native boolean 값 직접 전달
+        $manager = new App\Models\User();
+        $manager->name = $request->manager_name ?? $request->name . ' 관리자';
+        $manager->email = $managerEmail;
+        $manager->password = Hash::make('123456');
+        $manager->role = 'branch';
+        $manager->branch_id = $branch->id;
+        $manager->store_id = null;
+        
+        // PostgreSQL boolean 호환을 위한 Raw SQL 사용
+        DB::statement('INSERT INTO users (name, email, password, role, branch_id, store_id, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?::boolean, ?, ?)', [
+            $manager->name,
+            $manager->email,
+            $manager->password,
+            $manager->role,
+            $manager->branch_id,
+            $manager->store_id,
+            'true',  // PostgreSQL boolean 리터럴
+            now(),
+            now()
         ]);
+        
+        // 생성된 사용자 가져오기
+        $manager = App\Models\User::where('email', $managerEmail)->first();
         
         DB::commit();
         
