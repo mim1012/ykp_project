@@ -189,43 +189,14 @@ Route::middleware(['web', 'auth', 'rbac'])->prefix('report')->group(function () 
 | These routes are called from the dashboard and require CSRF tokens
 */
 
-// Additional web-based API endpoints (인증 제거)
-Route::prefix('api')->group(function () {
-    // Dashboard specific endpoints
-    Route::get('/dashboard/stats', function (Request $request) {
-        try {
-            return response()->json(['success' => true, 'data' => ['status' => 'active']]);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
-        }
-    })->name('api.dashboard.stats');
-
-    // User profile endpoint (인증 제거)
-    Route::get('/profile', function (Request $request) {
-        try {
-            $user = auth()->user();
-            
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'id' => $user->id ?? 1,
-                    'name' => $user->name ?? '본사 관리자',
-                    'email' => $user->email ?? 'hq@ykp.com',
-                    'role' => $user->role ?? 'headquarters',
-                    'branch' => $user->branch?->name ?? null,
-                    'store' => $user->store?->name ?? null,
-                    'branch_id' => $user->branch_id ?? null,
-                    'store_id' => $user->store_id ?? null
-                ]
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => true,
-                'data' => ['id' => 1, 'name' => '본사 관리자', 'role' => 'headquarters']
-            ]);
-        }
-    })->name('api.profile');
-});
+// Dashboard stats API (단순 상태 확인용)
+Route::get('/api/dashboard/stats', function (Request $request) {
+    try {
+        return response()->json(['success' => true, 'data' => ['status' => 'active']]);
+    } catch (\Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+})->name('api.dashboard.stats');
 
 /*
 |--------------------------------------------------------------------------
