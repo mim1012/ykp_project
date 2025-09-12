@@ -392,8 +392,8 @@ Route::middleware(['web', 'auth'])->prefix('payroll')->group(function () {
 | 메인 대시보드용 실시간 데이터 제공
 */
 
-// 웹 대시보드용 API (클로저 함수로 직접 구현)
-Route::prefix('dashboard')->group(function () {
+// 웹 대시보드용 API (웹 세션 기반 인증)
+Route::middleware(['web'])->prefix('dashboard')->group(function () {
     // 대시보드 개요 (통계 페이지 메인) - 통일된 응답 구조
     Route::get('/overview', function() {
         try {
@@ -585,8 +585,8 @@ Route::middleware(['web', 'auth', 'rbac'])->prefix('api/users')->group(function 
     })->name('api.users.stores');
 });
 
-// Profile API 추가 (누락된 엔드포인트)
-Route::get('/api/profile', function () {
+// Profile API 추가 (웹 세션 기반 인증)
+Route::middleware(['web'])->get('/api/profile', function () {
     $user = auth()->user();
     if (!$user) {
         return response()->json(['success' => false, 'error' => 'Unauthorized'], 401);
