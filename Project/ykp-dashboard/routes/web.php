@@ -385,6 +385,27 @@ Route::get('/api/profile', function () {
     ]);
 })->name('web.api.profile');
 
+// 긴급 Users Branches API 추가
+Route::get('/api/users/branches', function () {
+    try {
+        $branches = \App\Models\Branch::with(['users', 'stores'])->get();
+        return response()->json([
+            'success' => true,
+            'data' => $branches->map(function($branch) {
+                return [
+                    'id' => $branch->id,
+                    'name' => $branch->name,
+                    'code' => $branch->code,
+                    'users_count' => $branch->users->count(),
+                    'stores_count' => $branch->stores->count()
+                ];
+            })
+        ]);
+    } catch (\Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+})->name('web.api.users.branches');
+
 // 기존 고급 대시보드 복구 (임시)
 Route::get('/premium-dash', function () {
     return view('premium-dashboard');
