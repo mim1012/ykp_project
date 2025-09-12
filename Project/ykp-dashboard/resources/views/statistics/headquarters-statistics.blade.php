@@ -81,18 +81,9 @@
                 </div>
                 <div class="p-6">
                     <div class="space-y-4" id="store-ranking-list">
-                        <div class="flex justify-between items-center p-4 bg-gray-50 rounded">
-                            <div class="flex items-center">
-                                <span class="text-lg font-bold text-yellow-600">🥇</span>
-                                <div class="ml-3">
-                                    <div class="text-sm font-medium text-gray-900">경기 1호점</div>
-                                    <div class="text-sm text-gray-500">경기지사</div>
-                                </div>
-                            </div>
-                            <div class="text-right">
-                                <div class="text-sm font-medium text-gray-900">₩1,400,000</div>
-                                <div class="text-sm text-gray-500">14건 개통</div>
-                            </div>
+                        <div id="dynamic-ranking-container" class="text-center text-gray-500 py-4">
+                            <div class="text-sm">📊 매장 순위 로딩 중...</div>
+                            <div class="text-xs mt-1">API에서 실제 데이터를 불러오고 있습니다</div>
                         </div>
                         <!-- 추가 순위 데이터는 JavaScript로 로드 -->
                     </div>
@@ -326,6 +317,35 @@
                         `;
                         tbody.appendChild(tr);
                     });
+                } catch {}
+
+                // 매장 순위 동적 업데이트 (하드코딩 대신 실제 데이터)
+                try {
+                    const rankingContainer = document.getElementById('dynamic-ranking-container');
+                    if (rankingContainer && ranking.success && ranking.data && ranking.data.length > 0) {
+                        rankingContainer.innerHTML = '';
+                        
+                        ranking.data.slice(0, 5).forEach((store, index) => {
+                            const storeDiv = document.createElement('div');
+                            storeDiv.className = 'flex justify-between items-center p-4 bg-gray-50 rounded mb-2';
+                            storeDiv.innerHTML = `
+                                <div class="flex items-center">
+                                    <span class="text-lg font-bold text-yellow-600">${index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '🏆'}</span>
+                                    <div class="ml-3">
+                                        <div class="text-sm font-medium text-gray-900">${store.store_name}</div>
+                                        <div class="text-sm text-gray-500">${store.branch_name}</div>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-sm font-medium text-gray-900">₩${Number(store.total_sales).toLocaleString()}</div>
+                                    <div class="text-sm text-gray-500">${store.activation_count}건 개통</div>
+                                </div>
+                            `;
+                            rankingContainer.appendChild(storeDiv);
+                        });
+                    } else {
+                        rankingContainer.innerHTML = '<div class="text-center text-gray-500 py-4">매장 데이터가 없습니다</div>';
+                    }
                 } catch {}
 
             } catch (error) {
