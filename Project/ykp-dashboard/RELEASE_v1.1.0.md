@@ -103,18 +103,25 @@ DB::statement('INSERT INTO users (...) VALUES (..., ?::boolean, ...)', [
 
 ---
 
-## 🎯 **다음 단계 제안**
+## 🔍 **식별된 개선사항 (다음 릴리즈 대상)**
 
-### **통계 페이지 개선** (다음 릴리즈 예정)
-1. **실시간 데이터 동기화** 개선
-2. **대시보드 성능** 최적화  
-3. **권한별 통계 뷰** 세분화
-4. **차트 및 시각화** 개선
+### **통계 페이지 API 문제** 
+E2E 테스트에서 발견된 404 오류들:
+- `/api/dashboard/rankings` - 순위 데이터 API 누락
+- `/api/dashboard/top-list?type=branch&limit=5` - TOP 지사 API 누락  
+- `/api/dashboard/top-list?type=store&limit=5` - TOP 매장 API 누락
 
-### **UI/UX 개선**
+### **UI/UX 개선 필요사항**
 1. **매장 추가 버튼** JavaScript 이벤트 핸들러 수정
-2. **폼 모달** 개선
+2. **폼 모달** 개선  
 3. **사용자 피드백** 개선
+4. **실시간 데이터 로드** 오류 해결
+
+### **다음 릴리즈 v1.2.0 계획**
+1. **통계 API 완성**: 누락된 rankings, top-list API 구현
+2. **대시보드 차트**: 실시간 데이터 로딩 안정화
+3. **UI 이벤트**: 프론트엔드 JavaScript 개선
+4. **성능 최적화**: API 응답 속도 개선
 
 ---
 
