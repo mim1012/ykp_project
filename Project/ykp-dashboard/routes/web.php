@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Helpers\DatabaseHelper;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Hash;
 
@@ -394,7 +395,9 @@ Route::get('/api/users/branches', function () {
         return response()->json([
             'success' => true,
             'data' => $branches->map(function($branch) {
-                $storeCount = \App\Models\Store::where('branch_id', $branch->id)->count();
+                $storeCount = DatabaseHelper::executeWithRetry(function() use ($branch) {
+                    return \App\Models\Store::where('branch_id', $branch->id)->count();
+                });
                 return [
                     'id' => $branch->id,
                     'name' => $branch->name,
@@ -1065,17 +1068,22 @@ Route::middleware(['web'])->get('/api/dashboard/dealer-performance', function ()
             }
         }
         
-        $currentYearMonth = now()->format('Y-m');
-        $totalCurrentMonth = \App\Models\Sale::where('sale_date', 'like', $currentYearMonth . '%')->count();
+        $startOfMonth = now()->startOfMonth();
+        $endOfMonth = now()->endOfMonth();
+        $totalCurrentMonth = DatabaseHelper::executeWithRetry(function() use ($startOfMonth, $endOfMonth) {
+            return \App\Models\Sale::whereBetween('sale_date', [$startOfMonth, $endOfMonth])->count();
+        });
         
-        $carrierStats = (clone $query)->where('sale_date', 'like', $currentYearMonth . '%')
-            ->select([
-                'carrier',
-                DB::raw('COUNT(*) as count'),
-                DB::raw('SUM(settlement_amount) as total_sales')
-            ])
-            ->groupBy('carrier')
-            ->get()
+        $carrierStats = DatabaseHelper::executeWithRetry(function() use ($query, $startOfMonth, $endOfMonth) {
+            return (clone $query)->whereBetween('sale_date', [$startOfMonth, $endOfMonth])
+                ->select([
+                    'carrier',
+                    DB::raw('COUNT(*) as count'),
+                    DB::raw('SUM(settlement_amount) as total_sales')
+                ])
+                ->groupBy('carrier')
+                ->get();
+        })
             ->map(function($stat) use ($totalCurrentMonth) {
                 return [
                     'carrier' => $stat->carrier,
@@ -1124,14 +1132,20 @@ Route::get('/api/dashboard/overview', function () {
         $endOfDay = now()->endOfDay();
         $todaySales = (clone $query)->whereBetween('sale_date', [$startOfDay, $endOfDay])
                      ->sum('settlement_amount') ?? 0;
-        $monthSales = (clone $query)->whereYear('sale_date', now()->year)
-                          ->whereMonth('sale_date', now()->month)
-                          ->sum('settlement_amount') ?? 0;
+        $monthSales = DatabaseHelper::executeWithRetry(function() use ($query) {
+            $startOfMonth = now()->startOfMonth();
+            $endOfMonth = now()->endOfMonth();
+            return (clone $query)->whereBetween('sale_date', [$startOfMonth, $endOfMonth])
+                                 ->sum('settlement_amount') ?? 0;
+        });
         $todayActivations = (clone $query)->whereBetween('sale_date', [$startOfDay, $endOfDay])
                            ->count();
-        $monthActivations = (clone $query)->whereYear('sale_date', now()->year)
-                               ->whereMonth('sale_date', now()->month)
-                               ->count();
+        $monthActivations = DatabaseHelper::executeWithRetry(function() use ($query) {
+            $startOfMonth = now()->startOfMonth();
+            $endOfMonth = now()->endOfMonth();
+            return (clone $query)->whereBetween('sale_date', [$startOfMonth, $endOfMonth])
+                                 ->count();
+        });
         
         return response()->json([
             'success' => true,
@@ -1215,9 +1229,12 @@ Route::get('/test-api/dashboard-debug', function () {
         $todayEnd = now()->endOfDay();
         $todaySales = App\Models\Sale::whereBetween('sale_date', [$todayStart, $todayEnd])
                      ->sum('settlement_amount');
-        $monthSales = App\Models\Sale::whereYear('sale_date', now()->year)
-                          ->whereMonth('sale_date', now()->month)
-                          ->sum('settlement_amount');
+        $monthSales = DatabaseHelper::executeWithRetry(function() {
+            $startOfMonth = now()->startOfMonth();
+            $endOfMonth = now()->endOfMonth();
+            return App\Models\Sale::whereBetween('sale_date', [$startOfMonth, $endOfMonth])
+                                  ->sum('settlement_amount');
+        });
         $totalSales = App\Models\Sale::sum('settlement_amount');
         $totalCount = App\Models\Sale::count();
         
@@ -1436,10 +1453,13 @@ Route::get('/test-api/stores/{id}/stats', function ($id) {
             ->whereBetween('sale_date', [$todayStart, $todayEnd])
             ->sum('settlement_amount');
             
-        $monthSales = App\Models\Sale::where('store_id', $id)
-            ->whereYear('sale_date', $currentYear)
-            ->whereMonth('sale_date', $currentMonth)
-            ->sum('settlement_amount');
+        $monthSales = DatabaseHelper::executeWithRetry(function() use ($id) {
+            $startOfMonth = now()->startOfMonth();
+            $endOfMonth = now()->endOfMonth();
+            return App\Models\Sale::where('store_id', $id)
+                ->whereBetween('sale_date', [$startOfMonth, $endOfMonth])
+                ->sum('settlement_amount');
+        });
             
         $todayCount = App\Models\Sale::where('store_id', $id)
             ->whereBetween('sale_date', [$todayStart, $todayEnd])

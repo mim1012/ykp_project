@@ -61,7 +61,7 @@ return [
 
     'providers' => [
         'users' => [
-            'driver' => 'eloquent',
+            'driver' => env('AUTH_DRIVER', 'railway_eloquent'), // Railway PostgreSQL 호환
             'model' => env('AUTH_MODEL', App\Models\User::class),
         ],
 

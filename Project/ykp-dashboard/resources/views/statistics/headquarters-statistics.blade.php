@@ -8,6 +8,22 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+        .loading-pulse {
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
 </head>
 <body class="bg-gray-50">
     <!-- 헤더 -->
@@ -211,12 +227,259 @@
             }
         }
 
+        // Railway PostgreSQL 동시성 충돌 해결을 위한 순차 API 호출 함수
+        async function callApiSequentially(apiConfig, retryCount = 2) {
+            for (let attempt = 1; attempt <= retryCount + 1; attempt++) {
+                try {
+                    console.log(`🔄 ${apiConfig.name} API 호출 시도 ${attempt}/${retryCount + 1}: ${apiConfig.url}`);
+                    
+                    const response = await fetch(apiConfig.url, { 
+                        credentials: 'same-origin',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    const result = await safeJsonParse(response, apiConfig.name);
+                    
+                    if (result.success) {
+                        console.log(`✅ ${apiConfig.name} API 성공 (${attempt}번째 시도)`);
+                        return result;
+                    } else if (attempt < retryCount + 1) {
+                        console.warn(`⚠️ ${apiConfig.name} API 실패, 재시도 중... (${attempt}/${retryCount + 1})`);
+                        await new Promise(resolve => setTimeout(resolve, 200 * attempt)); // 점진적 대기
+                    }
+                } catch (error) {
+                    console.error(`❌ ${apiConfig.name} API 오류 (${attempt}번째 시도):`, error);
+                    if (attempt < retryCount + 1) {
+                        await new Promise(resolve => setTimeout(resolve, 200 * attempt));
+                    }
+                }
+            }
+            
+            console.error(`💥 ${apiConfig.name} API 최종 실패 (${retryCount + 1}번 시도 모두 실패)`);
+            return { success: false, data: {} };
+        }
+
+        // 🎨 섹션별 즉시 UI 업데이트 함수 (사용자 경험 개선)
+        function updateUISection(apiName, result, config) {
+            try {
+                console.log(`🎨 ${apiName} 섹션 UI 업데이트 중...`);
+                
+                switch(apiName) {
+                    case 'profile':
+                        if (result.success && result.data) {
+                            // 프로필 정보로 매장 수 업데이트
+                            const storeCount = (result.data.permissions?.accessible_store_ids || []).length;
+                            document.getElementById('total-stores').textContent = `${storeCount}개 매장`;
+                            document.getElementById('total-stores').className = 'text-2xl font-bold text-gray-900';
+                        }
+                        break;
+                        
+                    case 'overview':
+                        if (result.success && result.data) {
+                            const today = result.data.today ?? { sales: 0, activations: 0 };
+                            const month = result.data.month ?? { sales: 0, activations: 0 };
+                            
+                            // KPI 카드 즉시 업데이트
+                            document.getElementById('total-sales').textContent = `₩${Number(month.sales || 0).toLocaleString()}`;
+                            document.getElementById('total-sales').className = 'text-2xl font-bold text-green-600';
+                            
+                            const achievementRate = ((month.sales / 50000000) * 100).toFixed(1);
+                            document.getElementById('system-goal').textContent = `${achievementRate}% 달성`;
+                            document.getElementById('system-goal').className = 'text-2xl font-bold text-indigo-600';
+                            
+                            console.log(`💰 매출 정보 업데이트 완료: ₩${Number(month.sales).toLocaleString()}`);
+                        }
+                        break;
+                        
+                    case 'branches':
+                        if (result.success && Array.isArray(result.data)) {
+                            document.getElementById('total-branches').textContent = `${result.data.length}개 지사`;
+                            document.getElementById('total-branches').className = 'text-2xl font-bold text-gray-900';
+                            console.log(`🏢 지사 정보 업데이트 완료: ${result.data.length}개`);
+                        }
+                        break;
+                        
+                    case 'ranking':
+                        if (result.success && Array.isArray(result.data)) {
+                            updateStoreRanking(result.data);
+                            console.log(`🏆 매장 랭킹 업데이트 완료: ${result.data.length}개 매장`);
+                        }
+                        break;
+                        
+                    case 'financial':
+                        if (result.success && result.data) {
+                            updateFinancialSummary(result.data);
+                            console.log(`💵 재무 요약 업데이트 완료`);
+                        }
+                        break;
+                        
+                    case 'carrier':
+                        if (result.success && result.data?.carrier_breakdown) {
+                            updateCarrierTable(result.data.carrier_breakdown);
+                            console.log(`📊 통신사 점유율 업데이트 완료: ${result.data.carrier_breakdown.length}개 통신사`);
+                        }
+                        break;
+                }
+                
+            } catch (error) {
+                console.error(`❌ ${apiName} UI 업데이트 오류:`, error);
+            }
+        }
+
+        // 📊 매장 랭킹 업데이트 함수
+        function updateStoreRanking(rankings) {
+            try {
+                const rankingContainer = document.getElementById('dynamic-ranking-container');
+                if (!rankingContainer) return;
+                
+                if (rankings && rankings.length > 0) {
+                    rankingContainer.innerHTML = '';
+                    
+                    rankings.slice(0, 5).forEach((store, index) => {
+                        const storeDiv = document.createElement('div');
+                        storeDiv.className = 'flex justify-between items-center p-4 bg-gray-50 rounded mb-2 animate-fade-in';
+                        storeDiv.innerHTML = `
+                            <div class="flex items-center">
+                                <span class="text-lg font-bold text-yellow-600">${index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '🏆'}</span>
+                                <div class="ml-3">
+                                    <div class="text-sm font-medium text-gray-900">${store.store_name}</div>
+                                    <div class="text-sm text-gray-500">${store.branch_name}</div>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-sm font-medium text-gray-900">₩${Number(store.total_sales).toLocaleString()}</div>
+                                <div class="text-sm text-gray-500">${store.activation_count}건 개통</div>
+                            </div>
+                        `;
+                        rankingContainer.appendChild(storeDiv);
+                    });
+                } else {
+                    rankingContainer.innerHTML = '<div class="text-center text-gray-500 py-4">📊 매장 데이터를 불러오는 중...</div>';
+                }
+            } catch (error) {
+                console.error('매장 랭킹 업데이트 오류:', error);
+            }
+        }
+
+        // 💵 재무 요약 업데이트 함수
+        function updateFinancialSummary(finData) {
+            try {
+                const revenue = finData.total_sales || 0;
+                const margin = finData.total_margin || 0;
+                const expenses = finData.total_expenses || 0;
+                const netProfit = revenue - expenses;
+
+                document.getElementById('hq-fin-total-revenue').textContent = `₩${Number(revenue).toLocaleString()}`;
+                document.getElementById('hq-fin-total-margin').textContent = `₩${Number(margin).toLocaleString()}`;
+                document.getElementById('hq-fin-total-expenses').textContent = `₩${Number(expenses).toLocaleString()}`;
+                document.getElementById('hq-fin-net-profit').textContent = `₩${Number(netProfit).toLocaleString()}`;
+                
+                // 긍정적/부정적 수치에 따른 색상 적용
+                document.getElementById('hq-fin-net-profit').className = netProfit >= 0 ? 'text-lg font-semibold text-green-600' : 'text-lg font-semibold text-red-600';
+            } catch (error) {
+                console.error('재무 요약 업데이트 오류:', error);
+            }
+        }
+
+        // 📊 통신사 테이블 업데이트 함수
+        function updateCarrierTable(carrierBreakdown) {
+            try {
+                const tbody = document.getElementById('hq-carrier-table-body');
+                if (!tbody) return;
+                
+                tbody.innerHTML = '';
+                carrierBreakdown.forEach((carrier, index) => {
+                    const tr = document.createElement('tr');
+                    tr.className = index % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+                    tr.innerHTML = `
+                        <td class="px-4 py-2 font-medium">${carrier.carrier}</td>
+                        <td class="px-4 py-2">${carrier.count}건</td>
+                        <td class="px-4 py-2 font-semibold text-indigo-600">${carrier.percentage}%</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (error) {
+                console.error('통신사 테이블 업데이트 오류:', error);
+            }
+        }
+
+        // 📈 지사별 성과 차트 업데이트 함수
+        function updateBranchChart(rankingData, period) {
+            try {
+                const ctx = document.getElementById('branchComparisonChart');
+                if (!ctx) return;
+                
+                // 기존 차트 인스턴스 제거 (중복 방지)
+                if (window.branchChart) {
+                    window.branchChart.destroy();
+                }
+                
+                window.branchChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: (rankingData || []).slice(0, 8).map(r => r.branch_name || '지사'),
+                        datasets: [{
+                            label: '매출 합계 (₩)',
+                            data: (rankingData || []).slice(0, 8).map(r => r.total_sales || 0),
+                            backgroundColor: 'rgba(59, 130, 246, 0.6)',
+                            borderColor: 'rgba(59, 130, 246, 1)',
+                            borderWidth: 2,
+                            borderRadius: 4,
+                            borderSkipped: false,
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: { 
+                                display: true, 
+                                text: `🏢 지사별 매출 성과 (${period === 'monthly' ? '월간' : period === 'weekly' ? '주간' : '일간'})`,
+                                font: { size: 14, weight: 'bold' }
+                            },
+                            legend: {
+                                display: false // 단일 데이터셋이므로 범례 숨김
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return '₩' + Number(value).toLocaleString();
+                                    }
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    maxRotation: 45,
+                                    minRotation: 0
+                                }
+                            }
+                        },
+                        elements: {
+                            bar: {
+                                borderRadius: 4
+                            }
+                        }
+                    }
+                });
+                
+                console.log(`📊 지사별 성과 차트 업데이트 완료: ${(rankingData || []).length}개 데이터`);
+            } catch (error) {
+                console.error('지사별 성과 차트 업데이트 오류:', error);
+            }
+        }
+
         async function loadHeadquartersStatistics() {
             try {
-                console.log('📊 본사 통계 데이터 로딩 중...');
+                console.log('🚀 Railway PostgreSQL 최적화 순차 로딩 시작...');
                 const period = document.getElementById('hq-ranking-period').value;
                 const limit = parseInt(document.getElementById('hq-ranking-limit').value || '10', 10);
-                // 실제 시스템 현황 데이터 로드
+                
                 // 기간 설정 기본값: 이번달
                 const now = new Date();
                 const yyyy = now.getFullYear();
@@ -225,128 +488,51 @@
                 const endDefault = new Date(yyyy, now.getMonth()+1, 0).toISOString().slice(0,10);
                 const startDate = document.getElementById('hq-start-date').value || startDefault;
                 const endDate = document.getElementById('hq-end-date').value || endDefault;
+                const ym = endDate.slice(0,7);
 
-                // Promise.allSettled()로 안정적 병렬 처리 (타이밍 이슈 해결)
-                const results = await Promise.allSettled([
-                    fetch('/api/profile', { credentials: 'same-origin' }),
-                    fetch('/api/dashboard/overview', { credentials: 'same-origin' }),
-                    fetch(`/api/dashboard/store-ranking?period=${period}&limit=${Math.min(Math.max(limit,3),50)}`, { credentials: 'same-origin' }),
-                    fetch('/api/users/branches', { credentials: 'same-origin' }),
-                    fetch(`/api/dashboard/financial-summary?start_date=${startDate}&end_date=${endDate}`, { credentials: 'same-origin' }),
-                    (() => { const ym = endDate.slice(0,7); return fetch(`/api/dashboard/dealer-performance?year_month=${ym}`, { credentials: 'same-origin' }); })()
-                ]);
+                // 🎯 API 호출 순서 정의 (Railway PostgreSQL 충돌 방지)
+                const apiSequence = [
+                    { name: 'profile', url: '/api/profile' },
+                    { name: 'overview', url: '/api/dashboard/overview' },
+                    { name: 'ranking', url: `/api/dashboard/store-ranking?period=${period}&limit=${Math.min(Math.max(limit,3),50)}` },
+                    { name: 'branches', url: '/api/users/branches' },
+                    { name: 'financial', url: `/api/dashboard/financial-summary?start_date=${startDate}&end_date=${endDate}` },
+                    { name: 'carrier', url: `/api/dashboard/dealer-performance?year_month=${ym}` }
+                ];
 
-                // 각 결과를 안전하게 처리 (실패한 API가 있어도 계속 진행)
-                const profile = results[0].status === 'fulfilled' ? await safeJsonParse(results[0].value, 'profile') : { success: false, data: {} };
-                const overview = results[1].status === 'fulfilled' ? await safeJsonParse(results[1].value, 'overview') : { success: false, data: {} };
-                const ranking = results[2].status === 'fulfilled' ? await safeJsonParse(results[2].value, 'ranking') : { success: false, data: {} };
-                const branches = results[3].status === 'fulfilled' ? await safeJsonParse(results[3].value, 'branches') : { success: false, data: {} };
-                const fin = results[4].status === 'fulfilled' ? await safeJsonParse(results[4].value, 'financial') : { success: false, data: {} };
-                const carrierPerf = results[5].status === 'fulfilled' ? await safeJsonParse(results[5].value, 'carrier') : { success: false, data: {} };
-
-                // KPI 업데이트
-                // 대시보드 개요 데이터 적용
-                const today = overview.data?.today ?? { sales: 0, activations: 0 };
-                const month = overview.data?.month ?? { sales: 0, activations: 0 };
-
-                const storeCount = (profile.permissions?.accessible_store_ids || []).length;
-                const branchCount = Array.isArray(branches?.data) ? branches.data.length : '-';
-                document.getElementById('total-branches').textContent = `${branchCount}개 지사`;
-                document.getElementById('total-stores').textContent = `${storeCount}개 매장`;
-                document.getElementById('total-sales').textContent = `₩${Number(month.sales || 0).toLocaleString()}`;
+                // 🔄 순차 호출 및 즉시 UI 업데이트
+                const apiResults = {};
                 
-                const achievementRate = ((month.sales / 50000000) * 100).toFixed(1);
-                document.getElementById('system-goal').textContent = `${achievementRate}% 달성`;
-
-                // 지사별 성과 차트
-                const branchChart = new Chart(document.getElementById('branchComparisonChart'), {
-                    type: 'bar',
-                    data: {
-                        labels: (ranking.data?.rankings || []).map(r => r.branch_name || '지사'),
-                        datasets: [{
-                            label: '매출 합계 (상위 매장)',
-                            data: (ranking.data?.rankings || []).map(r => r.total_sales || 0),
-                            backgroundColor: 'rgba(59, 130, 246, 0.5)',
-                            borderColor: 'rgba(59, 130, 246, 1)',
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            title: { 
-                                display: true, 
-                                text: `상위 매장 매출 (${period})` 
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                ticks: {
-                                    stepSize: 1
-                                }
-                            }
-                        }
+                for (const apiConfig of apiSequence) {
+                    // Railway PostgreSQL 안정화를 위한 100ms 간격
+                    if (apiSequence.indexOf(apiConfig) > 0) {
+                        await new Promise(resolve => setTimeout(resolve, 100));
                     }
-                });
-
-                console.log('✅ 본사 통계 로딩 완료');
-
-                // 재무 요약 업데이트
-                try {
-                    const rev = fin?.data?.revenue || { total_revenue: 0, total_margin: 0 };
-                    const exp = fin?.data?.expenses || { total_expenses: 0 };
-                    const prof = fin?.data?.profit || { net_profit: 0 };
-                    document.getElementById('hq-fin-total-revenue').textContent = `₩${Number(rev.total_revenue||0).toLocaleString()}`;
-                    document.getElementById('hq-fin-total-margin').textContent = `₩${Number(rev.total_margin||0).toLocaleString()}`;
-                    document.getElementById('hq-fin-total-expenses').textContent = `₩${Number(exp.total_expenses||0).toLocaleString()}`;
-                    document.getElementById('hq-fin-net-profit').textContent = `₩${Number(prof.net_profit||0).toLocaleString()}`;
-                } catch {}
-
-                // 캐리어 표 갱신
-                try {
-                    const tbody = document.getElementById('hq-carrier-table-body');
-                    tbody.innerHTML = '';
-                    const rows = carrierPerf?.data?.carrier_breakdown || [];
-                    rows.forEach(r => {
-                        const tr = document.createElement('tr');
-                        tr.innerHTML = `
-                            <td class=\"px-4 py-2\">${r.carrier}</td>
-                            <td class=\"px-4 py-2\">${r.count}</td>
-                            <td class=\"px-4 py-2\">${r.percentage ?? 0}</td>
-                        `;
-                        tbody.appendChild(tr);
+                    
+                    // API 호출 및 결과 저장
+                    apiResults[apiConfig.name] = await callApiSequentially(apiConfig);
+                    
+                    // 🎨 각 API 완료 시 즉시 UI 업데이트
+                    updateUISection(apiConfig.name, apiResults[apiConfig.name], {
+                        period, limit, startDate, endDate
                     });
-                } catch {}
+                }
 
-                // 매장 순위 동적 업데이트 (하드코딩 대신 실제 데이터)
+                // 별칭으로 기존 코드 호환성 유지
+                const profile = apiResults.profile;
+                const overview = apiResults.overview;
+                const ranking = apiResults.ranking;
+                const branches = apiResults.branches;
+                const fin = apiResults.financial;
+                const carrierPerf = apiResults.carrier;
+
+                // 🎉 최종 차트 업데이트 (모든 데이터 로딩 완료 후)
                 try {
-                    const rankingContainer = document.getElementById('dynamic-ranking-container');
-                    if (rankingContainer && ranking.success && ranking.data && ranking.data.length > 0) {
-                        rankingContainer.innerHTML = '';
-                        
-                        ranking.data.slice(0, 5).forEach((store, index) => {
-                            const storeDiv = document.createElement('div');
-                            storeDiv.className = 'flex justify-between items-center p-4 bg-gray-50 rounded mb-2';
-                            storeDiv.innerHTML = `
-                                <div class="flex items-center">
-                                    <span class="text-lg font-bold text-yellow-600">${index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '🏆'}</span>
-                                    <div class="ml-3">
-                                        <div class="text-sm font-medium text-gray-900">${store.store_name}</div>
-                                        <div class="text-sm text-gray-500">${store.branch_name}</div>
-                                    </div>
-                                </div>
-                                <div class="text-right">
-                                    <div class="text-sm font-medium text-gray-900">₩${Number(store.total_sales).toLocaleString()}</div>
-                                    <div class="text-sm text-gray-500">${store.activation_count}건 개통</div>
-                                </div>
-                            `;
-                            rankingContainer.appendChild(storeDiv);
-                        });
-                    } else {
-                        rankingContainer.innerHTML = '<div class="text-center text-gray-500 py-4">매장 데이터가 없습니다</div>';
-                    }
-                } catch {}
+                    updateBranchChart(ranking.data || [], period);
+                    console.log('🚀 Railway PostgreSQL 최적화 로딩 완료! 모든 섹션이 순차적으로 업데이트되었습니다.');
+                } catch (error) {
+                    console.error('차트 업데이트 오류:', error);
+                }
 
             } catch (error) {
                 console.error('❌ 본사 통계 로딩 실패:', error);

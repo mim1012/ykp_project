@@ -15,7 +15,9 @@ use App\Policies\SalePolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\ServiceProvider;
+use App\Auth\RailwayEloquentUserProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -39,6 +41,11 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Railway PostgreSQL 호환 인증 프로바이더 등록
+        Auth::provider('railway_eloquent', function ($app, array $config) {
+            return new RailwayEloquentUserProvider($app['hash'], $config['model']);
+        });
+        
         // Policy 등록
         Gate::policy(User::class, UserPolicy::class);
         Gate::policy(Sale::class, SalePolicy::class);

@@ -10,6 +10,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
+use App\Helpers\DatabaseHelper;
 
 class DashboardController extends Controller
 {
@@ -126,8 +127,9 @@ class DashboardController extends Controller
                     break;
                 case 'monthly':
                 default:
-                    $query->whereMonth('sale_date', now()->month)
-                          ->whereYear('sale_date', now()->year);
+                    $startOfMonth = now()->startOfMonth();
+                    $endOfMonth = now()->endOfMonth();
+                    $query->whereBetween('sale_date', [$startOfMonth, $endOfMonth]);
                     break;
             }
             
@@ -261,8 +263,9 @@ class DashboardController extends Controller
             $user = auth()->user();
             
             // 이번 달 기준 매출 데이터
-            $salesQuery = Sale::whereMonth('sale_date', now()->month)
-                            ->whereYear('sale_date', now()->year);
+            $startOfMonth = now()->startOfMonth();
+            $endOfMonth = now()->endOfMonth();
+            $salesQuery = Sale::whereBetween('sale_date', [$startOfMonth, $endOfMonth]);
             
             // 1. 지사 순위 계산
             $branchRankings = $salesQuery->clone()
@@ -344,8 +347,9 @@ class DashboardController extends Controller
             $limit = min($request->query('limit', 5), 20); // 최대 20개
             $user = auth()->user();
             
-            $salesQuery = Sale::whereMonth('sale_date', now()->month)
-                            ->whereYear('sale_date', now()->year);
+            $startOfMonth = now()->startOfMonth();
+            $endOfMonth = now()->endOfMonth();
+            $salesQuery = Sale::whereBetween('sale_date', [$startOfMonth, $endOfMonth]);
             
             if ($type === 'branch') {
                 // TOP N 지사 리스트
