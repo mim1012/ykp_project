@@ -128,16 +128,22 @@ class StoreController extends Controller
             'password' => 'required|string|min:6'
         ]);
         
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => 'store',
-            'store_id' => $store->id,
-            'branch_id' => $store->branch_id,
-            'is_active' => true,
-            'created_by_user_id' => Auth::id()
+        // PostgreSQL boolean 호환성을 위한 Raw SQL 사용 (createAccount 메서드)
+        DB::statement('INSERT INTO users (name, email, password, role, store_id, branch_id, is_active, created_by_user_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?::boolean, ?, ?, ?)', [
+            $request->name,
+            $request->email,
+            Hash::make($request->password),
+            'store',
+            $store->id,
+            $store->branch_id,
+            'true',  // PostgreSQL boolean 리터럴
+            Auth::id(),
+            now(),
+            now()
         ]);
+        
+        // 생성된 사용자 가져오기
+        $user = User::where('email', $request->email)->first();
         
         return response()->json([
             'success' => true,
@@ -211,16 +217,22 @@ class StoreController extends Controller
             return response()->json(['error' => '지사 관리자는 매장 계정만 생성할 수 있습니다.'], 403);
         }
         
-        $newUser = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => $request->role,
-            'store_id' => $request->role === 'store' ? $store->id : null,
-            'branch_id' => $store->branch_id,
-            'is_active' => true,
-            'created_by_user_id' => Auth::id()
+        // PostgreSQL boolean 호환성을 위한 Raw SQL 사용
+        DB::statement('INSERT INTO users (name, email, password, role, store_id, branch_id, is_active, created_by_user_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?::boolean, ?, ?, ?)', [
+            $request->name,
+            $request->email,
+            Hash::make($request->password),
+            $request->role,
+            $request->role === 'store' ? $store->id : null,
+            $store->branch_id,
+            'true',  // PostgreSQL boolean 리터럴
+            Auth::id(),
+            now(),
+            now()
         ]);
+        
+        // 생성된 사용자 가져오기
+        $newUser = User::where('email', $request->email)->first();
         
         Log::info('Store account created', [
             'store_id' => $store->id,
@@ -421,17 +433,24 @@ class StoreController extends Controller
                 $standardAccount['email'] = str_replace('@ykp.com', $timestamp . '@ykp.com', $standardAccount['email']);
             }
             
-            // 사용자 생성
-            $newUser = User::create([
-                'name' => $standardAccount['name'],
-                'email' => $standardAccount['email'],
-                'password' => Hash::make($standardAccount['password']),
-                'role' => 'store',
-                'store_id' => $store->id,
-                'branch_id' => $store->branch_id,
-                'is_active' => true,
-                'created_by_user_id' => Auth::id()
+            // 사용자 생성 (PostgreSQL boolean 호환성을 위한 Raw SQL 사용)
+            // 문제: Laravel Eloquent가 boolean true를 integer 1로 변환하여 PostgreSQL 오류 발생
+            // 해결: DB::statement()를 사용하여 PostgreSQL native boolean 값 직접 전달
+            DB::statement('INSERT INTO users (name, email, password, role, store_id, branch_id, is_active, created_by_user_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?::boolean, ?, ?, ?)', [
+                $standardAccount['name'],
+                $standardAccount['email'],
+                Hash::make($standardAccount['password']),
+                'store',
+                $store->id,
+                $store->branch_id,
+                'true',  // PostgreSQL boolean 리터럴
+                Auth::id(),
+                now(),
+                now()
             ]);
+            
+            // 생성된 사용자 가져오기
+            $newUser = User::where('email', $standardAccount['email'])->first();
             
             Log::info('Store account created via new endpoint', [
                 'store_id' => $store->id,
