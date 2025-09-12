@@ -354,6 +354,37 @@ Route::get('/test/api-status', function () {
     }
 })->name('test.api-status');
 
+// 긴급 Profile API (웹 라우트로 임시 추가)
+Route::get('/api/profile', function () {
+    $user = \Illuminate\Support\Facades\Auth::user();
+
+    if (!$user) {
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => null,
+                'name' => '게스트',
+                'email' => null,
+                'role' => 'guest',
+                'branch_id' => null,
+                'store_id' => null
+            ]
+        ]);
+    }
+
+    return response()->json([
+        'success' => true,
+        'data' => [
+            'id' => $user->id,
+            'name' => $user->name,
+            'email' => $user->email,
+            'role' => $user->role,
+            'branch_id' => $user->branch_id,
+            'store_id' => $user->store_id
+        ]
+    ]);
+})->name('web.api.profile');
+
 // 기존 고급 대시보드 복구 (임시)
 Route::get('/premium-dash', function () {
     return view('premium-dashboard');
