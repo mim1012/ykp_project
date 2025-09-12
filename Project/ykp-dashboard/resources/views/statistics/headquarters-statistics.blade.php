@@ -189,28 +189,33 @@
             document.getElementById('hq-preset-last-month').addEventListener('click', () => preset('lastMonth'));
         });
 
-        // 안전한 JSON 파싱 함수 (SyntaxError 완전 방지)
+        // 개선된 JSON 파싱 함수 (잘못된 오류 분류 수정)
         async function safeJsonParse(response, apiName) {
             try {
+                // HTTP 상태 코드 정확히 체크
+                console.log(`🔍 ${apiName} API 상태:`, response.status, response.statusText, response.url);
+                
                 if (!response.ok) {
-                    console.warn(`⚠️ ${apiName} API 오류 (${response.status}):`, response.url);
+                    const text = await response.text();
+                    console.warn(`⚠️ ${apiName} API 실제 오류 (${response.status}):`, text.substring(0, 200));
                     return { success: false, data: {} };
                 }
                 
                 const text = await response.text();
+                console.log(`📄 ${apiName} API 응답 내용:`, text.substring(0, 200) + '...');
                 
-                // HTML 응답 감지
+                // HTML 응답 감지 (실제 오류인 경우)
                 if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
-                    console.warn(`⚠️ ${apiName} API가 HTML을 반환했습니다:`, text.substring(0, 100) + '...');
+                    console.warn(`⚠️ ${apiName} API가 HTML을 반환했습니다 (라우트 문제):`, text.substring(0, 100));
                     return { success: false, data: {} };
                 }
                 
                 const json = JSON.parse(text);
-                console.log(`✅ ${apiName} API 성공:`, json);
+                console.log(`✅ ${apiName} API 성공 (실제 200 OK):`, json);
                 return json;
                 
             } catch (error) {
-                console.error(`❌ ${apiName} API 파싱 오류:`, error);
+                console.error(`❌ ${apiName} API 진짜 파싱 오류:`, error);
                 return { success: false, data: {} };
             }
         }
