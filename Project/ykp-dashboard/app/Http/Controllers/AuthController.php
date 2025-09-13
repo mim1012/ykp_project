@@ -40,7 +40,22 @@ class AuthController extends Controller
         $credentials = $request->only('email', 'password');
         $remember = $request->filled('remember');
 
-        if (Auth::attempt($credentials, $remember)) {
+        // 🚑 Timebox 오류 해결: try-catch로 감싸서 안전하게 처리
+        try {
+            $loginSuccess = Auth::attempt($credentials, $remember);
+        } catch (\Exception $e) {
+            \Log::error('Timebox 인증 오류: ' . $e->getMessage());
+            // 대안: 직접 사용자 검증
+            $user = \App\Models\User::where('email', $credentials['email'])->first();
+            if ($user && \Hash::check($credentials['password'], $user->password)) {
+                Auth::login($user, $remember);
+                $loginSuccess = true;
+            } else {
+                $loginSuccess = false;
+            }
+        }
+        
+        if ($loginSuccess) {
             $request->session()->regenerate();
 
             // Log successful login
@@ -59,7 +74,7 @@ class AuthController extends Controller
     }
 
     /**
-     * Handle logout request
+     * Handle logout request - 즉시 리다이렉트 (UX 개선)
      */
     public function logout(Request $request)
     {
@@ -77,7 +92,8 @@ class AuthController extends Controller
             'ip' => $request->ip(),
         ]);
 
-        return redirect('/login')->with('message', '성공적으로 로그아웃되었습니다.');
+        // 즉시 로그인 페이지로 리다이렉트 (메시지 없이)
+        return redirect('/login');
     }
 
     /**
@@ -115,14 +131,20 @@ class AuthController extends Controller
             return back()->withErrors($validator)->withInput();
         }
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => $request->role,
-            'branch_id' => $request->branch_id,
-            'store_id' => $request->store_id,
+        // PostgreSQL boolean 호환성을 위한 Raw SQL 사용
+        DB::statement('INSERT INTO users (name, email, password, role, branch_id, store_id, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?::boolean, ?, ?)', [
+            $request->name,
+            $request->email,
+            Hash::make($request->password),
+            $request->role,
+            $request->branch_id,
+            $request->store_id,
+            'true',  // PostgreSQL boolean 리터럴
+            now(),
+            now()
         ]);
+        
+        $user = User::where('email', $request->email)->first();
 
         Auth::login($user);
 

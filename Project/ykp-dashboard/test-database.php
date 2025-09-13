@@ -44,6 +44,7 @@ try {
             'email' => 'admin@test.com',
             'password' => Hash::make('password'),
             'role' => 'headquarters',
+            'is_active' => true,
         ]);
         echo "✓ Admin user created: admin@test.com / password\n";
 
@@ -77,6 +78,7 @@ try {
             'role' => 'store',
             'branch_id' => $branch->id,
             'store_id' => $store->id,
+            'is_active' => true,
         ]);
 
         echo "✓ Test data created successfully\n";

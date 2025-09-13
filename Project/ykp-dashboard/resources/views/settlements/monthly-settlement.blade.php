@@ -6,6 +6,9 @@
     <title>월마감정산 - YKP ERP</title>
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    {{-- 🔒 세션 안정성 강화 --}}
+    <script src="/js/session-stability.js"></script>
     <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css" rel="stylesheet">
     
     <!-- Chart.js -->

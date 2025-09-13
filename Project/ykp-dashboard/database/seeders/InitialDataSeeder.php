@@ -18,6 +18,7 @@ class InitialDataSeeder extends Seeder
             'email' => 'admin@ykp.com',
             'password' => Hash::make('password'),
             'role' => 'headquarters',
+            'is_active' => true,
         ]);
 
         // 지점 생성
@@ -43,6 +44,7 @@ class InitialDataSeeder extends Seeder
                 'password' => Hash::make('password'),
                 'role' => 'branch',
                 'branch_id' => $branch->id,
+                'is_active' => true,
             ]);
 
             // 각 지점별 매장 생성 (10개씩)
@@ -67,6 +69,7 @@ class InitialDataSeeder extends Seeder
                     'role' => 'store',
                     'branch_id' => $branch->id,
                     'store_id' => $store->id,
+                    'is_active' => true,
                 ]);
             }
         }

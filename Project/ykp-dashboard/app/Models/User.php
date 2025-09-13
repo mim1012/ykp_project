@@ -6,6 +6,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use App\Helpers\DatabaseHelper;
 
 class User extends Authenticatable
 {
@@ -47,6 +48,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_active' => 'boolean',  // PostgreSQL boolean 타입 호환
         ];
     }
 
@@ -141,5 +143,21 @@ class User extends Authenticatable
     public function scopeByRole($query, $role)
     {
         return $query->where('role', $role);
+    }
+
+    // Railway PostgreSQL 호환 사용자 조회 메서드 (인증용)
+    public static function findForAuth($id)
+    {
+        return DatabaseHelper::executeWithRetry(function () use ($id) {
+            return static::find($id);
+        });
+    }
+
+    // Railway PostgreSQL 호환 이메일 조회 메서드 (인증용)
+    public static function findByEmailForAuth($email)
+    {
+        return DatabaseHelper::executeWithRetry(function () use ($email) {
+            return static::where('email', $email)->first();
+        });
     }
 }

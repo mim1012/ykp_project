@@ -14,7 +14,10 @@ use App\Policies\UserPolicy;
 use App\Policies\SalePolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Blade;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\ServiceProvider;
+use App\Auth\RailwayEloquentUserProvider;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -38,12 +41,26 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Railway PostgreSQL 호환 인증 프로바이더 등록
+        Auth::provider('railway_eloquent', function ($app, array $config) {
+            return new RailwayEloquentUserProvider($app['hash'], $config['model']);
+        });
+        
         // Policy 등록
         Gate::policy(User::class, UserPolicy::class);
         Gate::policy(Sale::class, SalePolicy::class);
         
         // Feature Flag Blade Directives 등록
         $this->registerFeatureFlagDirectives();
+        
+        // 🚑 Railway Timebox 오류 해결 - config 설정으로 대체
+        if (config('app.env') === 'production') {
+            config(['auth.throttle' => 300]); // 5분으로 연장
+            config(['auth.password_timeout' => 28800]); // 8시간으로 연장
+            
+            // 🔒 HTTPS 강제 설정 (Mixed Content 해결)
+            URL::forceScheme('https');
+        }
         
         // 개발 환경에서만 성능 모니터링 활성화
         if (config('app.debug')) {

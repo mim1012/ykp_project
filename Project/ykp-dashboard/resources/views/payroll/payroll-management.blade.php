@@ -549,10 +549,10 @@
                     // 성공 피드백
                     showNotification('✅ 저장완료', 'success');
                 } else {
-                    alert('❌ 수정 실패: ' + (result.message || '알 수 없는 오류'));
+                    alert('💼 급여 정보 수정에 실패했습니다. 입력 내용을 확인해주세요.');
                 }
             } catch (error) {
-                alert('❌ 네트워크 오류: ' + error.message);
+                alert('📞 네트워크 연결 문제로 저장하지 못했습니다. 잠시 후 다시 시도해주세요.');
             }
         }
 

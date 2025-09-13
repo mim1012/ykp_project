@@ -53,7 +53,7 @@ class StoreController extends Controller
         
         $validationRules = [
             'name' => 'required|string|max:255',
-            'code' => 'required|string|unique:stores,code',
+            'code' => 'nullable|string|unique:stores,code', // 자동 생성되므로 nullable
             'owner_name' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:20',
             'address' => 'nullable|string|max:500'
@@ -70,9 +70,20 @@ class StoreController extends Controller
         $branchId = $user->role === 'branch' ? $user->branch_id : $request->branch_id;
         
         return DB::transaction(function () use ($request, $user, $branchId) {
+            // 매장 코드 자동 생성 (PM 요구사항 반영)
+            $branch = \App\Models\Branch::find($branchId);
+            $branchCode = $branch ? $branch->code : 'BR' . str_pad($branchId, 3, '0', STR_PAD_LEFT);
+            
+            // 해당 지사의 다음 매장 번호 계산
+            $lastStoreNumber = Store::where('branch_id', $branchId)
+                ->where('code', 'LIKE', $branchCode . '-%')
+                ->count();
+            
+            $storeCode = $request->code ?: $branchCode . '-' . str_pad($lastStoreNumber + 1, 3, '0', STR_PAD_LEFT);
+            
             $store = Store::create([
                 'name' => $request->name,
-                'code' => $request->code,
+                'code' => $storeCode,
                 'branch_id' => $branchId,
                 'owner_name' => $request->owner_name,
                 'phone' => $request->phone,
@@ -117,21 +128,220 @@ class StoreController extends Controller
             'password' => 'required|string|min:6'
         ]);
         
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => 'store',
-            'store_id' => $store->id,
-            'branch_id' => $store->branch_id,
-            'created_by_user_id' => Auth::id()
+        // PostgreSQL boolean 호환성을 위한 Raw SQL 사용 (createAccount 메서드)
+        DB::statement('INSERT INTO users (name, email, password, role, store_id, branch_id, is_active, created_by_user_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?::boolean, ?, ?, ?)', [
+            $request->name,
+            $request->email,
+            Hash::make($request->password),
+            'store',
+            $store->id,
+            $store->branch_id,
+            'true',  // PostgreSQL boolean 리터럴
+            Auth::id(),
+            now(),
+            now()
         ]);
+        
+        // 생성된 사용자 가져오기
+        $user = User::where('email', $request->email)->first();
         
         return response()->json([
             'success' => true,
             'message' => '매장 계정이 성공적으로 생성되었습니다.',
             'data' => $user
         ], 201);
+    }
+    
+    /**
+     * 매장 정보 수정 (본사/지사)
+     */
+    public function update(Request $request, Store $store): JsonResponse
+    {
+        $user = Auth::user();
+        
+        // 권한 확인: 본사 또는 해당 지사 관리자만 수정 가능
+        if ($user->role === 'branch' && $store->branch_id !== $user->branch_id) {
+            return response()->json(['error' => '권한이 없습니다.'], 403);
+        } elseif ($user->role === 'store') {
+            return response()->json(['error' => '매장 사용자는 매장 정보를 수정할 수 없습니다.'], 403);
+        }
+        
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'owner_name' => 'nullable|string|max:255',
+            'phone' => 'nullable|string|max:20',
+            'address' => 'nullable|string|max:500',
+            'status' => 'nullable|in:active,inactive,maintenance'
+        ]);
+        
+        $store->update($request->only([
+            'name', 'owner_name', 'phone', 'address', 'status'
+        ]));
+        
+        Log::info('Store updated', [
+            'store_id' => $store->id,
+            'updated_by' => Auth::id(),
+            'changes' => $request->only(['name', 'owner_name', 'phone', 'address', 'status'])
+        ]);
+        
+        return response()->json([
+            'success' => true,
+            'message' => '매장 정보가 성공적으로 수정되었습니다.',
+            'data' => $store->fresh()->load('branch')
+        ]);
+    }
+    
+    /**
+     * 매장 계정 생성 (본사/지사)
+     */
+    public function createAccount(Request $request, Store $store): JsonResponse
+    {
+        $user = Auth::user();
+        
+        // 권한 확인
+        if ($user->role === 'branch' && $store->branch_id !== $user->branch_id) {
+            return response()->json(['error' => '권한이 없습니다.'], 403);
+        } elseif ($user->role === 'store') {
+            return response()->json(['error' => '매장 사용자는 계정을 생성할 수 없습니다.'], 403);
+        }
+        
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:6',
+            'role' => 'required|in:store,branch'
+        ]);
+        
+        // 지사 관리자는 매장 계정만 생성 가능
+        if ($user->role === 'branch' && $request->role !== 'store') {
+            return response()->json(['error' => '지사 관리자는 매장 계정만 생성할 수 있습니다.'], 403);
+        }
+        
+        // PostgreSQL boolean 호환성을 위한 Raw SQL 사용
+        DB::statement('INSERT INTO users (name, email, password, role, store_id, branch_id, is_active, created_by_user_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?::boolean, ?, ?, ?)', [
+            $request->name,
+            $request->email,
+            Hash::make($request->password),
+            $request->role,
+            $request->role === 'store' ? $store->id : null,
+            $store->branch_id,
+            'true',  // PostgreSQL boolean 리터럴
+            Auth::id(),
+            now(),
+            now()
+        ]);
+        
+        // 생성된 사용자 가져오기
+        $newUser = User::where('email', $request->email)->first();
+        
+        Log::info('Store account created', [
+            'store_id' => $store->id,
+            'new_user_id' => $newUser->id,
+            'role' => $newUser->role,
+            'created_by' => Auth::id()
+        ]);
+        
+        return response()->json([
+            'success' => true,
+            'message' => '계정이 성공적으로 생성되었습니다.',
+            'data' => $newUser
+        ], 201);
+    }
+    
+    /**
+     * 매장 삭제/비활성화 (본사만)
+     */
+    public function destroy(Store $store): JsonResponse
+    {
+        if (Auth::user()->role !== 'headquarters') {
+            return response()->json(['error' => '본사 관리자만 매장을 삭제할 수 있습니다.'], 403);
+        }
+        
+        return DB::transaction(function () use ($store) {
+            // 연관된 판매 데이터가 있는 경우 소프트 삭제 (상태를 비활성화)
+            $hasSales = $store->sales()->exists();
+            
+            if ($hasSales) {
+                $store->update([
+                    'status' => 'deleted',
+                    'deleted_at' => now()
+                ]);
+                
+                // 매장 사용자들도 비활성화
+                $store->users()->update(['is_active' => false]);
+                
+                $message = '판매 데이터가 있어 매장이 비활성화되었습니다.';
+            } else {
+                // 판매 데이터가 없으면 완전 삭제
+                $store->users()->delete();
+                $store->delete();
+                
+                $message = '매장이 완전히 삭제되었습니다.';
+            }
+            
+            Log::info('Store deleted/deactivated', [
+                'store_id' => $store->id,
+                'store_name' => $store->name,
+                'had_sales' => $hasSales,
+                'deleted_by' => Auth::id(),
+                'action' => $hasSales ? 'deactivated' : 'deleted'
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => $message
+            ]);
+        });
+    }
+    
+    /**
+     * 매장 성과 조회 (본사/지사/해당 매장)
+     */
+    public function performance(Store $store): JsonResponse
+    {
+        $user = Auth::user();
+        
+        // 권한 확인
+        if ($user->role === 'store' && $store->id !== $user->store_id) {
+            return response()->json(['error' => '권한이 없습니다.'], 403);
+        } elseif ($user->role === 'branch' && $store->branch_id !== $user->branch_id) {
+            return response()->json(['error' => '권한이 없습니다.'], 403);
+        }
+        
+        // 이번 달 성과
+        $thisMonth = $store->sales()
+            ->whereYear('sale_date', now()->year)
+            ->whereMonth('sale_date', now()->month)
+            ->selectRaw('
+                COUNT(*) as total_count,
+                COALESCE(SUM(settlement_amount), 0) as total_settlement,
+                COALESCE(SUM(margin_after_tax), 0) as total_margin,
+                COALESCE(AVG(settlement_amount), 0) as avg_settlement
+            ')
+            ->first();
+        
+        // 지난달 성과 (비교용)
+        $lastMonth = $store->sales()
+            ->whereYear('sale_date', now()->subMonth()->year)
+            ->whereMonth('sale_date', now()->subMonth()->month)
+            ->selectRaw('
+                COUNT(*) as total_count,
+                COALESCE(SUM(settlement_amount), 0) as total_settlement,
+                COALESCE(SUM(margin_after_tax), 0) as total_margin
+            ')
+            ->first();
+        
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'store' => $store->only(['id', 'name', 'status']),
+                'this_month' => $thisMonth,
+                'last_month' => $lastMonth,
+                'growth_rate' => $lastMonth->total_settlement > 0 
+                    ? (($thisMonth->total_settlement - $lastMonth->total_settlement) / $lastMonth->total_settlement) * 100 
+                    : 0
+            ]
+        ]);
     }
     
     /**
@@ -145,5 +355,199 @@ class StoreController extends Controller
             'success' => true,
             'data' => $branches
         ]);
+    }
+    
+    /**
+     * 매장 계정 정보 조회
+     */
+    public function getAccount(Store $store): JsonResponse
+    {
+        $user = Auth::user();
+        
+        // 권한 확인
+        if ($user->role === 'store' && $store->id !== $user->store_id) {
+            return response()->json(['error' => '권한이 없습니다.'], 403);
+        } elseif ($user->role === 'branch' && $store->branch_id !== $user->branch_id) {
+            return response()->json(['error' => '권한이 없습니다.'], 403);
+        }
+        
+        $storeUser = User::where('store_id', $store->id)
+                        ->where('role', 'store')
+                        ->first();
+        
+        if (!$storeUser) {
+            return response()->json([
+                'success' => false,
+                'error' => '매장 계정이 존재하지 않습니다.'
+            ], 404);
+        }
+        
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'account' => [
+                    'id' => $storeUser->id,
+                    'name' => $storeUser->name,
+                    'email' => $storeUser->email,
+                    'created_at' => $storeUser->created_at
+                ]
+            ]
+        ]);
+    }
+    
+    /**
+     * 매장 계정 생성 (개선된 버전)
+     */
+    public function createStoreAccount(Request $request, Store $store): JsonResponse
+    {
+        $user = Auth::user();
+        
+        // 권한 확인: 본사 또는 해당 지사 관리자만 가능
+        if ($user->role === 'branch' && $store->branch_id !== $user->branch_id) {
+            return response()->json(['error' => '권한이 없습니다.'], 403);
+        } elseif ($user->role === 'store') {
+            return response()->json(['error' => '매장 사용자는 계정을 생성할 수 없습니다.'], 403);
+        }
+        
+        // 기존 계정 확인
+        $existingUser = User::where('store_id', $store->id)
+                           ->where('role', 'store')
+                           ->first();
+        
+        if ($existingUser) {
+            return response()->json([
+                'success' => false,
+                'error' => '이미 매장 계정이 존재합니다.'
+            ], 409);
+        }
+        
+        return DB::transaction(function () use ($request, $user, $store) {
+            // 표준 양식으로 계정 정보 생성
+            $standardAccount = $this->generateStandardAccountInfo($store, $user, $request);
+            
+            // 이메일 중복 확인
+            $emailExists = User::where('email', $standardAccount['email'])->exists();
+            if ($emailExists) {
+                // 중복 시 타임스탬프 추가
+                $timestamp = substr(time(), -4); // 마지막 4자리
+                $standardAccount['email'] = str_replace('@ykp.com', $timestamp . '@ykp.com', $standardAccount['email']);
+            }
+            
+            // 사용자 생성 (PostgreSQL boolean 호환성을 위한 Raw SQL 사용)
+            // 문제: Laravel Eloquent가 boolean true를 integer 1로 변환하여 PostgreSQL 오류 발생
+            // 해결: DB::statement()를 사용하여 PostgreSQL native boolean 값 직접 전달
+            DB::statement('INSERT INTO users (name, email, password, role, store_id, branch_id, is_active, created_by_user_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?::boolean, ?, ?, ?)', [
+                $standardAccount['name'],
+                $standardAccount['email'],
+                Hash::make($standardAccount['password']),
+                'store',
+                $store->id,
+                $store->branch_id,
+                'true',  // PostgreSQL boolean 리터럴
+                Auth::id(),
+                now(),
+                now()
+            ]);
+            
+            // 생성된 사용자 가져오기
+            $newUser = User::where('email', $standardAccount['email'])->first();
+            
+            Log::info('Store account created via new endpoint', [
+                'store_id' => $store->id,
+                'store_code' => $store->code,
+                'new_user_id' => $newUser->id,
+                'new_user_email' => $standardAccount['email'],
+                'created_by' => Auth::id(),
+                'created_by_role' => $user->role,
+                'account_type' => $standardAccount['type']
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => '매장 계정이 성공적으로 생성되었습니다.',
+                'data' => [
+                    'store' => $store->only(['id', 'name', 'code']),
+                    'account' => [
+                        'id' => $newUser->id,
+                        'name' => $standardAccount['name'],
+                        'email' => $standardAccount['email'],
+                        'password' => $standardAccount['password'], // 1회성 반환
+                        'created_at' => $newUser->created_at,
+                        'type' => $standardAccount['type']
+                    ]
+                ]
+            ], 201);
+        });
+    }
+    
+    /**
+     * 표준 양식으로 계정 정보 생성
+     */
+    private function generateStandardAccountInfo(Store $store, User $creator, Request $request): array
+    {
+        if ($creator->role === 'headquarters' && $request->filled(['name', 'email', 'password'])) {
+            // 본사: 사용자 입력 정보 사용 (하지만 표준 양식 권장)
+            return [
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => $request->password,
+                'type' => 'headquarters_manual'
+            ];
+        }
+        
+        // 표준 자동 생성 양식
+        $branchCode = strtolower($store->branch->code ?? 'BR' . str_pad($store->branch_id, 3, '0', STR_PAD_LEFT));
+        $storeNumber = $this->extractStoreNumber($store->code);
+        
+        // 이메일: {지사코드}-{매장번호}@ykp.com
+        $email = $branchCode . '-' . str_pad($storeNumber, 3, '0', STR_PAD_LEFT) . '@ykp.com';
+        
+        // 계정명: {사장님명} ({매장코드} 매장장)
+        $ownerName = $store->owner_name ?: '매장관리자';
+        $name = "{$ownerName} ({$store->code} 매장장)";
+        
+        // 비밀번호: store{6자리_영숫자}
+        $password = 'store' . $this->generateSecureRandomString(6);
+        
+        return [
+            'name' => $name,
+            'email' => $email,
+            'password' => $password,
+            'type' => 'auto_generated_standard'
+        ];
+    }
+    
+    /**
+     * 매장 코드에서 매장 번호 추출
+     */
+    private function extractStoreNumber(string $storeCode): string
+    {
+        // BR001-001 → 001, DG001-003 → 003
+        if (preg_match('/.*-(\d+)$/', $storeCode, $matches)) {
+            return $matches[1];
+        }
+        
+        // 패턴이 맞지 않으면 마지막 숫자들 추출
+        if (preg_match('/(\d+)$/', $storeCode, $matches)) {
+            return str_pad($matches[1], 3, '0', STR_PAD_LEFT);
+        }
+        
+        // 기본값: 001
+        return '001';
+    }
+    
+    /**
+     * 안전한 랜덤 문자열 생성 (영숫자 조합)
+     */
+    private function generateSecureRandomString(int $length): string
+    {
+        $characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        $result = '';
+        
+        for ($i = 0; $i < $length; $i++) {
+            $result .= $characters[random_int(0, strlen($characters) - 1)];
+        }
+        
+        return $result;
     }
 }

@@ -64,7 +64,22 @@
       "Bash(git remote:*)",
       "Bash(git stash push:*)",
       "Bash(git pull:*)",
-      "Bash(test:*)"
+      "Bash(test:*)",
+      "WebFetch(domain:ykpproject-production.up.railway.app)",
+      "mcp__microsoft-playwright-mcp__browser_console_messages",
+      "mcp__microsoft-playwright-mcp__browser_fill_form",
+      "mcp__microsoft-playwright-mcp__browser_network_requests",
+      "mcp__microsoft-playwright-mcp__browser_take_screenshot",
+      "mcp__microsoft-playwright-mcp__browser_press_key",
+      "mcp__microsoft-playwright-mcp__browser_select_option",
+      "Bash(./vendor/bin/phpunit --filter=\"SaleStatisticsTest\")",
+      "Bash(python:*)",
+      "Bash(tree:*)",
+      "Bash(dir:*)",
+      "Bash(./vendor/bin/phpunit --filter=\"StatisticsApiTest\")",
+      "Bash(./vendor/bin/phpunit:*)",
+      "mcp__microsoft-playwright-mcp__browser_navigate_back",
+      "Bash(composer:*)"
     ],
     "defaultMode": "acceptEdits",
     "additionalDirectories": [

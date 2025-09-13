@@ -302,22 +302,25 @@
                 });
             };
 
-            // 대시보드 데이터 로드
+            // 대시보드 데이터 로드 - 새로운 통합 API 사용
             const loadDashboardData = async () => {
                 setDataStatus({ hasData: false, message: '데이터를 로딩 중...', loading: true });
                 
                 try {
-                    const response = await secureRequest('/api/sales/statistics');
+                    const response = await secureRequest('/dashboard/overview');
                     if (response.ok) {
-                        const data = await response.json();
+                        const result = await response.json();
                         
-                        // 실제 데이터가 있는 경우
-                        if (data.summary && data.summary.total_count > 0) {
+                        if (result.success && result.data) {
+                            const data = result.data;
                             setDashboardData({
-                                todayRevenue: parseInt(data.summary.total_settlement) || 0,
-                                monthRevenue: parseInt(data.summary.total_settlement) * 30 || 0,
-                                avgRevenue: parseInt(data.summary.avg_settlement) || 0,
-                                activeStores: parseInt(data.summary.active_stores) || 0
+                                todayRevenue: data.this_month_sales || 0,
+                                monthRevenue: (data.this_month_sales || 0) * 1.2, // 목표 대비 추정
+                                avgRevenue: Math.round((data.this_month_sales || 0) / Math.max(data.stores.with_sales, 1)),
+                                activeStores: data.stores.with_sales || 0,
+                                totalStores: data.stores.total || 0,
+                                totalBranches: data.branches.total || 0,
+                                achievementRate: data.achievement_rate || 0
                             });
                             setDataStatus({ hasData: true, message: '데이터 로드 완료', loading: false });
                         } else {
@@ -326,9 +329,12 @@
                                 todayRevenue: 0,
                                 monthRevenue: 0,
                                 avgRevenue: 0,
-                                activeStores: 0
+                                activeStores: 0,
+                                totalStores: 0,
+                                totalBranches: 0,
+                                achievementRate: 0
                             });
-                            setDataStatus({ hasData: false, message: data.message || '선택한 기간에 데이터가 없습니다.', loading: false });
+                            setDataStatus({ hasData: false, message: '데이터가 없습니다.', loading: false });
                         }
                     } else if (response.status === 401) {
                         // Unauthorized - redirect to login
@@ -499,11 +505,49 @@
                             description="최근 30일 평균"
                         />
                         <KPICard 
-                            title="활성 매장" 
-                            value={`${dashboardData.activeStores} / 50`}
+                            title="매장 현황" 
+                            value={`${dashboardData.activeStores} / ${dashboardData.totalStores}`}
                             icon="store"
-                            description="오늘 매출 발생 매장"
+                            description="매출활동 / 전체등록"
                         />
+                    </div>
+
+                    {/* 추가 통계 카드 */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <Card className="p-4 bg-gradient-to-r from-blue-50 to-blue-100">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-blue-600">지사 현황</p>
+                                    <p className="text-2xl font-bold text-blue-900">{dashboardData.totalBranches}개</p>
+                                    <p className="text-xs text-blue-500 mt-1">전국 지사 네트워크</p>
+                                </div>
+                                <Icon name="map-pin" className="h-8 w-8 text-blue-500" />
+                            </div>
+                        </Card>
+                        
+                        <Card className="p-4 bg-gradient-to-r from-green-50 to-green-100">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-green-600">목표 달성률</p>
+                                    <p className="text-2xl font-bold text-green-900">{dashboardData.achievementRate}%</p>
+                                    <p className="text-xs text-green-500 mt-1">이번 달 기준</p>
+                                </div>
+                                <Icon name="target" className="h-8 w-8 text-green-500" />
+                            </div>
+                        </Card>
+                        
+                        <Card className="p-4 bg-gradient-to-r from-purple-50 to-purple-100">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-purple-600">매출 효율성</p>
+                                    <p className="text-2xl font-bold text-purple-900">
+                                        {dashboardData.totalStores > 0 ? Math.round((dashboardData.activeStores / dashboardData.totalStores) * 100) : 0}%
+                                    </p>
+                                    <p className="text-xs text-purple-500 mt-1">활성 매장 비율</p>
+                                </div>
+                                <Icon name="trending-up" className="h-8 w-8 text-purple-500" />
+                            </div>
+                        </Card>
                     </div>
 
                     {/* Charts */}
