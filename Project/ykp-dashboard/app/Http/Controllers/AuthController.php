@@ -131,15 +131,20 @@ class AuthController extends Controller
             return back()->withErrors($validator)->withInput();
         }
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => $request->role,
-            'branch_id' => $request->branch_id,
-            'store_id' => $request->store_id,
-            'is_active' => true,
+        // PostgreSQL boolean 호환성을 위한 Raw SQL 사용
+        DB::statement('INSERT INTO users (name, email, password, role, branch_id, store_id, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?::boolean, ?, ?)', [
+            $request->name,
+            $request->email,
+            Hash::make($request->password),
+            $request->role,
+            $request->branch_id,
+            $request->store_id,
+            'true',  // PostgreSQL boolean 리터럴
+            now(),
+            now()
         ]);
+        
+        $user = User::where('email', $request->email)->first();
 
         Auth::login($user);
 

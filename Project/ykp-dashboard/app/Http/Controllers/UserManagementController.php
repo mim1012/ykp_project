@@ -61,12 +61,25 @@ class UserManagementController extends Controller
         try {
             $userData = $request->validated();
             $userData['password'] = Hash::make($userData['password']);
-            $userData['is_active'] = true; // PostgreSQL boolean compatibility
             
             // 역할별 유효성 검증
             $this->validateRoleAssignment($userData);
             
-            $user = User::create($userData);
+            // PostgreSQL boolean 호환성을 위한 Raw SQL 사용
+            DB::statement('INSERT INTO users (name, email, password, role, branch_id, store_id, is_active, created_by_user_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?::boolean, ?, ?, ?)', [
+                $userData['name'],
+                $userData['email'],
+                $userData['password'],
+                $userData['role'],
+                $userData['branch_id'] ?? null,
+                $userData['store_id'] ?? null,
+                'true',  // PostgreSQL boolean 리터럴
+                Auth::id(),
+                now(),
+                now()
+            ]);
+            
+            $user = User::where('email', $userData['email'])->first();
             
             Log::info('User created by headquarters', [
                 'created_user_id' => $user->id,

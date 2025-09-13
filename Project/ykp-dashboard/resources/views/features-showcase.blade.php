@@ -340,18 +340,27 @@
                 // 매장 수
                 if (storesResponse.ok) {
                     const storesData = await storesResponse.json();
-                    document.getElementById('total-stores-count').textContent = storesData.count || 0;
+                    const storesElement = document.getElementById('total-stores-count');
+                    if (storesElement) {
+                        storesElement.textContent = storesData.count || 0;
+                    }
                 }
 
                 // 사용자 수
                 if (usersResponse.ok) {
                     const usersData = await usersResponse.json();
-                    document.getElementById('total-users-count').textContent = usersData.count || 0;
+                    const usersElement = document.getElementById('total-users-count');
+                    if (usersElement) {
+                        usersElement.textContent = usersData.count || 0;
+                    }
                 }
 
                 // 지사 수
                 if (branchesResponse.success) {
-                    document.getElementById('total-branches-count').textContent = branchesResponse.data.length || 0;
+                    const branchesElement = document.getElementById('total-branches-count');
+                    if (branchesElement) {
+                        branchesElement.textContent = branchesResponse.data.length || 0;
+                    }
                 }
 
                 // 개통 건수

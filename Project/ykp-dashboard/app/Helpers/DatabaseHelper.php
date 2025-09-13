@@ -15,7 +15,7 @@ class DatabaseHelper
      * @param int $maxRetries
      * @return mixed
      */
-    public static function executeWithRetry(callable $callback, int $maxRetries = 3)
+    public static function executeWithRetry(callable $callback, int $maxRetries = 5)
     {
         $attempt = 0;
         $lastException = null;
@@ -47,8 +47,8 @@ class DatabaseHelper
                     throw $e;
                 }
                 
-                // Exponential backoff 지연 (100ms, 300ms, 900ms)
-                $delayMs = 100 * pow(3, $attempt - 1);
+                // 개선된 Exponential backoff (50ms, 150ms, 450ms, 1350ms, 4050ms)
+                $delayMs = 50 * pow(3, $attempt - 1);
                 Log::warning("DatabaseHelper: Retrying query after {$delayMs}ms", [
                     'attempt' => $attempt,
                     'error' => $e->getMessage()
@@ -76,7 +76,7 @@ class DatabaseHelper
     {
         $errorMessage = $e->getMessage();
         
-        // Prepared statement 관련 오류
+        // Prepared statement 관련 오류 (Railway에서 자주 발생)
         if (str_contains($errorMessage, 'prepared statement') && 
             str_contains($errorMessage, 'does not exist')) {
             return true;
@@ -84,12 +84,28 @@ class DatabaseHelper
         
         // Connection 관련 오류
         if (str_contains($errorMessage, 'Connection') || 
-            str_contains($errorMessage, 'timeout')) {
+            str_contains($errorMessage, 'timeout') ||
+            str_contains($errorMessage, 'server closed') ||
+            str_contains($errorMessage, 'broken pipe')) {
             return true;
         }
         
         // Bind parameter 오류
-        if (str_contains($errorMessage, 'bind message supplies')) {
+        if (str_contains($errorMessage, 'bind message supplies') ||
+            str_contains($errorMessage, 'parameter count')) {
+            return true;
+        }
+        
+        // Lock 관련 오류 (동시성 문제)
+        if (str_contains($errorMessage, 'deadlock') ||
+            str_contains($errorMessage, 'lock wait timeout')) {
+            return true;
+        }
+        
+        // PostgreSQL 특정 오류들
+        if (str_contains($errorMessage, 'connection to server') ||
+            str_contains($errorMessage, 'SSL connection') ||
+            str_contains($errorMessage, 'terminating connection')) {
             return true;
         }
         

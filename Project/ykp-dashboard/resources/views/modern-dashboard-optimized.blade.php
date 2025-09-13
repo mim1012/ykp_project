@@ -333,8 +333,11 @@
         // 실시간 시스템 통계 로드
         async function loadSystemStats() {
             try {
-                // 로딩 상태 표시
-                document.getElementById('last-update').textContent = '마지막 업데이트: 로딩 중...';
+                // 로딩 상태 표시 (안전한 DOM 접근)
+                const lastUpdateElement = document.getElementById('last-update');
+                if (lastUpdateElement) {
+                    lastUpdateElement.textContent = '마지막 업데이트: 로딩 중...';
+                }
                 
                 // 각 모델의 개수를 API로 가져오기
                 const [usersResponse, storesResponse, dealersResponse, salesResponse] = await Promise.all([
@@ -366,8 +369,10 @@
 
                 // 업데이트 시간 표시
                 const now = new Date();
-                document.getElementById('last-update').textContent = 
-                    `마지막 업데이트: ${now.toLocaleTimeString('ko-KR')}`;
+                const lastUpdateElement = document.getElementById('last-update');
+                if (lastUpdateElement) {
+                    lastUpdateElement.textContent = `마지막 업데이트: ${now.toLocaleTimeString('ko-KR')}`;
+                }
 
             } catch (error) {
                 console.error('시스템 통계 로드 오류:', error);
@@ -378,8 +383,10 @@
                 updateCountElement('dealer-count', '5', 'text-purple-600');
                 updateCountElement('sales-count', '12', 'text-indigo-600');
                 
-                document.getElementById('last-update').textContent = 
-                    '마지막 업데이트: 연결 오류 (기본값 표시)';
+                const lastUpdateElement = document.getElementById('last-update');
+                if (lastUpdateElement) {
+                    lastUpdateElement.textContent = '마지막 업데이트: 연결 오류 (기본값 표시)';
+                }
             }
         }
         

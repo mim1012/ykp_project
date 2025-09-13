@@ -296,8 +296,11 @@
                         
                     case 'branches':
                         if (result.success && Array.isArray(result.data)) {
-                            document.getElementById('total-branches').textContent = `${result.data.length}개 지사`;
-                            document.getElementById('total-branches').className = 'text-2xl font-bold text-gray-900';
+                            const totalBranchesElement = document.getElementById('total-branches');
+                            if (totalBranchesElement) {
+                                totalBranchesElement.textContent = `${result.data.length}개 지사`;
+                                totalBranchesElement.className = 'text-2xl font-bold text-gray-900';
+                            }
                             console.log(`🏢 지사 정보 업데이트 완료: ${result.data.length}개`);
                         }
                         break;

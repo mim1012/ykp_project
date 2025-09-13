@@ -112,15 +112,20 @@ class StoreController extends Controller
         try {
             $store = Store::findOrFail($id);
             
-            $user = User::create([
-                'name' => $request->name,
-                'email' => $request->email,
-                'password' => Hash::make($request->password),
-                'role' => 'store',
-                'store_id' => $store->id,
-                'branch_id' => $store->branch_id,
-                'is_active' => true
+            // PostgreSQL boolean 호환성을 위한 Raw SQL 사용
+            DB::statement('INSERT INTO users (name, email, password, role, store_id, branch_id, is_active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?::boolean, ?, ?)', [
+                $request->name,
+                $request->email,
+                Hash::make($request->password),
+                'store',
+                $store->id,
+                $store->branch_id,
+                'true',  // PostgreSQL boolean 리터럴
+                now(),
+                now()
             ]);
+            
+            $user = User::where('email', $request->email)->first();
             
             return response()->json([
                 'success' => true,
