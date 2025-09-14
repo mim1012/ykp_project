@@ -467,6 +467,7 @@
                         sale_date: row.sale_date,
                         salesperson: row.salesperson,
                         dealer_name: row.dealer_name,
+                        dealer_code: row.dealer_name || 'DEFAULT', // 필수 필드 추가
                         carrier: row.carrier,
                         activation_type: row.activation_type,
                         model_name: row.model_name,
@@ -490,6 +491,7 @@
                         payback: row.payback,
                         margin_before_tax: row.margin_before_tax,
                         margin_after_tax: row.margin_after_tax,
+                        monthly_fee: 0, // 필수 필드 기본값
                         memo: row.memo || ''
                     }))
                 })
