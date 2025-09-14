@@ -429,7 +429,7 @@
         }
         
         // PM 요구사항: 완전한 27개 필드 DB 저장
-        async function saveAllData() {
+        function saveAllData() {
             if (salesData.length === 0) {
                 showStatus('저장할 데이터가 없습니다.', 'warning');
                 return;
@@ -446,70 +446,69 @@
             showStatus('저장 중...', 'info');
             
             // PM 요구사항: 27개 필드 완전 매핑으로 DB 저장
-            // CSRF 토큰 새로고침
-            const response = await fetch('/api/csrf-token');
-            const tokenData = await response.json();
-            const freshToken = tokenData.token || document.querySelector('meta[name="csrf-token"]').content;
-
-            const saveResponse = await fetch('/test-api/sales/save', {
+            fetch('/test-api/sales/save', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': freshToken,
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest'
                 },
                 credentials: 'same-origin',
                 body: JSON.stringify({
                     sales: validData.map(row => ({
-                        // PM 요구사항: DB 스키마와 1:1 매핑 (사용자 권한 기반)
-                        @if(auth()->user()->store_id)
-                        store_id: {{ auth()->user()->store_id }},
-                        @endif
-                        @if(auth()->user()->branch_id)
-                        branch_id: {{ auth()->user()->branch_id }},
-                        @endif
+                        // PM 요구사항: DB 스키마와 1:1 매핑
+                        store_id: {{ auth()->user()->store_id ?? 1 }},
+                        branch_id: {{ auth()->user()->branch_id ?? 1 }},
                         sale_date: row.sale_date,
+                        salesperson: row.salesperson,
+                        dealer_name: row.dealer_name,
                         carrier: row.carrier,
                         activation_type: row.activation_type,
-
-                        // DB 스키마와 정확히 매칭된 필드명 사용
-                        price_setting: row.base_price,        // base_price → price_setting
+                        model_name: row.model_name,
+                        serial_number: row.serial_number,
+                        phone_number: row.phone_number,
+                        customer_name: row.customer_name,
+                        customer_birth_date: row.customer_birth_date,
+                        base_price: row.base_price,
                         verbal1: row.verbal1,
                         verbal2: row.verbal2,
                         grade_amount: row.grade_amount,
-                        addon_amount: row.additional_amount,   // additional_amount → addon_amount
-                        paper_cash: row.cash_activation,      // cash_activation → paper_cash
+                        additional_amount: row.additional_amount,
+                        cash_activation: row.cash_activation,
                         usim_fee: row.usim_fee,
-                        new_mnp_disc: row.new_mnp_discount,   // new_mnp_discount → new_mnp_disc
+                        new_mnp_discount: row.new_mnp_discount,
                         deduction: row.deduction,
-                        cash_in: row.cash_received,           // cash_received → cash_in
-                        payback: row.payback,
                         rebate_total: row.rebate_total,
                         settlement_amount: row.settlement_amount,
                         tax: row.tax,
+                        cash_received: row.cash_received,
+                        payback: row.payback,
                         margin_before_tax: row.margin_before_tax,
-                        margin_after_tax: row.margin_after_tax
+                        margin_after_tax: row.margin_after_tax,
+                        memo: row.memo || ''
                     }))
                 })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    showStatus('✅ 전체 개통표가 저장되었습니다', 'success');
+                    console.log('🔥 DB 영속화 완료 - 실시간 동기화 시작');
+                    console.log('저장된 27개 필드 데이터:', validData);
+                } else {
+                    showStatus('❌ 저장 실패: ' + (data.message || '알 수 없는 오류'), 'error');
+                }
+            })
+            .catch(error => {
+                console.error('저장 오류:', error);
+                showStatus('❌ 저장 중 오류 발생: ' + error.message, 'error');
             });
-
-            if (!saveResponse.ok) {
-                throw new Error(`HTTP ${saveResponse.status}: ${saveResponse.statusText}`);
-            }
-
-            const data = await saveResponse.json();
-
-            if (data.success) {
-                showStatus('✅ 전체 개통표가 저장되었습니다', 'success');
-                console.log('🔥 DB 영속화 완료 - 실시간 동기화 시작');
-                console.log('저장된 27개 필드 데이터:', validData);
-            } else {
-                showStatus('❌ 저장 실패: ' + (data.message || '알 수 없는 오류'), 'error');
-            }
-        } catch (error) {
-            console.error('저장 오류:', error);
-            showStatus('❌ 저장 중 오류 발생: ' + error.message, 'error');
         }
         
         // 상태 메시지 표시

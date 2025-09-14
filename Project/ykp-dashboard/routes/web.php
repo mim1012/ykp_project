@@ -929,40 +929,8 @@ Route::middleware(['web'])->post('/test-api/sales/save', function (Illuminate\Ht
                 }
             }
             
-            try {
-                // 간단한 직접 저장 방식 (PostgreSQL 호환)
-                $finalData = array_merge($saleData, [
-                    'dealer_code' => $saleData['dealer_name'] ?? 'DEFAULT',
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ]);
-
-                // 사용자 권한에 따른 store_id/branch_id 설정
-                if ($user->role === 'store') {
-                    $finalData['store_id'] = $user->store_id;
-                    $finalData['branch_id'] = $user->branch_id;
-                } elseif ($user->role === 'branch') {
-                    $finalData['branch_id'] = $user->branch_id;
-                    // 지사의 첫 번째 매장 선택
-                    $firstStore = \App\Models\Store::where('branch_id', $user->branch_id)->first();
-                    if ($firstStore) {
-                        $finalData['store_id'] = $firstStore->id;
-                    } else {
-                        throw new \Exception('지사에 등록된 매장이 없습니다.');
-                    }
-                }
-
-                $created_sale = \App\Models\Sale::create($finalData);
-                $savedCount++;
-            } catch (\Exception $e) {
-                \Log::error('Sale creation failed', [
-                    'error' => $e->getMessage(),
-                    'sale_data' => $saleData,
-                    'final_data' => $finalData ?? null,
-                    'user_id' => $user->id ?? null
-                ]);
-                throw new \Exception('판매 데이터 저장 실패: ' . $e->getMessage());
-            }
+            $created_sale = App\Models\Sale::create($saleData);
+            $savedCount++;
             
             // 연관 매장/지사 ID 수집
             if ($created_sale->store_id) {
@@ -1002,22 +970,8 @@ Route::middleware(['web'])->post('/test-api/sales/save', function (Illuminate\Ht
             'affected_branches' => $unique_branch_ids,
             'cache_cleared' => true
         ]);
-    } catch (\Exception $e) {
-        \Log::error('Sales save API failed', [
-            'error' => $e->getMessage(),
-            'request_data' => $request->all(),
-            'user_id' => auth()->id(),
-            'trace' => $e->getTraceAsString()
-        ]);
-
-        return response()->json([
-            'success' => false,
-            'error' => $e->getMessage(),
-            'debug' => [
-                'line' => $e->getLine(),
-                'file' => basename($e->getFile())
-            ]
-        ], 500);
+    } catch (Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
     }
 });
 
@@ -2497,70 +2451,4 @@ Route::middleware(['web'])->group(function () {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
     });
-});
-
-// 🔧 임시 Staging 계정 생성 Route
-Route::get('/setup-staging-accounts', function() {
-    try {
-        $results = [];
-
-        // 기본 지사 생성
-        $branch = \App\Models\Branch::updateOrCreate(
-            ['code' => 'HQ'],
-            [
-                'name' => '본사',
-                'manager_name' => '본사 관리자',
-                'status' => 'active'
-            ]
-        );
-        $results[] = "지사 생성: {$branch->name}";
-
-        // 테스트 계정들 생성
-        $accounts = [
-            ['name' => '본사 관리자', 'email' => 'hq@ykp.com', 'role' => 'headquarters'],
-            ['name' => '지사 관리자', 'email' => 'branch@ykp.com', 'role' => 'branch', 'branch_id' => $branch->id],
-            ['name' => '매장 관리자', 'email' => 'store@ykp.com', 'role' => 'store', 'branch_id' => $branch->id]
-        ];
-
-        foreach ($accounts as $accountData) {
-            // PostgreSQL boolean 호환성을 위한 Raw SQL 사용
-            \DB::statement('
-                INSERT INTO users (name, email, password, role, branch_id, store_id, is_active, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?::boolean, ?, ?)
-                ON CONFLICT (email) DO UPDATE SET
-                password = EXCLUDED.password,
-                updated_at = EXCLUDED.updated_at
-            ', [
-                $accountData['name'],
-                $accountData['email'],
-                \Hash::make('123456'),
-                $accountData['role'],
-                $accountData['branch_id'] ?? null,
-                $accountData['store_id'] ?? null,
-                'true',  // PostgreSQL boolean 리터럴
-                now(),
-                now()
-            ]);
-
-            $results[] = "계정 생성: {$accountData['email']} ({$accountData['role']})";
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Staging 환경 설정 완료!',
-            'results' => $results,
-            'login_info' => [
-                '본사' => 'hq@ykp.com / 123456',
-                '지사' => 'branch@ykp.com / 123456',
-                '매장' => 'store@ykp.com / 123456'
-            ]
-        ]);
-
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString()
-        ], 500);
-    }
 });
