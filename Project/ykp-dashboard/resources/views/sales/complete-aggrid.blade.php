@@ -511,7 +511,6 @@
             console.error('저장 오류:', error);
             showStatus('❌ 저장 중 오류 발생: ' + error.message, 'error');
         }
-        }
         
         // 상태 메시지 표시
         function showStatus(message, type = 'info') {
