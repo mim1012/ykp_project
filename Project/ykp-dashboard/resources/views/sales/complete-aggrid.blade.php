@@ -457,9 +457,15 @@
                 credentials: 'same-origin',
                 body: JSON.stringify({
                     sales: validData.map(row => ({
-                        // PM 요구사항: DB 스키마와 1:1 매핑
-                        store_id: {{ auth()->user()->store_id ?? 1 }},
-                        branch_id: {{ auth()->user()->branch_id ?? 1 }},
+                        // PM 요구사항: DB 스키마와 1:1 매핑 (안전한 기본값)
+                        @if(auth()->user()->store_id)
+                        store_id: {{ auth()->user()->store_id }},
+                        @endif
+                        @if(auth()->user()->branch_id)
+                        branch_id: {{ auth()->user()->branch_id }},
+                        @else
+                        branch_id: 1, // 본사는 첫 번째 지사로 설정
+                        @endif
                         sale_date: row.sale_date,
                         salesperson: row.salesperson,
                         dealer_name: row.dealer_name,
