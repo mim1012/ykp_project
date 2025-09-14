@@ -903,7 +903,7 @@ Route::middleware(['web', 'auth'])->post('/test-api/stores/add', function (Illum
     }
 });
 
-Route::middleware(['web'])->post('/test-api/sales/save', function (Illuminate\Http\Request $request) {
+Route::middleware(['web', 'auth'])->post('/test-api/sales/save', function (Illuminate\Http\Request $request) {
     try {
         $user = auth()->user();
 
