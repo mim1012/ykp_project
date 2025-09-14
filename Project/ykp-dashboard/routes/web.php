@@ -2477,16 +2477,26 @@ Route::get('/setup-staging-accounts', function() {
         ];
 
         foreach ($accounts as $accountData) {
-            $user = \App\Models\User::updateOrCreate(
-                ['email' => $accountData['email']],
-                array_merge($accountData, [
-                    'password' => \Hash::make('123456'),
-                    'is_active' => true,
-                    'created_at' => now(),
-                    'updated_at' => now()
-                ])
-            );
-            $results[] = "계정 생성: {$user->email} ({$user->role})";
+            // PostgreSQL boolean 호환성을 위한 Raw SQL 사용
+            \DB::statement('
+                INSERT INTO users (name, email, password, role, branch_id, store_id, is_active, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?::boolean, ?, ?)
+                ON CONFLICT (email) DO UPDATE SET
+                password = EXCLUDED.password,
+                updated_at = EXCLUDED.updated_at
+            ', [
+                $accountData['name'],
+                $accountData['email'],
+                \Hash::make('123456'),
+                $accountData['role'],
+                $accountData['branch_id'] ?? null,
+                $accountData['store_id'] ?? null,
+                'true',  // PostgreSQL boolean 리터럴
+                now(),
+                now()
+            ]);
+
+            $results[] = "계정 생성: {$accountData['email']} ({$accountData['role']})";
         }
 
         return response()->json([
