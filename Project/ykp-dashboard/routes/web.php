@@ -929,8 +929,17 @@ Route::middleware(['web'])->post('/test-api/sales/save', function (Illuminate\Ht
                 }
             }
             
-            $created_sale = App\Models\Sale::create($saleData);
-            $savedCount++;
+            try {
+                $created_sale = App\Models\Sale::create($saleData);
+                $savedCount++;
+            } catch (\Exception $e) {
+                \Log::error('Sale creation failed', [
+                    'error' => $e->getMessage(),
+                    'sale_data' => $saleData,
+                    'user_id' => $user->id ?? null
+                ]);
+                throw new \Exception('판매 데이터 저장 실패: ' . $e->getMessage());
+            }
             
             // 연관 매장/지사 ID 수집
             if ($created_sale->store_id) {
@@ -970,8 +979,22 @@ Route::middleware(['web'])->post('/test-api/sales/save', function (Illuminate\Ht
             'affected_branches' => $unique_branch_ids,
             'cache_cleared' => true
         ]);
-    } catch (Exception $e) {
-        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    } catch (\Exception $e) {
+        \Log::error('Sales save API failed', [
+            'error' => $e->getMessage(),
+            'request_data' => $request->all(),
+            'user_id' => auth()->id(),
+            'trace' => $e->getTraceAsString()
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage(),
+            'debug' => [
+                'line' => $e->getLine(),
+                'file' => basename($e->getFile())
+            ]
+        ], 500);
     }
 });
 
