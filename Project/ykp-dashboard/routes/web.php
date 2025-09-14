@@ -2452,3 +2452,59 @@ Route::middleware(['web'])->group(function () {
         }
     });
 });
+
+// 🔧 임시 Staging 계정 생성 Route
+Route::get('/setup-staging-accounts', function() {
+    try {
+        $results = [];
+
+        // 기본 지사 생성
+        $branch = \App\Models\Branch::updateOrCreate(
+            ['code' => 'HQ'],
+            [
+                'name' => '본사',
+                'manager_name' => '본사 관리자',
+                'status' => 'active'
+            ]
+        );
+        $results[] = "지사 생성: {$branch->name}";
+
+        // 테스트 계정들 생성
+        $accounts = [
+            ['name' => '본사 관리자', 'email' => 'hq@ykp.com', 'role' => 'headquarters'],
+            ['name' => '지사 관리자', 'email' => 'branch@ykp.com', 'role' => 'branch', 'branch_id' => $branch->id],
+            ['name' => '매장 관리자', 'email' => 'store@ykp.com', 'role' => 'store', 'branch_id' => $branch->id]
+        ];
+
+        foreach ($accounts as $accountData) {
+            $user = \App\Models\User::updateOrCreate(
+                ['email' => $accountData['email']],
+                array_merge($accountData, [
+                    'password' => \Hash::make('123456'),
+                    'is_active' => true,
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ])
+            );
+            $results[] = "계정 생성: {$user->email} ({$user->role})";
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Staging 환경 설정 완료!',
+            'results' => $results,
+            'login_info' => [
+                '본사' => 'hq@ykp.com / 123456',
+                '지사' => 'branch@ykp.com / 123456',
+                '매장' => 'store@ykp.com / 123456'
+            ]
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ], 500);
+    }
+});
