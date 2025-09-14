@@ -429,7 +429,7 @@
         }
         
         // PM 요구사항: 완전한 27개 필드 DB 저장
-        function saveAllData() {
+        async function saveAllData() {
             if (salesData.length === 0) {
                 showStatus('저장할 데이터가 없습니다.', 'warning');
                 return;
@@ -446,11 +446,16 @@
             showStatus('저장 중...', 'info');
             
             // PM 요구사항: 27개 필드 완전 매핑으로 DB 저장
+            // CSRF 토큰 새로고침
+            const response = await fetch('/api/csrf-token');
+            const tokenData = await response.json();
+            const freshToken = tokenData.token || document.querySelector('meta[name="csrf-token"]').content;
+
             fetch('/test-api/sales/save', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'X-CSRF-TOKEN': freshToken,
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest'
                 },
