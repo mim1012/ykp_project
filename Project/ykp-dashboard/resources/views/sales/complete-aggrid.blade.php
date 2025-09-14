@@ -451,7 +451,7 @@
             const tokenData = await response.json();
             const freshToken = tokenData.token || document.querySelector('meta[name="csrf-token"]').content;
 
-            fetch('/test-api/sales/save', {
+            const saveResponse = await fetch('/test-api/sales/save', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -493,26 +493,25 @@
                         margin_after_tax: row.margin_after_tax
                     }))
                 })
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.success) {
-                    showStatus('✅ 전체 개통표가 저장되었습니다', 'success');
-                    console.log('🔥 DB 영속화 완료 - 실시간 동기화 시작');
-                    console.log('저장된 27개 필드 데이터:', validData);
-                } else {
-                    showStatus('❌ 저장 실패: ' + (data.message || '알 수 없는 오류'), 'error');
-                }
-            })
-            .catch(error => {
-                console.error('저장 오류:', error);
-                showStatus('❌ 저장 중 오류 발생: ' + error.message, 'error');
             });
+
+            if (!saveResponse.ok) {
+                throw new Error(`HTTP ${saveResponse.status}: ${saveResponse.statusText}`);
+            }
+
+            const data = await saveResponse.json();
+
+            if (data.success) {
+                showStatus('✅ 전체 개통표가 저장되었습니다', 'success');
+                console.log('🔥 DB 영속화 완료 - 실시간 동기화 시작');
+                console.log('저장된 27개 필드 데이터:', validData);
+            } else {
+                showStatus('❌ 저장 실패: ' + (data.message || '알 수 없는 오류'), 'error');
+            }
+        } catch (error) {
+            console.error('저장 오류:', error);
+            showStatus('❌ 저장 중 오류 발생: ' + error.message, 'error');
+        }
         }
         
         // 상태 메시지 표시
