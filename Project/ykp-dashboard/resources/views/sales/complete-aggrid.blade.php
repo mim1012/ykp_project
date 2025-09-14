@@ -470,7 +470,6 @@
                         branch_id: {{ auth()->user()->branch_id }},
                         @endif
                         sale_date: row.sale_date,
-                        salesperson: row.salesperson,
                         carrier: row.carrier,
                         activation_type: row.activation_type,
 
