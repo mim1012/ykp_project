@@ -930,24 +930,35 @@ Route::middleware(['web'])->post('/test-api/sales/save', function (Illuminate\Ht
             }
             
             try {
-                // 기존 해결 패턴 적용: Service Layer 사용
-                $saleService = new \App\Application\Services\SaleService();
-                $createRequest = new \App\Http\Requests\CreateSaleRequest();
-                $createRequest->merge(['sales' => [$saleData]]);
+                // 간단한 직접 저장 방식 (PostgreSQL 호환)
+                $finalData = array_merge($saleData, [
+                    'dealer_code' => $saleData['dealer_name'] ?? 'DEFAULT',
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
 
-                $result = $saleService->bulkCreate($createRequest, $user);
-
-                if ($result['success']) {
-                    $savedCount++;
-                    // 새로 생성된 Sale ID 가져오기
-                    $created_sale = \App\Models\Sale::latest()->first();
-                } else {
-                    throw new \Exception($result['message'] ?? '판매 데이터 저장 실패');
+                // 사용자 권한에 따른 store_id/branch_id 설정
+                if ($user->role === 'store') {
+                    $finalData['store_id'] = $user->store_id;
+                    $finalData['branch_id'] = $user->branch_id;
+                } elseif ($user->role === 'branch') {
+                    $finalData['branch_id'] = $user->branch_id;
+                    // 지사의 첫 번째 매장 선택
+                    $firstStore = \App\Models\Store::where('branch_id', $user->branch_id)->first();
+                    if ($firstStore) {
+                        $finalData['store_id'] = $firstStore->id;
+                    } else {
+                        throw new \Exception('지사에 등록된 매장이 없습니다.');
+                    }
                 }
+
+                $created_sale = \App\Models\Sale::create($finalData);
+                $savedCount++;
             } catch (\Exception $e) {
                 \Log::error('Sale creation failed', [
                     'error' => $e->getMessage(),
                     'sale_data' => $saleData,
+                    'final_data' => $finalData ?? null,
                     'user_id' => $user->id ?? null
                 ]);
                 throw new \Exception('판매 데이터 저장 실패: ' . $e->getMessage());
