@@ -906,15 +906,23 @@ Route::middleware(['web', 'auth'])->post('/test-api/stores/add', function (Illum
 Route::middleware(['web'])->post('/test-api/sales/save', function (Illuminate\Http\Request $request) {
     try {
         $user = auth()->user();
+
+        // 인증 확인 (null 체크)
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'error' => '로그인이 필요합니다. 다시 로그인해주세요.'
+            ], 401);
+        }
+
         $salesData = $request->input('sales', []);
         $savedCount = 0;
         $store_ids = [];
         $branch_ids = [];
-        
+
         foreach ($salesData as $saleData) {
-            // 사용자 컨텍스트 기반 자동 설정
-            if ($user) {
-                switch ($user->role) {
+            // 사용자 컨텍스트 기반 자동 설정 (이제 $user는 확실히 존재)
+            switch ($user->role) {
                     case 'store':
                         $saleData['store_id'] = $user->store_id;
                         $saleData['branch_id'] = $user->branch_id;
