@@ -35,10 +35,9 @@ RUN chown -R www-data:www-data storage bootstrap/cache \
 # 헬스체크 (PM 요구사항)
 RUN printf "<?php echo 'OK';" > public/healthz.php
 
-# PM 15년차 요구사항: 마이그레이션 및 캐시 클리어 자동 실행
+# Staging 환경: 마이그레이션 우회하고 웹서버만 시작
 CMD php artisan config:clear \
  && php artisan route:clear \
  && php artisan view:clear \
  && php artisan cache:clear \
- && php artisan migrate --force \
  && apache2-foreground
