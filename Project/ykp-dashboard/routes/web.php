@@ -930,8 +930,20 @@ Route::middleware(['web'])->post('/test-api/sales/save', function (Illuminate\Ht
             }
             
             try {
-                $created_sale = App\Models\Sale::create($saleData);
-                $savedCount++;
+                // 기존 해결 패턴 적용: Service Layer 사용
+                $saleService = new \App\Application\Services\SaleService();
+                $createRequest = new \App\Http\Requests\CreateSaleRequest();
+                $createRequest->merge(['sales' => [$saleData]]);
+
+                $result = $saleService->bulkCreate($createRequest, $user);
+
+                if ($result['success']) {
+                    $savedCount++;
+                    // 새로 생성된 Sale ID 가져오기
+                    $created_sale = \App\Models\Sale::latest()->first();
+                } else {
+                    throw new \Exception($result['message'] ?? '판매 데이터 저장 실패');
+                }
             } catch (\Exception $e) {
                 \Log::error('Sale creation failed', [
                     'error' => $e->getMessage(),
