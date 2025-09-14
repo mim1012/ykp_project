@@ -466,33 +466,26 @@
                         @endif
                         sale_date: row.sale_date,
                         salesperson: row.salesperson,
-                        dealer_name: row.dealer_name,
-                        dealer_code: row.dealer_name || 'DEFAULT', // 필수 필드 추가
                         carrier: row.carrier,
                         activation_type: row.activation_type,
-                        model_name: row.model_name,
-                        serial_number: row.serial_number,
-                        phone_number: row.phone_number,
-                        customer_name: row.customer_name,
-                        customer_birth_date: row.customer_birth_date,
-                        base_price: row.base_price,
+
+                        // DB 스키마와 정확히 매칭된 필드명 사용
+                        price_setting: row.base_price,        // base_price → price_setting
                         verbal1: row.verbal1,
                         verbal2: row.verbal2,
                         grade_amount: row.grade_amount,
-                        additional_amount: row.additional_amount,
-                        cash_activation: row.cash_activation,
+                        addon_amount: row.additional_amount,   // additional_amount → addon_amount
+                        paper_cash: row.cash_activation,      // cash_activation → paper_cash
                         usim_fee: row.usim_fee,
-                        new_mnp_discount: row.new_mnp_discount,
+                        new_mnp_disc: row.new_mnp_discount,   // new_mnp_discount → new_mnp_disc
                         deduction: row.deduction,
+                        cash_in: row.cash_received,           // cash_received → cash_in
+                        payback: row.payback,
                         rebate_total: row.rebate_total,
                         settlement_amount: row.settlement_amount,
                         tax: row.tax,
-                        cash_received: row.cash_received,
-                        payback: row.payback,
                         margin_before_tax: row.margin_before_tax,
-                        margin_after_tax: row.margin_after_tax,
-                        monthly_fee: 0, // 필수 필드 기본값
-                        memo: row.memo || ''
+                        margin_after_tax: row.margin_after_tax
                     }))
                 })
             })
