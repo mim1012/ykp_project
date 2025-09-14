@@ -21,7 +21,15 @@ class SaleService implements SaleServiceInterface
             foreach ($request->validated()['sales'] as $saleData) {
                 $calculatedData = $this->calculateSaleData($saleData);
 
-                Sale::create(array_merge($storeInfo, $saleData, $calculatedData));
+                // PostgreSQL 호환성을 위한 안전한 생성
+                $mergedData = array_merge($storeInfo, $saleData, $calculatedData);
+
+                // 필수 필드 기본값 설정
+                $mergedData['created_at'] = now();
+                $mergedData['updated_at'] = now();
+
+                // PostgreSQL 호환 방식으로 생성
+                Sale::create($mergedData);
                 $savedCount++;
             }
 
@@ -91,7 +99,13 @@ class SaleService implements SaleServiceInterface
                       Store::where('branch_id', $user->branch_id)->first()?->id;
 
             if (! $storeId) {
-                throw new \DomainException('매장 정보가 설정되지 않았습니다.');
+                // 지사에 매장이 없으면 에러 (store_id는 필수)
+                \Log::error('Branch has no stores for sales creation', [
+                    'user_id' => $user->id,
+                    'branch_id' => $user->branch_id
+                ]);
+
+                throw new \DomainException('지사에 등록된 매장이 없습니다. 먼저 매장을 생성해주세요.');
             }
 
             return [
