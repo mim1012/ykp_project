@@ -34,6 +34,16 @@ class CreateSaleRequest extends FormRequest
             'sales.*.phone_number' => ['nullable', 'string', 'max:20'],
             'sales.*.salesperson' => ['nullable', 'string', 'max:50'],
             'sales.*.memo' => ['nullable', 'string', 'max:255'],
+
+            // 신규 필드 검증 추가
+            'sales.*.dealer_code' => ['nullable', 'string', 'max:50'],
+            'sales.*.dealer_name' => ['nullable', 'string', 'max:100'],
+            'sales.*.serial_number' => ['nullable', 'string', 'max:100'],
+            'sales.*.customer_name' => ['nullable', 'string', 'max:100'],
+            'sales.*.customer_birth_date' => ['nullable', 'date'],
+
+            // 요청 레벨 dealer_code (전체 적용)
+            'dealer_code' => ['nullable', 'string', 'max:50'],
         ];
     }
 

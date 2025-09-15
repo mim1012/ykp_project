@@ -541,46 +541,9 @@ const fetchSalesData = async (dealerCode) => {
         const response = await axios.get('/api/sales', { params });
         return response.data.data || [];
     } catch (error) {
-        console.warn('Sales data fetch failed, using dummy data');
-        // 더미 데이터 반환
-        return [
-            {
-                id: 1,
-                salesperson: '김대리',
-                agency: 'ENT',
-                carrier: 'SK',
-                activation_type: '신규',
-                model_name: 'iPhone 15',
-                base_price: 100000,
-                verbal1: 30000,
-                verbal2: 20000,
-                grade_amount: 15000,
-                additional_amount: 5000,
-                rebate_total: 170000,
-                settlement_amount: 170000,
-                tax: 22610,
-                margin_before_tax: 147390,
-                margin_after_tax: 170000
-            },
-            {
-                id: 2,
-                salesperson: '박과장',
-                agency: 'WIN',
-                carrier: 'KT',
-                activation_type: 'MNP',
-                model_name: 'Galaxy S24',
-                base_price: 150000,
-                verbal1: 40000,
-                verbal2: 25000,
-                grade_amount: 20000,
-                additional_amount: 10000,
-                rebate_total: 245000,
-                settlement_amount: 245000,
-                tax: 32585,
-                margin_before_tax: 212415,
-                margin_after_tax: 245000
-            }
-        ];
+        console.error('Sales data fetch failed:', error);
+        // 더미 데이터 대신 에러 전파
+        throw new Error(`판매 데이터 로드 실패: ${error.message}`);
     }
 };
 
@@ -593,8 +556,9 @@ const calculateRow = async (rowData, dealerCode) => {
 };
 
 const saveAllRows = async (allRowsData, dealerCode) => {
+    // 서버 스키마에 맞게 페이로드 수정 (data → sales)
     const response = await axios.post('/api/sales/bulk-save', {
-        data: allRowsData,
+        sales: allRowsData, // 서버가 기대하는 키 이름
         dealer_code: dealerCode
     });
     return response.data;

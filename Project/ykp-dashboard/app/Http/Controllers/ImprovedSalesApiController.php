@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Application\Services\SaleServiceInterface;
 use App\Http\Requests\CreateSaleRequest;
 use App\Http\Resources\SaleCollection;
+use App\Models\Sale;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;

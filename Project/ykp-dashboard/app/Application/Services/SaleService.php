@@ -24,6 +24,19 @@ class SaleService implements SaleServiceInterface
                 // PostgreSQL 호환성을 위한 안전한 생성
                 $mergedData = array_merge($storeInfo, $saleData, $calculatedData);
 
+                // dealer_code 처리 (요청에서 제공되면 사용)
+                if ($request->has('dealer_code') && $request->dealer_code) {
+                    $mergedData['dealer_code'] = $request->dealer_code;
+                }
+
+                // 신규 필드들 처리 (존재하면 저장)
+                $newFields = ['dealer_name', 'serial_number', 'customer_name', 'customer_birth_date'];
+                foreach ($newFields as $field) {
+                    if (isset($saleData[$field]) && $saleData[$field] !== null) {
+                        $mergedData[$field] = $saleData[$field];
+                    }
+                }
+
                 // 필수 필드 기본값 설정
                 $mergedData['created_at'] = now();
                 $mergedData['updated_at'] = now();
