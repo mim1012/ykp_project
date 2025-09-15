@@ -341,32 +341,78 @@
         }
 
         // KPI 데이터 로드
+        // 🛡️ 안전한 KPI 데이터 로드 (매장 ID 검증 + 에러 처리)
         async function loadKPIData() {
             try {
                 const storeParam = storeFilter ? `&store=${storeFilter.id}` : '';
-                const response = await fetch(`/api/statistics/kpi?days=${currentPeriod}${storeParam}`);
+                const url = `/api/statistics/kpi?days=${currentPeriod}${storeParam}`;
+
+                console.log('📡 KPI API 호출:', url);
+
+                const response = await fetch(url);
+
+                // Content-Type 검증
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const htmlText = await response.text();
+                    console.error('❌ API가 HTML 반환:', htmlText.substring(0, 200));
+
+                    if (htmlText.includes('404') || htmlText.includes('Not Found')) {
+                        throw new Error('매장을 찾을 수 없습니다. 매장 ID를 확인해주세요.');
+                    } else {
+                        throw new Error('API 서버 오류가 발생했습니다.');
+                    }
+                }
+
                 const result = await response.json();
-                
+
                 if (result.success) {
+                    // 실제 데이터 업데이트
                     updateKPICards(result.data);
+                    console.log('✅ KPI 데이터 로드 성공:', result.data);
                 } else {
-                    throw new Error('KPI 데이터 로드 실패');
+                    // API 오류 처리
+                    if (result.available_stores) {
+                        console.log('💡 사용 가능한 매장들:', result.available_stores);
+                        showToast(`매장 ID ${result.requested_store_id}가 존재하지 않습니다. 다른 매장을 선택해주세요.`, 'error');
+                    } else {
+                        throw new Error(result.error || 'KPI 데이터 로드 실패');
+                    }
                 }
             } catch (error) {
-                console.error('KPI API 호출 실패:', error);
-                // 실제 데이터 로드 실패 시 0 값으로 표시 (데모 데이터 제거)
-                const emptyKPI = {
-                    total_revenue: 0,
-                    net_profit: 0,
-                    profit_margin: 0,
-                    total_activations: 0,
-                    avg_daily: 0,
-                    active_stores: 0,
-                    store_growth: 0,
-                    revenue_growth: 0
-                };
-                updateKPICards(emptyKPI);
-                showToast('통계 데이터를 불러올 수 없습니다. 관리자에게 문의하세요.', 'error');
+                console.error('❌ KPI API 호출 실패:', error);
+
+                // 에러 종류별 처리
+                if (error.message.includes('매장을 찾을 수 없습니다')) {
+                    const emptyKPI = {
+                        total_revenue: 0,
+                        net_profit: 0,
+                        profit_margin: 0,
+                        total_activations: 0,
+                        avg_daily: 0,
+                        active_stores: 0,
+                        store_growth: 0,
+                        revenue_growth: 0,
+                        message: '매장 정보를 찾을 수 없습니다.'
+                    };
+                    updateKPICards(emptyKPI);
+                    showToast('매장 정보를 확인해주세요.', 'warning');
+                } else {
+                    // 일반 오류
+                    const errorKPI = {
+                        total_revenue: 0,
+                        net_profit: 0,
+                        profit_margin: 0,
+                        total_activations: 0,
+                        avg_daily: 0,
+                        active_stores: 0,
+                        store_growth: 0,
+                        revenue_growth: 0,
+                        message: '데이터를 불러올 수 없습니다.'
+                    };
+                    updateKPICards(errorKPI);
+                    showToast('통계 데이터 로드 중 오류가 발생했습니다.', 'error');
+                }
             }
         }
 

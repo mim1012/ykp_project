@@ -2385,15 +2385,38 @@ Route::middleware(['web'])->group(function () {
                 return response()->json(['success' => false, 'error' => '조회 기간은 1-365일 사이여야 합니다.'], 400);
             }
 
-            // 매장 존재 여부 검증 (DB 오류 방지)
+            // 매장 존재 여부 검증 (DB 오류 방지) - 강화된 검증
             if ($storeId) {
-                $storeExists = App\Models\Store::where('id', $storeId)->exists();
-                if (!$storeExists) {
+                $store = App\Models\Store::find($storeId);
+                if (!$store) {
+                    // 존재하는 매장 목록 제공
+                    $existingStores = App\Models\Store::select('id', 'name', 'code')->get();
+
                     return response()->json([
                         'success' => false,
                         'error' => '존재하지 않는 매장입니다.',
-                        'store_id' => $storeId
+                        'requested_store_id' => $storeId,
+                        'available_stores' => $existingStores,
+                        'suggestion' => '위 매장 ID 중 하나를 사용해주세요.'
                     ], 404);
+                }
+
+                // 매장에 Sales 데이터가 있는지 확인
+                $hasSalesData = App\Models\Sale::where('store_id', $storeId)->exists();
+                if (!$hasSalesData) {
+                    return response()->json([
+                        'success' => true,
+                        'data' => [
+                            'total_revenue' => 0,
+                            'net_profit' => 0,
+                            'profit_margin' => 0,
+                            'total_activations' => 0,
+                            'avg_daily' => 0,
+                            'message' => '아직 개통표 데이터가 없습니다.',
+                            'store_name' => $store->name,
+                            'suggestion' => '개통표를 입력하시면 통계가 표시됩니다.'
+                        ]
+                    ]);
                 }
             }
             
