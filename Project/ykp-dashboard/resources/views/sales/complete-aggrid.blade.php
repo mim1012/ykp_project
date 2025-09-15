@@ -184,12 +184,8 @@
                     </td>
                     <!-- 3. 대리점 -->
                     <td class="px-2 py-2">
-                        <select onchange="updateRowData(${row.id}, 'dealer_name', this.value)" class="field-dealer">
-                            <option value="">선택</option>
-                            <option value="이앤티" ${row.dealer_name === '이앤티' ? 'selected' : ''}>이앤티</option>
-                            <option value="앤투윈" ${row.dealer_name === '앤투윈' ? 'selected' : ''}>앤투윈</option>
-                            <option value="초시대" ${row.dealer_name === '초시대' ? 'selected' : ''}>초시대</option>
-                            <option value="아엠티" ${row.dealer_name === '아엠티' ? 'selected' : ''}>아엠티</option>
+                        <select onchange="updateRowData(${row.id}, 'dealer_name', this.value)" class="field-dealer" id="dealer-select-${row.id}">
+                            ${generateDealerOptions(row.dealer_name)}
                         </select>
                     </td>
                     <!-- 4. 통신사 -->
@@ -530,10 +526,67 @@
         }
         
         // 이벤트 리스너 등록
-        document.addEventListener('DOMContentLoaded', function() {
+        // 전역 대리점 목록 저장
+        let dealersList = [];
+
+        // 대리점 옵션 HTML 생성 함수
+        function generateDealerOptions(selectedValue = '') {
+            let options = '<option value="">선택</option>';
+
+            dealersList.forEach(dealer => {
+                const selected = selectedValue === dealer.name ? 'selected' : '';
+                options += `<option value="${dealer.name}" ${selected}>${dealer.name}</option>`;
+            });
+
+            return options;
+        }
+
+        // 대리점 목록 로드 함수
+        async function loadDealers() {
+            try {
+                const response = await fetch('/api/calculation/profiles');
+                const data = await response.json();
+
+                if (data.success && data.data) {
+                    dealersList = data.data
+                        .filter(dealer => dealer.status === 'active')
+                        .map(dealer => ({
+                            code: dealer.dealer_code,
+                            name: dealer.dealer_name
+                        }));
+
+                    console.log('✅ 대리점 목록 로드 완료:', dealersList.length, '개');
+                    return dealersList;
+                } else {
+                    console.error('❌ 대리점 목록 로드 실패');
+                    // 폴백: 하드코딩된 목록 사용
+                    dealersList = [
+                        {code: 'SM', name: 'SM'},
+                        {code: 'W', name: 'W'},
+                        {code: 'KING', name: '더킹'},
+                        {code: 'ENTER', name: '엔터'},
+                        {code: 'UP', name: '유피'},
+                        {code: 'CHOSI', name: '초시대'},
+                        {code: 'TAESUNG', name: '태성'},
+                        {code: 'PDM', name: '피디엠'},
+                        {code: 'HANJU', name: '한주'},
+                        {code: 'HAPPY', name: '해피'}
+                    ];
+                    return dealersList;
+                }
+            } catch (error) {
+                console.error('❌ 대리점 로드 오류:', error);
+                return [];
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            // 🔥 대리점 목록 먼저 로드
+            await loadDealers();
+
             // 기본 행 추가
             addNewRow();
-            
+
             // 버튼 이벤트 - Excel 스타일 UX
             document.getElementById('add-row-btn').addEventListener('click', addNewRow);
             document.getElementById('save-btn').addEventListener('click', saveAllData);
