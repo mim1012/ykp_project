@@ -945,12 +945,13 @@
                 
                 gridElement.innerHTML = '<div class="p-4 text-center text-gray-500">🔄 매장 목록 로딩 중...</div>';
                 
-                // Supabase 실제 API 호출
-                const response = await fetch('/api/dev/stores/list');
+                // 권한 필터링이 적용된 매장 API 호출
+                const response = await fetch('/dev/stores/list');
                 console.log('✅ API 응답 상태:', response.status);
-                
+
                 const data = await response.json();
                 console.log('✅ 받은 데이터:', data.data?.length + '개 매장');
+                console.log('✅ 필터 적용:', data.filter_applied);
                 
                 if (data.success && data.data && Array.isArray(data.data)) {
                     // 매장 카드 생성 (매우 단순한 HTML)
@@ -2103,27 +2104,47 @@
             // TODO: 성과 대시보드 구현
         };
         
-        window.deleteStore = function(storeId) {
-            if (confirm('정말로 이 매장을 삭제하시겠습니까?')) {
-                fetch('/api/dev/stores/' + storeId, {
-                    method: 'DELETE',
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert('매장이 삭제되었습니다.');
-                        location.reload();
-                    } else {
-                        alert('삭제 실패: ' + (data.error || '알 수 없는 오류'));
-                    }
-                })
-                .catch(error => {
-                    alert('삭제 중 오류가 발생했습니다.');
-                });
+        window.deleteStore = function(storeId, storeName) {
+            const userRole = '{{ auth()->user()->role }}';
+            const userBranchId = '{{ auth()->user()->branch_id }}';
+
+            console.log('🗑️ 매장 삭제 요청:', { storeId, storeName, userRole, userBranchId });
+
+            if (!confirm(`⚠️ 정말로 "${storeName || '이 매장'}"을(를) 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`)) {
+                return;
             }
+
+            fetch('/dev/stores/' + storeId, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('🗑️ 삭제 API 응답:', data);
+
+                if (data.success) {
+                    alert('✅ ' + data.message);
+                    window.loadStores(); // 목록 새로고침
+                } else {
+                    // 권한 오류 상세 표시
+                    if (data.error && data.error.includes('권한이 없습니다')) {
+                        alert('❌ 삭제 권한 없음\n\n' + data.error +
+                              '\n\n시도한 매장: ' + (data.attempted_store || 'Unknown') +
+                              '\n매장 소속지사: ' + (data.store_branch || 'Unknown') +
+                              '\n내 소속지사: ' + (data.user_branch || 'Unknown'));
+                    } else {
+                        alert('❌ 삭제 실패: ' + (data.error || '알 수 없는 오류'));
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('매장 삭제 오류:', error);
+                alert('❌ 삭제 중 오류가 발생했습니다: ' + error.message);
+            });
         };
         
         // ✨ 안전한 초기화 함수 + 버튼 이벤트 등록

@@ -51,17 +51,53 @@ Route::get('/sales/count', function () {
     }
 })->name('api.sales.count');
 
-// 매장 관리 API (개발용 - 완전 우회)
+// 매장 관리 API (개발용 - 지사별 권한 필터링 적용)
 Route::get('dev/stores/list', function() {
-    $stores = App\Models\Store::with('branch')->get();
-    return response()->json(['success' => true, 'data' => $stores]);
+    try {
+        $user = auth()->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'error' => '인증이 필요합니다.'
+            ], 401);
+        }
+
+        // 지사 계정인 경우 자신의 지사 매장만 조회
+        if ($user->role === 'branch' && $user->branch_id) {
+            $stores = App\Models\Store::with('branch')
+                ->where('branch_id', $user->branch_id)
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $stores,
+                'filter_applied' => 'branch_only',
+                'branch_id' => $user->branch_id
+            ]);
+        }
+
+        // 본사 계정인 경우 모든 매장 조회
+        $stores = App\Models\Store::with('branch')->get();
+        return response()->json([
+            'success' => true,
+            'data' => $stores,
+            'filter_applied' => 'all_stores'
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'error' => '매장 목록 조회 실패: ' . $e->getMessage()
+        ], 500);
+    }
 });
 
 Route::post('dev/stores/add', function(Illuminate\Http\Request $request) {
     $branch = App\Models\Branch::find($request->branch_id);
     $storeCount = App\Models\Store::where('branch_id', $request->branch_id)->count();
     $autoCode = $branch->code . '-' . str_pad($storeCount + 1, 3, '0', STR_PAD_LEFT);
-    
+
     $store = App\Models\Store::create([
         'name' => $request->name,
         'code' => $autoCode,
@@ -72,8 +108,60 @@ Route::post('dev/stores/add', function(Illuminate\Http\Request $request) {
         'status' => 'active',
         'opened_at' => now()
     ]);
-    
+
     return response()->json(['success' => true, 'data' => $store]);
+});
+
+// 매장 삭제 API (지사별 권한 체크 포함)
+Route::delete('dev/stores/{storeId}', function($storeId) {
+    try {
+        $user = auth()->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'error' => '인증이 필요합니다.'
+            ], 401);
+        }
+
+        $store = App\Models\Store::find($storeId);
+
+        if (!$store) {
+            return response()->json([
+                'success' => false,
+                'error' => '매장을 찾을 수 없습니다.'
+            ], 404);
+        }
+
+        // 🔒 지사 계정인 경우 자신의 지사 매장만 삭제 가능
+        if ($user->role === 'branch') {
+            if (!$user->branch_id || $store->branch_id !== $user->branch_id) {
+                return response()->json([
+                    'success' => false,
+                    'error' => '권한이 없습니다. 자신의 지사 매장만 삭제할 수 있습니다.',
+                    'attempted_store' => $store->name,
+                    'store_branch' => $store->branch->name ?? 'Unknown',
+                    'user_branch' => $user->branch->name ?? 'Unknown'
+                ], 403);
+            }
+        }
+
+        // 매장 삭제 실행
+        $storeName = $store->name;
+        $store->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => "매장 '{$storeName}'이 삭제되었습니다.",
+            'deleted_store' => $storeName
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'error' => '매장 삭제 실패: ' . $e->getMessage()
+        ], 500);
+    }
 });
 
 // 기존 복잡한 라우트 (문제 있음)
