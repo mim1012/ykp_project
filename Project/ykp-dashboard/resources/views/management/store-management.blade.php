@@ -188,15 +188,13 @@
                         modal.style.display = 'none';
                     }
                     
-                    // 🔥 PM 긴급 요구사항: 지사 계정은 자동 계정 생성 + 모달 표시
+                    // 🔥 PM 긴급 요구사항: 본사/지사 모두 자동 계정 생성 + 모달 표시
                     const userRole = '{{ auth()->user()->role }}';
-                    if (userRole === 'branch') {
-                        console.log('🔥 지사 계정 - 자동 계정 생성 및 모달 표시 시작');
-                        createAccountAndShowCredentials(result.data.id, result.data);
-                    } else {
-                        alert('매장이 성공적으로 생성되었습니다!');
-                        location.reload();
-                    }
+                    console.log('🔥 매장 생성 완료 - 자동 계정 생성 및 모달 표시 시작');
+                    console.log('👤 사용자 역할:', userRole);
+
+                    // 본사든 지사든 모두 계정 생성 모달 표시
+                    createAccountAndShowCredentials(result.data.id, result.data);
                 } else {
                     alert('매장 생성 실패: ' + (result.error || '알 수 없는 오류'));
                 }
