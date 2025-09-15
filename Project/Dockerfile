@@ -1,5 +1,5 @@
 # ========== CACHE BUST - 숫자 변경 시 완전 새 빌드 ==========
-ARG CACHE_BUST=3
+ARG CACHE_BUST=999
 
 # ========== 1) Node 빌드 (Vite) ==========
 # devDependencies(=vite 등) 필요하므로 production-only 설치 금지!
@@ -7,7 +7,7 @@ FROM node:20-alpine AS frontend_build
 WORKDIR /app
 
 # 확인용 - Railway가 루트 Dockerfile 사용 중임을 검증
-RUN echo ">>> USING ROOT DOCKERFILE v3 @ $(date)" && sleep 2
+RUN echo ">>> STAGING BRANCH v999 - NO VENDOR COPY @ $(date)" && sleep 2
 
 # 레이어 캐시 최적화
 COPY Project/ykp-dashboard/package*.json ./
@@ -26,8 +26,8 @@ FROM php:8.3-apache-bookworm
 WORKDIR /var/www/html
 
 # 캐시 버스터 강화 - Railway 완전 새 빌드 강제
-ARG CACHE_BUST=3
-RUN echo ">>> CACHE BUST v$CACHE_BUST - NO VENDOR COPY @ $(date)" && sleep 1
+ARG CACHE_BUST=999
+RUN echo ">>> STAGING CACHE BUST v$CACHE_BUST - NO VENDOR COPY @ $(date)" && sleep 1
 
 # Apache 모듈
 RUN a2enmod rewrite headers
