@@ -631,6 +631,18 @@ Route::get('/api/profile', function () {
 
 /*
 |--------------------------------------------------------------------------
+| 활동 로그 API (Activity Logging)
+|--------------------------------------------------------------------------
+| 실시간 사용자 활동 기록 및 조회
+*/
+
+Route::middleware(['web', 'auth'])->prefix('activities')->group(function () {
+    Route::get('/recent', [App\Http\Controllers\ActivityController::class, 'recent'])->name('api.activities.recent');
+    Route::post('/log', [App\Http\Controllers\ActivityController::class, 'log'])->name('api.activities.log');
+});
+
+/*
+|--------------------------------------------------------------------------
 | 월마감정산 API (가장 핵심적인 기능)
 |--------------------------------------------------------------------------
 | 엑셀 "월마감정산" 시트의 모든 로직을 API로 구현
