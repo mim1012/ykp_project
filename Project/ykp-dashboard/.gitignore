@@ -33,7 +33,7 @@
 /node_modules
 /storage/*.key
 /storage/pail
-# /vendor  # Temporarily allow vendor for Railway deployment
+/vendor  # Laravel vendor directory excluded
 
 # Temporary files
 *.tmp

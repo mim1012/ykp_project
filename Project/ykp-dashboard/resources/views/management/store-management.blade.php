@@ -2168,27 +2168,27 @@
             currentEditStoreId = null;
         }
 
-        // 클린코드: 성과보기 모달 (권한 체크 + 실시간 대시보드)
-        function viewStoreStats(storeId) {
-            // 권한 체크 먼저
-            if (!window.permissionManager.canViewStats(storeId)) {
+        // 📊 통합된 매장 성과 보기 함수 (중복 제거)
+        function viewStoreStatsModal(storeId) {
+            // 권한 체크 먼저 (permissionManager가 있다면)
+            if (window.permissionManager && !window.permissionManager.canViewStats(storeId)) {
                 showToast('❌ 이 매장의 성과를 조회할 권한이 없습니다.', 'error');
                 return;
             }
-            
+
             // 매장 이름 설정
             fetch(`/api/stores/${storeId}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
                         document.getElementById('stats-store-name').textContent = data.data.name;
-                        
+
                         // 성과 대시보드 모달 표시
                         document.getElementById('store-stats-modal').classList.remove('hidden');
-                        
+
                         // 실시간 통계 로드
                         loadFullStoreStats(storeId);
-                        
+
                         showToast(`📈 ${data.data.name} 성과 데이터를 로딩합니다...`, 'info');
                     }
                 });
@@ -2571,19 +2571,7 @@
         
         // 🛠️ 매장별 액션 버튼 함수들 정의 - editStore 함수 제거 (중복 해결)
         
-        // 완전 구현된 매장 성과 보기 함수 (TODO 제거)
-        window.viewStoreStats = function(storeId, storeName) {
-            console.log('📊 레거시 성과 보기 호출 - 개선된 함수로 리디렉션');
-
-            // 개선된 viewStoreStats 함수 호출
-            if (typeof window.viewStoreStats === 'function') {
-                // 하단에 정의된 개선된 함수 사용
-                viewStoreStats(storeId, storeName || `매장 ${storeId}`);
-            } else {
-                // 기본 동작: 통계 페이지로 직접 이동
-                window.location.href = `/statistics/enhanced?store=${storeId}&name=${encodeURIComponent(storeName || '매장')}`;
-            }
-        };
+        // 🗑️ 중복 정의 제거됨 (통합된 함수 사용)
         
         window.deleteStore = function(storeId) {
             if (confirm('정말로 이 매장을 삭제하시겠습니까?')) {
@@ -2787,9 +2775,9 @@
             });
         };
         
-        // 간편한 매장 성과 보기 함수 (직접 통계 페이지로 이동)
+        // 📊 통합된 매장 성과 보기 함수 (중복 제거 완료)
         window.viewStoreStats = function(storeId, storeName) {
-            console.log('📊 매장 성과 보기:', storeId, storeName);
+            console.log('📊 통합 매장 성과 보기:', storeId, storeName);
 
             // 권한 체크 (permissionManager가 있다면)
             if (window.permissionManager && !window.permissionManager.canViewStats(storeId)) {
@@ -2797,24 +2785,39 @@
                 return;
             }
 
-            // 성과 조회 안내 메시지
-            let statsInfo = `📊 ${storeName} 성과 분석 페이지로 이동\n`;
-            statsInfo += `${'='.repeat(40)}\n\n`;
-            statsInfo += `📈 확인 가능한 정보:\n`;
-            statsInfo += `• 실시간 매출 현황\n`;
-            statsInfo += `• 개통 건수 통계\n`;
-            statsInfo += `• 매장 순위 및 비교\n`;
-            statsInfo += `• 기간별 성과 추이\n`;
-            statsInfo += `• 통신사별 점유율\n\n`;
-            statsInfo += `통계 페이지로 이동하시겠습니까?`;
+            // 매장명 확정
+            const finalStoreName = storeName || `매장 ${storeId}`;
 
-            if (confirm(statsInfo)) {
-                console.log(`✅ ${storeName} 통계 페이지로 이동`);
+            // 성과 조회 옵션 제공
+            let statsOptions = `📊 ${finalStoreName} 성과 분석 옵션\n`;
+            statsOptions += `${'='.repeat(45)}\n\n`;
+            statsOptions += `어떤 방식으로 성과를 확인하시겠습니까?\n\n`;
+            statsOptions += `1. 📈 상세 통계 페이지로 이동\n`;
+            statsOptions += `   • 기간별 성과 추이\n`;
+            statsOptions += `   • 매장 순위 및 비교\n`;
+            statsOptions += `   • 목표 달성률 분석\n\n`;
+            statsOptions += `2. 🔍 빠른 성과 요약 보기\n`;
+            statsOptions += `   • 이번달 매출 및 개통건수\n`;
+            statsOptions += `   • 순위 및 성장률\n\n`;
+            statsOptions += `선택하세요 (1 또는 2):`;
 
-                // 통계 페이지로 직접 이동 (매장 필터 적용)
-                window.location.href = `/statistics/enhanced?store=${storeId}&name=${encodeURIComponent(storeName)}`;
-            } else {
-                console.log('❌ 사용자가 통계 페이지 이동 취소');
+            const choice = prompt(statsOptions);
+
+            if (choice === '1') {
+                // 상세 통계 페이지로 이동
+                console.log(`✅ ${finalStoreName} 상세 통계 페이지로 이동`);
+                window.location.href = `/statistics/enhanced?store=${storeId}&name=${encodeURIComponent(finalStoreName)}`;
+            } else if (choice === '2') {
+                // 빠른 성과 요약 (모달)
+                console.log(`✅ ${finalStoreName} 빠른 성과 요약 표시`);
+                if (typeof viewStoreStatsModal === 'function') {
+                    viewStoreStatsModal(storeId);
+                } else {
+                    // 모달 함수가 없으면 통계 페이지로 이동
+                    window.location.href = `/statistics/enhanced?store=${storeId}&name=${encodeURIComponent(finalStoreName)}`;
+                }
+            } else if (choice !== null) {
+                alert('❌ 올바른 옵션을 선택해주세요 (1 또는 2)');
             }
         };
         
