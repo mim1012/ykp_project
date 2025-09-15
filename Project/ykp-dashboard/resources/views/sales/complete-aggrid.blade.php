@@ -470,23 +470,23 @@
                         carrier: row.carrier,
                         activation_type: row.activation_type,
 
-                        // DB 스키마와 정확히 매칭된 필드명
-                        price_setting: row.base_price,           // base_price → price_setting
-                        verbal1: row.verbal1,
-                        verbal2: row.verbal2,
-                        grade_amount: row.grade_amount,
-                        addon_amount: row.additional_amount,     // additional_amount → addon_amount
-                        paper_cash: row.cash_activation,         // cash_activation → paper_cash
-                        usim_fee: row.usim_fee,
-                        new_mnp_disc: row.new_mnp_discount,      // new_mnp_discount → new_mnp_disc
-                        deduction: row.deduction,
-                        cash_in: row.cash_received,              // cash_received → cash_in
-                        payback: row.payback,
-                        rebate_total: row.rebate_total,
-                        settlement_amount: row.settlement_amount,
-                        tax: row.tax,
-                        margin_before_tax: row.margin_before_tax,
-                        margin_after_tax: row.margin_after_tax
+                        // DB 스키마와 정확히 매칭된 필드명 (숫자 변환 포함)
+                        price_setting: Number(row.base_price) || 0,
+                        verbal1: Number(row.verbal1) || 0,
+                        verbal2: Number(row.verbal2) || 0,
+                        grade_amount: Number(row.grade_amount) || 0,
+                        addon_amount: Number(row.additional_amount) || 0,
+                        paper_cash: Number(row.cash_activation) || 0,
+                        usim_fee: Number(row.usim_fee) || 0,
+                        new_mnp_disc: Number(row.new_mnp_discount) || 0,
+                        deduction: Number(row.deduction) || 0,
+                        cash_in: Number(row.cash_received) || 0,
+                        payback: Number(row.payback) || 0,
+                        rebate_total: Number(row.rebate_total) || 0,
+                        settlement_amount: Number(row.settlement_amount) || 0,
+                        tax: Number(row.tax) || 0,
+                        margin_before_tax: Number(row.margin_before_tax) || 0,
+                        margin_after_tax: Number(row.margin_after_tax) || 0
                     }))
                 })
             })

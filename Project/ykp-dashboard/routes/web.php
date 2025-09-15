@@ -924,7 +924,15 @@ Route::middleware(['web'])->post('/test-api/sales/save', function (Illuminate\Ht
                         // store_id는 요청 데이터 사용
                         break;
                     case 'headquarters':
-                        // 본사는 요청 데이터 그대로 사용
+                        // 본사는 첫 번째 지사/매장 자동 설정
+                        if (!isset($saleData['branch_id'])) {
+                            $firstBranch = \App\Models\Branch::first();
+                            $saleData['branch_id'] = $firstBranch?->id ?? 1;
+                        }
+                        if (!isset($saleData['store_id'])) {
+                            $firstStore = \App\Models\Store::where('branch_id', $saleData['branch_id'])->first();
+                            $saleData['store_id'] = $firstStore?->id ?? 1;
+                        }
                         break;
                 }
             }
