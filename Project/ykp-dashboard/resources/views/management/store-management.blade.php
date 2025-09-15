@@ -106,12 +106,12 @@
                         location.reload();
                     }
                 } else {
-                    alert('🏢 매장 등록에 실패했습니다. 입력 내용을 확인해주세요.');
+                    alert('매장 생성 실패: ' + (result.error || '알 수 없는 오류'));
                 }
             })
             .catch(error => {
                 console.error('매장 생성 오류:', error);
-                alert('📞 네트워크 연결에 문제가 있습니다. 잠시 후 다시 시도해주세요.');
+                alert('매장 생성 중 오류가 발생했습니다');
             });
         };
         
@@ -152,12 +152,12 @@
                     const account = accountResult.data.account;
                     showPMAccountModal(account, storeData);
                 } else {
-                    alert('🏢 매장이 등록되었습니다! 계정은 관리자가 별도로 생성해드리겠습니다.');
+                    alert('매장은 생성되었지만 계정 생성에 실패했습니다: ' + (accountResult.error || '알 수 없는 오류'));
                     location.reload();
                 }
             } catch (error) {
                 console.error('계정 생성 오류:', error);
-                alert('🏢 매장 등록이 완료되었습니다! 로그인 계정은 관리자에게 문의해주세요.');
+                alert('매장은 생성되었지만 계정 생성 중 오류가 발생했습니다');
                 location.reload();
             }
         };
@@ -229,7 +229,7 @@
             navigator.clipboard.writeText(text).then(() => {
                 alert('복사되었습니다!');
             }).catch(() => {
-                alert('📋 복사 기능을 사용할 수 없습니다. 다른 방법으로 저장해주세요.');
+                alert('복사에 실패했습니다');
             });
         };
         
@@ -1344,27 +1344,57 @@
             document.getElementById('modal-store-name').focus();
         }
         
-        // 지사 옵션 동적 로드 함수
+        // 지사 옵션 동적 로드 함수 (지사별 권한 필터링 적용)
         function loadBranchOptions(selectId) {
             const select = document.getElementById(selectId);
+            const userRole = '{{ auth()->user()->role }}';
+            const userBranchId = '{{ auth()->user()->branch_id }}';
+
             select.innerHTML = '<option value="">로딩 중...</option>';
-            
-            fetch('/test-api/branches')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        select.innerHTML = '<option value="">지사를 선택하세요...</option>';
-                        data.data.forEach(branch => {
-                            select.innerHTML += `<option value="${branch.id}">${branch.name}</option>`;
-                        });
-                    } else {
-                        select.innerHTML = '<option value="">지사 목록 로드 실패</option>';
-                    }
-                })
-                .catch(error => {
-                    console.error('지사 목록 로드 오류:', error);
-                    select.innerHTML = '<option value="">지사 목록 로드 오류</option>';
-                });
+
+            // 지사 계정인 경우 자신의 지사만 표시
+            if (userRole === 'branch' && userBranchId) {
+                // 지사 정보 로드
+                fetch('/test-api/branches')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            const userBranch = data.data.find(branch => branch.id == userBranchId);
+                            if (userBranch) {
+                                select.innerHTML = `<option value="${userBranch.id}" selected>${userBranch.name}</option>`;
+                                // 지사 선택 컨테이너 숨기기 (이미 선택됨)
+                                const container = document.getElementById('branch-select-container');
+                                if (container) {
+                                    container.style.display = 'none';
+                                }
+                            } else {
+                                select.innerHTML = '<option value="">지사 정보를 찾을 수 없습니다</option>';
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('지사 정보 로드 오류:', error);
+                        select.innerHTML = '<option value="">지사 정보 로드 오류</option>';
+                    });
+            } else {
+                // 본사 계정인 경우 모든 지사 표시
+                fetch('/test-api/branches')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            select.innerHTML = '<option value="">지사를 선택하세요...</option>';
+                            data.data.forEach(branch => {
+                                select.innerHTML += `<option value="${branch.id}">${branch.name}</option>`;
+                            });
+                        } else {
+                            select.innerHTML = '<option value="">지사 목록 로드 실패</option>';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('지사 목록 로드 오류:', error);
+                        select.innerHTML = '<option value="">지사 목록 로드 오류</option>';
+                    });
+            }
         }
 
         // 매장 추가 모달 닫기
