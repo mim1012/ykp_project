@@ -1,38 +1,30 @@
-# ========== CACHE BUST - 숫자 변경 시 완전 새 빌드 ==========
-ARG CACHE_BUST=999
+# ========== NUCLEAR CACHE BUST ==========
+ARG NUCLEAR_BUST=20250916_FINAL
 
-# ========== 1) Node 빌드 (Vite) ==========
-# devDependencies(=vite 등) 필요하므로 production-only 설치 금지!
+# ========== Node Build Stage ==========
 FROM node:20-alpine AS frontend_build
 WORKDIR /app
 
-# 확인용 - Railway가 루트 Dockerfile 사용 중임을 검증
-RUN echo ">>> STAGING BRANCH v999 - NO VENDOR COPY @ $(date)" && sleep 2
+RUN echo "🚀 NUCLEAR BUILD v20250916 - ABSOLUTE FINAL @ $(date)" && sleep 3
 
-# 레이어 캐시 최적화
 COPY ykp-dashboard/package*.json ./
 RUN npm ci --no-audit --no-fund --prefer-offline
 
 COPY ykp-dashboard/ ./
-# Vite 빌드 시 메모리 상한(2GB) — Railway OOM 예방
 ENV NODE_OPTIONS=--max-old-space-size=2048
 RUN npm run build
 
-# ========== 2) Composer 빌드 스테이지 제거 ==========
-# PHP 런타임에서 직접 설치하도록 통합
-
-# ========== 3) PHP 8.3 + Apache 런타임 ==========
+# ========== PHP Runtime Stage ==========
 FROM php:8.3-apache-bookworm
 WORKDIR /var/www/html
 
-# 캐시 버스터 강화 - Railway 완전 새 빌드 강제
-ARG CACHE_BUST=999
-RUN echo ">>> STAGING CACHE BUST v$CACHE_BUST - NO VENDOR COPY @ $(date)" && sleep 1
+ARG NUCLEAR_BUST=20250916_FINAL
+RUN echo "💥 NUCLEAR CACHE BUST v$NUCLEAR_BUST - ZERO VENDOR COPY @ $(date)" && sleep 2
 
-# Apache 모듈
+# Apache modules
 RUN a2enmod rewrite headers
 
-# 런타임 의존성 (Postgres용)
+# Install dependencies
 RUN apt-get update \
  && apt-get install -y --no-install-recommends \
       git unzip curl ca-certificates \
@@ -42,39 +34,41 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/* \
  && apt-get clean
 
-# DocumentRoot 변경
+# Set DocumentRoot
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' \
       /etc/apache2/sites-available/000-default.conf
 
-# Composer 의존성 파일 먼저 복사 (레이어 캐시 최적화)
-COPY ykp-dashboard/composer.json ykp-dashboard/composer.lock ./
-
-# Composer 설치 및 의존성 설치
+# Install Composer first
 RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
     && php composer-setup.php --install-dir=/usr/local/bin --filename=composer \
-    && rm composer-setup.php \
-    && composer install --no-dev --optimize-autoloader --no-interaction --no-progress
+    && rm composer-setup.php
 
-# 앱 소스 복사 (vendor는 이미 설치됨)
+# Copy composer files for caching
+COPY ykp-dashboard/composer.json ykp-dashboard/composer.lock ./
+
+# Install dependencies with composer
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress
+
+# Copy application code
 COPY ykp-dashboard/ ./
 
-# 빌드 산출물 반영
+# Copy frontend build output
 COPY --from=frontend_build /app/public/build ./public/build
 
-# Composer autoload 최종 최적화
+# Optimize autoloader
 RUN composer dump-autoload --optimize
 
-# 권한
+# Set permissions
 RUN chown -R www-data:www-data storage bootstrap/cache \
  && chmod -R 775 storage bootstrap/cache
 
-# 환경
+# Environment
 ENV APP_ENV=production
 ENV APP_DEBUG=false
 EXPOSE 80
 
-# 헬스체크
+# Health check
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD curl -f http://localhost/ || exit 1
