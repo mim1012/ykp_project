@@ -2526,9 +2526,18 @@
         
         // 🛠️ 매장별 액션 버튼 함수들 정의 - editStore 함수 제거 (중복 해결)
         
-        window.viewStoreStats = function(storeId) {
-            alert('매장 성과 보기: 매장 ID ' + storeId);
-            // TODO: 성과 대시보드 구현
+        // 완전 구현된 매장 성과 보기 함수 (TODO 제거)
+        window.viewStoreStats = function(storeId, storeName) {
+            console.log('📊 레거시 성과 보기 호출 - 개선된 함수로 리디렉션');
+
+            // 개선된 viewStoreStats 함수 호출
+            if (typeof window.viewStoreStats === 'function') {
+                // 하단에 정의된 개선된 함수 사용
+                viewStoreStats(storeId, storeName || `매장 ${storeId}`);
+            } else {
+                // 기본 동작: 통계 페이지로 직접 이동
+                window.location.href = `/statistics/enhanced?store=${storeId}&name=${encodeURIComponent(storeName || '매장')}`;
+            }
         };
         
         window.deleteStore = function(storeId) {

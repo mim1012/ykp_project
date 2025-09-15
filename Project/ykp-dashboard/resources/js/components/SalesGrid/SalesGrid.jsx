@@ -86,12 +86,47 @@ const SalesGrid = ({
         };
     }, [gridApi, autoSaveMutation]);
 
-    // 데이터 조회
-    const { data: salesData, isLoading } = useQuery({
+    // 데이터 조회 (강화된 에러 처리)
+    const {
+        data: salesData = [],
+        isLoading,
+        error: queryError,
+        refetch
+    } = useQuery({
         queryKey: ['sales', dealerCode],
         queryFn: () => fetchSalesData(dealerCode),
         refetchOnWindowFocus: false,
-        staleTime: 30000 // 30초
+        staleTime: 30000, // 30초
+        retry: (failureCount, error) => {
+            // 인증 오류는 재시도하지 않음
+            if (error.message.includes('401') || error.message.includes('인증')) {
+                setErrorMessage('로그인이 필요합니다. 3초 후 로그인 페이지로 이동합니다.');
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 3000);
+                return false;
+            }
+            // 서버 오류는 최대 2회 재시도
+            return failureCount < 2;
+        },
+        onError: (error) => {
+            console.error('Sales data loading failed:', error);
+
+            if (error.message.includes('401') || error.message.includes('인증')) {
+                setErrorMessage('로그인 세션이 만료되었습니다. 다시 로그인해주세요.');
+            } else if (error.message.includes('403')) {
+                setErrorMessage('이 데이터에 접근할 권한이 없습니다.');
+            } else if (error.message.includes('404')) {
+                setErrorMessage('요청한 데이터를 찾을 수 없습니다.');
+            } else {
+                setErrorMessage(`데이터 로드 실패: ${error.message}`);
+            }
+        },
+        onSuccess: (data) => {
+            // 성공 시 에러 메시지 클리어
+            setErrorMessage('');
+            console.log(`✅ Sales data loaded: ${data?.length || 0} records`);
+        }
     });
 
     // 개선된 실시간 계산 뮤테이션

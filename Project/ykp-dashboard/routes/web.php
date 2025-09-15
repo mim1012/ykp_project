@@ -1556,18 +1556,45 @@ Route::get('/api/stores/{id}/stats', function ($id) {
             ->take(5)
             ->get(['sale_date', 'model_name', 'settlement_amount', 'carrier']);
 
+        // 🚀 최적화된 매장 성과 응답 (목표 달성률 + KPI)
         return response()->json([
             'success' => true,
             'data' => [
-                'store' => $store,
-                'today_sales' => $todaySales ?: 0,
-                'month_sales' => $monthSales ?: 0,
-                'today_count' => $todayCount ?: 0,
-                'total_activations' => $totalActivations ?: 0,
-                'month_activations' => $monthActivations ?: 0,
-                'rank' => $storeRank,
-                'recent_sales' => $recentSales,
-                'stats_date' => now()->toDateString()
+                'store' => [
+                    'id' => $store->id,
+                    'name' => $store->name,
+                    'code' => $store->code,
+                    'branch_name' => $store->branch->name ?? 'Unknown'
+                ],
+                'performance' => [
+                    'today_sales' => (float) $todaySales ?: 0,
+                    'month_sales' => (float) $monthSales ?: 0,
+                    'total_sales' => (float) $totalSales ?: 0,
+                    'today_count' => (int) $todayCount ?: 0,
+                    'month_activations' => (int) $monthActivations ?: 0,
+                    'total_activations' => (int) $totalActivations ?: 0,
+                    'avg_sale_amount' => $totalActivations > 0 ? round($totalSales / $totalActivations) : 0
+                ],
+                'ranking' => [
+                    'current_rank' => $storeRank,
+                    'total_stores' => $allStoreStats->count(),
+                    'rank_change' => 0 // TODO: 전월 대비 순위 변화
+                ],
+                'goals' => [
+                    'monthly_target' => 5000000, // 기본 목표 (나중에 goals 테이블에서)
+                    'achievement_rate' => $monthSales > 0 ? round(($monthSales / 5000000) * 100, 1) : 0,
+                    'days_remaining' => now()->endOfMonth()->diffInDays(now()) + 1
+                ],
+                'trends' => [
+                    'recent_sales' => $recentSales,
+                    'growth_rate' => 0, // TODO: 전월 대비 성장률
+                    'performance_trend' => $monthSales > $todaySales * 30 ? 'improving' : 'declining'
+                ],
+                'meta' => [
+                    'stats_date' => now()->toDateString(),
+                    'generated_at' => now()->toISOString(),
+                    'user_role' => auth()->user()->role
+                ]
             ]
         ]);
     } catch (Exception $e) {
