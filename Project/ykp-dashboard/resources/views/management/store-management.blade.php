@@ -2515,10 +2515,55 @@
                 return;
             }
             
-            // 계정 생성 API 호출 (향후 구현)
-            showToast(`${userData.email} 계정이 생성되었습니다!`, 'success');
-            closeAddUserModal();
-            loadUsers(); // 목록 새로고침
+            // 실제 계정 생성 API 호출
+            console.log('🔄 사용자 계정 생성 API 호출 시작...', userData);
+
+            fetch(`/api/stores/${currentStoreForUser}/create-user`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify({
+                    name: userData.name.trim(),
+                    email: userData.email.trim(),
+                    password: userData.password || '123456',
+                    role: 'store',
+                    store_id: currentStoreForUser,
+                    is_active: true
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast(`✅ ${userData.name} 계정이 성공적으로 생성되었습니다!\n📧 ${userData.email}\n🔑 비밀번호: ${userData.password}`, 'success');
+
+                    // 활동 로그 기록
+                    fetch('/api/activities/log', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        },
+                        body: JSON.stringify({
+                            activity_type: 'account_create',
+                            activity_title: `매장 계정 생성: ${userData.name}`,
+                            activity_description: `${userData.email} 계정을 생성했습니다.`,
+                            target_type: 'user',
+                            target_id: data.data?.id
+                        })
+                    });
+
+                    closeAddUserModal();
+                    loadUsers(); // 목록 새로고침
+                } else {
+                    showToast(`❌ 계정 생성 실패: ${data.error || '알 수 없는 오류'}`, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('계정 생성 API 오류:', error);
+                showToast('❌ 계정 생성 중 네트워크 오류가 발생했습니다.', 'error');
+            });
         };
         
         // 🔒 전역 상태 초기화

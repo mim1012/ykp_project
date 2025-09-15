@@ -67,6 +67,7 @@ class SaleService implements SaleServiceInterface
         $this->applyUserPermissionFilters($query, $user);
         $this->applyDateFilters($query, $filters);
         $this->applyStoreFilters($query, $filters, $user);
+        $this->applyDealerFilters($query, $filters);
 
         return $query->orderBy('sale_date', 'desc')
             ->paginate($filters['per_page'] ?? 50);
@@ -238,5 +239,19 @@ class SaleService implements SaleServiceInterface
             ->selectRaw('COUNT(*) as count, COALESCE(SUM(settlement_amount), 0) as total')
             ->groupBy('activation_type')
             ->get();
+    }
+
+    /**
+     * dealer_code 필터링 적용
+     */
+    private function applyDealerFilters($query, array $filters): void
+    {
+        if (isset($filters['dealer_code']) && !empty($filters['dealer_code'])) {
+            $query->where('dealer_code', $filters['dealer_code']);
+        }
+
+        if (isset($filters['dealer_name']) && !empty($filters['dealer_name'])) {
+            $query->where('dealer_name', 'like', '%' . $filters['dealer_name'] . '%');
+        }
     }
 }

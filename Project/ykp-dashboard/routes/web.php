@@ -5,6 +5,61 @@ use App\Helpers\DatabaseHelper;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Hash;
 
+// 🧮 성과 분석 계산 함수들
+function calculateRankChange($storeId, $currentRank) {
+    try {
+        // 전월 순위 계산
+        $lastMonth = now()->subMonth();
+        $lastMonthStats = App\Models\Sale::join('stores', 'sales.store_id', '=', 'stores.id')
+            ->whereBetween('sales.sale_date', [$lastMonth->startOfMonth(), $lastMonth->endOfMonth()])
+            ->select('stores.id')
+            ->selectRaw('SUM(sales.settlement_amount) as total_sales')
+            ->groupBy('stores.id')
+            ->orderByDesc('total_sales')
+            ->get();
+
+        $lastMonthRank = null;
+        foreach ($lastMonthStats as $index => $stat) {
+            if ($stat->id == $storeId) {
+                $lastMonthRank = $index + 1;
+                break;
+            }
+        }
+
+        if ($lastMonthRank && $currentRank) {
+            return $lastMonthRank - $currentRank; // 양수면 순위 상승
+        }
+
+        return 0;
+    } catch (Exception $e) {
+        \Log::warning('Rank change calculation failed: ' . $e->getMessage());
+        return 0;
+    }
+}
+
+function calculateGrowthRate($storeId) {
+    try {
+        // 이번달 매출
+        $thisMonth = App\Models\Sale::where('store_id', $storeId)
+            ->whereBetween('sale_date', [now()->startOfMonth(), now()->endOfMonth()])
+            ->sum('settlement_amount');
+
+        // 전월 매출
+        $lastMonth = App\Models\Sale::where('store_id', $storeId)
+            ->whereBetween('sale_date', [now()->subMonth()->startOfMonth(), now()->subMonth()->endOfMonth()])
+            ->sum('settlement_amount');
+
+        if ($lastMonth > 0) {
+            return round((($thisMonth - $lastMonth) / $lastMonth) * 100, 1);
+        }
+
+        return $thisMonth > 0 ? 100 : 0; // 전월 데이터 없으면 100% 또는 0%
+    } catch (Exception $e) {
+        \Log::warning('Growth rate calculation failed: ' . $e->getMessage());
+        return 0;
+    }
+}
+
 /*
 |--------------------------------------------------------------------------
 | Authentication Routes
@@ -1578,7 +1633,7 @@ Route::get('/api/stores/{id}/stats', function ($id) {
                 'ranking' => [
                     'current_rank' => $storeRank,
                     'total_stores' => $allStoreStats->count(),
-                    'rank_change' => 0 // TODO: 전월 대비 순위 변화
+                    'rank_change' => calculateRankChange($store->id, $storeRank)
                 ],
                 'goals' => [
                     'monthly_target' => 5000000, // 기본 목표 (나중에 goals 테이블에서)
@@ -1587,7 +1642,7 @@ Route::get('/api/stores/{id}/stats', function ($id) {
                 ],
                 'trends' => [
                     'recent_sales' => $recentSales,
-                    'growth_rate' => 0, // TODO: 전월 대비 성장률
+                    'growth_rate' => calculateGrowthRate($store->id),
                     'performance_trend' => $monthSales > $todaySales * 30 ? 'improving' : 'declining'
                 ],
                 'meta' => [

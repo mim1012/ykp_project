@@ -55,7 +55,7 @@ class SalesApiController extends Controller
     {
         $filters = $request->only([
             'start_date', 'end_date', 'sale_date', 'store_id',
-            'branch_id', 'per_page',
+            'branch_id', 'per_page', 'dealer_code', 'dealer_name'
         ]);
 
         $sales = $this->saleService->getFilteredSales($filters, Auth::user());
