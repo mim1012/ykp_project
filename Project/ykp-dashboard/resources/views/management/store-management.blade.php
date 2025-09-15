@@ -2364,8 +2364,100 @@
         
         // 매장 관리 버튼 함수들 (전역 등록) - 404 오류 해결을 위해 모달 방식으로 변경
         
+        // 강화된 매장 계정 생성/수정 함수
         window.createStoreAccount = function createStoreAccount(storeId, storeName) {
-            console.log('👤 계정 생성:', storeId, storeName);
+            console.log('👤 매장 계정 생성/수정 시작:', storeId, storeName);
+
+            // 먼저 기존 계정 상태 확인
+            fetch(`/debug/store-account/${storeId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const accountInfo = data.data;
+                        console.log('📊 매장 계정 상태:', accountInfo);
+
+                        if (accountInfo.account_exists) {
+                            // 기존 계정이 있는 경우
+                            const existingAccount = accountInfo.existing_account;
+                            let accountMessage = `👤 "${storeName}" 매장 계정 정보\n`;
+                            accountMessage += `${'='.repeat(40)}\n\n`;
+                            accountMessage += `📧 기존 계정: ${existingAccount.email}\n`;
+                            accountMessage += `👤 이름: ${existingAccount.name}\n`;
+                            accountMessage += `📊 상태: ${existingAccount.is_active ? '✅ 활성' : '❌ 비활성'}\n\n`;
+
+                            if (!existingAccount.is_active) {
+                                accountMessage += `⚠️ 계정이 비활성화되어 있습니다.\n`;
+                                accountMessage += `계정을 활성화하고 비밀번호를 리셋하시겠습니까?`;
+                            } else {
+                                accountMessage += `✅ 계정이 이미 활성화되어 있습니다.\n`;
+                                accountMessage += `비밀번호를 리셋하시겠습니까?`;
+                            }
+
+                            if (confirm(accountMessage)) {
+                                // 계정 활성화/리셋
+                                activateStoreAccount(storeId, storeName);
+                            }
+                        } else {
+                            // 새 계정 생성
+                            let createMessage = `👤 "${storeName}" 매장 새 계정 생성\n`;
+                            createMessage += `${'='.repeat(40)}\n\n`;
+                            createMessage += `📧 생성될 이메일: ${accountInfo.suggested_email}\n`;
+                            createMessage += `🔑 기본 비밀번호: 123456\n`;
+                            createMessage += `🏪 역할: 매장 관리자\n\n`;
+                            createMessage += `새 계정을 생성하시겠습니까?`;
+
+                            if (confirm(createMessage)) {
+                                // 새 계정 생성
+                                createNewStoreAccount(storeId, storeName);
+                            }
+                        }
+                    } else {
+                        throw new Error(data.error || '계정 상태를 확인할 수 없습니다.');
+                    }
+                })
+                .catch(error => {
+                    console.error('❌ 계정 상태 확인 오류:', error);
+                    alert('❌ 계정 상태 확인 중 오류가 발생했습니다.\n기본 계정 생성을 진행하시겠습니까?');
+
+                    // 기본 계정 생성 프로세스로 폴백
+                    createNewStoreAccount(storeId, storeName);
+                });
+        };
+
+        // 매장 계정 활성화/리셋
+        function activateStoreAccount(storeId, storeName) {
+            console.log('🔄 매장 계정 활성화/리셋:', storeId);
+
+            fetch(`/test-api/stores/${storeId}/ensure-account`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    let successMessage = `✅ "${storeName}" 계정 ${data.action === 'activated' ? '활성화' : '생성'} 완료!\n\n`;
+                    successMessage += `📧 이메일: ${data.user.email}\n`;
+                    successMessage += `🔑 비밀번호: 123456\n`;
+                    successMessage += `📊 상태: 활성\n\n`;
+                    successMessage += `이 정보를 매장 관리자에게 전달하세요.`;
+
+                    alert(successMessage);
+                    console.log(`✅ ${storeName} 계정 처리 완료`);
+                } else {
+                    alert('❌ 계정 처리 실패: ' + (data.error || '알 수 없는 오류'));
+                }
+            })
+            .catch(error => {
+                console.error('❌ 계정 처리 오류:', error);
+                alert('❌ 계정 처리 중 오류가 발생했습니다.');
+            });
+        }
+
+        // 새 매장 계정 생성
+        function createNewStoreAccount(storeId, storeName) {
             const name = prompt(`${storeName} 매장의 관리자 이름을 입력하세요:`, `${storeName} 관리자`);
             if (!name) return;
             
@@ -2400,9 +2492,9 @@
             });
         };
         
-        // 개선된 매장 성과 보기 함수
+        // 간편한 매장 성과 보기 함수 (직접 통계 페이지로 이동)
         window.viewStoreStats = function(storeId, storeName) {
-            console.log('📊 매장 성과 조회 시작:', storeId, storeName);
+            console.log('📊 매장 성과 보기:', storeId, storeName);
 
             // 권한 체크 (permissionManager가 있다면)
             if (window.permissionManager && !window.permissionManager.canViewStats(storeId)) {
@@ -2410,89 +2502,25 @@
                 return;
             }
 
-            // 로딩 상태 표시
-            const loadingToast = showToast(`📊 ${storeName} 성과 데이터 조회 중...`, 'info', 3000);
+            // 성과 조회 안내 메시지
+            let statsInfo = `📊 ${storeName} 성과 분석 페이지로 이동\n`;
+            statsInfo += `${'='.repeat(40)}\n\n`;
+            statsInfo += `📈 확인 가능한 정보:\n`;
+            statsInfo += `• 실시간 매출 현황\n`;
+            statsInfo += `• 개통 건수 통계\n`;
+            statsInfo += `• 매장 순위 및 비교\n`;
+            statsInfo += `• 기간별 성과 추이\n`;
+            statsInfo += `• 통신사별 점유율\n\n`;
+            statsInfo += `통계 페이지로 이동하시겠습니까?`;
 
-            // 매장 성과 데이터 먼저 가져오기
-            fetch(`/test-api/stores/${storeId}/stats`)
-                .then(response => {
-                    console.log('📡 매장 성과 API 응답:', response.status);
-                    if (!response.ok) {
-                        throw new Error(`HTTP ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    console.log('📊 매장 성과 데이터:', data);
+            if (confirm(statsInfo)) {
+                console.log(`✅ ${storeName} 통계 페이지로 이동`);
 
-                    if (data.success) {
-                        const stats = data.data;
-
-                        // 성과 요약 정보를 상세하게 표시
-                        let statsMessage = `📊 ${storeName} 성과 현황 (${stats.stats_date || '오늘'})\n`;
-                        statsMessage += `${'='.repeat(40)}\n\n`;
-
-                        // 📈 매출 정보
-                        statsMessage += `💰 매출 현황\n`;
-                        statsMessage += `   • 오늘: ${Number(stats.today_sales || 0).toLocaleString()}원\n`;
-                        statsMessage += `   • 이번달: ${Number(stats.month_sales || 0).toLocaleString()}원\n\n`;
-
-                        // 📱 개통 정보
-                        statsMessage += `📱 개통 현황\n`;
-                        statsMessage += `   • 오늘: ${stats.today_count || 0}건\n`;
-                        statsMessage += `   • 이번달: ${stats.month_activations || 0}건\n`;
-                        statsMessage += `   • 누적 총합: ${stats.total_activations || 0}건\n\n`;
-
-                        // 🏆 순위 정보
-                        if (stats.rank) {
-                            statsMessage += `🏆 이번달 매출 순위: ${stats.rank}위\n\n`;
-                        }
-
-                        // 📋 최근 거래
-                        if (stats.recent_sales && stats.recent_sales.length > 0) {
-                            statsMessage += `📋 최근 거래 (${stats.recent_sales.length}건)\n`;
-                            stats.recent_sales.slice(0, 3).forEach((sale, index) => {
-                                const saleDate = new Date(sale.sale_date).toLocaleDateString();
-                                const amount = Number(sale.settlement_amount || 0).toLocaleString();
-                                statsMessage += `   ${index + 1}. ${saleDate} ${sale.model_name} ${amount}원\n`;
-                            });
-                            statsMessage += `\n`;
-                        }
-
-                        statsMessage += `상세한 통계 및 분석을 보시겠습니까?`;
-
-                        if (confirm(statsMessage)) {
-                            // 상세 통계 페이지로 이동
-                            window.location.href = `/statistics/enhanced?store=${storeId}&name=${encodeURIComponent(storeName)}`;
-                        }
-
-                        showToast(`✅ ${storeName} 성과 데이터 조회 완료`, 'success');
-                    } else {
-                        throw new Error(data.error || '성과 데이터를 가져올 수 없습니다.');
-                    }
-                })
-                .catch(error => {
-                    console.error('❌ 매장 성과 조회 오류:', error);
-
-                    let errorMessage = `${storeName} 성과 데이터 조회 중 오류가 발생했습니다.\n\n`;
-
-                    if (error.message.includes('HTTP 404')) {
-                        errorMessage += '📍 해당 매장의 성과 데이터가 없습니다.';
-                    } else if (error.message.includes('HTTP 403')) {
-                        errorMessage += '🔒 성과 조회 권한이 없습니다.';
-                    } else {
-                        errorMessage += `🔍 오류: ${error.message}`;
-                    }
-
-                    errorMessage += '\n\n기본 통계 페이지로 이동하시겠습니까?';
-
-                    if (confirm(errorMessage)) {
-                        // 오류 발생 시에도 기본 통계 페이지로 이동
-                        window.location.href = `/statistics/enhanced?store=${storeId}&name=${encodeURIComponent(storeName)}`;
-                    }
-
-                    showToast('❌ 성과 데이터 조회 실패', 'error');
-                });
+                // 통계 페이지로 직접 이동 (매장 필터 적용)
+                window.location.href = `/statistics/enhanced?store=${storeId}&name=${encodeURIComponent(storeName)}`;
+            } else {
+                console.log('❌ 사용자가 통계 페이지 이동 취소');
+            }
         };
         
         // 강화된 매장 삭제 함수 (Foreign Key 제약 조건 처리)
@@ -2548,16 +2576,10 @@
                     location.reload(); // 페이지 새로고침
 
                 } else if (result.requires_confirmation) {
-                    // 확인이 필요한 경우 (관련 데이터 존재)
-                    console.log('⚠️ 관련 데이터 확인 필요');
+                    // 확인이 필요한 경우 (관련 데이터 존재) - 상세 가이드 표시
+                    console.log('⚠️ 관련 데이터 확인 필요 - 사용자 가이드 표시');
 
-                    if (confirm(result.message || result.error)) {
-                        console.log('✅ 사용자가 강제 삭제 승인');
-                        // 강제 삭제 재시도
-                        deleteStoreWithConfirmation(storeId, storeName, true);
-                    } else {
-                        console.log('❌ 사용자가 강제 삭제 거부');
-                    }
+                    showStoreDeleteGuide(storeId, storeName, result);
 
                 } else {
                     // 일반 오류
@@ -2569,7 +2591,107 @@
                 alert('❌ 네트워크 오류가 발생했습니다: ' + error.message);
             });
         };
-        
+
+        // 🗑️ 매장 삭제 상세 가이드 함수
+        function showStoreDeleteGuide(storeId, storeName, result) {
+            console.log('📋 매장 삭제 가이드 표시:', result);
+
+            // 사용자 친화적인 옵션 선택 UI 생성
+            let optionMessage = `🗑️ "${storeName}" 매장 삭제 옵션\n`;
+            optionMessage += `${'='.repeat(50)}\n\n`;
+
+            optionMessage += `📊 연결된 데이터:\n`;
+            Object.entries(result.details.data_types).forEach(([type, count]) => {
+                optionMessage += `• ${type}: ${count}\n`;
+            });
+
+            optionMessage += `\n🔧 삭제 방법을 선택하세요:\n\n`;
+
+            result.actions.forEach((action, index) => {
+                optionMessage += `${index + 1}. ${action.label}\n`;
+                optionMessage += `   ${action.description}\n`;
+                if (action.warning) {
+                    optionMessage += `   ⚠️ ${action.warning}\n`;
+                }
+                optionMessage += `\n`;
+            });
+
+            const choice = prompt(optionMessage + '선택하세요 (번호 입력):');
+
+            if (!choice || choice === '3') {
+                console.log('❌ 사용자가 삭제 취소');
+                return;
+            }
+
+            const selectedAction = result.actions[parseInt(choice) - 1];
+            if (!selectedAction) {
+                alert('❌ 잘못된 선택입니다.');
+                return;
+            }
+
+            console.log('✅ 사용자 선택:', selectedAction.label);
+
+            switch (selectedAction.action) {
+                case 'backup_first':
+                    handleBackupFirstDeletion(storeId, storeName, result);
+                    break;
+                case 'force_delete':
+                    handleForceDelete(storeId, storeName);
+                    break;
+                default:
+                    console.log('❌ 알 수 없는 액션');
+            }
+        }
+
+        // 📊 데이터 백업 후 삭제 처리
+        function handleBackupFirstDeletion(storeId, storeName, result) {
+            let backupMessage = `📊 "${storeName}" 데이터 백업 안내\n`;
+            backupMessage += `${'='.repeat(40)}\n\n`;
+
+            backupMessage += `백업할 데이터:\n`;
+            backupMessage += `• 개통표 기록: ${result.details.sales_count}건\n`;
+            backupMessage += `• 사용자 계정: ${result.details.users_count}개\n\n`;
+
+            backupMessage += `💾 백업 방법:\n`;
+            backupMessage += `1. 통계 페이지에서 해당 매장 데이터 내보내기\n`;
+            backupMessage += `2. 계정 관리에서 사용자 정보 내보내기\n`;
+            backupMessage += `3. 백업 완료 후 다시 삭제 시도\n\n`;
+
+            backupMessage += `지금 백업 페이지로 이동하시겠습니까?`;
+
+            if (confirm(backupMessage)) {
+                // 통계 페이지로 이동하여 데이터 백업
+                window.open(`/statistics/enhanced?store=${storeId}&name=${encodeURIComponent(storeName)}&backup=true`, '_blank');
+                alert('📊 백업 페이지가 열렸습니다.\n백업 완료 후 다시 삭제를 시도해주세요.');
+            }
+        }
+
+        // 🗑️ 강제 삭제 처리
+        function handleForceDelete(storeId, storeName) {
+            let confirmMessage = `⚠️ "${storeName}" 강제 삭제 최종 확인\n`;
+            confirmMessage += `${'='.repeat(40)}\n\n`;
+
+            confirmMessage += `🚨 다음 데이터들이 영구적으로 삭제됩니다:\n`;
+            confirmMessage += `• 모든 개통표 기록\n`;
+            confirmMessage += `• 관련 사용자 계정\n`;
+            confirmMessage += `• 매장 통계 데이터\n`;
+            confirmMessage += `• 매장 기본 정보\n\n`;
+
+            confirmMessage += `❗ 이 작업은 되돌릴 수 없습니다!\n\n`;
+
+            confirmMessage += `정말로 "${storeName}" 매장을 강제 삭제하시겠습니까?\n\n`;
+            confirmMessage += `확인하려면 매장명을 정확히 입력하세요:`;
+
+            const confirmation = prompt(confirmMessage);
+
+            if (confirmation === storeName) {
+                console.log('✅ 사용자가 매장명 확인 완료 - 강제 삭제 진행');
+                deleteStoreWithConfirmation(storeId, storeName, true);
+            } else if (confirmation !== null) {
+                alert('❌ 매장명이 일치하지 않습니다.\n삭제가 취소되었습니다.');
+            }
+        }
+
         // 🛠️ 매장 버튼 이벤트 리스너 설정
         function setupStoreActionButtons() {
             console.log('🛠️ 매장 버튼 이벤트 등록 시작');

@@ -1724,16 +1724,54 @@ Route::middleware(['web', 'auth'])->delete('/test-api/stores/{id}', function ($i
         $forceDelete = request()->get('force', false);
 
         if (!$forceDelete && ($salesCount > 0)) {
+            // 사용자 가이드 메시지 생성
+            $guideMessage = "'{$store->name}' 매장을 삭제하려면 다음 단계를 따르세요:\n\n";
+            $guideMessage .= "📋 현재 연결된 데이터:\n";
+            $guideMessage .= "• 개통표 기록: {$salesCount}건\n";
+            $guideMessage .= "• 사용자 계정: {$usersCount}개\n\n";
+
+            $guideMessage .= "🔧 삭제 방법:\n";
+            $guideMessage .= "1️⃣ 먼저 개통표 데이터를 백업하거나 다른 매장으로 이전\n";
+            $guideMessage .= "2️⃣ 또는 '강제 삭제'를 선택하여 모든 데이터 함께 삭제\n\n";
+
+            $guideMessage .= "⚠️ 주의사항:\n";
+            $guideMessage .= "• 강제 삭제 시 모든 데이터가 영구적으로 삭제됩니다\n";
+            $guideMessage .= "• 이 작업은 되돌릴 수 없습니다\n\n";
+
+            $guideMessage .= "계속 진행하시겠습니까?";
+
             return response()->json([
                 'success' => false,
-                'error' => '매장에 연결된 데이터가 있습니다.',
+                'error' => '매장에 연결된 데이터가 있어 삭제할 수 없습니다.',
                 'details' => [
                     'store_name' => $store->name,
                     'sales_count' => $salesCount,
-                    'users_count' => $usersCount
+                    'users_count' => $usersCount,
+                    'data_types' => [
+                        '개통표 기록' => $salesCount . '건',
+                        '사용자 계정' => $usersCount . '개'
+                    ]
                 ],
                 'requires_confirmation' => true,
-                'message' => "'{$store->name}' 매장을 삭제하시겠습니까?\n\n⚠️ 연결된 데이터:\n• 개통표 기록: {$salesCount}건\n• 사용자 계정: {$usersCount}개\n\n이 데이터들도 함께 삭제됩니다.\n되돌릴 수 없습니다."
+                'user_guide' => $guideMessage,
+                'actions' => [
+                    [
+                        'label' => '📊 데이터 백업 후 삭제',
+                        'action' => 'backup_first',
+                        'description' => '개통표 데이터를 먼저 내보내기'
+                    ],
+                    [
+                        'label' => '🗑️ 강제 삭제 (모든 데이터 삭제)',
+                        'action' => 'force_delete',
+                        'description' => '모든 연관 데이터와 함께 매장 삭제',
+                        'warning' => '되돌릴 수 없습니다'
+                    ],
+                    [
+                        'label' => '❌ 취소',
+                        'action' => 'cancel',
+                        'description' => '삭제 취소'
+                    ]
+                ]
             ], 400);
         }
 
@@ -1787,6 +1825,90 @@ Route::middleware(['web', 'auth'])->delete('/test-api/stores/{id}', function ($i
     } catch (Exception $e) {
         \Log::error("매장 삭제 일반 오류: " . $e->getMessage(), ['store_id' => $id]);
         return response()->json(['success' => false, 'error' => '매장 삭제 중 오류가 발생했습니다: ' . $e->getMessage()], 500);
+    }
+});
+
+// 매장 계정 상태 확인 및 자동 수정 API
+Route::get('/debug/store-account/{storeId}', function($storeId) {
+    try {
+        $store = App\Models\Store::findOrFail($storeId);
+
+        // 기존 계정 찾기
+        $existingUser = App\Models\User::where('store_id', $storeId)->first();
+
+        $result = [
+            'store' => $store,
+            'account_exists' => !!$existingUser,
+            'account_active' => $existingUser?->is_active ?? false,
+            'suggested_email' => strtolower($store->code) . '@ykp.com',
+            'needs_creation' => !$existingUser
+        ];
+
+        if ($existingUser) {
+            $result['existing_account'] = [
+                'id' => $existingUser->id,
+                'name' => $existingUser->name,
+                'email' => $existingUser->email,
+                'is_active' => $existingUser->is_active,
+                'role' => $existingUser->role
+            ];
+        }
+
+        return response()->json(['success' => true, 'data' => $result]);
+    } catch (Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 404);
+    }
+});
+
+// 매장 계정 자동 생성/수정 API
+Route::post('/test-api/stores/{id}/ensure-account', function($id) {
+    try {
+        $store = App\Models\Store::findOrFail($id);
+
+        // 기존 계정 확인
+        $existingUser = App\Models\User::where('store_id', $id)->first();
+
+        if ($existingUser) {
+            // 기존 계정 활성화
+            $existingUser->update([
+                'is_active' => true,
+                'password' => Hash::make('123456') // 비밀번호 리셋
+            ]);
+
+            \Log::info("매장 계정 활성화: {$existingUser->email}");
+
+            return response()->json([
+                'success' => true,
+                'message' => '기존 계정이 활성화되었습니다.',
+                'user' => $existingUser,
+                'action' => 'activated'
+            ]);
+        } else {
+            // 새 계정 생성
+            $newEmail = strtolower($store->code) . '@ykp.com';
+
+            $user = App\Models\User::create([
+                'name' => $store->name . ' 관리자',
+                'email' => $newEmail,
+                'password' => Hash::make('123456'),
+                'role' => 'store',
+                'store_id' => $id,
+                'branch_id' => $store->branch_id,
+                'is_active' => true
+            ]);
+
+            \Log::info("매장 계정 생성: {$user->email}");
+
+            return response()->json([
+                'success' => true,
+                'message' => '새 계정이 생성되었습니다.',
+                'user' => $user,
+                'action' => 'created'
+            ]);
+        }
+    } catch (Exception $e) {
+        \Log::error("매장 계정 생성/수정 오류: " . $e->getMessage());
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
     }
 });
 
