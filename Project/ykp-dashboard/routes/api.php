@@ -146,13 +146,35 @@ Route::delete('dev/stores/{storeId}', function($storeId) {
             }
         }
 
-        // 매장 삭제 실행
+        // 🔒 삭제 전 종속 데이터 확인
+        $salesCount = App\Models\Sale::where('store_id', $storeId)->count();
+        $usersCount = App\Models\User::where('store_id', $storeId)->count();
+
+        if ($salesCount > 0 || $usersCount > 0) {
+            return response()->json([
+                'success' => false,
+                'error' => "매장 '{$store->name}'을 삭제할 수 없습니다.",
+                'details' => [
+                    'sales_count' => $salesCount,
+                    'users_count' => $usersCount,
+                    'message' => $salesCount > 0
+                        ? "매출 데이터 {$salesCount}건이 있어 삭제할 수 없습니다."
+                        : "사용자 계정 {$usersCount}개가 있어 삭제할 수 없습니다."
+                ],
+                'required_actions' => [
+                    $salesCount > 0 ? '매출 데이터를 다른 매장으로 이관하거나 삭제' : null,
+                    $usersCount > 0 ? '매장 사용자 계정을 다른 매장으로 이관하거나 비활성화' : null
+                ]
+            ], 422);
+        }
+
+        // 안전한 삭제 실행
         $storeName = $store->name;
         $store->delete();
 
         return response()->json([
             'success' => true,
-            'message' => "매장 '{$storeName}'이 삭제되었습니다.",
+            'message' => "매장 '{$storeName}'이 안전하게 삭제되었습니다.",
             'deleted_store' => $storeName
         ]);
 
@@ -160,6 +182,79 @@ Route::delete('dev/stores/{storeId}', function($storeId) {
         return response()->json([
             'success' => false,
             'error' => '매장 삭제 실패: ' . $e->getMessage()
+        ], 500);
+    }
+});
+
+// 지사 삭제 API (종속성 체크 포함)
+Route::delete('dev/branches/{branchId}', function($branchId) {
+    try {
+        $user = auth()->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'error' => '인증이 필요합니다.'
+            ], 401);
+        }
+
+        // 본사 계정만 지사 삭제 가능
+        if ($user->role !== 'headquarters') {
+            return response()->json([
+                'success' => false,
+                'error' => '지사 삭제는 본사 계정만 가능합니다.',
+                'user_role' => $user->role
+            ], 403);
+        }
+
+        $branch = App\Models\Branch::find($branchId);
+
+        if (!$branch) {
+            return response()->json([
+                'success' => false,
+                'error' => '지사를 찾을 수 없습니다.'
+            ], 404);
+        }
+
+        // 🔒 삭제 전 종속 데이터 확인
+        $storesCount = App\Models\Store::where('branch_id', $branchId)->count();
+        $salesCount = App\Models\Sale::where('branch_id', $branchId)->count();
+        $usersCount = App\Models\User::where('branch_id', $branchId)->count();
+
+        if ($storesCount > 0 || $salesCount > 0 || $usersCount > 0) {
+            $stores = App\Models\Store::where('branch_id', $branchId)->pluck('name')->toArray();
+
+            return response()->json([
+                'success' => false,
+                'error' => "지사 '{$branch->name}'을 삭제할 수 없습니다.",
+                'details' => [
+                    'stores_count' => $storesCount,
+                    'sales_count' => $salesCount,
+                    'users_count' => $usersCount,
+                    'stores' => $stores
+                ],
+                'required_actions' => [
+                    $storesCount > 0 ? "하위 매장 {$storesCount}개를 먼저 삭제하거나 다른 지사로 이관" : null,
+                    $salesCount > 0 ? "매출 데이터 {$salesCount}건을 처리" : null,
+                    $usersCount > 0 ? "사용자 계정 {$usersCount}개를 처리" : null
+                ]
+            ], 422);
+        }
+
+        // 안전한 삭제 실행
+        $branchName = $branch->name;
+        $branch->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => "지사 '{$branchName}'이 안전하게 삭제되었습니다.",
+            'deleted_branch' => $branchName
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'error' => '지사 삭제 실패: ' . $e->getMessage()
         ], 500);
     }
 });

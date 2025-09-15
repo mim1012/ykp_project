@@ -1754,10 +1754,12 @@
                 return;
             }
             
-            fetch(`/test-api/branches/${branchId}`, {
+            fetch(`/dev/branches/${branchId}`, {
                 method: 'DELETE',
                 headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
                 }
             })
             .then(response => response.json())
@@ -2128,12 +2130,29 @@
                     alert('✅ ' + data.message);
                     window.loadStores(); // 목록 새로고침
                 } else {
-                    // 권한 오류 상세 표시
+                    // 상세 에러 처리
                     if (data.error && data.error.includes('권한이 없습니다')) {
                         alert('❌ 삭제 권한 없음\n\n' + data.error +
                               '\n\n시도한 매장: ' + (data.attempted_store || 'Unknown') +
                               '\n매장 소속지사: ' + (data.store_branch || 'Unknown') +
                               '\n내 소속지사: ' + (data.user_branch || 'Unknown'));
+                    } else if (data.details) {
+                        // 종속 데이터 오류 상세 표시
+                        let errorMessage = '❌ ' + data.error + '\n\n📊 삭제 불가 이유:\n';
+
+                        if (data.details.sales_count > 0) {
+                            errorMessage += `• 매출 데이터: ${data.details.sales_count}건\n`;
+                        }
+                        if (data.details.users_count > 0) {
+                            errorMessage += `• 사용자 계정: ${data.details.users_count}개\n`;
+                        }
+
+                        errorMessage += '\n🔧 필요한 작업:\n';
+                        data.required_actions.forEach(action => {
+                            if (action) errorMessage += `• ${action}\n`;
+                        });
+
+                        alert(errorMessage);
                     } else {
                         alert('❌ 삭제 실패: ' + (data.error || '알 수 없는 오류'));
                     }
