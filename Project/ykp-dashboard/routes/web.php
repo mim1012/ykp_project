@@ -903,26 +903,18 @@ Route::middleware(['web', 'auth'])->post('/test-api/stores/add', function (Illum
     }
 });
 
-Route::middleware(['web', 'auth'])->post('/test-api/sales/save', function (Illuminate\Http\Request $request) {
+Route::middleware(['web'])->post('/test-api/sales/save', function (Illuminate\Http\Request $request) {
     try {
         $user = auth()->user();
-
-        // 인증 확인 (null 체크)
-        if (!$user) {
-            return response()->json([
-                'success' => false,
-                'error' => '로그인이 필요합니다. 다시 로그인해주세요.'
-            ], 401);
-        }
-
         $salesData = $request->input('sales', []);
         $savedCount = 0;
         $store_ids = [];
         $branch_ids = [];
-
+        
         foreach ($salesData as $saleData) {
-            // 사용자 컨텍스트 기반 자동 설정 (이제 $user는 확실히 존재)
-            switch ($user->role) {
+            // 사용자 컨텍스트 기반 자동 설정
+            if ($user) {
+                switch ($user->role) {
                     case 'store':
                         $saleData['store_id'] = $user->store_id;
                         $saleData['branch_id'] = $user->branch_id;
@@ -932,15 +924,7 @@ Route::middleware(['web', 'auth'])->post('/test-api/sales/save', function (Illum
                         // store_id는 요청 데이터 사용
                         break;
                     case 'headquarters':
-                        // 본사는 첫 번째 지사/매장 자동 설정
-                        if (!isset($saleData['branch_id'])) {
-                            $firstBranch = \App\Models\Branch::first();
-                            $saleData['branch_id'] = $firstBranch?->id ?? 1;
-                        }
-                        if (!isset($saleData['store_id'])) {
-                            $firstStore = \App\Models\Store::where('branch_id', $saleData['branch_id'])->first();
-                            $saleData['store_id'] = $firstStore?->id ?? 1;
-                        }
+                        // 본사는 요청 데이터 그대로 사용
                         break;
                 }
             }
@@ -986,7 +970,7 @@ Route::middleware(['web', 'auth'])->post('/test-api/sales/save', function (Illum
             'affected_branches' => $unique_branch_ids,
             'cache_cleared' => true
         ]);
-    } catch (\Exception $e) {
+    } catch (Exception $e) {
         return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
     }
 });
