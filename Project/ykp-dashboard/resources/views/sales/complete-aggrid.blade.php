@@ -184,12 +184,8 @@
                     </td>
                     <!-- 3. 대리점 -->
                     <td class="px-2 py-2">
-                        <select onchange="updateRowData(${row.id}, 'dealer_name', this.value)" class="field-dealer">
-                            <option value="">선택</option>
-                            <option value="이앤티" ${row.dealer_name === '이앤티' ? 'selected' : ''}>이앤티</option>
-                            <option value="앤투윈" ${row.dealer_name === '앤투윈' ? 'selected' : ''}>앤투윈</option>
-                            <option value="초시대" ${row.dealer_name === '초시대' ? 'selected' : ''}>초시대</option>
-                            <option value="아엠티" ${row.dealer_name === '아엠티' ? 'selected' : ''}>아엠티</option>
+                        <select onchange="updateRowData(${row.id}, 'dealer_name', this.value)" class="field-dealer" id="dealer-select-${row.id}">
+                            ${generateDealerOptions(row.dealer_name)}
                         </select>
                     </td>
                     <!-- 4. 통신사 -->
@@ -454,33 +450,39 @@
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest'
                 },
-                credentials: 'include',
+                credentials: 'same-origin',
                 body: JSON.stringify({
                     sales: validData.map(row => ({
-                        // PM 요구사항: DB 스키마와 1:1 매핑 (안전한 기본값)
+                        // PM 요구사항: DB 스키마와 1:1 매핑
                         store_id: {{ auth()->user()->store_id ?? 1 }},
                         branch_id: {{ auth()->user()->branch_id ?? 1 }},
                         sale_date: row.sale_date,
+                        salesperson: row.salesperson,
+                        dealer_name: row.dealer_name,
                         carrier: row.carrier,
                         activation_type: row.activation_type,
-
-                        // DB 스키마와 정확히 매칭된 필드명 (숫자 변환 포함)
-                        price_setting: Number(row.base_price) || 0,
-                        verbal1: Number(row.verbal1) || 0,
-                        verbal2: Number(row.verbal2) || 0,
-                        grade_amount: Number(row.grade_amount) || 0,
-                        addon_amount: Number(row.additional_amount) || 0,
-                        paper_cash: Number(row.cash_activation) || 0,
-                        usim_fee: Number(row.usim_fee) || 0,
-                        new_mnp_disc: Number(row.new_mnp_discount) || 0,
-                        deduction: Number(row.deduction) || 0,
-                        cash_in: Number(row.cash_received) || 0,
-                        payback: Number(row.payback) || 0,
-                        rebate_total: Number(row.rebate_total) || 0,
-                        settlement_amount: Number(row.settlement_amount) || 0,
-                        tax: Number(row.tax) || 0,
-                        margin_before_tax: Number(row.margin_before_tax) || 0,
-                        margin_after_tax: Number(row.margin_after_tax) || 0
+                        model_name: row.model_name,
+                        serial_number: row.serial_number,
+                        phone_number: row.phone_number,
+                        customer_name: row.customer_name,
+                        customer_birth_date: row.customer_birth_date,
+                        base_price: row.base_price,
+                        verbal1: row.verbal1,
+                        verbal2: row.verbal2,
+                        grade_amount: row.grade_amount,
+                        additional_amount: row.additional_amount,
+                        cash_activation: row.cash_activation,
+                        usim_fee: row.usim_fee,
+                        new_mnp_discount: row.new_mnp_discount,
+                        deduction: row.deduction,
+                        rebate_total: row.rebate_total,
+                        settlement_amount: row.settlement_amount,
+                        tax: row.tax,
+                        cash_received: row.cash_received,
+                        payback: row.payback,
+                        margin_before_tax: row.margin_before_tax,
+                        margin_after_tax: row.margin_after_tax,
+                        memo: row.memo || ''
                     }))
                 })
             })
@@ -524,10 +526,67 @@
         }
         
         // 이벤트 리스너 등록
-        document.addEventListener('DOMContentLoaded', function() {
+        // 전역 대리점 목록 저장
+        let dealersList = [];
+
+        // 대리점 옵션 HTML 생성 함수
+        function generateDealerOptions(selectedValue = '') {
+            let options = '<option value="">선택</option>';
+
+            dealersList.forEach(dealer => {
+                const selected = selectedValue === dealer.name ? 'selected' : '';
+                options += `<option value="${dealer.name}" ${selected}>${dealer.name}</option>`;
+            });
+
+            return options;
+        }
+
+        // 대리점 목록 로드 함수
+        async function loadDealers() {
+            try {
+                const response = await fetch('/api/calculation/profiles');
+                const data = await response.json();
+
+                if (data.success && data.data) {
+                    dealersList = data.data
+                        .filter(dealer => dealer.status === 'active')
+                        .map(dealer => ({
+                            code: dealer.dealer_code,
+                            name: dealer.dealer_name
+                        }));
+
+                    console.log('✅ 대리점 목록 로드 완료:', dealersList.length, '개');
+                    return dealersList;
+                } else {
+                    console.error('❌ 대리점 목록 로드 실패');
+                    // 폴백: 하드코딩된 목록 사용
+                    dealersList = [
+                        {code: 'SM', name: 'SM'},
+                        {code: 'W', name: 'W'},
+                        {code: 'KING', name: '더킹'},
+                        {code: 'ENTER', name: '엔터'},
+                        {code: 'UP', name: '유피'},
+                        {code: 'CHOSI', name: '초시대'},
+                        {code: 'TAESUNG', name: '태성'},
+                        {code: 'PDM', name: '피디엠'},
+                        {code: 'HANJU', name: '한주'},
+                        {code: 'HAPPY', name: '해피'}
+                    ];
+                    return dealersList;
+                }
+            } catch (error) {
+                console.error('❌ 대리점 로드 오류:', error);
+                return [];
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            // 🔥 대리점 목록 먼저 로드
+            await loadDealers();
+
             // 기본 행 추가
             addNewRow();
-            
+
             // 버튼 이벤트 - Excel 스타일 UX
             document.getElementById('add-row-btn').addEventListener('click', addNewRow);
             document.getElementById('save-btn').addEventListener('click', saveAllData);
