@@ -1,67 +1,16 @@
 <?php
 
-namespace Database\Seeders;
-
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 use App\Models\DealerProfile;
-use Illuminate\Database\Seeder;
 
-class DealerProfileSeeder extends Seeder
+return new class extends Migration
 {
-    public function run(): void
+    public function up(): void
     {
-        $dealers = [
-            [
-                'dealer_code' => 'DEFAULT',
-                'dealer_name' => '기본 대리점',
-                'contact_person' => '관리자',
-                'phone' => '02-1234-5678',
-                'address' => '서울시 강남구',
-                'default_sim_fee' => 0,
-                'default_mnp_discount' => 800,
-                'tax_rate' => 0.10,
-                'default_payback_rate' => 0.00,
-                'status' => 'active',
-                'activated_at' => now()
-            ],
-            [
-                'dealer_code' => 'ENT',
-                'dealer_name' => '이앤티',
-                'contact_person' => '김대리',
-                'phone' => '02-2222-3333',
-                'address' => '서울시 서초구',
-                'default_sim_fee' => 0,
-                'default_mnp_discount' => 800,
-                'tax_rate' => 0.10,
-                'default_payback_rate' => 2.50,
-                'status' => 'active',
-                'activated_at' => now()
-            ],
-            [
-                'dealer_code' => 'WIN',
-                'dealer_name' => '앤투윈',
-                'contact_person' => '박과장',
-                'phone' => '02-3333-4444',
-                'address' => '서울시 종로구',
-                'default_sim_fee' => 0,
-                'default_mnp_discount' => 800,
-                'tax_rate' => 0.10,
-                'default_payback_rate' => 1.80,
-                'status' => 'active',
-                'activated_at' => now()
-            ],
-            [
-                'dealer_code' => 'CHOSI',
-                'dealer_name' => '초시대',
-                'contact_person' => '이팀장',
-                'phone' => '02-4444-5555',
-                'address' => '부산시 해운대구',
-                'default_sim_fee' => 0,
-                'default_mnp_discount' => 800,
-                'tax_rate' => 0.10,
-                'default_payback_rate' => 3.00,
-                'status' => 'active',
-                'activated_at' => now()
-            ],
+        // 필요한 대리점 목록: sm, w, 더킹, 엔터, 유피, 초시대, 태성, 피디엠, 한주, 해피
+        $newDealers = [
             [
                 'dealer_code' => 'SM',
                 'dealer_name' => 'SM',
@@ -73,7 +22,9 @@ class DealerProfileSeeder extends Seeder
                 'tax_rate' => 0.10,
                 'default_payback_rate' => 2.00,
                 'status' => 'active',
-                'activated_at' => now()
+                'activated_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now()
             ],
             [
                 'dealer_code' => 'W',
@@ -86,7 +37,9 @@ class DealerProfileSeeder extends Seeder
                 'tax_rate' => 0.10,
                 'default_payback_rate' => 1.80,
                 'status' => 'active',
-                'activated_at' => now()
+                'activated_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now()
             ],
             [
                 'dealer_code' => 'KING',
@@ -99,7 +52,9 @@ class DealerProfileSeeder extends Seeder
                 'tax_rate' => 0.10,
                 'default_payback_rate' => 2.50,
                 'status' => 'active',
-                'activated_at' => now()
+                'activated_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now()
             ],
             [
                 'dealer_code' => 'ENTER',
@@ -112,7 +67,9 @@ class DealerProfileSeeder extends Seeder
                 'tax_rate' => 0.10,
                 'default_payback_rate' => 2.20,
                 'status' => 'active',
-                'activated_at' => now()
+                'activated_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now()
             ],
             [
                 'dealer_code' => 'UP',
@@ -125,7 +82,9 @@ class DealerProfileSeeder extends Seeder
                 'tax_rate' => 0.10,
                 'default_payback_rate' => 1.90,
                 'status' => 'active',
-                'activated_at' => now()
+                'activated_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now()
             ],
             [
                 'dealer_code' => 'TAESUNG',
@@ -138,7 +97,9 @@ class DealerProfileSeeder extends Seeder
                 'tax_rate' => 0.10,
                 'default_payback_rate' => 2.30,
                 'status' => 'active',
-                'activated_at' => now()
+                'activated_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now()
             ],
             [
                 'dealer_code' => 'PDM',
@@ -151,7 +112,9 @@ class DealerProfileSeeder extends Seeder
                 'tax_rate' => 0.10,
                 'default_payback_rate' => 2.10,
                 'status' => 'active',
-                'activated_at' => now()
+                'activated_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now()
             ],
             [
                 'dealer_code' => 'HANJU',
@@ -164,7 +127,9 @@ class DealerProfileSeeder extends Seeder
                 'tax_rate' => 0.10,
                 'default_payback_rate' => 1.95,
                 'status' => 'active',
-                'activated_at' => now()
+                'activated_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now()
             ],
             [
                 'dealer_code' => 'HAPPY',
@@ -177,14 +142,31 @@ class DealerProfileSeeder extends Seeder
                 'tax_rate' => 0.10,
                 'default_payback_rate' => 2.40,
                 'status' => 'active',
-                'activated_at' => now()
+                'activated_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now()
             ]
         ];
 
-        foreach ($dealers as $dealer) {
-            DealerProfile::create($dealer);
+        // 중복 방지를 위한 체크 후 삽입
+        foreach ($newDealers as $dealer) {
+            // 이미 존재하는지 확인
+            $existing = DealerProfile::where('dealer_code', $dealer['dealer_code'])->first();
+
+            if (!$existing) {
+                DealerProfile::create($dealer);
+                echo "✅ 대리점 추가: {$dealer['dealer_name']} ({$dealer['dealer_code']})\n";
+            } else {
+                echo "ℹ️ 이미 존재: {$dealer['dealer_name']} ({$dealer['dealer_code']})\n";
+            }
         }
-        
-        echo "DealerProfile 시더 실행 완료: " . count($dealers) . "개 대리점 생성\n";
     }
-}
+
+    public function down(): void
+    {
+        // 추가한 대리점들 제거
+        $dealerCodes = ['SM', 'W', 'KING', 'ENTER', 'UP', 'TAESUNG', 'PDM', 'HANJU', 'HAPPY'];
+
+        DealerProfile::whereIn('dealer_code', $dealerCodes)->delete();
+    }
+};
