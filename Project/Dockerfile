@@ -23,7 +23,7 @@ FROM php:8.3-apache-bookworm
 WORKDIR /var/www/html
 
 # 캐시 버스터(선택)
-ARG CACHE_BUST=2025-09-04-v5
+ARG CACHE_BUST=2025-09-16-v1
 
 # Apache 모듈
 RUN a2enmod rewrite headers
