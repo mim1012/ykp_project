@@ -987,6 +987,25 @@ Route::get('/test-api/sales/count', function () {
     return response()->json(['count' => App\Models\Sale::count()]);
 });
 
+// 디버깅: DB 상태 확인
+Route::get('/debug-db-state', function () {
+    try {
+        return response()->json([
+            'branches' => \App\Models\Branch::select('id', 'name')->get(),
+            'stores' => \App\Models\Store::select('id', 'name', 'branch_id')->get(),
+            'sales_count' => \App\Models\Sale::count(),
+            'user' => auth()->user() ? [
+                'id' => auth()->user()->id,
+                'role' => auth()->user()->role,
+                'store_id' => auth()->user()->store_id,
+                'branch_id' => auth()->user()->branch_id
+            ] : null
+        ]);
+    } catch (\Exception $e) {
+        return response()->json(['error' => $e->getMessage()], 500);
+    }
+});
+
 // 누락된 API 엔드포인트들 추가 (404, 405 오류 해결)
 Route::get('/test-api/stores/count', function () {
     try {
