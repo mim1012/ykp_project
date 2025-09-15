@@ -2384,6 +2384,18 @@ Route::middleware(['web'])->group(function () {
             if ($days <= 0 || $days > 365) {
                 return response()->json(['success' => false, 'error' => '조회 기간은 1-365일 사이여야 합니다.'], 400);
             }
+
+            // 매장 존재 여부 검증 (DB 오류 방지)
+            if ($storeId) {
+                $storeExists = App\Models\Store::where('id', $storeId)->exists();
+                if (!$storeExists) {
+                    return response()->json([
+                        'success' => false,
+                        'error' => '존재하지 않는 매장입니다.',
+                        'store_id' => $storeId
+                    ], 404);
+                }
+            }
             
             // 캐시 키 생성
             $cacheKey = "kpi.{$storeId}.{$days}." . now()->format('Y-m-d-H');
@@ -2789,6 +2801,170 @@ Route::middleware(['web'])->group(function () {
 
             return response()->json(['success' => true, 'data' => $goalData]);
         } catch (\Exception $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    });
+});
+
+// 목표 설정 및 조회 API
+Route::middleware(['web', 'auth'])->group(function () {
+    // 목표 조회 (권한별)
+    Route::get('/api/goals/{type}/{id?}', function($type, $id = null) {
+        try {
+            $user = auth()->user();
+
+            // 권한 체크
+            if ($type === 'system' && $user->role !== 'headquarters') {
+                return response()->json(['success' => false, 'error' => '시스템 목표는 본사만 조회 가능합니다.'], 403);
+            }
+
+            // 현재 월 목표 조회
+            $currentMonth = now()->format('Y-m');
+            $goal = App\Models\Goal::where('target_type', $type)
+                ->where('target_id', $id)
+                ->where('period_type', 'monthly')
+                ->whereRaw("DATE_FORMAT(period_start, '%Y-%m') = ?", [$currentMonth])
+                ->where('is_active', true)
+                ->first();
+
+            if ($goal) {
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'target_type' => $goal->target_type,
+                        'target_id' => $goal->target_id,
+                        'sales_target' => (float) $goal->sales_target,
+                        'activation_target' => (int) $goal->activation_target,
+                        'margin_target' => (float) $goal->margin_target,
+                        'period' => $currentMonth,
+                        'notes' => $goal->notes,
+                        'set_by' => $goal->createdBy->name ?? 'Unknown',
+                        'is_custom' => true
+                    ]
+                ]);
+            } else {
+                // 기본 목표 반환
+                $defaultTargets = [
+                    'system' => ['sales' => 50000000, 'activations' => 200],
+                    'branch' => ['sales' => 10000000, 'activations' => 50],
+                    'store' => ['sales' => 5000000, 'activations' => 25]
+                ];
+
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'target_type' => $type,
+                        'target_id' => $id,
+                        'sales_target' => $defaultTargets[$type]['sales'],
+                        'activation_target' => $defaultTargets[$type]['activations'],
+                        'margin_target' => 0,
+                        'period' => $currentMonth,
+                        'notes' => '기본 목표 (설정 가능)',
+                        'is_custom' => false
+                    ]
+                ]);
+            }
+        } catch (Exception $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    });
+
+    // 목표 설정 (본사/지사 관리자만)
+    Route::post('/api/goals/{type}/{id?}', function($type, $id = null) {
+        $user = auth()->user();
+
+        // 권한 체크
+        if ($user->role === 'store') {
+            return response()->json(['success' => false, 'error' => '매장 직원은 목표를 설정할 수 없습니다.'], 403);
+        }
+
+        request()->validate([
+            'sales_target' => 'required|numeric|min:0',
+            'activation_target' => 'required|integer|min:0',
+            'notes' => 'nullable|string|max:500'
+        ]);
+
+        try {
+            $goal = App\Models\Goal::create([
+                'target_type' => $type,
+                'target_id' => $id,
+                'period_type' => 'monthly',
+                'period_start' => now()->startOfMonth(),
+                'period_end' => now()->endOfMonth(),
+                'sales_target' => request('sales_target'),
+                'activation_target' => request('activation_target'),
+                'margin_target' => 0,
+                'notes' => request('notes'),
+                'created_by' => $user->id,
+                'is_active' => true
+            ]);
+
+            // 활동 로그 기록
+            App\Models\ActivityLog::logActivity(
+                'goal_create',
+                "{$type} 목표 설정",
+                "매출 목표: " . number_format(request('sales_target')) . "원, 개통 목표: " . request('activation_target') . "건",
+                $type,
+                $id
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => '목표가 성공적으로 설정되었습니다.',
+                'data' => $goal
+            ]);
+        } catch (Exception $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    });
+});
+
+// 실시간 활동 로그 API
+Route::middleware(['web', 'auth'])->group(function () {
+    // 최근 활동 조회
+    Route::get('/api/activities/recent', function() {
+        try {
+            $user = auth()->user();
+            $limit = request()->get('limit', 10);
+
+            $query = App\Models\ActivityLog::with('user:id,name,role')
+                ->orderBy('performed_at', 'desc')
+                ->limit($limit);
+
+            // 권한별 필터링
+            if ($user->role === 'branch') {
+                $query->where(function($q) use ($user) {
+                    $q->where('user_id', $user->id)
+                      ->orWhereIn('target_id', function($subq) use ($user) {
+                          $subq->select('id')->from('stores')->where('branch_id', $user->branch_id);
+                      });
+                });
+            } elseif ($user->role === 'store') {
+                $query->where('user_id', $user->id);
+            }
+
+            $activities = $query->get()->map(function($activity) {
+                return [
+                    'id' => $activity->id,
+                    'type' => $activity->activity_type,
+                    'title' => $activity->activity_title,
+                    'description' => $activity->activity_description,
+                    'user_name' => $activity->user->name ?? 'Unknown',
+                    'user_role' => $activity->user->role ?? 'unknown',
+                    'performed_at' => $activity->performed_at->toISOString(),
+                    'time_ago' => $activity->performed_at->diffForHumans()
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $activities,
+                'meta' => [
+                    'count' => $activities->count(),
+                    'user_role' => $user->role
+                ]
+            ]);
+        } catch (Exception $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
     });

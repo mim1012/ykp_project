@@ -387,9 +387,14 @@
                 }, 2000);
                 console.log('저장 성공:', data);
 
-                // 🔄 저장 후 대시보드 실시간 업데이트 트리거
+                // 🔄 저장 후 실시간 시스템 업데이트
                 if (data.success && validData.length > 0) {
-                    console.log('💡 대시보드 실시간 업데이트 시작...');
+                    console.log('💡 실시간 시스템 업데이트 시작...');
+
+                    // 1. 활동 로그 기록
+                    recordSalesActivity(validData.length);
+
+                    // 2. 대시보드 업데이트
                     refreshDashboardStats(validData.length);
                 }
             })
@@ -480,6 +485,45 @@
             }
 
             console.log('🎯 대시보드 실시간 업데이트 처리 완료');
+        }
+
+        // 📝 활동 로그 기록 함수
+        function recordSalesActivity(savedCount) {
+            console.log(`📝 개통표 입력 활동 로그 기록: ${savedCount}건`);
+
+            const storeName = window.userData.store_name || '알 수 없는 매장';
+            const storeId = window.userData.store_id;
+
+            fetch('/api/activities/log', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    activity_type: 'sales_input',
+                    activity_title: `개통표 ${savedCount}건 입력`,
+                    activity_description: `${storeName}에서 개통표 ${savedCount}건을 입력했습니다.`,
+                    target_type: 'store',
+                    target_id: storeId,
+                    activity_data: {
+                        saved_count: savedCount,
+                        store_name: storeName,
+                        timestamp: new Date().toISOString()
+                    }
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log('✅ 활동 로그 기록 완료');
+                } else {
+                    console.warn('⚠️ 활동 로그 기록 실패:', data.error);
+                }
+            })
+            .catch(error => {
+                console.warn('⚠️ 활동 로그 기록 오류:', error.message);
+            });
         }
 
         // 초기 로드

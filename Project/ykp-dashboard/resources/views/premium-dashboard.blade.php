@@ -651,8 +651,19 @@
                     <div class="chart-title">최근 활동</div>
                     <div style="text-align: center; padding: 40px 20px; color: #6b7280;">
                         <div style="font-size: 24px; margin-bottom: 12px;">🚧</div>
-                        <div style="font-weight: 600; margin-bottom: 8px;">실시간 활동 데이터 없음</div>
-                        <div style="font-size: 14px;">사용자 활동이 발생하면 여기에 표시됩니다.</div>
+                        <div style="font-weight: 600; margin-bottom: 8px;" id="activity-status">실시간 활동 로딩 중...</div>
+                        <div style="font-size: 14px;" id="activity-description">최근 활동을 불러오고 있습니다.</div>
+                    </div>
+                    <div id="realtime-activities" style="padding: 0 20px; max-height: 300px; overflow-y: auto;">
+                        <!-- 실시간 활동이 여기에 표시됩니다 -->
+                    </div>
+                </div>
+                <div class="bottom-card">
+                    <div class="chart-title">공지사항</div>
+                    <div style="text-align: center; padding: 40px 20px; color: #6b7280;">
+                        <div style="font-size: 24px; margin-bottom: 12px;">📢</div>
+                        <div style="font-weight: 600; margin-bottom: 8px;">공지사항 없음</div>
+                        <div style="font-size: 14px;">새로운 공지사항이 등록되면 여기에 표시됩니다.</div>
                     </div>
                 </div>
                 <div class="bottom-card">
@@ -1544,6 +1555,125 @@
 
             console.log('🎨 대시보드 UI 업데이트 완료');
         }
+
+        // 📝 실시간 활동 로드 함수
+        async function loadRealtimeActivities() {
+            try {
+                console.log('📝 실시간 활동 로딩...');
+
+                const response = await fetch('/api/activities/recent?limit=10');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+
+                if (data.success && data.data && data.data.length > 0) {
+                    // 활동 데이터가 있는 경우
+                    document.getElementById('activity-status').textContent = `최근 활동 ${data.data.length}건`;
+                    document.getElementById('activity-description').textContent = '실시간으로 업데이트됩니다.';
+
+                    const activitiesHtml = data.data.map(activity => `
+                        <div style="border-bottom: 1px solid #e5e7eb; padding: 12px 0;">
+                            <div style="display: flex; justify-between; align-items: start;">
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 600; color: #374151; margin-bottom: 4px;">
+                                        ${activity.title}
+                                    </div>
+                                    <div style="font-size: 13px; color: #6b7280; margin-bottom: 4px;">
+                                        ${activity.description || ''}
+                                    </div>
+                                    <div style="font-size: 12px; color: #9ca3af;">
+                                        ${activity.user_name} • ${activity.time_ago}
+                                    </div>
+                                </div>
+                                <div style="padding: 4px 8px; background: #f3f4f6; border-radius: 4px; font-size: 11px; color: #6b7280;">
+                                    ${activity.type}
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+
+                    document.getElementById('realtime-activities').innerHTML = activitiesHtml;
+
+                    // 빈 상태 숨기기
+                    const emptyState = document.querySelector('#activity-status').parentElement;
+                    emptyState.style.display = 'none';
+
+                    console.log(`✅ 실시간 활동 ${data.data.length}건 로드 완료`);
+                } else {
+                    // 활동 데이터가 없는 경우
+                    document.getElementById('activity-status').textContent = '활동 데이터 없음';
+                    document.getElementById('activity-description').textContent = '사용자 활동이 발생하면 여기에 표시됩니다.';
+                    document.getElementById('realtime-activities').innerHTML = '';
+                    console.log('ℹ️ 실시간 활동 데이터 없음');
+                }
+            } catch (error) {
+                console.error('❌ 실시간 활동 로드 실패:', error);
+                document.getElementById('activity-status').textContent = '활동 로드 실패';
+                document.getElementById('activity-description').textContent = '활동 데이터를 불러올 수 없습니다.';
+            }
+        }
+
+        // 🔄 실시간 목표 로드 함수
+        async function loadRealtimeGoals() {
+            try {
+                const userData = window.userData;
+                let goalType, goalId;
+
+                // 사용자 역할에 따른 목표 조회
+                if (userData.role === 'headquarters') {
+                    goalType = 'system';
+                    goalId = null;
+                } else if (userData.role === 'branch') {
+                    goalType = 'branch';
+                    goalId = userData.branch_id;
+                } else if (userData.role === 'store') {
+                    goalType = 'store';
+                    goalId = userData.store_id;
+                }
+
+                if (goalType) {
+                    const goalUrl = goalId ? `/api/goals/${goalType}/${goalId}` : `/api/goals/${goalType}`;
+                    const response = await fetch(goalUrl);
+
+                    if (response.ok) {
+                        const data = await response.json();
+
+                        if (data.success && data.data) {
+                            const goal = data.data;
+
+                            // 목표 정보 업데이트
+                            const targetElement = document.getElementById(`${goalType === 'system' ? 'system' : goalType}-goal-target`);
+                            if (targetElement) {
+                                targetElement.textContent = `월 ${(goal.sales_target / 10000).toLocaleString()}만원 목표`;
+                                if (!goal.is_custom) {
+                                    targetElement.textContent += ' (기본값)';
+                                }
+                            }
+
+                            console.log(`✅ ${goalType} 목표 로드 완료:`, goal);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.warn('⚠️ 실시간 목표 로드 실패:', error);
+            }
+        }
+
+        // 페이지 로드 시 실시간 데이터 초기화
+        document.addEventListener('DOMContentLoaded', function() {
+            // 기존 초기화 함수들...
+
+            // 추가: 실시간 활동 및 목표 로드
+            setTimeout(() => {
+                loadRealtimeActivities();
+                loadRealtimeGoals();
+            }, 2000); // 다른 데이터 로딩 후 실행
+
+            // 30초마다 실시간 활동 업데이트
+            setInterval(loadRealtimeActivities, 30000);
+        });
 
         // 실시간 업데이트 리스너 초기화 실행
         initRealtimeUpdateListeners();
