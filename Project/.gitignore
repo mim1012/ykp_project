@@ -1,0 +1,85 @@
+# 🚨 CRITICAL SECURITY - Root .gitignore for YKP Project
+
+# YKP Dashboard specific (🚨 CRITICAL - vendor 추적 방지)
+/ykp-dashboard/.env*
+!/ykp-dashboard/.env.example
+/ykp-dashboard/vendor/
+/ykp-dashboard/node_modules/
+/ykp-dashboard/storage/logs/
+/ykp-dashboard/bootstrap/cache/
+/ykp-dashboard/playwright-report/
+/ykp-dashboard/test-results/
+/ykp-dashboard/public/build/
+/ykp-dashboard/public/hot
+/ykp-dashboard/storage/framework/cache/
+/ykp-dashboard/storage/framework/sessions/
+/ykp-dashboard/storage/framework/views/
+
+# Windows system files (SECURITY CRITICAL)
+**/System Volume Information/
+**/C:/Windows/
+**/etc/hosts
+desktop.ini
+Thumbs.db
+
+# Environment and config files
+**/.env
+**/.env.*
+!**/.env.example
+**/config/database.local.php
+**/config/app.local.php
+
+# IDE and development tools
+.vscode/
+.idea/
+*.swp
+*.swo
+**/.phpunit.cache
+**/.phpactor.json
+
+# Build artifacts
+**/playwright-report/
+**/test-results/
+**/coverage/
+**/dist/
+**/build/
+
+# Temporary files
+*.tmp
+*.temp
+**/tmp/
+nul
+*.log.*
+
+# OS generated files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Development cache
+**/.laragon/
+**/.docker/
+**/.phpunit.result.cache
+
+# Project specific exclusions
+/AutoClick/
+/AutoInput/
+/Crypto/
+/KaKao Auto/
+/KimStudyMacroV2*/
+/KimTutorBot/
+/Media_enhanced*/
+/My project/
+/PJT*/
+/PURPLE_Macro*/
+/Python*/
+/Teder*/
+/YKP ERP System/
+/n8n project/
+/커서AI*/
+/프로젝트*/
+/쓰레드*/
+/암호화폐*/
+/카카오톡*/
+/TK EXEV PSI*/
+/루팅/
