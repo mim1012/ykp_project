@@ -21,12 +21,16 @@
     <script>
         window.showAddStoreModal = function() {
             console.log('✅ 전역 showAddStoreModal 즉시 실행');
+
+            // 🔥 지사 목록을 먼저 로드
+            loadBranchOptions('modal-branch-select');
+
             const modal = document.getElementById('add-store-modal');
             if (modal) {
                 modal.classList.remove('hidden');
                 modal.style.display = 'flex';
                 console.log('✅ 모달 표시 성공');
-                
+
                 // 첫 번째 입력 필드에 포커스
                 const nameInput = document.getElementById('modal-store-name');
                 if (nameInput) {
@@ -37,14 +41,102 @@
                 alert('매장 추가 기능을 호출했지만 모달을 찾을 수 없습니다.');
             }
         };
+
+        window.loadBranchOptions = function(selectId) {
+            console.log('✅ 전역 loadBranchOptions 실행:', selectId);
+
+            const select = document.getElementById(selectId);
+            const userRole = '{{ auth()->user()->role }}';
+            const userBranchId = '{{ auth()->user()->branch_id }}';
+
+            if (!select) {
+                console.error('❌ 드롭다운 요소를 찾을 수 없음:', selectId);
+                return;
+            }
+
+            select.innerHTML = '<option value="">로딩 중...</option>';
+
+            // 지사 계정인 경우 자신의 지사만 표시
+            if (userRole === 'branch' && userBranchId) {
+                console.log('🏢 지사 계정:', userRole, '지사 ID:', userBranchId);
+
+                fetch('/test-api/branches')
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('📊 지사 API 응답:', data);
+
+                        if (data.success) {
+                            const userBranch = data.data.find(branch => branch.id == userBranchId);
+                            if (userBranch) {
+                                select.innerHTML = `<option value="${userBranch.id}" selected>${userBranch.name}</option>`;
+                                console.log('✅ 지사 계정용 지사 선택됨:', userBranch.name);
+
+                                // 지사 선택 컨테이너 숨기기
+                                const container = document.getElementById('branch-select-container');
+                                if (container) {
+                                    container.style.display = 'none';
+                                    console.log('✅ 지사 선택 컨테이너 숨김');
+                                }
+                            } else {
+                                select.innerHTML = '<option value="">지사 정보를 찾을 수 없습니다</option>';
+                                console.error('❌ 지사 정보 찾기 실패');
+                            }
+                        } else {
+                            select.innerHTML = '<option value="">지사 목록 로드 실패</option>';
+                            console.error('❌ API 응답 실패');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('❌ 지사 정보 로드 오류:', error);
+                        select.innerHTML = '<option value="">지사 정보 로드 오류</option>';
+                    });
+            } else {
+                console.log('🏛️ 본사 계정 - 모든 지사 표시');
+
+                fetch('/test-api/branches')
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('📊 본사용 지사 API 응답:', data);
+
+                        if (data.success) {
+                            select.innerHTML = '<option value="">지사를 선택하세요...</option>';
+                            data.data.forEach(branch => {
+                                select.innerHTML += `<option value="${branch.id}">${branch.name}</option>`;
+                            });
+                            console.log('✅ 본사 계정용 지사 목록 로드 완료:', data.data.length, '개');
+                        } else {
+                            select.innerHTML = '<option value="">지사 목록 로드 실패</option>';
+                            console.error('❌ API 응답 실패');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('❌ 지사 목록 로드 오류:', error);
+                        select.innerHTML = '<option value="">지사 목록 로드 오류</option>';
+                    });
+            }
+        };
         
+        window.closeAddStoreModal = function() {
+            console.log('✅ 전역 closeAddStoreModal 실행');
+            const modal = document.getElementById('add-store-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+                // 폼 초기화
+                document.getElementById('modal-store-name').value = '';
+                document.getElementById('modal-owner-name').value = '';
+                document.getElementById('modal-phone').value = '';
+                console.log('✅ 모달 닫기 및 폼 초기화 완료');
+            }
+        };
+
         window.submitAddStore = function() {
             console.log('✅ 매장 추가 제출 시작');
-            
+
             // 지사 계정인 경우 자동으로 branch_id 설정
             const userRole = '{{ auth()->user()->role }}';
             const userBranchId = '{{ auth()->user()->branch_id }}';
-            
+
             const formData = {
                 name: document.getElementById('modal-store-name')?.value || '',
                 branch_id: userRole === 'branch' ? userBranchId : (document.getElementById('modal-branch-select')?.value || ''),
