@@ -64,9 +64,14 @@ RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' \
 # 앱 소스
 COPY Project/ykp-dashboard/ ./
 
-# 빌드 산출물/벤더 반영
+# 빌드 산출물 반영
 COPY --from=frontend_build /app/public/build ./public/build
+
+# Composer 의존성 반영 (빌드 스테이지에서)
 COPY --from=composer_build /app/vendor ./vendor
+
+# Composer autoload 최적화 (의존성 설치 완료 후)
+RUN composer dump-autoload --optimize
 
 # 권한
 RUN chown -R www-data:www-data storage bootstrap/cache \
