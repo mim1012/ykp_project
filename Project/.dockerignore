@@ -1,31 +1,20 @@
-# 전체 제외 후 필요한 것만 포함
-**
+# 불필요한 디렉터리 제외
+*/node_modules/
+*/vendor/
+*/storage/logs/
+*/storage/framework/
+*/bootstrap/cache/
+*/tests/
+*/playwright-report/
+*/.env
+*/.env.*
+!*/.env.example
+*/tmp/
+*/.tmp/
+*/.git/
 
-# Laravel 프로젝트만 포함
-!Project/ykp-dashboard/
-
-# 빌드에 필요한 핵심 파일들
-!Project/ykp-dashboard/app/
-!Project/ykp-dashboard/bootstrap/
-!Project/ykp-dashboard/config/
-!Project/ykp-dashboard/database/
-!Project/ykp-dashboard/public/
-!Project/ykp-dashboard/resources/
-!Project/ykp-dashboard/routes/
-!Project/ykp-dashboard/storage/
-!Project/ykp-dashboard/artisan
-!Project/ykp-dashboard/composer.json
-!Project/ykp-dashboard/composer.lock
-!Project/ykp-dashboard/package*.json
-!Project/ykp-dashboard/vite.config.js
-!Project/ykp-dashboard/.env.example
-
-# 빌드/런타임 제외 (생성되거나 불필요)
-Project/ykp-dashboard/node_modules/
-Project/ykp-dashboard/vendor/
-Project/ykp-dashboard/storage/logs/
-Project/ykp-dashboard/storage/framework/
-Project/ykp-dashboard/bootstrap/cache/
-Project/ykp-dashboard/tests/
-Project/ykp-dashboard/playwright-report/
-Project/ykp-dashboard/.env
+# 기타 OS/에디터 파일
+.DS_Store
+Thumbs.db
+*.log
+*.tmp

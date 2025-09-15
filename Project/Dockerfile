@@ -10,10 +10,10 @@ WORKDIR /app
 RUN echo ">>> STAGING BRANCH v999 - NO VENDOR COPY @ $(date)" && sleep 2
 
 # 레이어 캐시 최적화
-COPY Project/ykp-dashboard/package*.json ./
+COPY ykp-dashboard/package*.json ./
 RUN npm ci --no-audit --no-fund --prefer-offline
 
-COPY Project/ykp-dashboard/ ./
+COPY ykp-dashboard/ ./
 # Vite 빌드 시 메모리 상한(2GB) — Railway OOM 예방
 ENV NODE_OPTIONS=--max-old-space-size=2048
 RUN npm run build
@@ -48,7 +48,7 @@ RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' \
       /etc/apache2/sites-available/000-default.conf
 
 # Composer 의존성 파일 먼저 복사 (레이어 캐시 최적화)
-COPY Project/ykp-dashboard/composer.json Project/ykp-dashboard/composer.lock ./
+COPY ykp-dashboard/composer.json ykp-dashboard/composer.lock ./
 
 # Composer 설치 및 의존성 설치
 RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
@@ -57,7 +57,7 @@ RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
     && composer install --no-dev --optimize-autoloader --no-interaction --no-progress
 
 # 앱 소스 복사 (vendor는 이미 설치됨)
-COPY Project/ykp-dashboard/ ./
+COPY ykp-dashboard/ ./
 
 # 빌드 산출물 반영
 COPY --from=frontend_build /app/public/build ./public/build
