@@ -47,8 +47,8 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-blue-100 text-sm font-medium">총 매출</p>
-                        <p class="text-2xl font-bold" id="total-revenue">₩0</p>
-                        <p class="text-blue-200 text-xs mt-1" id="revenue-growth">전주 대비 -</p>
+                        <p class="text-2xl font-bold" id="total-revenue">로딩 중...</p>
+                        <p class="text-blue-200 text-xs mt-1" id="revenue-growth">데이터 로딩 중...</p>
                     </div>
                     <div class="bg-blue-400 bg-opacity-30 p-3 rounded-full">
                         <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -63,8 +63,8 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-green-100 text-sm font-medium">순이익</p>
-                        <p class="text-2xl font-bold" id="net-profit">₩0</p>
-                        <p class="text-green-200 text-xs mt-1" id="profit-margin">마진율: 0%</p>
+                        <p class="text-2xl font-bold" id="net-profit">로딩 중...</p>
+                        <p class="text-green-200 text-xs mt-1" id="profit-margin">계산 중...</p>
                     </div>
                     <div class="bg-green-400 bg-opacity-30 p-3 rounded-full">
                         <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -79,8 +79,8 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-purple-100 text-sm font-medium">총 개통 건수</p>
-                        <p class="text-2xl font-bold" id="total-activations">0건</p>
-                        <p class="text-purple-200 text-xs mt-1" id="avg-daily">일평균: 0건</p>
+                        <p class="text-2xl font-bold" id="total-activations">로딩 중...</p>
+                        <p class="text-purple-200 text-xs mt-1" id="avg-daily">계산 중...</p>
                     </div>
                     <div class="bg-purple-400 bg-opacity-30 p-3 rounded-full">
                         <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">

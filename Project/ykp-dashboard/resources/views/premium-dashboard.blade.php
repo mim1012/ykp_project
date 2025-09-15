@@ -468,7 +468,7 @@
                             <span class="kpi-title">🏢 전체 지사 수</span>
                             <span class="kpi-trend trend-up">+ 2개</span>
                         </div>
-                        <div class="kpi-value">{{ App\Models\Branch::count() }}개 지사</div>
+                        <div class="kpi-value" id="total-branches-count">로딩 중...</div>
                         <div class="kpi-subtitle">전국 지사 관리</div>
                     </div>
                     <div class="kpi-card" id="totalStores" style="border-left: 4px solid #3b82f6;">
@@ -476,7 +476,7 @@
                             <span class="kpi-title">🏪 전체 매장 수</span>
                             <span class="kpi-trend trend-up">+ 1개</span>
                         </div>
-                        <div class="kpi-value">{{ App\Models\Store::count() }}개 매장</div>
+                        <div class="kpi-value" id="total-stores-count">로딩 중...</div>
                         <div class="kpi-subtitle">전국 매장 관리</div>
                     </div>
                     <div class="kpi-card" id="totalUsers" style="border-left: 4px solid #3b82f6;">
@@ -484,15 +484,15 @@
                             <span class="kpi-title">👥 전체 사용자</span>
                             <span class="kpi-trend trend-up">+ 1명</span>
                         </div>
-                        <div class="kpi-value">{{ App\Models\User::where('role', 'store')->count() }}명 관리</div>
+                        <div class="kpi-value" id="total-users-count">로딩 중...</div>
                         <div class="kpi-subtitle">시스템 사용자</div>
                     </div>
                     <div class="kpi-card" id="systemGoal" style="border-left: 4px solid #3b82f6;">
                         <div class="kpi-header">
                             <span class="kpi-title">🎯 시스템 목표</span>
                         </div>
-                        <div class="kpi-value">3.4% 달성</div>
-                        <div class="kpi-subtitle">월 5천만원 목표</div>
+                        <div class="kpi-value" id="system-goal-achievement">로딩 중...</div>
+                        <div class="kpi-subtitle" id="system-goal-target">목표 로딩 중...</div>
                     </div>
                 @elseif(auth()->user()->role === 'branch')
                     <!-- 지사: 소속 매장 관리 관점 -->
@@ -525,7 +525,7 @@
                             <span class="kpi-title">🎯 지사 목표</span>
                         </div>
                         <div class="kpi-value" id="branch-goal-achievement">0% 달성</div>
-                        <div class="kpi-subtitle">월 1천만원 목표</div>
+                        <div class="kpi-subtitle" id="branch-goal-target">목표 로딩 중...</div>
                     </div>
                     <div class="kpi-card" id="branchRanking" style="border-left: 4px solid #8b5cf6;">
                         <div class="kpi-header">
@@ -574,7 +574,7 @@
                             <span class="kpi-title">🎯 매장 목표</span>
                         </div>
                         <div class="kpi-value">0% 달성</div>
-                        <div class="kpi-subtitle">월 500만원 목표</div>
+                        <div class="kpi-subtitle" id="store-goal-target">목표 로딩 중...</div>
                     </div>
                 @else
                     <!-- 개발자: 시스템 정보 -->
@@ -651,16 +651,16 @@
                     <div class="chart-title">최근 활동</div>
                     <div style="text-align: center; padding: 40px 20px; color: #6b7280;">
                         <div style="font-size: 24px; margin-bottom: 12px;">🚧</div>
-                        <div style="font-weight: 600; margin-bottom: 8px;">시스템 준비중입니다</div>
-                        <div style="font-size: 14px;">실시간 활동 로그 시스템을 구축 중입니다.</div>
+                        <div style="font-weight: 600; margin-bottom: 8px;">실시간 활동 데이터 없음</div>
+                        <div style="font-size: 14px;">사용자 활동이 발생하면 여기에 표시됩니다.</div>
                     </div>
                 </div>
                 <div class="bottom-card">
                     <div class="chart-title">공지사항</div>
                     <div style="text-align: center; padding: 40px 20px; color: #6b7280;">
                         <div style="font-size: 24px; margin-bottom: 12px;"></div>
-                        <div style="font-weight: 600; margin-bottom: 8px;">시스템 준비중입니다</div>
-                        <div style="font-size: 14px;">공지사항 관리 시스템을 구축 중입니다.</div>
+                        <div style="font-weight: 600; margin-bottom: 8px;">공지사항 없음</div>
+                        <div style="font-size: 14px;">새로운 공지사항이 등록되면 여기에 표시됩니다.</div>
                     </div>
                 </div>
             </div>
@@ -941,7 +941,8 @@
                     if (window.userData.role === 'branch') {
                         const accessibleStores = overviewData.debug?.accessible_stores || 0;
                         const monthSales = data.month?.sales || 0;
-                        const monthTarget = 10000000; // 지사 목표 1천만원
+                        // 지사 목표를 실시간 API에서 가져오거나 기본값
+                        const monthTarget = data.month?.target || 10000000;
                         const achievementRate = monthSales > 0 ? Math.round((monthSales / monthTarget) * 100) : 0;
                         
                         // 지사 KPI 업데이트
@@ -1059,12 +1060,12 @@
             try {
                 console.log('📊 실시간 시스템 상태 로드 시작...');
 
-                // 🚀 실시간 API 호출 - 각각 개별 처리로 안정성 극대화
+                // 🚀 실시간 API 호출 - 모든 데이터를 실시간으로 로드
                 const apiResults = {
-                    users: 15,    // 기본값 (알려진 사용자 수)
-                    stores: 7,    // 기본값 (알려진 매장 수)
-                    sales: 8,     // 기본값 (알려진 매출 건수)
-                    branches: 16  // 기본값 (알려진 지사 수)
+                    users: 0,     // 실시간 로드될 사용자 수
+                    stores: 0,    // 실시간 로드될 매장 수
+                    sales: 0,     // 실시간 로드될 매출 건수
+                    branches: 0   // 실시간 로드될 지사 수
                 };
                 
                 // 🔄 실시간 API 호출들 - 병렬 처리로 성능 향상
@@ -1105,11 +1106,14 @@
                 // 모든 API 호출을 병렬로 실행
                 await Promise.allSettled(apiCalls);
                 
-                // 안정적인 데이터로 결과 생성
+                // 실시간 데이터로 UI 업데이트
                 const userCount = apiResults.users;
                 const storeCount = apiResults.stores;
-                const salesCount = apiResults.sales;
                 const branchCount = apiResults.branches;
+                const salesCount = apiResults.sales;
+
+                // UI 요소 실시간 업데이트
+                updateDashboardElements(userCount, storeCount, branchCount, salesCount);
                 
                 console.log('✅ 데이터 집계 완료:', { users: userCount, stores: storeCount, sales: salesCount, branches: branchCount });
                 
@@ -1416,6 +1420,109 @@
             };
 
             console.log('✅ 실시간 업데이트 리스너 초기화 완료');
+        }
+
+        // 🔄 대시보드 UI 요소 실시간 업데이트 함수
+        function updateDashboardElements(userCount, storeCount, branchCount, salesCount) {
+            console.log('🎨 대시보드 UI 실시간 업데이트:', { userCount, storeCount, branchCount, salesCount });
+
+            // 안전한 요소 업데이트 함수
+            const safeUpdateElement = (id, value, fallback = '데이터 없음') => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.textContent = value || fallback;
+                    console.log(`✅ ${id} 업데이트: ${value || fallback}`);
+                } else {
+                    console.warn(`⚠️ 요소 찾기 실패: ${id}`);
+                }
+            };
+
+            // 본사 관리자 UI 업데이트
+            if (window.userData?.role === 'headquarters') {
+                safeUpdateElement('total-branches-count', branchCount > 0 ? `${branchCount}개 지사` : '지사 없음');
+                safeUpdateElement('total-stores-count', storeCount > 0 ? `${storeCount}개 매장` : '매장 없음');
+                safeUpdateElement('total-users-count', userCount > 0 ? `${userCount}명 관리` : '사용자 없음');
+
+                // 목표 달성률 계산 (실제 매출 데이터 기반)
+                fetch('/api/dashboard/overview')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.data) {
+                            const monthSales = data.data.month?.sales || 0;
+                            const monthTarget = 50000000; // 월 5천만원 목표
+                            const achievementRate = monthSales > 0 ? (monthSales / monthTarget * 100).toFixed(1) : 0;
+
+                            safeUpdateElement('system-goal-achievement', monthSales > 0 ? `${achievementRate}% 달성` : '데이터 없음');
+                            safeUpdateElement('system-goal-target', `월 ${(monthTarget / 10000).toLocaleString()}만원 목표`);
+                        } else {
+                            safeUpdateElement('system-goal-achievement', '데이터 없음');
+                            safeUpdateElement('system-goal-target', '목표 정보 없음');
+                        }
+                    })
+                    .catch(error => {
+                        console.warn('⚠️ 목표 데이터 로드 실패:', error);
+                        safeUpdateElement('system-goal-achievement', '로딩 실패');
+                        safeUpdateElement('system-goal-target', '데이터를 불러올 수 없음');
+                    });
+            }
+
+            // 지사 관리자 UI 업데이트
+            if (window.userData?.role === 'branch') {
+                const branchId = window.userData.branch_id;
+                const branchName = window.userData.branch_name;
+
+                // 지사별 목표 설정 (실제 데이터 또는 기본값)
+                fetch(`/api/dashboard/overview?branch=${branchId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.data) {
+                            const monthSales = data.data.month?.sales || 0;
+                            const branchTarget = data.data.month?.target || 10000000; // 지사 기본 목표 1천만원
+                            const achievementRate = monthSales > 0 ? (monthSales / branchTarget * 100).toFixed(1) : 0;
+
+                            safeUpdateElement('branch-goal-achievement', monthSales > 0 ? `${achievementRate}% 달성` : '실적 없음');
+                            safeUpdateElement('branch-goal-target', `월 ${(branchTarget / 10000).toLocaleString()}만원 목표`);
+                        } else {
+                            safeUpdateElement('branch-goal-achievement', '데이터 없음');
+                            safeUpdateElement('branch-goal-target', '목표 정보 없음');
+                        }
+                    })
+                    .catch(error => {
+                        console.warn('⚠️ 지사 목표 데이터 로드 실패:', error);
+                        safeUpdateElement('branch-goal-achievement', '로딩 실패');
+                        safeUpdateElement('branch-goal-target', '데이터를 불러올 수 없음');
+                    });
+            }
+
+            // 매장 직원 UI 업데이트
+            if (window.userData?.role === 'store') {
+                const storeId = window.userData.store_id;
+                const storeName = window.userData.store_name;
+
+                // 매장별 목표 설정 (실제 데이터 또는 기본값)
+                fetch(`/api/dashboard/overview?store=${storeId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.data) {
+                            const monthSales = data.data.month?.sales || 0;
+                            const storeTarget = data.data.month?.target || 5000000; // 매장 기본 목표 500만원
+                            const achievementRate = monthSales > 0 ? (monthSales / storeTarget * 100).toFixed(1) : 0;
+
+                            safeUpdateElement('store-goal-achievement', monthSales > 0 ? `${achievementRate}% 달성` : '실적 없음');
+                            safeUpdateElement('store-goal-target', `월 ${(storeTarget / 10000).toLocaleString()}만원 목표`);
+                        } else {
+                            safeUpdateElement('store-goal-achievement', '데이터 없음');
+                            safeUpdateElement('store-goal-target', '목표 정보 없음');
+                        }
+                    })
+                    .catch(error => {
+                        console.warn('⚠️ 매장 목표 데이터 로드 실패:', error);
+                        safeUpdateElement('store-goal-achievement', '로딩 실패');
+                        safeUpdateElement('store-goal-target', '데이터를 불러올 수 없음');
+                    });
+            }
+
+            console.log('🎨 대시보드 UI 업데이트 완료');
         }
 
         // 실시간 업데이트 리스너 초기화 실행
