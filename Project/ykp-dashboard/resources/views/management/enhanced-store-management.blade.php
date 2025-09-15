@@ -460,7 +460,7 @@
         // 지사 목록 로드
         async function loadBranches() {
             try {
-                const response = await fetch('/test-api/branches');
+                const response = await fetch('/api/branches');
                 const result = await response.json();
                 
                 if (result.success) {
@@ -624,7 +624,7 @@
             }
             
             try {
-                const response = await fetch(`/test-api/stores/${storeId}`, {
+                const response = await fetch(`/api/stores/${storeId}`, {
                     method: 'DELETE',
                     headers: {
                         'Content-Type': 'application/json',
@@ -794,8 +794,8 @@
 
                 // API 엔드포인트 실패 시 fallback
                 if (!response.ok && response.status === 404) {
-                    console.log('정식 API 실패, fallback으로 test-api 사용');
-                    response = await fetch(`/test-api/stores/${storeId}/create-user`, {
+                    console.log('정식 API 실패, fallback으로 api 사용');
+                    response = await fetch(`/api/stores/${storeId}/create-user`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -919,7 +919,7 @@
         // 계정 생성 API 호출
         async function createAccount(storeId, accountData) {
             try {
-                const response = await fetch(`/test-api/stores/${storeId}/create-user`, {
+                const response = await fetch(`/api/stores/${storeId}/create-user`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -997,7 +997,7 @@
                     };
 
                     try {
-                        const response = await fetch(`/test-api/stores/${storeId}/create-user`, {
+                        const response = await fetch(`/api/stores/${storeId}/create-user`, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -1037,7 +1037,7 @@
         // 계정 수 로드
         async function loadAccountCount() {
             try {
-                const response = await fetch('/test-api/users/count');
+                const response = await fetch('/api/users/count');
                 const result = await response.json();
                 
                 if (result.success) {
@@ -1090,7 +1090,7 @@
         // 매장 계정 확인 (새로운 전용 API 사용)
         async function checkStoreAccount(storeId) {
             try {
-                const response = await fetch(`/test-api/stores/${storeId}/account`);
+                const response = await fetch(`/api/stores/${storeId}/account`);
                 const result = await response.json();
                 
                 if (!result.success) {

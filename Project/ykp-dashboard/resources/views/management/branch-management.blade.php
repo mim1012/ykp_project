@@ -137,7 +137,7 @@
         function loadBranches() {
             console.log('지사 목록 로딩 시작...');
             
-            fetch('/test-api/branches')
+            fetch('/api/branches')
                 .then(response => {
                     console.log('지사 API 응답:', response.status);
                     return response.json();
@@ -219,7 +219,7 @@
             for (const branch of branches) {
                 try {
                     // 실제 지사 계정 조회 (모든 사용자 중에서 필터링)
-                    const userResponse = await fetch('/test-api/users');
+                    const userResponse = await fetch('/api/users');
                     let actualAccount = null;
                     
                     if (userResponse.ok) {
@@ -350,7 +350,7 @@
                 contact_number: phone
             };
 
-            fetch('/test-api/branches/add', {
+            fetch('/api/branches/add', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -381,7 +381,7 @@
 
         // 지사 통계 (1차 구현)
         function viewBranchStats(branchId) {
-            fetch(`/test-api/branches/${branchId}/stats`)
+            fetch(`/api/branches/${branchId}/stats`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
@@ -403,7 +403,7 @@
             // 1단계: 지사 정보 로딩
             console.log('🔄 지사 수정 시작:', branchId);
 
-            fetch(`/test-api/branches/${branchId}`)
+            fetch(`/api/branches/${branchId}`)
                 .then(response => {
                     console.log('📡 지사 정보 조회 응답:', response.status);
 
@@ -460,7 +460,7 @@
                     console.log('🔄 지사 정보 업데이트 시작...');
 
                     // 4단계: API 업데이트 요청
-                    return fetch(`/test-api/branches/${branchId}`, {
+                    return fetch(`/api/branches/${branchId}`, {
                         method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json',

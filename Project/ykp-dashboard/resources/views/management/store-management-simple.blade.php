@@ -66,8 +66,8 @@
             
             // 지사와 매장 데이터를 동시에 로드
             Promise.all([
-                fetch('/test-api/branches').then(r => r.json()),
-                fetch('/test-api/stores').then(r => r.json())
+                fetch('/api/branches').then(r => r.json()),
+                fetch('/api/stores').then(r => r.json())
             ])
             .then(([branchData, storeData]) => {
                 console.log('지사 데이터:', branchData.data?.length, '개');

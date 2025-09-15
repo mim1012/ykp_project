@@ -442,7 +442,7 @@
             showStatus('저장 중...', 'info');
             
             // PM 요구사항: 27개 필드 완전 매핑으로 DB 저장
-            fetch('/test-api/sales/save', {
+            fetch('/api/sales/save', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

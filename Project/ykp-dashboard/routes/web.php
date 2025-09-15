@@ -842,7 +842,7 @@ Route::middleware(['auth'])->get('/role-dashboard', function () {
 
 // 매장/지사 관리 API (모든 환경에서 사용)
 // if (config('app.env') !== 'production') { // Production에서도 사용 가능하도록 주석 처리
-Route::middleware(['web', 'auth'])->get('/test-api/stores', function (Illuminate\Http\Request $request) {
+Route::middleware(['web', 'auth'])->get('/api/stores', function (Illuminate\Http\Request $request) {
     // 세션에서 사용자 정보 확인
     $user = auth()->user();
     
@@ -869,7 +869,7 @@ Route::middleware(['web', 'auth'])->get('/test-api/stores', function (Illuminate
     return response()->json(['success' => true, 'data' => $stores]);
 });
 
-Route::middleware(['web', 'auth'])->post('/test-api/stores/add', function (Illuminate\Http\Request $request) {
+Route::middleware(['web', 'auth'])->post('/api/stores/add', function (Illuminate\Http\Request $request) {
     // 권한 검증: 본사와 지사만 매장 추가 가능
     $currentUser = auth()->user();
     if (!in_array($currentUser->role, ['headquarters', 'branch'])) {
@@ -903,7 +903,7 @@ Route::middleware(['web', 'auth'])->post('/test-api/stores/add', function (Illum
     }
 });
 
-Route::middleware(['web'])->post('/test-api/sales/save', function (Illuminate\Http\Request $request) {
+Route::middleware(['web'])->post('/api/sales/save', function (Illuminate\Http\Request $request) {
     try {
         $user = auth()->user();
         $salesData = $request->input('sales', []);
@@ -983,7 +983,7 @@ Route::middleware(['web'])->post('/test-api/sales/save', function (Illuminate\Ht
     }
 });
 
-Route::get('/test-api/sales/count', function () {
+Route::get('/api/sales/count', function () {
     return response()->json(['count' => App\Models\Sale::count()]);
 });
 
@@ -1007,7 +1007,7 @@ Route::get('/debug-db-state', function () {
 });
 
 // 누락된 API 엔드포인트들 추가 (404, 405 오류 해결)
-Route::get('/test-api/stores/count', function () {
+Route::get('/api/stores/count', function () {
     try {
         return response()->json(['success' => true, 'count' => App\Models\Store::count()]);
     } catch (\Exception $e) {
@@ -1015,7 +1015,7 @@ Route::get('/test-api/stores/count', function () {
     }
 });
 
-Route::get('/test-api/users/count', function () {
+Route::get('/api/users/count', function () {
     try {
         return response()->json(['success' => true, 'count' => App\Models\User::count()]);
     } catch (\Exception $e) {
@@ -1210,7 +1210,7 @@ Route::get('/api/dashboard/overview', function () {
 });
 
 // 매출 데이터 매장별 분산 (1회성 작업)
-Route::get('/test-api/distribute-sales', function () {
+Route::get('/api/distribute-sales', function () {
     try {
         $totalSales = App\Models\Sale::count();
         $perStore = ceil($totalSales / 3); // 3개 매장에 균등 분배
@@ -1248,7 +1248,7 @@ Route::get('/test-api/distribute-sales', function () {
 });
 
 // 간단한 대시보드 데이터 테스트
-Route::get('/test-api/dashboard-debug', function () {
+Route::get('/api/dashboard-debug', function () {
     try {
         $today = now()->toDateString();
         
@@ -1288,23 +1288,23 @@ Route::get('/test-api/dashboard-debug', function () {
     }
 });
 
-Route::middleware(['web', 'auth'])->get('/test-api/users', function () {
+Route::middleware(['web', 'auth'])->get('/api/users', function () {
     $users = App\Models\User::with(['store', 'branch'])->get();
     return response()->json(['success' => true, 'data' => $users]);
 });
 
-Route::get('/test-api/branches', function () {
+Route::get('/api/branches', function () {
     try {
         $branches = App\Models\Branch::withCount('stores')->get();
         return response()->json(['success' => true, 'data' => $branches]);
     } catch (\Exception $e) {
-        \Log::error('test-api/branches error: ' . $e->getMessage());
+        \Log::error('api/branches error: ' . $e->getMessage());
         return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
     }
 });
 
 // 지사 추가 API (본사 전용)
-Route::middleware(['web', 'auth'])->post('/test-api/branches/add', function (Illuminate\Http\Request $request) {
+Route::middleware(['web', 'auth'])->post('/api/branches/add', function (Illuminate\Http\Request $request) {
     // 본사 관리자만 지사 추가 가능
     if (auth()->user()->role !== 'headquarters') {
         return response()->json(['success' => false, 'error' => '지사 추가는 본사 관리자만 가능합니다.'], 403);
@@ -1384,7 +1384,7 @@ Route::middleware(['web', 'auth'])->post('/test-api/branches/add', function (Ill
 });
 
 // 지사 상세 조회 API
-Route::get('/test-api/branches/{id}', function ($id) {
+Route::get('/api/branches/{id}', function ($id) {
     try {
         $branch = App\Models\Branch::with(['stores'])->findOrFail($id);
         return response()->json(['success' => true, 'data' => $branch]);
@@ -1394,7 +1394,7 @@ Route::get('/test-api/branches/{id}', function ($id) {
 });
 
 // 지사 수정 API
-Route::put('/test-api/branches/{id}', function (Illuminate\Http\Request $request, $id) {
+Route::put('/api/branches/{id}', function (Illuminate\Http\Request $request, $id) {
     try {
         $branch = App\Models\Branch::findOrFail($id);
         
@@ -1426,7 +1426,7 @@ Route::put('/test-api/branches/{id}', function (Illuminate\Http\Request $request
 });
 
 // 지사 삭제 API
-Route::delete('/test-api/branches/{id}', function ($id) {
+Route::delete('/api/branches/{id}', function ($id) {
     try {
         $branch = App\Models\Branch::with('stores')->findOrFail($id);
         
@@ -1456,7 +1456,7 @@ Route::delete('/test-api/branches/{id}', function ($id) {
 });
 
 // 매장 수정 API
-Route::middleware(['web', 'auth'])->put('/test-api/stores/{id}', function (Illuminate\Http\Request $request, $id) {
+Route::middleware(['web', 'auth'])->put('/api/stores/{id}', function (Illuminate\Http\Request $request, $id) {
     // 권한 검증: 본사와 지사만 매장 수정 가능
     $currentUser = auth()->user();
     if (!in_array($currentUser->role, ['headquarters', 'branch'])) {
@@ -1485,7 +1485,7 @@ Route::middleware(['web', 'auth'])->put('/test-api/stores/{id}', function (Illum
 });
 
 // 매장 상세 정보 조회 (수정 모달용)
-Route::middleware(['web', 'auth'])->get('/test-api/stores/{id}', function ($id) {
+Route::middleware(['web', 'auth'])->get('/api/stores/{id}', function ($id) {
     try {
         $store = App\Models\Store::with('branch')->findOrFail($id);
         return response()->json(['success' => true, 'data' => $store]);
@@ -1495,7 +1495,7 @@ Route::middleware(['web', 'auth'])->get('/test-api/stores/{id}', function ($id) 
 });
 
 // 매장별 통계 조회 (성과보기용)
-Route::get('/test-api/stores/{id}/stats', function ($id) {
+Route::get('/api/stores/{id}/stats', function ($id) {
     try {
         $store = App\Models\Store::findOrFail($id);
         
@@ -1638,7 +1638,7 @@ Route::middleware(['web', 'auth'])->prefix('api')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
-| Legacy API Routes (test-api) - 호환성 유지용
+| Legacy API Routes (api) - 호환성 유지용
 |--------------------------------------------------------------------------
 */
 
@@ -1648,7 +1648,7 @@ Route::middleware(['web', 'auth'])->prefix('api')->group(function () {
 
 // 매장/지사 관리 API (모든 환경에서 사용) - 프로덕션에서도 필요
 // 매장 계정 조회 API
-Route::middleware(['web', 'auth'])->get('/test-api/stores/{id}/account', function ($id) {
+Route::middleware(['web', 'auth'])->get('/api/stores/{id}/account', function ($id) {
     try {
         $currentUser = auth()->user();
         $store = App\Models\Store::with('branch')->findOrFail($id);
@@ -1676,7 +1676,7 @@ Route::middleware(['web', 'auth'])->get('/test-api/stores/{id}/account', functio
 });
 
 // 매장 계정 생성 API
-Route::middleware(['web', 'auth'])->post('/test-api/stores/{id}/create-user', function (Illuminate\Http\Request $request, $id) {
+Route::middleware(['web', 'auth'])->post('/api/stores/{id}/create-user', function (Illuminate\Http\Request $request, $id) {
     // 권한 검증: 본사와 지사만 매장 계정 생성 가능
     $currentUser = auth()->user();
     if (!in_array($currentUser->role, ['headquarters', 'branch'])) {
@@ -1706,7 +1706,7 @@ Route::middleware(['web', 'auth'])->post('/test-api/stores/{id}/create-user', fu
 });
 
 // 매장 삭제 API (Foreign Key 제약 조건 처리)
-Route::middleware(['web', 'auth'])->delete('/test-api/stores/{id}', function ($id) {
+Route::middleware(['web', 'auth'])->delete('/api/stores/{id}', function ($id) {
     // 권한 검증: 본사만 매장 삭제 가능
     $currentUser = auth()->user();
     if ($currentUser->role !== 'headquarters') {
@@ -1845,7 +1845,7 @@ Route::middleware(['web', 'auth'])->delete('/test-api/stores/{id}', function ($i
 });
 
 // 매장 상태 변경 API (폐점 처리 - 데이터 보존)
-Route::post('/test-api/stores/{id}/deactivate', function($id) {
+Route::post('/api/stores/{id}/deactivate', function($id) {
     try {
         $store = App\Models\Store::findOrFail($id);
         $salesCount = App\Models\Sale::where('store_id', $id)->count();
@@ -1878,7 +1878,7 @@ Route::post('/test-api/stores/{id}/deactivate', function($id) {
 });
 
 // 매장 계정만 비활성화 API
-Route::post('/test-api/stores/{id}/disable-accounts', function($id) {
+Route::post('/api/stores/{id}/disable-accounts', function($id) {
     try {
         $store = App\Models\Store::findOrFail($id);
         $affectedUsers = App\Models\User::where('store_id', $id)->update(['is_active' => false]);
@@ -1931,7 +1931,7 @@ Route::get('/debug/store-account/{storeId}', function($storeId) {
 });
 
 // 매장 계정 자동 생성/수정 API
-Route::post('/test-api/stores/{id}/ensure-account', function($id) {
+Route::post('/api/stores/{id}/ensure-account', function($id) {
     try {
         $store = App\Models\Store::findOrFail($id);
 
@@ -2012,7 +2012,7 @@ Route::middleware(['web', 'auth'])->post('/api/dashboard/cache-invalidate', func
 });
 
 // 지사 계정 생성 API
-Route::post('/test-api/branches/{id}/create-user', function (Illuminate\Http\Request $request, $id) {
+Route::post('/api/branches/{id}/create-user', function (Illuminate\Http\Request $request, $id) {
     try {
         $branch = App\Models\Branch::findOrFail($id);
         
@@ -2037,7 +2037,7 @@ Route::post('/test-api/branches/{id}/create-user', function (Illuminate\Http\Req
 });
 
 // 사용자 업데이트 API
-Route::put('/test-api/users/{id}', function (Illuminate\Http\Request $request, $id) {
+Route::put('/api/users/{id}', function (Illuminate\Http\Request $request, $id) {
     try {
         $currentUser = auth()->user();
         $targetUser = App\Models\User::findOrFail($id);
@@ -2081,7 +2081,7 @@ Route::put('/test-api/users/{id}', function (Illuminate\Http\Request $request, $
 });
 
 // 사용자 삭제 API
-Route::delete('/test-api/users/{id}', function ($id) {
+Route::delete('/api/users/{id}', function ($id) {
     try {
         $currentUser = auth()->user();
         $targetUser = App\Models\User::findOrFail($id);
@@ -2113,7 +2113,7 @@ Route::delete('/test-api/users/{id}', function ($id) {
 });
 
 // 본사 전용 계정 관리 API
-Route::get('/test-api/accounts/all', function () {
+Route::get('/api/accounts/all', function () {
     $user = auth()->user();
     
     // 본사 관리자만 접근 가능
@@ -2144,7 +2144,7 @@ Route::get('/test-api/accounts/all', function () {
 });
 
 // 비밀번호 리셋 API
-Route::post('/test-api/users/{id}/reset-password', function (Illuminate\Http\Request $request, $id) {
+Route::post('/api/users/{id}/reset-password', function (Illuminate\Http\Request $request, $id) {
     $user = auth()->user();
     
     // 본사 관리자만 접근 가능
@@ -2175,7 +2175,7 @@ Route::post('/test-api/users/{id}/reset-password', function (Illuminate\Http\Req
 });
 
 // 계정 활성/비활성화 API
-Route::post('/test-api/users/{id}/toggle-status', function (Illuminate\Http\Request $request, $id) {
+Route::post('/api/users/{id}/toggle-status', function (Illuminate\Http\Request $request, $id) {
     $user = auth()->user();
     
     // 본사 관리자만 접근 가능
@@ -2221,7 +2221,7 @@ Route::middleware(['auth'])->get('/admin/accounts', function () {
 Route::middleware('auth')->get('/api/user', [AuthController::class, 'user'])->name('api.user');
 
 // 🚑 긴급 정산 테스트 API (인증 없이 접근 가능)
-Route::get('/test-api/monthly-settlements/generate-sample', function () {
+Route::get('/api/monthly-settlements/generate-sample', function () {
     try {
         // 샘플 정산 데이터 생성
         $settlement = \App\Models\MonthlySettlement::create([

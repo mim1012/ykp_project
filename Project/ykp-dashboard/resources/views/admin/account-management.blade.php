@@ -174,7 +174,7 @@
         // 🔇 조용한 계정 로드 (UI 갱신 없이 백그라운드 동기화)
         async function loadAccountsQuietly() {
             try {
-                const response = await fetch('/test-api/accounts/all');
+                const response = await fetch('/api/accounts/all');
                 if (!response.ok) return;
 
                 const data = await response.json();
@@ -197,7 +197,7 @@
         // 모든 계정 로드
         async function loadAccounts() {
             try {
-                const response = await fetch('/test-api/accounts/all');
+                const response = await fetch('/api/accounts/all');
                 const data = await response.json();
                 
                 if (data.success) {
@@ -323,7 +323,7 @@
             }
 
             try {
-                const response = await fetch(`/test-api/users/${currentResetUserId}/reset-password`, {
+                const response = await fetch(`/api/users/${currentResetUserId}/reset-password`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -356,7 +356,7 @@
             if (!confirm(`${user.name} (${user.email}) 계정을 ${actionText} 하시겠습니까?`)) return;
 
             try {
-                const response = await fetch(`/test-api/users/${userId}/toggle-status`, {
+                const response = await fetch(`/api/users/${userId}/toggle-status`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

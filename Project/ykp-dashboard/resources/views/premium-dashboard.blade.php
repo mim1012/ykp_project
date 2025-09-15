@@ -1071,7 +1071,7 @@
                 // 🔄 실시간 API 호출들 - 병렬 처리로 성능 향상
                 const apiCalls = [
                     // 매장 수 조회
-                    fetch('/test-api/stores/count').then(res => res.json()).then(data => {
+                    fetch('/api/stores/count').then(res => res.json()).then(data => {
                         if (data.success) {
                             apiResults.stores = data.count || data.data?.count || apiResults.stores;
                             console.log('✅ 매장 수 실시간 업데이트:', apiResults.stores);
@@ -1079,7 +1079,7 @@
                     }).catch(e => console.warn('⚠️ 매장 수 로드 실패:', e.message)),
 
                     // 사용자 수 조회
-                    fetch('/test-api/users/count').then(res => res.json()).then(data => {
+                    fetch('/api/users/count').then(res => res.json()).then(data => {
                         if (data.success) {
                             apiResults.users = data.count || data.data?.count || apiResults.users;
                             console.log('✅ 사용자 수 실시간 업데이트:', apiResults.users);
@@ -1087,7 +1087,7 @@
                     }).catch(e => console.warn('⚠️ 사용자 수 로드 실패:', e.message)),
 
                     // 지사 수 조회
-                    fetch('/test-api/branches').then(res => res.json()).then(data => {
+                    fetch('/api/branches').then(res => res.json()).then(data => {
                         if (data.success && Array.isArray(data.data)) {
                             apiResults.branches = data.data.length;
                             console.log('✅ 지사 수 실시간 업데이트:', apiResults.branches);
@@ -1437,25 +1437,45 @@
                 }
             };
 
-            // 본사 관리자 UI 업데이트
+            // 본사 관리자 UI 업데이트 (API 응답 값 기반)
             if (window.userData?.role === 'headquarters') {
-                safeUpdateElement('total-branches-count', branchCount > 0 ? `${branchCount}개 지사` : '지사 없음');
-                safeUpdateElement('total-stores-count', storeCount > 0 ? `${storeCount}개 매장` : '매장 없음');
-                safeUpdateElement('total-users-count', userCount > 0 ? `${userCount}명 관리` : '사용자 없음');
+                // API에서 받은 실제 값 표시, 0이면 "데이터 없음"
+                safeUpdateElement('total-branches-count',
+                    branchCount !== undefined ?
+                        (branchCount > 0 ? `${branchCount}개 지사` : '지사 데이터 없음') :
+                        '로딩 중...'
+                );
+                safeUpdateElement('total-stores-count',
+                    storeCount !== undefined ?
+                        (storeCount > 0 ? `${storeCount}개 매장` : '매장 데이터 없음') :
+                        '로딩 중...'
+                );
+                safeUpdateElement('total-users-count',
+                    userCount !== undefined ?
+                        (userCount > 0 ? `${userCount}명 관리` : '사용자 데이터 없음') :
+                        '로딩 중...'
+                );
 
                 // 목표 달성률 계산 (실제 매출 데이터 기반)
                 fetch('/api/dashboard/overview')
                     .then(response => response.json())
                     .then(data => {
                         if (data.success && data.data) {
-                            const monthSales = data.data.month?.sales || 0;
-                            const monthTarget = 50000000; // 월 5천만원 목표
-                            const achievementRate = monthSales > 0 ? (monthSales / monthTarget * 100).toFixed(1) : 0;
+                            const monthSales = data.data.month?.sales;
+                            const monthTarget = data.data.month?.target || 50000000; // API에서 목표 가져오거나 기본값
 
-                            safeUpdateElement('system-goal-achievement', monthSales > 0 ? `${achievementRate}% 달성` : '데이터 없음');
+                            if (monthSales !== undefined && monthSales !== null) {
+                                const achievementRate = monthSales > 0 ? (monthSales / monthTarget * 100).toFixed(1) : 0;
+                                safeUpdateElement('system-goal-achievement',
+                                    monthSales > 0 ? `${achievementRate}% 달성` : '이번달 실적 없음'
+                                );
+                            } else {
+                                safeUpdateElement('system-goal-achievement', '매출 데이터 없음');
+                            }
+
                             safeUpdateElement('system-goal-target', `월 ${(monthTarget / 10000).toLocaleString()}만원 목표`);
                         } else {
-                            safeUpdateElement('system-goal-achievement', '데이터 없음');
+                            safeUpdateElement('system-goal-achievement', 'API 데이터 없음');
                             safeUpdateElement('system-goal-target', '목표 정보 없음');
                         }
                     })

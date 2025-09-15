@@ -60,7 +60,7 @@
             if (userRole === 'branch' && userBranchId) {
                 console.log('🏢 지사 계정:', userRole, '지사 ID:', userBranchId);
 
-                fetch('/test-api/branches')
+                fetch('/api/branches')
                     .then(response => response.json())
                     .then(data => {
                         console.log('📊 지사 API 응답:', data);
@@ -93,7 +93,7 @@
             } else {
                 console.log('🏛️ 본사 계정 - 모든 지사 표시');
 
-                fetch('/test-api/branches')
+                fetch('/api/branches')
                     .then(response => response.json())
                     .then(data => {
                         console.log('📊 본사용 지사 API 응답:', data);
@@ -442,7 +442,7 @@
                                                             if (!email) return;
                                                             const password = prompt('비밀번호 (6자리 이상):', '123456');
                                                             if (!password || password.length < 6) { alert('비밀번호는 6자리 이상'); return; }
-                                                            fetch('/test-api/stores/{{ $store->id }}/create-user', {
+                                                            fetch('/api/stores/{{ $store->id }}/create-user', {
                                                                 method: 'POST',
                                                                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
                                                                 body: JSON.stringify({name, email, password})
@@ -453,7 +453,7 @@
                                                         " class="store-account-btn px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600">👤 계정</button>
                                                         <button onclick="
                                                             if (confirm('⚠️ {{ $store->name }} 매장을 삭제하시겠습니까?\\n\\n되돌릴 수 없습니다.')) {
-                                                                fetch('/test-api/stores/{{ $store->id }}', {
+                                                                fetch('/api/stores/{{ $store->id }}', {
                                                                     method: 'DELETE',
                                                                     headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
                                                                 }).then(r => r.json()).then(result => {
@@ -1188,7 +1188,7 @@
         function loadBranches() {
             document.getElementById('branches-grid').innerHTML = '<div class="p-4 text-center text-gray-500">지사 목록 로딩 중...</div>';
             
-            fetch('/test-api/branches')
+            fetch('/api/branches')
                 .then(response => response.json())
                 .then(data => {
                     let html = `
@@ -1236,7 +1236,7 @@
         function loadBranches() {
             document.getElementById('branches-grid').innerHTML = '<div class="p-4 text-center text-gray-500">지사 목록 로딩 중...</div>';
             
-            fetch('/test-api/branches')
+            fetch('/api/branches')
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
@@ -1345,7 +1345,7 @@
         function loadUsers() {
             document.getElementById('users-grid').innerHTML = '<div class="p-4 text-center text-gray-500">사용자 목록 로딩 중...</div>';
             
-            fetch('/test-api/users')
+            fetch('/api/users')
                 .then(response => response.json())
                 .then(data => {
                     let html = `
@@ -1446,7 +1446,7 @@
             // 지사 계정인 경우 자신의 지사만 표시
             if (userRole === 'branch' && userBranchId) {
                 // 지사 정보 로드
-                fetch('/test-api/branches')
+                fetch('/api/branches')
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
@@ -1469,7 +1469,7 @@
                     });
             } else {
                 // 본사 계정인 경우 모든 지사 표시
-                fetch('/test-api/branches')
+                fetch('/api/branches')
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
@@ -1511,7 +1511,7 @@
                 return;
             }
             
-            fetch('/test-api/stores/add', {
+            fetch('/api/stores/add', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1547,7 +1547,7 @@
                 
                 // API에서 지사 목록을 가져와서 동적으로 ID 찾기
                 try {
-                    const branchResponse = await fetch('/test-api/branches');
+                    const branchResponse = await fetch('/api/branches');
                     const branchData = await branchResponse.json();
                     
                     if (branchData.success) {
@@ -1589,7 +1589,7 @@
                 // 코드, 주소는 자동 처리
             };
             
-            fetch('/test-api/stores/add', {
+            fetch('/api/stores/add', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1651,7 +1651,7 @@
                 return;
             }
             
-            fetch('/test-api/branches/add', {
+            fetch('/api/branches/add', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1680,7 +1680,7 @@
             currentEditBranchId = branchId;
             
             // 지사 정보 불러오기
-            fetch(`/test-api/branches/${branchId}`)
+            fetch(`/api/branches/${branchId}`)
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
@@ -1724,7 +1724,7 @@
                 return;
             }
             
-            fetch(`/test-api/branches/${currentEditBranchId}`, {
+            fetch(`/api/branches/${currentEditBranchId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1754,7 +1754,7 @@
                 return;
             }
             
-            fetch(`/test-api/branches/${branchId}`, {
+            fetch(`/api/branches/${branchId}`, {
                 method: 'DELETE',
                 headers: {
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
@@ -1805,7 +1805,7 @@
             loadBranchOptions('edit-branch-select');
 
             // DB에서 매장 정보 자동 로드
-            fetch(`/test-api/stores/${storeId}`)
+            fetch(`/api/stores/${storeId}`)
                 .then(response => {
                     console.log('📡 매장 정보 API 응답:', response.status);
 
@@ -1900,7 +1900,7 @@
         
         // 수정 모달용 실시간 통계 로드
         function loadStoreStatsForEdit(storeId) {
-            fetch(`/test-api/stores/${storeId}/stats`)
+            fetch(`/api/stores/${storeId}/stats`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
@@ -1931,7 +1931,7 @@
                 return;
             }
             
-            fetch(`/test-api/stores/${currentEditStoreId}`, {
+            fetch(`/api/stores/${currentEditStoreId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(updatedData)
@@ -1967,7 +1967,7 @@
             }
             
             // 매장 이름 설정
-            fetch(`/test-api/stores/${storeId}`)
+            fetch(`/api/stores/${storeId}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
@@ -1986,7 +1986,7 @@
         
         // 풀스크린 성과 통계 로드
         function loadFullStoreStats(storeId) {
-            fetch(`/test-api/stores/${storeId}/stats`)
+            fetch(`/api/stores/${storeId}/stats`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
@@ -2051,7 +2051,7 @@
             console.log('👤 사용자 수정 시작:', userId);
 
             // 사용자 정보 로딩
-            fetch(`/test-api/users/${userId}`)
+            fetch(`/api/users/${userId}`)
                 .then(response => {
                     console.log('📡 사용자 정보 API 응답:', response.status);
                     if (!response.ok) {
@@ -2145,7 +2145,7 @@
                 return;
             }
 
-            fetch(`/test-api/users/${userId}/reset-password`, {
+            fetch(`/api/users/${userId}/reset-password`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -2177,7 +2177,7 @@
                 return;
             }
 
-            fetch(`/test-api/users/${userId}/toggle-status`, {
+            fetch(`/api/users/${userId}/toggle-status`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -2224,7 +2224,7 @@
                 password: password
             };
             
-            fetch(`/test-api/stores/${storeId}/create-user`, {
+            fetch(`/api/stores/${storeId}/create-user`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -2459,7 +2459,7 @@
         function activateStoreAccount(storeId, storeName) {
             console.log('🔄 매장 계정 활성화/리셋:', storeId);
 
-            fetch(`/test-api/stores/${storeId}/ensure-account`, {
+            fetch(`/api/stores/${storeId}/ensure-account`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -2502,7 +2502,7 @@
             }
             
             // API 호출
-            fetch(`/test-api/stores/${storeId}/create-user`, {
+            fetch(`/api/stores/${storeId}/create-user`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -2573,8 +2573,8 @@
 
             // API 호출
             const url = forceDelete ?
-                `/test-api/stores/${storeId}?force=true` :
-                `/test-api/stores/${storeId}`;
+                `/api/stores/${storeId}?force=true` :
+                `/api/stores/${storeId}`;
 
             fetch(url, {
                 method: 'DELETE',
@@ -2745,7 +2745,7 @@
             deactivateMessage += `폐점 처리를 진행하시겠습니까?`;
 
             if (confirm(deactivateMessage)) {
-                fetch(`/test-api/stores/${storeId}/deactivate`, {
+                fetch(`/api/stores/${storeId}/deactivate`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2786,7 +2786,7 @@
             disableMessage += `계정 비활성화를 진행하시겠습니까?`;
 
             if (confirm(disableMessage)) {
-                fetch(`/test-api/stores/${storeId}/disable-accounts`, {
+                fetch(`/api/stores/${storeId}/disable-accounts`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2910,7 +2910,7 @@
                 return;
             }
 
-            fetch(`/test-api/stores/${storeId}`, {
+            fetch(`/api/stores/${storeId}`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',

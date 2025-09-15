@@ -331,10 +331,10 @@
             try {
                 // 병렬로 모든 통계 데이터 로드
                 const [storesResponse, usersResponse, branchesResponse, salesResponse] = await Promise.all([
-                    fetch('/test-api/stores/count'),
-                    fetch('/test-api/users/count'),
-                    fetch('/test-api/branches').then(r => r.json()),
-                    fetch('/test-api/sales/count')
+                    fetch('/api/stores/count'),
+                    fetch('/api/users/count'),
+                    fetch('/api/branches').then(r => r.json()),
+                    fetch('/api/sales/count')
                 ]);
 
                 // 매장 수
