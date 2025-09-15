@@ -986,7 +986,7 @@ Route::middleware(['web', 'auth'])->post('/test-api/sales/save', function (Illum
             'affected_branches' => $unique_branch_ids,
             'cache_cleared' => true
         ]);
-    } catch (Exception $e) {
+    } catch (\Exception $e) {
         return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
     }
 });
