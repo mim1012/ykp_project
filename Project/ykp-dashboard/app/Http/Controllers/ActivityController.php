@@ -16,6 +16,18 @@ class ActivityController extends Controller
     public function recent(Request $request): JsonResponse
     {
         try {
+            // 테이블 존재 여부 확인 (Railway 마이그레이션 문제 방지)
+            if (!$this->checkTableExists('activity_logs')) {
+                return response()->json([
+                    'success' => true,
+                    'data' => [],
+                    'meta' => [
+                        'count' => 0,
+                        'message' => '활동 로그 시스템 준비 중입니다.'
+                    ]
+                ]);
+            }
+
             $user = Auth::user();
             $limit = $request->get('limit', 10);
 
@@ -74,6 +86,15 @@ class ActivityController extends Controller
      */
     public function log(Request $request): JsonResponse
     {
+        // 테이블 존재 여부 확인 (Railway 마이그레이션 문제 방지)
+        if (!$this->checkTableExists('activity_logs')) {
+            return response()->json([
+                'success' => true,
+                'message' => '활동 로그 시스템 준비 중입니다.',
+                'data' => ['id' => null, 'performed_at' => now()->toISOString()]
+            ], 201);
+        }
+
         $request->validate([
             'activity_type' => 'required|string|max:50',
             'activity_title' => 'required|string|max:255',
@@ -123,6 +144,21 @@ class ActivityController extends Controller
                 'success' => false,
                 'error' => '활동 기록 중 오류가 발생했습니다.'
             ], 500);
+        }
+    }
+
+    /**
+     * 테이블 존재 여부 확인 (Railway 마이그레이션 안전성)
+     */
+    private function checkTableExists(string $tableName): bool
+    {
+        try {
+            return \Schema::hasTable($tableName);
+        } catch (\Exception $e) {
+            Log::warning("Table existence check failed for {$tableName}", [
+                'error' => $e->getMessage()
+            ]);
+            return false;
         }
     }
 }
