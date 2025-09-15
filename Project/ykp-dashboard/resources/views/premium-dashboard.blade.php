@@ -385,27 +385,48 @@
                 <button class="btn btn-outline" onclick="logout()" style="background: #ef4444; color: white;">로그아웃</button>
                 
                 <script>
-                // 🚑 로그아웃 함수 정의 (누락되어 있었음!)
+                // 🚑 강화된 로그아웃 함수 (완전한 세션 정리)
                 function logout() {
-                    console.log('🚑 로그아웃 시도');
-                    
-                    // POST 요청으로 로그아웃
-                    const form = document.createElement('form');
-                    form.method = 'POST';
-                    form.action = '/logout';
-                    
-                    // CSRF 토큰 추가
-                    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-                    if (csrfToken) {
-                        const csrfInput = document.createElement('input');
-                        csrfInput.type = 'hidden';
-                        csrfInput.name = '_token';
-                        csrfInput.value = csrfToken;
-                        form.appendChild(csrfInput);
+                    console.log('🚑 완전 로그아웃 시도');
+
+                    if (confirm('로그아웃하시겠습니까?')) {
+                        // 1. 클라이언트 측 데이터 완전 정리
+                        try {
+                            localStorage.clear();
+                            sessionStorage.clear();
+
+                            // 모든 쿠키 삭제
+                            document.cookie.split(";").forEach(function(c) {
+                                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+                            });
+
+                            console.log('✅ 클라이언트 데이터 정리 완료');
+                        } catch (e) {
+                            console.warn('⚠️ 클라이언트 정리 중 오류:', e);
+                        }
+
+                        // 2. 서버 측 세션 무효화
+                        fetch('/logout', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                            }
+                        })
+                        .then(response => {
+                            console.log('📡 서버 로그아웃 응답:', response.status);
+
+                            // 3. 강제 리디렉션
+                            window.location.href = '/login?logout=success';
+                        })
+                        .catch(error => {
+                            console.error('❌ 로그아웃 오류:', error);
+
+                            // 오류 발생 시에도 강제 리디렉션
+                            alert('로그아웃 처리 중 오류가 발생했습니다.\n로그인 페이지로 이동합니다.');
+                            window.location.href = '/login';
+                        });
                     }
-                    
-                    document.body.appendChild(form);
-                    form.submit();
                 }
                 </script>
             </div>

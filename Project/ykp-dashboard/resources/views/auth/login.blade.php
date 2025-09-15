@@ -43,6 +43,23 @@
                 </div>
             @endif
 
+            <!-- 로그아웃 성공 메시지 (URL 파라미터 기반) -->
+            <script>
+                if (window.location.search.includes('logout=success')) {
+                    const logoutMessage = document.createElement('div');
+                    logoutMessage.className = 'mb-4 p-4 bg-blue-50 border border-blue-200 text-blue-800 rounded-lg';
+                    logoutMessage.innerHTML = '✅ 로그아웃되었습니다. 다른 계정으로 로그인할 수 있습니다.';
+
+                    const form = document.querySelector('form');
+                    if (form) {
+                        form.parentNode.insertBefore(logoutMessage, form);
+                    }
+
+                    // URL에서 파라미터 제거 (깔끔한 URL 유지)
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }
+            </script>
+
             @if($errors->any())
                 <div class="mb-4 p-4 bg-red-50 border border-red-200 text-red-800 rounded-lg">
                     <ul class="list-disc list-inside">
