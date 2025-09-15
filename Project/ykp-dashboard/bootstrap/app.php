@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'rbac' => \App\Http\Middleware\RBACMiddleware::class,
             'performance' => \App\Http\Middleware\PerformanceMonitoringMiddleware::class,
+            'api.auth' => \App\Http\Middleware\ApiAuthenticate::class,
         ]);
 
         // 프록시 신뢰 미들웨어 추가 (Railway 환경용)

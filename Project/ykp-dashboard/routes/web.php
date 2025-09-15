@@ -2372,8 +2372,8 @@ Route::middleware(['web'])->group(function () {
     });
 });
 
-// Statistics API Routes (통계 기능 API)
-Route::middleware(['web'])->group(function () {
+// Statistics API Routes (통계 기능 API) - API 전용 인증
+Route::middleware(['web', 'api.auth'])->group(function () {
     // KPI 데이터 - Redis 캐싱 적용된 최적화 버전
     Route::get('/api/statistics/kpi', function (Illuminate\Http\Request $request) {
         try {
