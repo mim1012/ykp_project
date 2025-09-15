@@ -398,29 +398,68 @@
                 });
         }
 
-        // 지사 수정 (1차 구현)
+        // 지사 수정 (개선된 에러 처리)
         function editBranch(branchId) {
-            // 전역 branches 배열이 없으므로 API에서 지사 정보 가져오기
+            // 1단계: 지사 정보 로딩
+            console.log('🔄 지사 수정 시작:', branchId);
+
             fetch(`/test-api/branches/${branchId}`)
-                .then(response => response.json())
+                .then(response => {
+                    console.log('📡 지사 정보 조회 응답:', response.status);
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+
+                    return response.json();
+                })
                 .then(data => {
+                    console.log('📊 지사 데이터:', data);
+
                     if (!data.success) {
-                        alert('지사 정보를 가져올 수 없습니다.');
+                        throw new Error(data.error || '지사 정보를 가져올 수 없습니다.');
+                    }
+
+                    const branch = data.data;
+                    console.log('✅ 지사 정보 로드 완료:', branch.name);
+
+                    // 2단계: 수정할 정보 입력받기
+                    const newName = prompt(`🏢 지사명 수정:\n현재: ${branch.name}`, branch.name);
+                    if (!newName || newName.trim() === '') {
+                        console.log('❌ 지사명이 비어있음');
+                        alert('지사명은 필수 입력입니다.');
                         return;
                     }
-                    
-                    const branch = data.data;
-                    
-                    const newName = prompt(`지사명 수정:\n현재: ${branch.name}`, branch.name);
-                    if (!newName || newName === branch.name) return;
 
-                    const newManager = prompt(`관리자명 수정:\n현재: ${branch.manager_name || '미등록'}`, branch.manager_name || '');
-                    if (newManager === null) return;
+                    if (newName === branch.name) {
+                        console.log('ℹ️ 지사명 변경 없음');
+                    }
 
-                    const newPhone = prompt(`연락처 수정:\n현재: ${branch.contact_number || '미등록'}`, branch.contact_number || '');
-                    if (newPhone === null) return;
+                    const newManager = prompt(`👤 관리자명 수정:\n현재: ${branch.manager_name || '미등록'}`, branch.manager_name || '');
+                    if (newManager === null) {
+                        console.log('❌ 사용자 취소');
+                        return;
+                    }
 
-                    // 지사 정보 업데이트
+                    const newPhone = prompt(`📞 연락처 수정:\n현재: ${branch.phone || '미등록'}`, branch.phone || '');
+                    if (newPhone === null) {
+                        console.log('❌ 사용자 취소');
+                        return;
+                    }
+
+                    // 3단계: 변경사항 확인
+                    const hasChanges = newName !== branch.name ||
+                                     newManager !== (branch.manager_name || '') ||
+                                     newPhone !== (branch.phone || '');
+
+                    if (!hasChanges) {
+                        alert('ℹ️ 변경된 내용이 없습니다.');
+                        return;
+                    }
+
+                    console.log('🔄 지사 정보 업데이트 시작...');
+
+                    // 4단계: API 업데이트 요청
                     return fetch(`/test-api/branches/${branchId}`, {
                         method: 'PUT',
                         headers: {
@@ -428,24 +467,55 @@
                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                         },
                         body: JSON.stringify({
-                            name: newName,
-                            manager_name: newManager,
-                            contact_number: newPhone
+                            name: newName.trim(),
+                            code: branch.code, // 기존 코드 유지
+                            manager_name: newManager.trim(),
+                            phone: newPhone.trim(),
+                            status: branch.status || 'active'
                         })
+                    })
+                    .then(updateResponse => {
+                        console.log('📡 업데이트 응답:', updateResponse.status);
+
+                        if (!updateResponse.ok) {
+                            throw new Error(`HTTP ${updateResponse.status}: 서버 오류가 발생했습니다.`);
+                        }
+
+                        return updateResponse.json();
+                    })
+                    .then(updateData => {
+                        console.log('📊 업데이트 결과:', updateData);
+
+                        if (updateData.success) {
+                            alert(`✅ "${newName}" 지사 정보가 성공적으로 수정되었습니다!\n\n📝 변경사항:\n• 지사명: ${branch.name} → ${newName}\n• 관리자: ${branch.manager_name || '미등록'} → ${newManager || '미등록'}\n• 연락처: ${branch.phone || '미등록'} → ${newPhone || '미등록'}`);
+                            console.log('✅ 지사 수정 완료');
+                            loadBranches(); // 목록 새로고침
+                        } else {
+                            throw new Error(updateData.error || '알 수 없는 서버 오류가 발생했습니다.');
+                        }
                     });
                 })
-                .then(response => response.json())
-                .then(updateData => {
-                    if (updateData.success) {
-                        alert(`✅ 지사 정보가 수정되었습니다!`);
-                        loadBranches(); // 목록 새로고침
-                    } else {
-                        alert('❌ 지사 수정 실패: ' + (updateData.error || '알 수 없는 오류'));
-                    }
-                })
                 .catch(error => {
-                    console.error('지사 수정 오류:', error);
-                    alert('지사 수정 중 오류가 발생했습니다.');
+                    console.error('❌ 지사 수정 오류:', error);
+
+                    // 상세한 에러 메시지 제공
+                    let errorMessage = '지사 수정 중 오류가 발생했습니다.\n\n';
+
+                    if (error.message.includes('HTTP 404')) {
+                        errorMessage += '📍 해당 지사를 찾을 수 없습니다.';
+                    } else if (error.message.includes('HTTP 403')) {
+                        errorMessage += '🔒 지사 수정 권한이 없습니다.';
+                    } else if (error.message.includes('HTTP 422')) {
+                        errorMessage += '📝 입력된 정보가 올바르지 않습니다.';
+                    } else if (error.message.includes('HTTP 500')) {
+                        errorMessage += '🔧 서버 내부 오류가 발생했습니다.\n관리자에게 문의해주세요.';
+                    } else if (error.message.includes('NetworkError') || error.message.includes('fetch')) {
+                        errorMessage += '🌐 네트워크 연결을 확인해주세요.';
+                    } else {
+                        errorMessage += `🔍 오류 세부사항: ${error.message}`;
+                    }
+
+                    alert(`❌ ${errorMessage}`);
                 });
         }
     </script>

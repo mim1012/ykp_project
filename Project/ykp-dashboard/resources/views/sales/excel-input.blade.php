@@ -364,11 +364,101 @@
                 setTimeout(() => {
                     status.style.display = 'none';
                 }, 2000);
+                console.log('저장 성공:', data);
+
+                // 🔄 저장 후 대시보드 실시간 업데이트 트리거
+                if (data.success && validData.length > 0) {
+                    console.log('💡 대시보드 실시간 업데이트 시작...');
+                    refreshDashboardStats(validData.length);
+                }
             })
             .catch(error => {
                 status.textContent = '❌ 저장 실패!';
-                console.error(error);
+                setTimeout(() => {
+                    status.style.display = 'none';
+                }, 3000);
+                console.error('저장 실패:', error);
             });
+        }
+
+        // 🔄 대시보드 실시간 업데이트 함수
+        function refreshDashboardStats(savedCount = 0) {
+            console.log(`📊 대시보드 통계 업데이트 중... (저장된 데이터: ${savedCount}건)`);
+
+            // 1. 실시간 활동 알림 (있다면)
+            try {
+                if (window.opener && window.opener.addRealtimeActivity) {
+                    const storeName = window.userData.store_name || '알 수 없는 매장';
+                    window.opener.addRealtimeActivity({
+                        type: 'sales_update',
+                        message: `${storeName}에서 개통표 ${savedCount}건 입력`,
+                        timestamp: new Date().toISOString(),
+                        user: window.userData.name,
+                        store: storeName
+                    });
+                    console.log('✅ 실시간 활동 알림 전송 완료');
+                }
+            } catch (e) {
+                console.warn('⚠️ 실시간 활동 알림 실패:', e.message);
+            }
+
+            // 2. 대시보드 통계 새로고침 요청 (부모 창)
+            try {
+                if (window.opener && window.opener.refreshDashboard) {
+                    window.opener.refreshDashboard();
+                    console.log('✅ 대시보드 새로고침 요청 완료');
+                } else if (window.parent && window.parent.refreshDashboard) {
+                    window.parent.refreshDashboard();
+                    console.log('✅ 부모 대시보드 새로고침 요청 완료');
+                }
+            } catch (e) {
+                console.warn('⚠️ 대시보드 새로고침 요청 실패:', e.message);
+            }
+
+            // 3. localStorage 이벤트로 다른 탭에 알림
+            try {
+                const updateEvent = {
+                    type: 'dashboard_update',
+                    timestamp: Date.now(),
+                    data: {
+                        store_id: window.userData.store_id,
+                        store_name: window.userData.store_name,
+                        saved_count: savedCount,
+                        user: window.userData.name
+                    }
+                };
+                localStorage.setItem('dashboard_update_trigger', JSON.stringify(updateEvent));
+                console.log('✅ 크로스 탭 업데이트 이벤트 발송 완료');
+            } catch (e) {
+                console.warn('⚠️ 크로스 탭 업데이트 실패:', e.message);
+            }
+
+            // 4. 통계 API 캐시 무효화 요청
+            try {
+                fetch('/api/dashboard/cache-invalidate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({
+                        store_id: window.userData.store_id,
+                        saved_count: savedCount
+                    })
+                }).then(response => {
+                    if (response.ok) {
+                        console.log('✅ 통계 캐시 무효화 완료');
+                    } else {
+                        console.warn('⚠️ 통계 캐시 무효화 실패');
+                    }
+                }).catch(e => {
+                    console.warn('⚠️ 통계 캐시 무효화 네트워크 오류:', e.message);
+                });
+            } catch (e) {
+                console.warn('⚠️ 통계 캐시 무효화 요청 실패:', e.message);
+            }
+
+            console.log('🎯 대시보드 실시간 업데이트 처리 완료');
         }
 
         // 초기 로드

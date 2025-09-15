@@ -1521,20 +1521,53 @@ Route::get('/test-api/stores/{id}/stats', function ($id) {
             ->whereBetween('sale_date', [$todayStart, $todayEnd])
             ->count();
             
+        // 총 개통건수 계산
+        $totalActivations = App\Models\Sale::where('store_id', $id)->count();
+
+        // 이번달 개통건수
+        $monthActivations = App\Models\Sale::where('store_id', $id)
+            ->whereBetween('sale_date', [now()->startOfMonth(), now()->endOfMonth()])
+            ->count();
+
+        // 매장 순위 계산 (이번달 매출 기준)
+        $storeRank = null;
+        try {
+            $allStoreStats = App\Models\Sale::select('store_id')
+                ->selectRaw('SUM(settlement_amount) as total_sales')
+                ->whereBetween('sale_date', [now()->startOfMonth(), now()->endOfMonth()])
+                ->groupBy('store_id')
+                ->orderByDesc('total_sales')
+                ->get();
+
+            $storeRank = $allStoreStats->search(function ($item) use ($id) {
+                return $item->store_id == $id;
+            });
+
+            if ($storeRank !== false) {
+                $storeRank = $storeRank + 1; // 0-based to 1-based
+            }
+        } catch (Exception $e) {
+            \Log::warning("매장 순위 계산 실패: " . $e->getMessage());
+        }
+
         // 최근 거래 내역
         $recentSales = App\Models\Sale::where('store_id', $id)
             ->orderBy('sale_date', 'desc')
             ->take(5)
             ->get(['sale_date', 'model_name', 'settlement_amount', 'carrier']);
-        
+
         return response()->json([
             'success' => true,
             'data' => [
                 'store' => $store,
-                'today_sales' => $todaySales,
-                'month_sales' => $monthSales,
-                'today_count' => $todayCount,
-                'recent_sales' => $recentSales
+                'today_sales' => $todaySales ?: 0,
+                'month_sales' => $monthSales ?: 0,
+                'today_count' => $todayCount ?: 0,
+                'total_activations' => $totalActivations ?: 0,
+                'month_activations' => $monthActivations ?: 0,
+                'rank' => $storeRank,
+                'recent_sales' => $recentSales,
+                'stats_date' => now()->toDateString()
             ]
         ]);
     } catch (Exception $e) {
@@ -1672,27 +1705,116 @@ Route::middleware(['web', 'auth'])->post('/test-api/stores/{id}/create-user', fu
     }
 });
 
-// 매장 삭제 API
+// 매장 삭제 API (Foreign Key 제약 조건 처리)
 Route::middleware(['web', 'auth'])->delete('/test-api/stores/{id}', function ($id) {
     // 권한 검증: 본사만 매장 삭제 가능
     $currentUser = auth()->user();
     if ($currentUser->role !== 'headquarters') {
         return response()->json(['success' => false, 'error' => '매장 삭제는 본사 관리자만 가능합니다.'], 403);
     }
+
     try {
         $store = App\Models\Store::findOrFail($id);
-        
-        // 매장 사용자들도 함께 삭제
-        App\Models\User::where('store_id', $id)->delete();
-        
-        // 매장 삭제
-        $store->delete();
-        
+
+        // 관련 데이터 확인
+        $salesCount = App\Models\Sale::where('store_id', $id)->count();
+        $usersCount = App\Models\User::where('store_id', $id)->count();
+
+        // force 파라미터가 없고 관련 데이터가 있으면 확인 요청
+        $forceDelete = request()->get('force', false);
+
+        if (!$forceDelete && ($salesCount > 0)) {
+            return response()->json([
+                'success' => false,
+                'error' => '매장에 연결된 데이터가 있습니다.',
+                'details' => [
+                    'store_name' => $store->name,
+                    'sales_count' => $salesCount,
+                    'users_count' => $usersCount
+                ],
+                'requires_confirmation' => true,
+                'message' => "'{$store->name}' 매장을 삭제하시겠습니까?\n\n⚠️ 연결된 데이터:\n• 개통표 기록: {$salesCount}건\n• 사용자 계정: {$usersCount}개\n\n이 데이터들도 함께 삭제됩니다.\n되돌릴 수 없습니다."
+            ], 400);
+        }
+
+        \Log::info("매장 삭제 시작: {$store->name} (ID: {$id})", [
+            'sales_count' => $salesCount,
+            'users_count' => $usersCount,
+            'force_delete' => $forceDelete
+        ]);
+
+        // 트랜잭션으로 안전하게 삭제
+        \DB::transaction(function() use ($id, $store) {
+            // 1. 매장의 개통표 데이터 삭제
+            $deletedSales = App\Models\Sale::where('store_id', $id)->delete();
+            \Log::info("매장 개통표 삭제 완료: {$deletedSales}건");
+
+            // 2. 매장 사용자들 삭제 또는 비활성화
+            $deletedUsers = App\Models\User::where('store_id', $id)->delete();
+            \Log::info("매장 사용자 삭제 완료: {$deletedUsers}명");
+
+            // 3. 기타 연관 데이터 정리 (필요시 추가)
+            // App\Models\MonthlySettlement::where('store_id', $id)->delete();
+
+            // 4. 매장 삭제
+            $store->delete();
+            \Log::info("매장 삭제 완료: {$store->name}");
+        });
+
         return response()->json([
             'success' => true,
-            'message' => '매장이 삭제되었습니다.'
+            'message' => "'{$store->name}' 매장이 성공적으로 삭제되었습니다.",
+            'deleted_data' => [
+                'sales_count' => $salesCount,
+                'users_count' => $usersCount
+            ]
+        ]);
+
+    } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        return response()->json(['success' => false, 'error' => '해당 매장을 찾을 수 없습니다.'], 404);
+    } catch (\Illuminate\Database\QueryException $e) {
+        \Log::error("매장 삭제 DB 오류: " . $e->getMessage(), ['store_id' => $id]);
+
+        if (str_contains($e->getMessage(), 'foreign key constraint') || str_contains($e->getMessage(), 'FOREIGN KEY')) {
+            return response()->json([
+                'success' => false,
+                'error' => '매장에 연결된 데이터가 있어 삭제할 수 없습니다.\n\n강제 삭제를 원하시면 다시 한 번 확인해주세요.',
+                'requires_confirmation' => true
+            ], 400);
+        }
+
+        return response()->json(['success' => false, 'error' => '데이터베이스 오류가 발생했습니다.'], 500);
+    } catch (Exception $e) {
+        \Log::error("매장 삭제 일반 오류: " . $e->getMessage(), ['store_id' => $id]);
+        return response()->json(['success' => false, 'error' => '매장 삭제 중 오류가 발생했습니다: ' . $e->getMessage()], 500);
+    }
+});
+
+// 통계 캐시 무효화 API (개통표 입력 후 즉시 반영용)
+Route::middleware(['web', 'auth'])->post('/api/dashboard/cache-invalidate', function (Illuminate\Http\Request $request) {
+    try {
+        $storeId = $request->get('store_id');
+        $savedCount = $request->get('saved_count', 0);
+
+        \Log::info("통계 캐시 무효화 요청", [
+            'store_id' => $storeId,
+            'saved_count' => $savedCount,
+            'user_id' => auth()->id()
+        ]);
+
+        // 캐시 무효화 (실제 캐시가 있다면)
+        \Cache::forget('dashboard_overview');
+        \Cache::forget('store_rankings');
+        \Cache::forget("store_stats_{$storeId}");
+
+        return response()->json([
+            'success' => true,
+            'message' => '통계 캐시가 무효화되었습니다.',
+            'invalidated_store' => $storeId,
+            'affected_records' => $savedCount
         ]);
     } catch (Exception $e) {
+        \Log::error("통계 캐시 무효화 오류: " . $e->getMessage());
         return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
     }
 });

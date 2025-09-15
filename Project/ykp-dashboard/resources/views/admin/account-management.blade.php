@@ -133,7 +133,66 @@
         // 페이지 로드 시 초기화
         document.addEventListener('DOMContentLoaded', function() {
             loadAccounts();
+
+            // ✨ 실시간 업데이트 강화 - 1분마다 자동 새로고침
+            setInterval(loadAccounts, 60000);
+
+            // 🔄 실시간 업데이트 리스너 초기화
+            initRealtimeAccountSync();
         });
+
+        // 🔄 실시간 계정 동기화 리스너
+        function initRealtimeAccountSync() {
+            console.log('📡 실시간 계정 동기화 리스너 초기화...');
+
+            // 1. localStorage 이벤트로 다른 탭의 변경사항 감지
+            window.addEventListener('storage', function(event) {
+                if (event.key === 'account_update_trigger') {
+                    try {
+                        const updateData = JSON.parse(event.newValue);
+                        console.log('📨 계정 업데이트 신호 수신:', updateData);
+
+                        if (updateData.type === 'account_change') {
+                            console.log('🔄 다른 탭에서 계정 변경 감지 - 데이터 새로고침');
+                            setTimeout(loadAccounts, 1000); // 1초 후 새로고침
+                        }
+                    } catch (e) {
+                        console.error('❌ 계정 업데이트 처리 오류:', e);
+                    }
+                }
+            });
+
+            // 2. 주기적 데이터 동기화 (30초마다)
+            setInterval(() => {
+                console.log('⏰ 주기적 계정 데이터 동기화...');
+                loadAccountsQuietly();
+            }, 30000);
+
+            console.log('✅ 실시간 계정 동기화 리스너 초기화 완료');
+        }
+
+        // 🔇 조용한 계정 로드 (UI 갱신 없이 백그라운드 동기화)
+        async function loadAccountsQuietly() {
+            try {
+                const response = await fetch('/test-api/accounts/all');
+                if (!response.ok) return;
+
+                const data = await response.json();
+                if (!data.success) return;
+
+                const newAccounts = data.data;
+
+                // 기존 데이터와 비교하여 변경사항이 있을 때만 업데이트
+                if (JSON.stringify(allAccounts) !== JSON.stringify(newAccounts)) {
+                    console.log('🔄 계정 데이터 변경 감지 - UI 업데이트');
+                    allAccounts = newAccounts;
+                    renderAccounts(allAccounts);
+                    updateStatistics(allAccounts);
+                }
+            } catch (error) {
+                console.warn('⚠️ 조용한 계정 동기화 실패:', error.message);
+            }
+        }
 
         // 모든 계정 로드
         async function loadAccounts() {

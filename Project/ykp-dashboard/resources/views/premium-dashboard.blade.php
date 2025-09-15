@@ -997,42 +997,56 @@
             }
         }
         
-        // 실제 시스템 상태 데이터 로드
+        // 실시간 시스템 상태 데이터 로드
         async function loadSystemStatus() {
             try {
-                // 🚀 안전한 API 호출 - 각각 개별 처리로 안정성 극대화
+                console.log('📊 실시간 시스템 상태 로드 시작...');
+
+                // 🚀 실시간 API 호출 - 각각 개별 처리로 안정성 극대화
                 const apiResults = {
                     users: 15,    // 기본값 (알려진 사용자 수)
-                    stores: 7,    // 기본값 (알려진 매장 수) 
+                    stores: 7,    // 기본값 (알려진 매장 수)
                     sales: 8,     // 기본값 (알려진 매출 건수)
                     branches: 16  // 기본값 (알려진 지사 수)
                 };
                 
-                // 각 API 안전하게 호출 (실패해도 계속 진행)
-                try {
-                    const storesRes = await fetch('/api/stores/count');
-                    if (storesRes.ok) {
-                        const storesData = await storesRes.json();
-                        if (storesData.count) apiResults.stores = storesData.count;
-                    }
-                } catch (e) { console.log('스토어 API 실패, 기본값 사용'); }
-                
-                try {
-                    const salesRes = await fetch('/test-api/sales/count');
-                    if (salesRes.ok) {
-                        const salesData = await salesRes.json();
-                        if (salesData.count) apiResults.sales = salesData.count;
-                    }
-                } catch (e) { console.log('매출 API 실패, 기본값 사용'); }
-                
-                // 지사 API도 안전하게 호출
-                try {
-                    const branchesRes = await fetch('/test-api/branches');
-                    if (branchesRes.ok) {
-                        const branchesData = await branchesRes.json();
-                        if (branchesData.data && branchesData.data.length) apiResults.branches = branchesData.data.length;
-                    }
-                } catch (e) { console.log('지사 API 실패, 기본값 사용'); }
+                // 🔄 실시간 API 호출들 - 병렬 처리로 성능 향상
+                const apiCalls = [
+                    // 매장 수 조회
+                    fetch('/test-api/stores/count').then(res => res.json()).then(data => {
+                        if (data.success) {
+                            apiResults.stores = data.count || data.data?.count || apiResults.stores;
+                            console.log('✅ 매장 수 실시간 업데이트:', apiResults.stores);
+                        }
+                    }).catch(e => console.warn('⚠️ 매장 수 로드 실패:', e.message)),
+
+                    // 사용자 수 조회
+                    fetch('/test-api/users/count').then(res => res.json()).then(data => {
+                        if (data.success) {
+                            apiResults.users = data.count || data.data?.count || apiResults.users;
+                            console.log('✅ 사용자 수 실시간 업데이트:', apiResults.users);
+                        }
+                    }).catch(e => console.warn('⚠️ 사용자 수 로드 실패:', e.message)),
+
+                    // 지사 수 조회
+                    fetch('/test-api/branches').then(res => res.json()).then(data => {
+                        if (data.success && Array.isArray(data.data)) {
+                            apiResults.branches = data.data.length;
+                            console.log('✅ 지사 수 실시간 업데이트:', apiResults.branches);
+                        }
+                    }).catch(e => console.warn('⚠️ 지사 수 로드 실패:', e.message)),
+
+                    // 개통표 수 조회
+                    fetch('/api/dashboard/overview').then(res => res.json()).then(data => {
+                        if (data.success && data.data) {
+                            apiResults.sales = data.data.total_activations || apiResults.sales;
+                            console.log('✅ 개통표 수 실시간 업데이트:', apiResults.sales);
+                        }
+                    }).catch(e => console.warn('⚠️ 개통표 수 로드 실패:', e.message))
+                ];
+
+                // 모든 API 호출을 병렬로 실행
+                await Promise.allSettled(apiCalls);
                 
                 // 안정적인 데이터로 결과 생성
                 const userCount = apiResults.users;
@@ -1262,6 +1276,93 @@
                 this.classList.add('active');
             });
         });
+
+        // 🔄 실시간 대시보드 업데이트 리스너 (개통표 입력 시 자동 새로고침)
+        function initRealtimeUpdateListeners() {
+            console.log('📡 실시간 대시보드 업데이트 리스너 초기화...');
+
+            // 1. localStorage 크로스 탭 이벤트 리스너
+            window.addEventListener('storage', function(event) {
+                if (event.key === 'dashboard_update_trigger') {
+                    try {
+                        const updateData = JSON.parse(event.newValue);
+                        console.log('📨 크로스 탭 대시보드 업데이트 신호 수신:', updateData);
+
+                        if (updateData.type === 'dashboard_update') {
+                            const { store_name, saved_count, user } = updateData.data;
+                            console.log(`🔄 ${store_name}에서 ${user}가 개통표 ${saved_count}건 입력 - 대시보드 새로고침`);
+
+                            // 실시간 활동에 추가
+                            addRealtimeActivity({
+                                type: 'sales_update',
+                                message: `${store_name}에서 개통표 ${saved_count}건 입력`,
+                                timestamp: new Date().toISOString(),
+                                user: user,
+                                store: store_name
+                            });
+
+                            // 대시보드 데이터 새로고침 (2초 지연 후)
+                            setTimeout(() => {
+                                refreshDashboard();
+                            }, 2000);
+                        }
+                    } catch (e) {
+                        console.error('❌ 크로스 탭 업데이트 처리 오류:', e);
+                    }
+                }
+            });
+
+            // 2. 전역 대시보드 새로고침 함수 등록 (개통표 입력 페이지에서 호출)
+            window.refreshDashboard = function() {
+                console.log('🔄 대시보드 전체 데이터 새로고침 시작...');
+                loadRealTimeData();
+                loadSystemStatus();
+                loadRankings();
+                loadTopLists();
+                console.log('✅ 대시보드 전체 데이터 새로고침 완료');
+            };
+
+            // 3. 실시간 활동 추가 함수 등록
+            window.addRealtimeActivity = function(activity) {
+                console.log('📝 실시간 활동 추가:', activity);
+
+                // 실시간 활동 피드가 있다면 추가
+                const activityFeed = document.getElementById('realtime-activities');
+                if (activityFeed) {
+                    const activityEl = document.createElement('div');
+                    activityEl.className = 'bg-green-50 border-l-4 border-green-400 p-3 mb-2';
+                    activityEl.innerHTML = `
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center">
+                                <span class="text-green-600 text-sm font-medium">📊 ${activity.message}</span>
+                            </div>
+                            <span class="text-xs text-gray-500">${new Date().toLocaleTimeString()}</span>
+                        </div>
+                        <div class="text-xs text-gray-600 mt-1">
+                            ${activity.user} • ${activity.store || ''}
+                        </div>
+                    `;
+
+                    // 피드 상단에 추가
+                    activityFeed.insertBefore(activityEl, activityFeed.firstChild);
+
+                    // 최대 10개 항목 유지
+                    const activities = activityFeed.children;
+                    while (activities.length > 10) {
+                        activityFeed.removeChild(activities[activities.length - 1]);
+                    }
+
+                    console.log('✅ 실시간 활동 피드 업데이트 완료');
+                } else {
+                    console.warn('⚠️ 실시간 활동 피드 요소를 찾을 수 없음');
+                }
+            };
+
+            console.log('✅ 실시간 업데이트 리스너 초기화 완료');
+        }
+
+        // 실시간 업데이트 리스너 초기화 실행
+        initRealtimeUpdateListeners();
     </script>
 </body>
 </html>
