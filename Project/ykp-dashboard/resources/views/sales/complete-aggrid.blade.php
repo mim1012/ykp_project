@@ -454,7 +454,7 @@
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest'
                 },
-                credentials: 'same-origin',
+                credentials: 'include',
                 body: JSON.stringify({
                     sales: validData.map(row => ({
                         // PM 요구사항: DB 스키마와 1:1 매핑 (안전한 기본값)
