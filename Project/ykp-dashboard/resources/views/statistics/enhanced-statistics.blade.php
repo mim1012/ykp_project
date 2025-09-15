@@ -251,8 +251,48 @@
             const urlParams = new URLSearchParams(window.location.search);
             const storeId = urlParams.get('store');
             const storeName = urlParams.get('name');
-            
-            if (storeId && storeName) {
+            const userRole = urlParams.get('role');
+
+            // 매장 직원 권한 처리
+            if (userRole === 'store' || window.userData?.role === 'store') {
+                // 매장 직원은 자신의 매장 데이터만 접근
+                const myStoreId = storeId || window.userData?.store_id;
+                const myStoreName = storeName || window.userData?.store_name || '내 매장';
+
+                if (myStoreId) {
+                    storeFilter = { id: myStoreId, name: myStoreName };
+                    document.getElementById('store-filter-badge').style.display = 'inline-block';
+                    document.getElementById('store-filter-badge').textContent = `${myStoreName} 성과 분석`;
+                    document.querySelector('h1').textContent = `${myStoreName} 매장 성과 대시보드`;
+
+                    // 매장 직원용 안내 메시지 추가
+                    const pageHeader = document.querySelector('header');
+                    if (pageHeader) {
+                        const storeNotice = document.createElement('div');
+                        storeNotice.className = 'bg-green-50 border-l-4 border-green-400 p-4 mb-6';
+                        storeNotice.innerHTML = `
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm text-green-700">
+                                        <strong>${myStoreName} 매장 전용 통계</strong> - 실시간 성과 데이터를 확인하고 성장 추이를 분석할 수 있습니다.
+                                    </p>
+                                </div>
+                            </div>
+                        `;
+                        pageHeader.after(storeNotice);
+                    }
+
+                    console.log(`📊 매장 직원 통계 모드: ${myStoreName} (ID: ${myStoreId})`);
+                } else {
+                    console.warn('⚠️ 매장 정보를 찾을 수 없음');
+                }
+            } else if (storeId && storeName) {
+                // 일반 매장 필터 (본사/지사 관리자용)
                 storeFilter = { id: storeId, name: storeName };
                 document.getElementById('store-filter-badge').style.display = 'inline-block';
                 document.getElementById('store-filter-badge').textContent = `${storeName} 매장 통계`;

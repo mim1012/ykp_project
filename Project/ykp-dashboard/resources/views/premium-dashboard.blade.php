@@ -328,6 +328,10 @@
                 🏪
                 <span class="tooltip-text">소속 매장 관리</span>
             </div>
+            <div class="sidebar-icon tooltip" onclick="openMyBranchStatistics()">
+                💼
+                <span class="tooltip-text">지사 통계</span>
+            </div>
             <div class="sidebar-icon tooltip" onclick="openManagement()">
                 📋
                 <span class="tooltip-text">완전한 판매관리</span>
@@ -338,6 +342,10 @@
             <div class="sidebar-icon tooltip" onclick="openManagement()">
                 📋
                 <span class="tooltip-text">개통표 입력</span>
+            </div>
+            <div class="sidebar-icon tooltip" onclick="openMyStoreStatistics()">
+                💼
+                <span class="tooltip-text">내 매장 통계</span>
             </div>
 
         @else
@@ -859,6 +867,34 @@
         function openMonthlySettlement() {
             // 권한별 통계 페이지로 이동
             window.location.href = '/statistics';
+        }
+
+        function openMyStoreStatistics() {
+            // 매장 직원용 통계 페이지 (자기 매장만)
+            const storeId = window.userData?.store_id;
+            const storeName = window.userData?.store_name || '내 매장';
+
+            if (storeId) {
+                console.log(`📊 ${storeName} 통계 페이지로 이동`);
+                window.location.href = `/statistics/enhanced?store=${storeId}&name=${encodeURIComponent(storeName)}&role=store`;
+            } else {
+                console.log('📊 매장 통계 페이지로 이동');
+                window.location.href = '/statistics/my-store';
+            }
+        }
+
+        function openMyBranchStatistics() {
+            // 지사 관리자용 통계 페이지 (소속 지사만)
+            const branchId = window.userData?.branch_id;
+            const branchName = window.userData?.branch_name || '내 지사';
+
+            if (branchId) {
+                console.log(`📊 ${branchName} 통계 페이지로 이동`);
+                window.location.href = `/statistics/enhanced?branch=${branchId}&name=${encodeURIComponent(branchName)}&role=branch`;
+            } else {
+                console.log('📊 지사 통계 페이지로 이동');
+                window.location.href = '/statistics';
+            }
         }
         
         function openStoreManagement() {
