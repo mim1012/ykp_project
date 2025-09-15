@@ -1,10 +1,10 @@
 // 🧪 YKP 대시보드 종합 E2E 테스트
 // 모든 역할(본사/지사/매장)의 모든 버튼과 데이터 바인딩 테스트
 
-const { test, expect } = require('@playwright/test');
+import { test, expect } from '@playwright/test';
 
 // 테스트 설정
-const BASE_URL = 'http://localhost:8000';
+const BASE_URL = 'https://endearing-dedication-production.up.railway.app';
 const TEST_TIMEOUT = 60000;
 
 // 테스트 계정 정보 (시스템에 존재하는 계정들)

@@ -434,7 +434,7 @@
                                                         @endif
                                                     </div>
                                                     <div class="mt-3 flex gap-2">
-                                                        <button onclick="alert('매장 수정: {{ $store->name }}'); window.location.href='/management/stores/enhanced?edit={{ $store->id }}';" class="store-edit-btn px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600">✏️ 수정</button>
+                                                        <button onclick="editStore({{ $store->id }}, '{{ $store->name }}')" class="store-edit-btn px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600">✏️ 수정</button>
                                                         <button onclick="
                                                             const name = prompt('{{ $store->name }} 매장 관리자 이름:', '{{ $store->name }} 관리자');
                                                             if (!name) return;
@@ -1813,6 +1813,12 @@
                         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                     }
 
+                    // Content-Type 안전 검증
+                    const contentType = response.headers.get('content-type');
+                    if (!contentType || !contentType.includes('application/json')) {
+                        throw new Error('API가 JSON이 아닌 응답을 반환했습니다.');
+                    }
+
                     return response.json();
                 })
                 .then(data => {
@@ -2370,7 +2376,32 @@
 
             // 먼저 기존 계정 상태 확인
             fetch(`/debug/store-account/${storeId}`)
-                .then(response => response.json())
+                .then(response => {
+                    console.log('📡 계정 상태 API 응답:', response.status, response.headers.get('content-type'));
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+
+                    // Content-Type 안전 검증
+                    const contentType = response.headers.get('content-type') || '';
+                    console.log('🔍 Response Content-Type:', contentType);
+
+                    if (!contentType.includes('application/json')) {
+                        // HTML 오류 페이지인 경우 텍스트로 읽어서 에러 추출
+                        return response.text().then(htmlText => {
+                            console.log('⚠️ HTML 응답 받음:', htmlText.substring(0, 200));
+
+                            // Laravel 오류 페이지에서 에러 메시지 추출
+                            const errorMatch = htmlText.match(/<title>([^<]+)<\/title>/);
+                            const errorTitle = errorMatch ? errorMatch[1] : '알 수 없는 오류';
+
+                            throw new Error(`API 오류: ${errorTitle} (HTML 응답)`);
+                        });
+                    }
+
+                    return response.json();
+                })
                 .then(data => {
                     if (data.success) {
                         const accountInfo = data.data;
@@ -2635,6 +2666,12 @@
                 case 'backup_first':
                     handleBackupFirstDeletion(storeId, storeName, result);
                     break;
+                case 'deactivate_store':
+                    handleStoreDeactivation(storeId, storeName);
+                    break;
+                case 'disable_accounts':
+                    handleAccountDisabling(storeId, storeName);
+                    break;
                 case 'force_delete':
                     handleForceDelete(storeId, storeName);
                     break;
@@ -2689,6 +2726,85 @@
                 deleteStoreWithConfirmation(storeId, storeName, true);
             } else if (confirmation !== null) {
                 alert('❌ 매장명이 일치하지 않습니다.\n삭제가 취소되었습니다.');
+            }
+        }
+
+        // 🏪 매장 폐점 처리 (데이터 보존)
+        function handleStoreDeactivation(storeId, storeName) {
+            let deactivateMessage = `🏪 "${storeName}" 매장 폐점 처리\n`;
+            deactivateMessage += `${'='.repeat(40)}\n\n`;
+            deactivateMessage += `📋 폐점 처리 내용:\n`;
+            deactivateMessage += `• 매장 상태: 운영중 → 폐점\n`;
+            deactivateMessage += `• 사용자 계정: 자동 비활성화\n`;
+            deactivateMessage += `• 개통표 데이터: 완전 보존 ✅\n`;
+            deactivateMessage += `• 매장 정보: 완전 보존 ✅\n\n`;
+            deactivateMessage += `💡 장점:\n`;
+            deactivateMessage += `• 데이터 손실 없음\n`;
+            deactivateMessage += `• 필요시 재개점 가능\n`;
+            deactivateMessage += `• 법적/감사 요구사항 준수\n\n`;
+            deactivateMessage += `폐점 처리를 진행하시겠습니까?`;
+
+            if (confirm(deactivateMessage)) {
+                fetch(`/test-api/stores/${storeId}/deactivate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        let successMessage = `✅ "${storeName}" 매장 폐점 처리 완료!\n\n`;
+                        successMessage += `📊 보존된 데이터:\n`;
+                        successMessage += `• 개통표 기록: ${data.preserved_data.sales_count}건\n`;
+                        successMessage += `• 사용자 정보: ${data.preserved_data.users_count}개\n\n`;
+                        successMessage += `${data.note}`;
+
+                        alert(successMessage);
+                        location.reload();
+                    } else {
+                        alert('❌ 폐점 처리 실패: ' + (data.error || '알 수 없는 오류'));
+                    }
+                })
+                .catch(error => {
+                    alert('❌ 폐점 처리 중 오류가 발생했습니다.');
+                });
+            }
+        }
+
+        // 👥 계정만 비활성화 처리
+        function handleAccountDisabling(storeId, storeName) {
+            let disableMessage = `👥 "${storeName}" 매장 계정 비활성화\n`;
+            disableMessage += `${'='.repeat(40)}\n\n`;
+            disableMessage += `📋 비활성화 내용:\n`;
+            disableMessage += `• 사용자 계정: 로그인 불가 처리\n`;
+            disableMessage += `• 매장 정보: 완전 보존 ✅\n`;
+            disableMessage += `• 개통표 데이터: 완전 보존 ✅\n`;
+            disableMessage += `• 매장 상태: 운영중 유지\n\n`;
+            disableMessage += `💡 용도: 일시적 운영 중단, 직원 교체 등\n\n`;
+            disableMessage += `계정 비활성화를 진행하시겠습니까?`;
+
+            if (confirm(disableMessage)) {
+                fetch(`/test-api/stores/${storeId}/disable-accounts`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(`✅ "${storeName}" 매장 계정 비활성화 완료!\n\n비활성화된 계정: ${data.affected_accounts}개\n\n필요시 계정 관리에서 재활성화 가능합니다.`);
+                        location.reload();
+                    } else {
+                        alert('❌ 계정 비활성화 실패: ' + (data.error || '알 수 없는 오류'));
+                    }
+                })
+                .catch(error => {
+                    alert('❌ 계정 비활성화 중 오류가 발생했습니다.');
+                });
             }
         }
 

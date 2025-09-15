@@ -1724,21 +1724,24 @@ Route::middleware(['web', 'auth'])->delete('/test-api/stores/{id}', function ($i
         $forceDelete = request()->get('force', false);
 
         if (!$forceDelete && ($salesCount > 0)) {
-            // 사용자 가이드 메시지 생성
-            $guideMessage = "'{$store->name}' 매장을 삭제하려면 다음 단계를 따르세요:\n\n";
-            $guideMessage .= "📋 현재 연결된 데이터:\n";
+            // 🚨 비즈니스 데이터 보호 정책 강화
+            $guideMessage = "🚨 '{$store->name}' 매장 삭제 불가\n\n";
+            $guideMessage .= "📊 중요한 비즈니스 데이터가 연결되어 있습니다:\n";
             $guideMessage .= "• 개통표 기록: {$salesCount}건\n";
             $guideMessage .= "• 사용자 계정: {$usersCount}개\n\n";
 
-            $guideMessage .= "🔧 삭제 방법:\n";
-            $guideMessage .= "1️⃣ 먼저 개통표 데이터를 백업하거나 다른 매장으로 이전\n";
-            $guideMessage .= "2️⃣ 또는 '강제 삭제'를 선택하여 모든 데이터 함께 삭제\n\n";
+            $guideMessage .= "🔒 데이터 보호 정책:\n";
+            $guideMessage .= "• 개통표 데이터는 회계/세무 목적으로 보존 필수\n";
+            $guideMessage .= "• 임의 삭제 시 법적/감사 문제 발생 가능\n";
+            $guideMessage .= "• 매장 폐점 시에도 데이터는 보관되어야 함\n\n";
 
-            $guideMessage .= "⚠️ 주의사항:\n";
-            $guideMessage .= "• 강제 삭제 시 모든 데이터가 영구적으로 삭제됩니다\n";
-            $guideMessage .= "• 이 작업은 되돌릴 수 없습니다\n\n";
+            $guideMessage .= "📋 권장 절차:\n";
+            $guideMessage .= "1️⃣ 매장 상태를 '휴업' 또는 '폐점'으로 변경\n";
+            $guideMessage .= "2️⃣ 사용자 계정 비활성화\n";
+            $guideMessage .= "3️⃣ 개통표 데이터는 보관 (삭제 금지)\n\n";
 
-            $guideMessage .= "계속 진행하시겠습니까?";
+            $guideMessage .= "⚠️ 그래도 강제 삭제하시겠습니까?\n";
+            $guideMessage .= "(책임자 승인 및 데이터 백업 완료 확인 필요)";
 
             return response()->json([
                 'success' => false,
@@ -1756,20 +1759,33 @@ Route::middleware(['web', 'auth'])->delete('/test-api/stores/{id}', function ($i
                 'user_guide' => $guideMessage,
                 'actions' => [
                     [
-                        'label' => '📊 데이터 백업 후 삭제',
+                        'label' => '📊 데이터 백업 및 내보내기',
                         'action' => 'backup_first',
-                        'description' => '개통표 데이터를 먼저 내보내기'
+                        'description' => '개통표 데이터를 CSV/Excel로 내보내기',
+                        'recommended' => true
                     ],
                     [
-                        'label' => '🗑️ 강제 삭제 (모든 데이터 삭제)',
+                        'label' => '🏪 매장 상태 변경 (폐점 처리)',
+                        'action' => 'deactivate_store',
+                        'description' => '매장을 폐점 상태로 변경 (데이터 보존)',
+                        'safe' => true
+                    ],
+                    [
+                        'label' => '👥 계정만 비활성화',
+                        'action' => 'disable_accounts',
+                        'description' => '사용자 계정만 비활성화 (매장 정보 보존)'
+                    ],
+                    [
+                        'label' => '🚨 완전 삭제 (위험)',
                         'action' => 'force_delete',
-                        'description' => '모든 연관 데이터와 함께 매장 삭제',
-                        'warning' => '되돌릴 수 없습니다'
+                        'description' => '모든 데이터 영구 삭제',
+                        'warning' => '⚠️ 법적 책임 및 감사 문제 발생 가능',
+                        'requiresApproval' => true
                     ],
                     [
                         'label' => '❌ 취소',
                         'action' => 'cancel',
-                        'description' => '삭제 취소'
+                        'description' => '작업 취소'
                     ]
                 ]
             ], 400);
@@ -1827,6 +1843,60 @@ Route::middleware(['web', 'auth'])->delete('/test-api/stores/{id}', function ($i
         return response()->json(['success' => false, 'error' => '매장 삭제 중 오류가 발생했습니다: ' . $e->getMessage()], 500);
     }
 });
+
+// 매장 상태 변경 API (폐점 처리 - 데이터 보존)
+Route::post('/test-api/stores/{id}/deactivate', function($id) {
+    try {
+        $store = App\Models\Store::findOrFail($id);
+        $salesCount = App\Models\Sale::where('store_id', $id)->count();
+        $usersCount = App\Models\User::where('store_id', $id)->count();
+
+        // 매장 상태를 비활성으로 변경 (데이터는 보존)
+        $store->update(['status' => 'inactive']);
+
+        // 관련 사용자 계정 비활성화 (삭제하지 않음)
+        App\Models\User::where('store_id', $id)->update(['is_active' => false]);
+
+        \Log::info("매장 폐점 처리: {$store->name}", [
+            'preserved_sales' => $salesCount,
+            'deactivated_users' => $usersCount
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "'{$store->name}' 매장이 폐점 처리되었습니다.",
+            'action' => 'deactivated',
+            'preserved_data' => [
+                'sales_count' => $salesCount,
+                'users_count' => $usersCount
+            ],
+            'note' => '모든 데이터가 보존되었으며, 필요시 재활성화 가능합니다.'
+        ]);
+    } catch (Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+// 매장 계정만 비활성화 API
+Route::post('/test-api/stores/{id}/disable-accounts', function($id) {
+    try {
+        $store = App\Models\Store::findOrFail($id);
+        $affectedUsers = App\Models\User::where('store_id', $id)->update(['is_active' => false]);
+
+        return response()->json([
+            'success' => true,
+            'message' => "'{$store->name}' 매장의 계정들이 비활성화되었습니다.",
+            'affected_accounts' => $affectedUsers
+        ]);
+    } catch (Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+});
+
+// 매장 수정 404 라우트 문제 해결 (리디렉션)
+Route::get('/management/stores/enhanced', function() {
+    return redirect('/management/stores');
+})->name('stores.enhanced.redirect');
 
 // 매장 계정 상태 확인 및 자동 수정 API
 Route::get('/debug/store-account/{storeId}', function($storeId) {

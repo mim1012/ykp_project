@@ -117,6 +117,27 @@
         
         console.log('사용자 정보:', window.userData);
         
+        // 사용자 정의 렌더러 등록
+        function setupCustomRenderers() {
+            if (typeof Handsontable !== 'undefined') {
+                // calculatedRenderer 등록
+                Handsontable.renderers.registerRenderer('calculatedRenderer', function(instance, td, row, col, prop, value, cellProperties) {
+                    td.innerHTML = value || '';
+                    td.style.backgroundColor = '#f0f9ff';
+                    td.style.fontWeight = 'bold';
+                    td.style.color = '#1e40af';
+                    td.style.textAlign = 'center';
+                });
+                console.log('✅ calculatedRenderer 등록 완료');
+            } else {
+                console.warn('⚠️ Handsontable 라이브러리 로딩 대기 중...');
+                setTimeout(setupCustomRenderers, 500);
+            }
+        }
+
+        // 렌더러 먼저 등록
+        setupCustomRenderers();
+
         // 컬럼 정의
         const columns = [
             {data: 'sale_date', type: 'date', dateFormat: 'YYYY-MM-DD', title: '판매일'},
