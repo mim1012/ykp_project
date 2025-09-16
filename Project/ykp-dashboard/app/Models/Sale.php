@@ -20,20 +20,21 @@ class Sale extends Model
         'activation_type',
         'model_name',
         'serial_number', // PM 요구사항: 일련번호 추가
-        'base_price',
+        // 🔄 실제 Railway DB 컬럼명과 정확히 일치
+        'price_setting',        // base_price → price_setting
         'verbal1',
         'verbal2',
         'grade_amount',
-        'additional_amount',
+        'addon_amount',         // additional_amount → addon_amount
         'rebate_total',
-        'cash_activation',
+        'paper_cash',           // cash_activation → paper_cash
         'usim_fee',
-        'new_mnp_discount',
+        'new_mnp_disc',         // new_mnp_discount → new_mnp_disc
         'deduction',
         'settlement_amount',
         'tax',
         'margin_before_tax',
-        'cash_received',
+        'cash_in',              // cash_received → cash_in
         'payback',
         'margin_after_tax',
         'monthly_fee',
