@@ -1,15 +1,54 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, Button, Badge, Icon, ResponsiveTable } from '../ui';
 
 export const StoreManagement = () => {
     const [selectedStore, setSelectedStore] = useState(null);
-    const stores = [
-        { id: 1, name: '강남점', region: '서울', status: 'active', todaySales: '₩5.2M' },
-        { id: 2, name: '판교점', region: '경기', status: 'active', todaySales: '₩4.8M' },
-        { id: 3, name: '송도점', region: '인천', status: 'maintenance', todaySales: '₩0' },
-        { id: 4, name: '해운대점', region: '부산', status: 'active', todaySales: '₩3.5M' },
-        { id: 5, name: '동성로점', region: '대구', status: 'active', todaySales: '₩2.9M' }
-    ];
+    const [stores, setStores] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    // 🔄 실제 API에서 매장 데이터 로드
+    useEffect(() => {
+        const fetchStores = async () => {
+            try {
+                setLoading(true);
+                const response = await fetch('/api/stores');
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                if (data.success && Array.isArray(data.data)) {
+                    // API 응답을 컴포넌트 형식으로 변환
+                    const transformedStores = data.data.map(store => ({
+                        id: store.id,
+                        name: store.name,
+                        region: store.branch?.name || '미지정',
+                        status: store.status || 'active',
+                        todaySales: `₩${Number(store.today_sales || 0).toLocaleString()}`,
+                        code: store.code,
+                        owner_name: store.owner_name,
+                        phone: store.phone,
+                        address: store.address
+                    }));
+
+                    setStores(transformedStores);
+                    console.log(`✅ 매장 데이터 ${transformedStores.length}개 로드 완료`);
+                } else {
+                    throw new Error('매장 데이터 형식 오류');
+                }
+            } catch (err) {
+                console.error('❌ 매장 데이터 로드 실패:', err);
+                setError(err.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchStores();
+    }, []);
 
     // Table columns configuration
     const columns = [
@@ -72,6 +111,37 @@ export const StoreManagement = () => {
             </Button>
         </div>
     );
+
+    // 로딩 상태 처리
+    if (loading) {
+        return (
+            <div className="space-y-6">
+                <div className="flex items-center justify-center p-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <span className="ml-3 text-gray-600">매장 데이터 로딩 중...</span>
+                </div>
+            </div>
+        );
+    }
+
+    // 에러 상태 처리
+    if (error) {
+        return (
+            <div className="space-y-6">
+                <Card>
+                    <div className="p-6 text-center">
+                        <div className="text-red-500 text-4xl mb-4">⚠️</div>
+                        <h3 className="text-lg font-medium text-gray-900 mb-2">매장 데이터 로드 실패</h3>
+                        <p className="text-gray-600 mb-4">{error}</p>
+                        <Button onClick={() => window.location.reload()}>
+                            <Icon name="refresh" className="w-4 h-4 mr-2" />
+                            다시 시도
+                        </Button>
+                    </div>
+                </Card>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6">

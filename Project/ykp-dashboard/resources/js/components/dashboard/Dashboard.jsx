@@ -20,7 +20,7 @@ export const Dashboard = () => {
                         labels: Array.from({length: 30}, (_, i) => `${i+1}일`),
                         datasets: [{
                             label: '매출',
-                            data: Array.from({length: 30}, () => Math.floor(Math.random() * 50) + 100),
+                            data: [], // 🔄 실제 API 데이터로 교체 예정
                             borderColor: '#0ea5e9',
                             backgroundColor: 'rgba(14, 165, 233, 0.1)',
                             tension: 0.4
@@ -191,7 +191,7 @@ export const Dashboard = () => {
                 />
                 <KPICard 
                     title="활성 매장" 
-                    value={`${dashboardData.activeStores} / 50`}
+                    value={`${dashboardData.activeStores} / ${dashboardData.totalStores || '...'}`}
                     icon="store"
                     description="오늘 매출 발생 매장"
                 />
