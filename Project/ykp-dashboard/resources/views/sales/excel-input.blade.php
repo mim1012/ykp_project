@@ -376,7 +376,13 @@
                         monthly_fee: row.monthly_fee || 0,
                         phone_number: row.phone_number,
                         salesperson: row.salesperson,
-                        memo: row.memo
+                        memo: row.memo,
+                        // 🔄 누락된 필수 필드들 추가
+                        dealer_code: window.userData.dealer_code || null,
+                        dealer_name: row.dealer_name || null,
+                        serial_number: row.serial_number || null,
+                        customer_name: row.customer_name || null,
+                        customer_birth_date: row.customer_birth_date || null
                     }))
                 })
             })

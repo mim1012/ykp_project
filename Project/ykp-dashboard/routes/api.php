@@ -164,33 +164,67 @@ Route::middleware(['web', 'auth', 'rbac'])->prefix('sales')->group(function () {
         try {
             $salesData = $request->input('sales', []);
             $savedCount = 0;
+            $errors = [];
 
             $user = auth()->user();
 
-            foreach ($salesData as $sale) {
-                // 🚨 하드코딩 제거: 실제 사용자 정보 사용
+            foreach ($salesData as $index => $sale) {
+                // 사용자 정보 또는 기본값 사용
                 if (empty($sale['store_id'])) {
-                    $sale['store_id'] = $user->store_id ?? null;
+                    if ($user && $user->store_id) {
+                        $sale['store_id'] = $user->store_id;
+                    } else {
+                        // 개발 환경용 기본값: 첫 번째 활성 매장
+                        $defaultStore = App\Models\Store::where('status', 'active')->first();
+                        $sale['store_id'] = $defaultStore ? $defaultStore->id : 1;
+                    }
                 }
                 if (empty($sale['branch_id'])) {
-                    $sale['branch_id'] = $user->branch_id ?? null;
+                    if ($user && $user->branch_id) {
+                        $sale['branch_id'] = $user->branch_id;
+                    } else {
+                        // store_id로부터 branch_id 가져오기
+                        $store = App\Models\Store::find($sale['store_id']);
+                        $sale['branch_id'] = $store ? $store->branch_id : 1;
+                    }
                 }
 
-                // null 값 검증
-                if (!$sale['store_id'] || !$sale['branch_id']) {
-                    throw new Exception('매장 또는 지사 정보가 없습니다. 관리자에게 문의하세요.');
+                // 빈 문자열을 null로 변환
+                foreach ($sale as $key => $value) {
+                    if ($value === '') {
+                        $sale[$key] = null;
+                    }
                 }
 
-                App\Models\Sale::create($sale);
-                $savedCount++;
+                try {
+                    App\Models\Sale::create($sale);
+                    $savedCount++;
+                } catch (\Exception $e) {
+                    $errors[] = "행 " . ($index + 1) . ": " . $e->getMessage();
+                    \Log::warning('Sale save error for row ' . ($index + 1), ['error' => $e->getMessage(), 'data' => $sale]);
+                }
             }
 
-            return response()->json([
-                'success' => true,
-                'message' => $savedCount . '건이 저장되었습니다.',
-                'saved_count' => $savedCount
-            ]);
+            if ($savedCount > 0) {
+                $message = $savedCount . '건이 저장되었습니다.';
+                if (!empty($errors)) {
+                    $message .= ' (일부 오류: ' . count($errors) . '건)';
+                }
+                return response()->json([
+                    'success' => true,
+                    'message' => $message,
+                    'saved_count' => $savedCount,
+                    'errors' => $errors
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => '데이터를 저장할 수 없습니다.',
+                    'errors' => $errors
+                ], 400);
+            }
         } catch (\Exception $e) {
+            \Log::error('Sales save error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => '저장 오류: ' . $e->getMessage()
