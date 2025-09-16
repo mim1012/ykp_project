@@ -1533,11 +1533,16 @@
                 // 매장별 목표 설정 (실제 데이터 또는 기본값)
                 fetch(`/api/dashboard/overview?store=${storeId}`)
                     .then(response => response.json())
-                    .then(data => {
+                    .then(async (data) => {
                         if (data.success && data.data) {
                             const monthSales = data.data.month?.sales || 0;
+
                             // 🔄 실제 목표 API에서 가져오기 (하드코딩 제거)
-                            const storeTarget = data.data.month?.target || await getStoreGoalFromAPI(userData.store_id);
+                            let storeTarget = data.data.month?.target;
+                            if (!storeTarget) {
+                                storeTarget = await getStoreGoalFromAPI(userData.store_id);
+                            }
+
                             const achievementRate = monthSales > 0 ? (monthSales / storeTarget * 100).toFixed(1) : 0;
 
                             safeUpdateElement('store-goal-achievement', monthSales > 0 ? `${achievementRate}% 달성` : '실적 없음');
