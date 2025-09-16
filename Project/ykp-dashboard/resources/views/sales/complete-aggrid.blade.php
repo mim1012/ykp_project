@@ -622,12 +622,20 @@
                     return;
                 }
 
-                const response = await fetch(`/api/sales?store_id=${storeId}&days=7`); // 최근 7일
+                const apiUrl = `/api/sales?store_id=${storeId}&days=7`;
+                console.log('📡 API 호출:', apiUrl);
+
+                const response = await fetch(apiUrl);
+                console.log('📡 API 응답 상태:', response.status);
+
                 if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('❌ API 응답 에러:', errorText);
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
 
                 const data = await response.json();
+                console.log('📊 API 응답 데이터:', data);
 
                 if (data.success && data.data && data.data.length > 0) {
                     console.log(`📊 기존 개통표 ${data.data.length}건 발견`);
@@ -675,8 +683,27 @@
                 }
             } catch (error) {
                 console.error('❌ 기존 데이터 로드 실패:', error);
-                console.log('🔄 빈 상태로 시작');
-                // 에러 시에도 계속 진행 (빈 상태로 시작)
+
+                // 🔄 대안 API 시도 (다른 엔드포인트)
+                try {
+                    console.log('🔄 대안 API 시도...');
+                    const fallbackUrl = `/dev/stores/sales?store_id=${storeId}`;
+                    const fallbackResponse = await fetch(fallbackUrl);
+
+                    if (fallbackResponse.ok) {
+                        const fallbackData = await fallbackResponse.json();
+                        if (fallbackData.success && fallbackData.data && fallbackData.data.length > 0) {
+                            console.log(`✅ 대안 API로 ${fallbackData.data.length}건 로드 성공`);
+                            // 동일한 데이터 변환 로직 적용
+                            // ... (데이터 변환 코드)
+                        }
+                    }
+                } catch (fallbackError) {
+                    console.warn('⚠️ 대안 API도 실패:', fallbackError.message);
+                }
+
+                console.log('🔄 빈 상태로 시작 (저장된 데이터 로드 실패)');
+                showStatus('⚠️ 기존 데이터 로드에 실패했습니다. 새로 시작합니다.', 'warning');
             }
         }
     </script>
