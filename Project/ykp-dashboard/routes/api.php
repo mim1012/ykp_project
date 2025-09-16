@@ -180,9 +180,8 @@ Route::middleware(['web', 'auth', 'rbac'])->prefix('sales')->group(function () {
                     if ($user && $user->store_id) {
                         $sale['store_id'] = $user->store_id;
                     } else {
-                        // 개발 환경용 기본값: 첫 번째 활성 매장
-                        $defaultStore = App\Models\Store::where('status', 'active')->first();
-                        $sale['store_id'] = $defaultStore ? $defaultStore->id : 1;
+                        // 🚨 하드코딩 제거: 매장 정보 없으면 에러
+                        throw new Exception('매장 정보가 없는 사용자는 개통표를 저장할 수 없습니다.');
                     }
                 }
                 if (empty($sale['branch_id'])) {
@@ -191,7 +190,10 @@ Route::middleware(['web', 'auth', 'rbac'])->prefix('sales')->group(function () {
                     } else {
                         // store_id로부터 branch_id 가져오기
                         $store = App\Models\Store::find($sale['store_id']);
-                        $sale['branch_id'] = $store ? $store->branch_id : 1;
+                        if (!$store) {
+                            throw new Exception('유효하지 않은 매장 정보입니다.');
+                        }
+                        $sale['branch_id'] = $store->branch_id;
                     }
                 }
 
@@ -474,7 +476,14 @@ Route::prefix('dashboard')->group(function () {
                     now()->endOfMonth()->toDateTimeString()
                 ]]
             );
-            $monthlyTarget = 50000000;
+            // 🔄 실제 목표 API에서 가져오기 (하드코딩 제거)
+            $goal = App\Models\Goal::where('target_type', 'system')
+                ->where('period_type', 'monthly')
+                ->where('is_active', true)
+                ->whereRaw("DATE_FORMAT(period_start, '%Y-%m') = ?", [now()->format('Y-m')])
+                ->first();
+
+            $monthlyTarget = $goal ? $goal->sales_target : 50000000; // 목표 미설정 시에만 기본값
             $achievementRate = $thisMonthSales > 0 ? round(($thisMonthSales / $monthlyTarget) * 100, 1) : 0;
             
             return response()->json([

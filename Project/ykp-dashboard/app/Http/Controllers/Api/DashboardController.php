@@ -47,8 +47,14 @@ class DashboardController extends Controller
             // 오늘 개통 건수
             $todaySales = Sale::whereDate('sale_date', today())->count();
             
-            // 목표 달성률 계산 (월 5천만원 기준)
-            $monthlyTarget = 50000000;
+            // 🔄 목표 달성률 계산 (실제 목표 API 기반, 하드코딩 제거)
+            $goal = \App\Models\Goal::where('target_type', 'system')
+                ->where('period_type', 'monthly')
+                ->where('is_active', true)
+                ->whereRaw("DATE_FORMAT(period_start, '%Y-%m') = ?", [now()->format('Y-m')])
+                ->first();
+
+            $monthlyTarget = $goal ? $goal->sales_target : 50000000; // 목표 미설정 시에만 기본값
             $achievementRate = $thisMonthSales > 0 ? round(($thisMonthSales / $monthlyTarget) * 100, 1) : 0;
             
             Log::info('Dashboard overview calculated', [
@@ -154,7 +160,7 @@ class DashboardController extends Controller
                         'branch_name' => $store->branch->name ?? '미지정',
                         'total_sales' => floatval($ranking->total_sales),
                         'activation_count' => $ranking->activation_count,
-                        'target_achievement' => round((floatval($ranking->total_sales) / 500000) * 100, 1) // 매장별 월 50만원 목표
+                        'target_achievement' => $this->calculateStoreTargetAchievement($store->id, floatval($ranking->total_sales))
                     ];
                 }
             }
@@ -420,6 +426,32 @@ class DashboardController extends Controller
         } catch (\Exception $e) {
             Log::error('Top list API error', ['error' => $e->getMessage(), 'type' => $request->query('type')]);
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * 매장별 목표 달성률 계산 (하드코딩 제거)
+     */
+    private function calculateStoreTargetAchievement($storeId, $actualSales)
+    {
+        try {
+            // 매장별 목표 조회
+            $goal = \App\Models\Goal::where('target_type', 'store')
+                ->where('target_id', $storeId)
+                ->where('period_type', 'monthly')
+                ->where('is_active', true)
+                ->whereRaw("DATE_FORMAT(period_start, '%Y-%m') = ?", [now()->format('Y-m')])
+                ->first();
+
+            $storeTarget = $goal ? $goal->sales_target : 5000000; // 매장 기본 목표 500만원 (미설정 시)
+
+            return $actualSales > 0 ? round(($actualSales / $storeTarget) * 100, 1) : 0;
+        } catch (\Exception $e) {
+            Log::warning('Store target calculation failed', [
+                'store_id' => $storeId,
+                'error' => $e->getMessage()
+            ]);
+            return 0;
         }
     }
 }
