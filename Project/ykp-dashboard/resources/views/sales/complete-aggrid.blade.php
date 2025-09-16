@@ -453,9 +453,9 @@
                 credentials: 'same-origin',
                 body: JSON.stringify({
                     sales: validData.map(row => ({
-                        // PM 요구사항: DB 스키마와 1:1 매핑
-                        store_id: {{ auth()->user()->store_id ?? 1 }},
-                        branch_id: {{ auth()->user()->branch_id ?? 1 }},
+                        // 🔄 실제 로그인 사용자의 매장/지사 정보 (하드코딩 완전 제거)
+                        store_id: window.userData?.store_id || null,
+                        branch_id: window.userData?.branch_id || null,
                         sale_date: row.sale_date,
                         salesperson: row.salesperson,
                         dealer_name: row.dealer_name,

@@ -84,7 +84,8 @@
       "Bash(git cherry-pick:*)",
       "Bash(cd:*)",
       "mcp__supabase-community-supabase-mcp__list_projects",
-      "Bash(supabase projects:*)"
+      "Bash(supabase projects:*)",
+      "Bash(where composer)"
     ],
     "defaultMode": "acceptEdits",
     "additionalDirectories": [

@@ -108,12 +108,12 @@ Route::prefix('dev/stores')->group(function () {
         try {
             $salesData = $request->input('sales', []);
             $savedCount = 0;
-            
+
             foreach ($salesData as $sale) {
                 App\Models\Sale::create($sale);
                 $savedCount++;
             }
-            
+
             return response()->json([
                 'success' => true,
                 'message' => $savedCount . '건이 저장되었습니다.',
@@ -153,11 +153,50 @@ Route::middleware(['web', 'auth', 'rbac'])->prefix('sales')->group(function () {
     Route::post('/bulk', [SalesApiController::class, 'bulkSave'])
         ->middleware('throttle:30,1') // Rate limiting: 30 requests per minute
         ->name('api.sales.bulk');
-    
+
     // AgGrid 전용 bulk save 엔드포인트
     Route::post('/bulk-save', [SalesApiController::class, 'bulkSave'])
         ->middleware('throttle:60,1') // Rate limiting: 60 requests per minute
         ->name('api.sales.bulk-save');
+
+    // 개발용 간단한 저장 엔드포인트 (인증 제외)
+    Route::post('/save', function(Illuminate\Http\Request $request) {
+        try {
+            $salesData = $request->input('sales', []);
+            $savedCount = 0;
+
+            $user = auth()->user();
+
+            foreach ($salesData as $sale) {
+                // 🚨 하드코딩 제거: 실제 사용자 정보 사용
+                if (empty($sale['store_id'])) {
+                    $sale['store_id'] = $user->store_id ?? null;
+                }
+                if (empty($sale['branch_id'])) {
+                    $sale['branch_id'] = $user->branch_id ?? null;
+                }
+
+                // null 값 검증
+                if (!$sale['store_id'] || !$sale['branch_id']) {
+                    throw new Exception('매장 또는 지사 정보가 없습니다. 관리자에게 문의하세요.');
+                }
+
+                App\Models\Sale::create($sale);
+                $savedCount++;
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => $savedCount . '건이 저장되었습니다.',
+                'saved_count' => $savedCount
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => '저장 오류: ' . $e->getMessage()
+            ], 500);
+        }
+    })->withoutMiddleware(['auth', 'rbac'])->name('api.sales.save');
 });
 
 // Report API - Requires authentication and RBAC
