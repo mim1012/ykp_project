@@ -657,6 +657,11 @@ Route::middleware(['auth', 'rbac'])->group(function () {
         return view('sales.complete-aggrid');
     })->name('sales.complete-aggrid');
 
+    // 404 방지: 누락된 advanced-input 라우트 리디렉션
+    Route::get('/sales/advanced-input', function () {
+        return redirect('/sales/complete-aggrid');
+    })->name('sales.advanced-input.redirect');
+
     Route::get('/sales/advanced-input-pro', function () {
         return view('sales.advanced-input-pro');
     })->name('sales.advanced-input-pro');

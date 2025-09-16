@@ -483,7 +483,7 @@ Route::prefix('dashboard')->group(function () {
                 ->whereRaw("DATE_FORMAT(period_start, '%Y-%m') = ?", [now()->format('Y-m')])
                 ->first();
 
-            $monthlyTarget = $goal ? $goal->sales_target : 50000000; // 목표 미설정 시에만 기본값
+            $monthlyTarget = $goal ? $goal->sales_target : config('sales.default_targets.system.monthly_sales');
             $achievementRate = $thisMonthSales > 0 ? round(($thisMonthSales / $monthlyTarget) * 100, 1) : 0;
             
             return response()->json([
