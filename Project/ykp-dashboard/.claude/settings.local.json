@@ -94,7 +94,8 @@
       "Bash(./supabase.exe projects list)",
       "Bash(./supabase.exe login)",
       "Bash(./supabase.exe db dump:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(git reset:*)"
     ],
     "defaultMode": "acceptEdits",
     "additionalDirectories": [

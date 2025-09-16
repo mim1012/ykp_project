@@ -939,8 +939,11 @@
                     if (window.userData.role === 'branch') {
                         const accessibleStores = overviewData.debug?.accessible_stores || 0;
                         const monthSales = data.month?.sales || 0;
-                        // 지사 목표를 실시간 API에서 가져오거나 기본값
-                        const monthTarget = data.month?.target || 10000000;
+                        // 지사 목표를 Goals API에서 가져오기
+                        let monthTarget = data.month?.target;
+                        if (!monthTarget) {
+                            monthTarget = await getBranchGoalFromAPI(userData.branch_id);
+                        }
                         const achievementRate = monthSales > 0 ? Math.round((monthSales / monthTarget) * 100) : 0;
                         
                         // 지사 KPI 업데이트
@@ -1361,7 +1364,8 @@
             let goalInput = `📊 시스템 전체 목표 설정 (${currentMonth})\n`;
             goalInput += `${'='.repeat(45)}\n\n`;
 
-            const salesTarget = prompt(goalInput + '월간 매출 목표 (원):', '50000000');
+            const currentTarget = await getSystemGoalFromAPI();
+            const salesTarget = prompt(goalInput + '월간 매출 목표 (원):', currentTarget.toString());
             if (!salesTarget || isNaN(salesTarget)) {
                 alert('❌ 올바른 매출 목표를 입력해주세요.');
                 return;
@@ -1559,7 +1563,10 @@
                     .then(data => {
                         if (data.success && data.data) {
                             const monthSales = data.data.month?.sales;
-                            const monthTarget = data.data.month?.target || 50000000; // API에서 목표 가져오거나 기본값
+                            let monthTarget = data.data.month?.target;
+                            if (!monthTarget) {
+                                monthTarget = await getSystemGoalFromAPI();
+                            }
 
                             if (monthSales !== undefined && monthSales !== null) {
                                 const achievementRate = monthSales > 0 ? (monthSales / monthTarget * 100).toFixed(1) : 0;
@@ -1594,7 +1601,10 @@
                     .then(data => {
                         if (data.success && data.data) {
                             const monthSales = data.data.month?.sales || 0;
-                            const branchTarget = data.data.month?.target || 10000000; // 지사 기본 목표 1천만원
+                            let branchTarget = data.data.month?.target;
+                            if (!branchTarget) {
+                                branchTarget = await getBranchGoalFromAPI(branchId);
+                            }
                             const achievementRate = monthSales > 0 ? (monthSales / branchTarget * 100).toFixed(1) : 0;
 
                             safeUpdateElement('branch-goal-achievement', monthSales > 0 ? `${achievementRate}% 달성` : '실적 없음');
@@ -1767,7 +1777,7 @@
             setInterval(loadRealtimeActivities, 30000);
         });
 
-        // 🎯 실시간 목표 가져오기 함수
+        // 🎯 실시간 목표 가져오기 함수들
         async function getStoreGoalFromAPI(storeId) {
             try {
                 const response = await fetch(`/api/goals/store/${storeId}`);
@@ -1776,9 +1786,35 @@
                     return data.success ? data.data.sales_target : 5000000;
                 }
             } catch (error) {
-                console.warn('목표 API 호출 실패:', error);
+                console.warn('매장 목표 API 호출 실패:', error);
             }
             return 5000000; // API 실패 시에만 기본값
+        }
+
+        async function getBranchGoalFromAPI(branchId) {
+            try {
+                const response = await fetch(`/api/goals/branch/${branchId}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    return data.success ? data.data.sales_target : 10000000;
+                }
+            } catch (error) {
+                console.warn('지사 목표 API 호출 실패:', error);
+            }
+            return 10000000; // API 실패 시에만 기본값
+        }
+
+        async function getSystemGoalFromAPI() {
+            try {
+                const response = await fetch('/api/goals/system');
+                if (response.ok) {
+                    const data = await response.json();
+                    return data.success ? data.data.sales_target : 50000000;
+                }
+            } catch (error) {
+                console.warn('시스템 목표 API 호출 실패:', error);
+            }
+            return 50000000; // API 실패 시에만 기본값
         }
 
         // 실시간 업데이트 리스너 초기화 실행

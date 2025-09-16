@@ -456,7 +456,15 @@ Route::get('/api/dashboard/overview', function () {
                            ->count() ?: 0;
         $storeCount = \App\Models\Store::count() ?: 0;
         
-        $achievementRate = $totalSales > 0 ? round(($totalSales / 50000000) * 100, 1) : 0;
+        // 시스템 목표 조회
+        $goal = \App\Models\Goal::where('target_type', 'system')
+            ->where('period_type', 'monthly')
+            ->where('is_active', true)
+            ->whereRaw("DATE_FORMAT(period_start, '%Y-%m') = ?", [now()->format('Y-m')])
+            ->first();
+        $systemTarget = $goal ? $goal->sales_target : 50000000;
+
+        $achievementRate = $totalSales > 0 ? round(($totalSales / $systemTarget) * 100, 1) : 0;
         
         return response()->json([
             'success' => true,
@@ -475,7 +483,7 @@ Route::get('/api/dashboard/overview', function () {
                     'avg_margin' => 15.3
                 ],
                 'goals' => [
-                    'monthly_target' => 50000000,
+                    'monthly_target' => $systemTarget,
                     'achievement_rate' => $achievementRate
                 ]
             ],
@@ -490,7 +498,7 @@ Route::get('/api/dashboard/overview', function () {
             'data' => [
                 'today' => ['sales' => 0, 'activations' => 0, 'date' => today()->format('Y-m-d')],
                 'month' => ['sales' => 0, 'activations' => 0, 'year_month' => now()->format('Y-m')],
-                'goals' => ['monthly_target' => 50000000, 'achievement_rate' => 0]
+                'goals' => ['monthly_target' => 50000000, 'achievement_rate' => 0] // 에러 시 기본값
             ]
         ]);
     }
@@ -1209,7 +1217,15 @@ Route::get('/api/dashboard/overview', function () {
             return (clone $query)->whereBetween('sale_date', [$startOfMonth, $endOfMonth])
                                  ->count();
         });
-        
+
+        // 시스템 목표 조회
+        $goal = \App\Models\Goal::where('target_type', 'system')
+            ->where('period_type', 'monthly')
+            ->where('is_active', true)
+            ->whereRaw("DATE_FORMAT(period_start, '%Y-%m') = ?", [now()->format('Y-m')])
+            ->first();
+        $systemTarget = $goal ? $goal->sales_target : 50000000;
+
         return response()->json([
             'success' => true,
             'data' => [
@@ -1227,8 +1243,8 @@ Route::get('/api/dashboard/overview', function () {
                     'avg_margin' => 15.3
                 ],
                 'goals' => [
-                    'monthly_target' => 50000000,
-                    'achievement_rate' => round(($monthSales / 50000000) * 100, 1)
+                    'monthly_target' => $systemTarget,
+                    'achievement_rate' => round(($monthSales / $systemTarget) * 100, 1)
                 ]
             ],
             'timestamp' => now()->toISOString(),
@@ -1591,6 +1607,15 @@ Route::get('/api/stores/{id}/stats', function ($id) {
             ->take(5)
             ->get(['sale_date', 'model_name', 'settlement_amount', 'carrier']);
 
+        // 매장 목표 조회
+        $storeGoal = \App\Models\Goal::where('target_type', 'store')
+            ->where('target_id', $id)
+            ->where('period_type', 'monthly')
+            ->where('is_active', true)
+            ->whereRaw("DATE_FORMAT(period_start, '%Y-%m') = ?", [now()->format('Y-m')])
+            ->first();
+        $storeTarget = $storeGoal ? $storeGoal->sales_target : 5000000;
+
         // 🚀 최적화된 매장 성과 응답 (목표 달성률 + KPI)
         return response()->json([
             'success' => true,
@@ -1616,8 +1641,8 @@ Route::get('/api/stores/{id}/stats', function ($id) {
                     'rank_change' => app(PerformanceService::class)->calculateRankChange($store->id, $storeRank)
                 ],
                 'goals' => [
-                    'monthly_target' => 5000000, // 기본 목표 (나중에 goals 테이블에서)
-                    'achievement_rate' => $monthSales > 0 ? round(($monthSales / 5000000) * 100, 1) : 0,
+                    'monthly_target' => $storeTarget, // Goals 테이블에서 조회
+                    'achievement_rate' => $monthSales > 0 ? round(($monthSales / $storeTarget) * 100, 1) : 0,
                     'days_remaining' => now()->endOfMonth()->diffInDays(now()) + 1
                 ],
                 'trends' => [
@@ -2848,15 +2873,26 @@ Route::middleware(['web', 'api.auth'])->group(function () {
             $currentProfit = floatval($monthlyStats->current_profit ?? 0);
             $currentProfitRate = $currentRevenue > 0 ? round(($currentProfit / $currentRevenue) * 100, 1) : 0;
             
-            // 목표 설정 (매장별 vs 전체)
+            // 목표 설정 (매장별 vs 전체) - Goals 테이블에서 조회
             if ($storeId) {
                 // 매장별 목표
-                $revenueTarget = 2000000;      // 매장별 월 200만원 목표
-                $activationTarget = 10;        // 매장별 월 10건 목표
+                $storeGoal = \App\Models\Goal::where('target_type', 'store')
+                    ->where('target_id', $storeId)
+                    ->where('period_type', 'monthly')
+                    ->where('is_active', true)
+                    ->whereRaw("DATE_FORMAT(period_start, '%Y-%m') = ?", [now()->format('Y-m')])
+                    ->first();
+                $revenueTarget = $storeGoal ? $storeGoal->sales_target : 2000000;
+                $activationTarget = $storeGoal ? $storeGoal->activation_target : 10;
                 $profitRateTarget = 55.0;     // 55% 목표
             } else {
                 // 전체 목표
-                $revenueTarget = 50000000;     // 전체 월 5000만원 목표
+                $systemGoal = \App\Models\Goal::where('target_type', 'system')
+                    ->where('period_type', 'monthly')
+                    ->where('is_active', true)
+                    ->whereRaw("DATE_FORMAT(period_start, '%Y-%m') = ?", [now()->format('Y-m')])
+                    ->first();
+                $revenueTarget = $systemGoal ? $systemGoal->sales_target : 50000000;
                 $activationTarget = 200;       // 전체 월 200건 목표
                 $profitRateTarget = 60.0;     // 60% 목표
             }
@@ -2928,7 +2964,7 @@ Route::middleware(['web', 'auth'])->group(function () {
                     ]
                 ]);
             } else {
-                // 기본 목표 반환
+                // 기본 목표 반환 (Goals 테이블에 설정이 없을 때만 사용되는 폴백값)
                 $defaultTargets = [
                     'system' => ['sales' => 50000000, 'activations' => 200],
                     'branch' => ['sales' => 10000000, 'activations' => 50],
