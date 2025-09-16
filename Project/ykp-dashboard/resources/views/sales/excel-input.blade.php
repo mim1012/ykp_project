@@ -356,21 +356,21 @@
                         carrier: row.carrier,
                         activation_type: row.activation_type,
                         model_name: row.model_name,
-                        // 🔄 실제 staging DB 스키마와 정확히 일치하는 필드명
-                        base_price: row.base_price || 0,
+                        // 🔄 실제 DB 컬럼명과 정확히 일치 (Railway PostgreSQL 기준)
+                        price_setting: row.base_price || 0,        // base_price → price_setting
                         verbal1: row.verbal1 || 0,
                         verbal2: row.verbal2 || 0,
                         grade_amount: row.grade_amount || 0,
-                        additional_amount: row.additional_amount || 0,
+                        addon_amount: row.additional_amount || 0,   // additional_amount → addon_amount
                         rebate_total: row.rebate_total || 0,
-                        cash_activation: row.cash_activation || 0,
+                        paper_cash: row.cash_activation || 0,       // cash_activation → paper_cash
                         usim_fee: row.usim_fee || 0,
-                        new_mnp_discount: row.new_mnp_discount || 0,
+                        new_mnp_disc: row.new_mnp_discount || 0,    // new_mnp_discount → new_mnp_disc
                         deduction: row.deduction || 0,
                         settlement_amount: row.settlement_amount || 0,
                         tax: row.tax || 0,
                         margin_before_tax: row.margin_before_tax || 0,
-                        cash_received: row.cash_received || 0,
+                        cash_in: row.cash_received || 0,            // cash_received → cash_in
                         payback: row.payback || 0,
                         margin_after_tax: row.margin_after_tax || 0,
                         monthly_fee: row.monthly_fee || 0,

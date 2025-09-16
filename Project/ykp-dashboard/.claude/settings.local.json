@@ -85,7 +85,16 @@
       "Bash(cd:*)",
       "mcp__supabase-community-supabase-mcp__list_projects",
       "Bash(supabase projects:*)",
-      "Bash(where composer)"
+      "Bash(where composer)",
+      "Bash(where:*)",
+      "Bash(supabase:*)",
+      "Bash(tar:*)",
+      "Bash(chmod:*)",
+      "Bash(./supabase.exe --version)",
+      "Bash(./supabase.exe projects list)",
+      "Bash(./supabase.exe login)",
+      "Bash(./supabase.exe db dump:*)",
+      "WebSearch"
     ],
     "defaultMode": "acceptEdits",
     "additionalDirectories": [
