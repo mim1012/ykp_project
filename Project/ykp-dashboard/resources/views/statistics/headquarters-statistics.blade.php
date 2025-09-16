@@ -316,6 +316,14 @@
                         }
                         break;
                         
+                    case 'branchPerformance':
+                        if (result.success && Array.isArray(result.data)) {
+                            // 지사별 성과 차트에 즉시 반영
+                            updateBranchChart(result.data, config.period || 'monthly');
+                            console.log(`🏢 지사별 성과 업데이트 완료: ${result.data.length}개 지사`);
+                        }
+                        break;
+
                     case 'carrier':
                         if (result.success && result.data?.carrier_breakdown) {
                             updateCarrierTable(result.data.carrier_breakdown);
@@ -407,23 +415,28 @@
         }
 
         // 📈 지사별 성과 차트 업데이트 함수
-        function updateBranchChart(rankingData, period) {
+        function updateBranchChart(branchPerformanceData, period) {
             try {
                 const ctx = document.getElementById('branchComparisonChart');
                 if (!ctx) return;
-                
+
                 // 기존 차트 인스턴스 제거 (중복 방지)
                 if (window.branchChart) {
                     window.branchChart.destroy();
                 }
-                
+
+                // 매출 순으로 정렬하고 TOP 8 선택
+                const sortedData = (branchPerformanceData || [])
+                    .sort((a, b) => (b.revenue || 0) - (a.revenue || 0))
+                    .slice(0, 8);
+
                 window.branchChart = new Chart(ctx, {
                     type: 'bar',
                     data: {
-                        labels: (rankingData || []).slice(0, 8).map(r => r.branch_name || '지사'),
+                        labels: sortedData.map(branch => branch.name || '지사'),
                         datasets: [{
                             label: '매출 합계 (₩)',
-                            data: (rankingData || []).slice(0, 8).map(r => r.total_sales || 0),
+                            data: sortedData.map(branch => branch.revenue || 0),
                             backgroundColor: 'rgba(59, 130, 246, 0.6)',
                             borderColor: 'rgba(59, 130, 246, 1)',
                             borderWidth: 2,
@@ -468,7 +481,7 @@
                     }
                 });
                 
-                console.log(`📊 지사별 성과 차트 업데이트 완료: ${(rankingData || []).length}개 데이터`);
+                console.log(`📊 지사별 성과 차트 업데이트 완료: ${(branchPerformanceData || []).length}개 데이터`);
             } catch (error) {
                 console.error('지사별 성과 차트 업데이트 오류:', error);
             }
@@ -496,6 +509,7 @@
                     { name: 'overview', url: '/api/dashboard/overview' },
                     { name: 'ranking', url: `/api/dashboard/store-ranking?period=${period}&limit=${Math.min(Math.max(limit,3),50)}` },
                     { name: 'branches', url: '/api/users/branches' },
+                    { name: 'branchPerformance', url: `/api/statistics/branch-performance?days=${period === 'daily' ? 1 : period === 'weekly' ? 7 : 30}` },
                     { name: 'financial', url: `/api/dashboard/financial-summary?start_date=${startDate}&end_date=${endDate}` },
                     { name: 'carrier', url: `/api/dashboard/dealer-performance?year_month=${ym}` }
                 ];
@@ -523,16 +537,12 @@
                 const overview = apiResults.overview;
                 const ranking = apiResults.ranking;
                 const branches = apiResults.branches;
+                const branchPerformance = apiResults.branchPerformance;
                 const fin = apiResults.financial;
                 const carrierPerf = apiResults.carrier;
 
-                // 🎉 최종 차트 업데이트 (모든 데이터 로딩 완료 후)
-                try {
-                    updateBranchChart(ranking.data || [], period);
-                    console.log('🚀 Railway PostgreSQL 최적화 로딩 완료! 모든 섹션이 순차적으로 업데이트되었습니다.');
-                } catch (error) {
-                    console.error('차트 업데이트 오류:', error);
-                }
+                // 🎉 최종 로딩 완료 (지사별 성과 차트는 updateUISection에서 이미 업데이트됨)
+                console.log('🚀 Railway PostgreSQL 최적화 로딩 완료! 모든 섹션이 순차적으로 업데이트되었습니다.');
 
             } catch (error) {
                 console.error('❌ 본사 통계 로딩 실패:', error);
