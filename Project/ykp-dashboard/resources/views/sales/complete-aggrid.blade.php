@@ -585,8 +585,13 @@
             // 🔥 대리점 목록 먼저 로드
             await loadDealers();
 
-            // 기본 행 추가
-            addNewRow();
+            // 🔄 저장된 개통표 데이터 로드 (매장별)
+            await loadExistingSalesData();
+
+            // 기본 행 추가 (데이터가 없을 때만)
+            if (salesData.length === 0) {
+                addNewRow();
+            }
 
             // 버튼 이벤트 - Excel 스타일 UX
             document.getElementById('add-row-btn').addEventListener('click', addNewRow);
@@ -599,6 +604,76 @@
             
             console.log('✅ PM 요구사항 27컬럼 완전한 개통표 시스템 초기화 완료');
         });
+
+        // 🔄 기존 저장된 개통표 데이터 로드 함수
+        async function loadExistingSalesData() {
+            try {
+                console.log('📊 저장된 개통표 데이터 로딩 시작...');
+
+                // 현재 매장의 최근 개통표 데이터 조회 (오늘 또는 최근)
+                const storeId = window.userData?.store_id;
+                if (!storeId) {
+                    console.warn('⚠️ 매장 정보 없음 - 데이터 로드 건너뛰기');
+                    return;
+                }
+
+                const response = await fetch(`/api/sales?store_id=${storeId}&days=7`); // 최근 7일
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                if (data.success && data.data && data.data.length > 0) {
+                    console.log(`📊 기존 개통표 ${data.data.length}건 발견`);
+
+                    // 기존 데이터를 그리드에 로드
+                    salesData = data.data.map((sale, index) => ({
+                        id: sale.id || (Date.now() + index),
+                        salesperson: sale.salesperson || '',
+                        dealer_name: sale.dealer_name || '',
+                        carrier: sale.carrier || 'SK',
+                        activation_type: sale.activation_type || '신규',
+                        model_name: sale.model_name || '',
+                        serial_number: sale.serial_number || '',
+                        phone_number: sale.phone_number || '',
+                        customer_name: sale.customer_name || '',
+                        customer_birth_date: sale.customer_birth_date || '',
+
+                        // 금액 필드들 (DB에서 가져온 실제 값)
+                        base_price: parseFloat(sale.price_setting || 0),
+                        verbal1: parseFloat(sale.verbal1 || 0),
+                        verbal2: parseFloat(sale.verbal2 || 0),
+                        grade_amount: parseFloat(sale.grade_amount || 0),
+                        additional_amount: parseFloat(sale.addon_amount || 0),
+                        rebate_total: parseFloat(sale.rebate_total || 0),
+                        cash_activation: parseFloat(sale.paper_cash || 0),
+                        usim_fee: parseFloat(sale.usim_fee || 0),
+                        new_mnp_discount: parseFloat(sale.new_mnp_disc || 0),
+                        deduction: parseFloat(sale.deduction || 0),
+                        settlement_amount: parseFloat(sale.settlement_amount || 0),
+                        tax: parseFloat(sale.tax || 0),
+                        margin_before_tax: parseFloat(sale.margin_before_tax || 0),
+                        cash_received: parseFloat(sale.cash_in || 0),
+                        payback: parseFloat(sale.payback || 0),
+                        margin_after_tax: parseFloat(sale.margin_after_tax || 0),
+                        memo: sale.memo || ''
+                    }));
+
+                    // 그리드 렌더링
+                    renderGrid();
+                    console.log(`✅ 기존 개통표 ${salesData.length}건 로드 완료`);
+
+                    showStatus(`📊 기존 개통표 ${salesData.length}건을 불러왔습니다.`, 'info');
+                } else {
+                    console.log('ℹ️ 저장된 개통표 데이터 없음 - 새로 시작');
+                }
+            } catch (error) {
+                console.error('❌ 기존 데이터 로드 실패:', error);
+                console.log('🔄 빈 상태로 시작');
+                // 에러 시에도 계속 진행 (빈 상태로 시작)
+            }
+        }
     </script>
 </body>
 </html>
