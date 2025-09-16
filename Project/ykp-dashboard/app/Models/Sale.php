@@ -38,11 +38,12 @@ class Sale extends Model
         'payback',
         'margin_after_tax',
         'monthly_fee',
-        'phone_number',
-        'customer_name', // PM 요구사항: 고객명 추가
+        'phone_number',        // 기본 필드
+        'salesperson',         // 기본 필드
+        'memo',               // 기본 필드
+        'model_name',         // 기본 필드 (필수)
+        'customer_name',      // PM 요구사항: 고객명 추가
         'customer_birth_date', // PM 요구사항: 생년월일 추가
-        'salesperson',
-        'memo',
     ];
 
     protected $casts = [

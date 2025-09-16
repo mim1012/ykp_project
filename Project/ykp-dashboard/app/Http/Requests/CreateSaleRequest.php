@@ -18,7 +18,7 @@ class CreateSaleRequest extends FormRequest
             'sales.*.sale_date' => ['required', 'date'],
             'sales.*.carrier' => ['required', 'in:SK,KT,LG,MVNO'],
             'sales.*.activation_type' => ['required', 'in:신규,기변,MNP'],
-            'sales.*.model_name' => ['required', 'string', 'max:100'],
+            'sales.*.model_name' => ['nullable', 'string', 'max:255'],  // nullable로 변경
             // 🔄 실제 Railway DB 컬럼명과 정확히 일치
             'sales.*.price_setting' => ['nullable', 'numeric', 'min:0'],    // base_price → price_setting
             'sales.*.verbal1' => ['nullable', 'numeric'],
