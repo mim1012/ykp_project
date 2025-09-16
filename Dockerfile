@@ -65,4 +65,4 @@ EXPOSE 80
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD curl -fsS http://localhost/healthz.php || exit 1
 
-CMD bash -lc "php artisan config:clear || true; php artisan route:clear || true; php artisan view:clear || true; apache2-foreground"
+CMD bash -lc "php artisan config:clear || true; php artisan route:clear || true; php artisan view:clear || true; php artisan migrate --force || true; apache2-foreground"
