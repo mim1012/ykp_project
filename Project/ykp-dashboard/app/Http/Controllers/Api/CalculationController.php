@@ -264,7 +264,7 @@ class CalculationController extends Controller
                 'active_dealer_profiles',
                 300, // 5분 캐시
                 fn() => DealerProfile::active()
-                    ->select(['id', 'dealer_code', 'dealer_name', 'tax_rate', 'default_sim_fee', 'default_mnp_discount'])
+                    ->select(['id', 'dealer_code', 'dealer_name', 'status', 'tax_rate', 'default_sim_fee', 'default_mnp_discount'])
                     ->orderBy('dealer_name')
                     ->get()
             );
