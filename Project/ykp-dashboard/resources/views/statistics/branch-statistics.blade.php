@@ -189,9 +189,10 @@
 
                 // KPI 업데이트
                 const monthSales = overview.data?.month?.sales || 0;
-                const storeCount = (profile.permissions?.accessible_store_ids || []).length;
                 document.getElementById('branch-total-sales').textContent = `₩${Number(monthSales).toLocaleString()}`;
-                document.getElementById('branch-stores').textContent = `${storeCount}개 매장`;
+
+                // 지사 소속 매장 수는 실제 매장 데이터에서 가져오기
+                loadBranchStoresCount();
 
                 // 소속 매장별 성과 차트
                 const stores = (ranking.data?.rankings || []);
@@ -300,6 +301,31 @@
             document.getElementById('branch-preset-this-week').addEventListener('click', () => preset('thisWeek'));
             document.getElementById('branch-preset-last-month').addEventListener('click', () => preset('lastMonth'));
         });
+
+        // 지사 소속 매장 수 로딩 함수
+        async function loadBranchStoresCount() {
+            try {
+                const branchId = {{ auth()->user()->branch_id ?? 'null' }};
+                if (!branchId) {
+                    document.getElementById('branch-stores').textContent = '0개 매장';
+                    return;
+                }
+
+                const response = await fetch(`/api/branches/${branchId}/stores`);
+                const result = await response.json();
+
+                if (result.success && result.data) {
+                    const storeCount = result.data.length;
+                    document.getElementById('branch-stores').textContent = `${storeCount}개 매장`;
+                    console.log(`🏪 ${branchId}번 지사 매장 수: ${storeCount}개`);
+                } else {
+                    document.getElementById('branch-stores').textContent = '0개 매장';
+                }
+            } catch (error) {
+                console.error('지사 매장 수 로딩 실패:', error);
+                document.getElementById('branch-stores').textContent = '0개 매장';
+            }
+        }
     </script>
 </body>
 </html>

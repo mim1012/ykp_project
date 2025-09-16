@@ -270,10 +270,8 @@
                 switch(apiName) {
                     case 'profile':
                         if (result.success && result.data) {
-                            // 프로필 정보로 매장 수 업데이트
-                            const storeCount = (result.data.permissions?.accessible_store_ids || []).length;
-                            document.getElementById('total-stores').textContent = `${storeCount}개 매장`;
-                            document.getElementById('total-stores').className = 'text-2xl font-bold text-gray-900';
+                            // 전체 매장 수는 별도 API에서 가져오기 (profile이 아닌 stores API 사용)
+                            loadTotalStoresCount();
                         }
                         break;
                         
@@ -286,9 +284,8 @@
                             document.getElementById('total-sales').textContent = `₩${Number(month.sales || 0).toLocaleString()}`;
                             document.getElementById('total-sales').className = 'text-2xl font-bold text-green-600';
                             
-                            const achievementRate = ((month.sales / 50000000) * 100).toFixed(1);
-                            document.getElementById('system-goal').textContent = `${achievementRate}% 달성`;
-                            document.getElementById('system-goal').className = 'text-2xl font-bold text-indigo-600';
+                            // 시스템 목표는 Goals API에서 가져오기
+                            updateSystemGoalAchievement(month.sales);
                             
                             console.log(`💰 매출 정보 업데이트 완료: ₩${Number(month.sales).toLocaleString()}`);
                         }
@@ -549,6 +546,47 @@
 
         function downloadSystemReport() {
             alert('📄 전체 시스템 리포트 다운로드 기능 구현 예정');
+        }
+
+        // 전체 매장 수 로딩 함수
+        async function loadTotalStoresCount() {
+            try {
+                const response = await fetch('/api/stores/count');
+                const result = await response.json();
+
+                if (result.success) {
+                    document.getElementById('total-stores').textContent = `${result.count}개 매장`;
+                    document.getElementById('total-stores').className = 'text-2xl font-bold text-gray-900';
+                    console.log(`🏪 전체 매장 수 업데이트: ${result.count}개`);
+                } else {
+                    document.getElementById('total-stores').textContent = '0개 매장';
+                }
+            } catch (error) {
+                console.error('매장 수 로딩 실패:', error);
+                document.getElementById('total-stores').textContent = '0개 매장';
+            }
+        }
+
+        // 시스템 목표 달성률 업데이트 함수
+        async function updateSystemGoalAchievement(monthSales) {
+            try {
+                const response = await fetch('/api/goals/system');
+                const result = await response.json();
+
+                let systemTarget = 50000000; // 기본값
+                if (result.success && result.data) {
+                    systemTarget = result.data.sales_target;
+                }
+
+                const achievementRate = monthSales > 0 ? ((monthSales / systemTarget) * 100).toFixed(1) : 0;
+                document.getElementById('system-goal').textContent = `${achievementRate}% 달성`;
+                document.getElementById('system-goal').className = 'text-2xl font-bold text-indigo-600';
+
+                console.log(`🎯 목표 달성률 업데이트: ${achievementRate}% (목표: ₩${systemTarget.toLocaleString()})`);
+            } catch (error) {
+                console.error('목표 달성률 계산 실패:', error);
+                document.getElementById('system-goal').textContent = '-';
+            }
         }
     </script>
 </body>
