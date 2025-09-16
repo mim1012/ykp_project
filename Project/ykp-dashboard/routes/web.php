@@ -442,14 +442,19 @@ Route::get('/api/users/branches', function () {
 Route::get('/api/dashboard/overview', function () {
     try {
         // PostgreSQL 호환 쿼리로 데이터 조회
-        $totalSales = \App\Models\Sale::sum('settlement_amount') ?: 0;
-        $totalActivations = \App\Models\Sale::count() ?: 0;
-        
-        // PostgreSQL 호환을 위해 날짜 범위 쿼리 사용
         $today = now();
+        $startOfMonth = $today->copy()->startOfMonth();
+        $endOfMonth = $today->copy()->endOfMonth();
         $startOfDay = $today->startOfDay();
         $endOfDay = $today->copy()->endOfDay();
-        
+
+        // 이번달 매출과 활성화 건수 (전체 기간이 아닌 현재 월만)
+        $monthlySales = \App\Models\Sale::whereBetween('sale_date', [$startOfMonth, $endOfMonth])
+                        ->sum('settlement_amount') ?: 0;
+        $monthlyActivations = \App\Models\Sale::whereBetween('sale_date', [$startOfMonth, $endOfMonth])
+                             ->count() ?: 0;
+
+        // 오늘 매출과 활성화 건수
         $todaySales = \App\Models\Sale::whereBetween('sale_date', [$startOfDay, $endOfDay])
                       ->sum('settlement_amount') ?: 0;
         $todayActivations = \App\Models\Sale::whereBetween('sale_date', [$startOfDay, $endOfDay])
@@ -464,7 +469,7 @@ Route::get('/api/dashboard/overview', function () {
             ->first();
         $systemTarget = $goal ? $goal->sales_target : 50000000;
 
-        $achievementRate = $totalSales > 0 ? round(($totalSales / $systemTarget) * 100, 1) : 0;
+        $achievementRate = $monthlySales > 0 ? round(($monthlySales / $systemTarget) * 100, 1) : 0;
         
         return response()->json([
             'success' => true,
@@ -475,9 +480,9 @@ Route::get('/api/dashboard/overview', function () {
                     'date' => today()->format('Y-m-d')
                 ],
                 'month' => [
-                    'sales' => $totalSales,
-                    'activations' => $totalActivations,
-                    'vat_included_sales' => $totalSales * 1.1,
+                    'sales' => $monthlySales,
+                    'activations' => $monthlyActivations,
+                    'vat_included_sales' => $monthlySales * 1.1,
                     'year_month' => now()->format('Y-m'),
                     'growth_rate' => 8.2,
                     'avg_margin' => 15.3
