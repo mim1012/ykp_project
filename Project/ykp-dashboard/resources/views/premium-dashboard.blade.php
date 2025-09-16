@@ -1536,7 +1536,8 @@
                     .then(data => {
                         if (data.success && data.data) {
                             const monthSales = data.data.month?.sales || 0;
-                            const storeTarget = data.data.month?.target || 5000000; // 매장 기본 목표 500만원
+                            // 🔄 실제 목표 API에서 가져오기 (하드코딩 제거)
+                            const storeTarget = data.data.month?.target || await getStoreGoalFromAPI(userData.store_id);
                             const achievementRate = monthSales > 0 ? (monthSales / storeTarget * 100).toFixed(1) : 0;
 
                             safeUpdateElement('store-goal-achievement', monthSales > 0 ? `${achievementRate}% 달성` : '실적 없음');
@@ -1674,6 +1675,20 @@
             // 30초마다 실시간 활동 업데이트
             setInterval(loadRealtimeActivities, 30000);
         });
+
+        // 🎯 실시간 목표 가져오기 함수
+        async function getStoreGoalFromAPI(storeId) {
+            try {
+                const response = await fetch(`/api/goals/store/${storeId}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    return data.success ? data.data.sales_target : 5000000;
+                }
+            } catch (error) {
+                console.warn('목표 API 호출 실패:', error);
+            }
+            return 5000000; // API 실패 시에만 기본값
+        }
 
         // 실시간 업데이트 리스너 초기화 실행
         initRealtimeUpdateListeners();
