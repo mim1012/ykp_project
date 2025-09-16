@@ -194,8 +194,14 @@
                     console.log('🏪 store 정보:', result.data);
 
                     // 🎉 계정 정보 모달 표시 (본사/지사 모두)
-                    if (result.account) {
-                        console.log('✅ account 존재, 모달 호출 시작');
+                    if (result.account && result.account.user_id) {
+                        console.log('✅ account 정상 생성됨, 모달 호출 시작');
+                        showStoreAccountModal(result.account, result.data);
+                    } else if (result.account && result.account.error) {
+                        console.log('⚠️ 매장은 생성됨, 계정 생성 실패:', result.account.error);
+                        alert(`매장이 생성되었습니다!\n\n⚠️ ${result.account.error}\n\n수동 계정 정보:\n이메일: ${result.account.email}\n비밀번호: ${result.account.password}`);
+                    } else if (result.account) {
+                        console.log('✅ account 존재 (user_id 없음), 모달 호출');
                         showStoreAccountModal(result.account, result.data);
                     } else {
                         console.log('❌ account 정보 없음, alert 표시');

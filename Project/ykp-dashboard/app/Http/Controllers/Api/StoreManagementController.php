@@ -81,33 +81,72 @@ class StoreManagementController extends Controller
                 'opened_at' => now()
             ]);
 
-            // 매장 계정 자동 생성
+            // 매장 계정 자동 생성 (더 안전한 방식)
             $autoPassword = 'store' . str_pad($store->id, 4, '0', STR_PAD_LEFT); // store0001 형태
-            $autoEmail = $autoCode . '@ykp.com'; // 지사코드-매장번호@ykp.com
+            $autoEmail = strtolower($autoCode) . '@ykp.com'; // 지사코드-매장번호@ykp.com (소문자로 통일)
 
-            $storeUser = User::create([
-                'name' => $request->name . ' 매장',
-                'email' => $autoEmail,
-                'password' => Hash::make($autoPassword),
-                'role' => 'store',
-                'branch_id' => $request->branch_id,
-                'store_id' => $store->id,
-                'is_active' => true,
-                'created_by_user_id' => $currentUser->id
-            ]);
+            $accountCreated = false;
+            $accountData = null;
 
-            return response()->json([
-                'success' => true,
-                'data' => $store,
-                'account' => [
+            try {
+                // 이메일 중복 체크
+                $existingUser = User::where('email', $autoEmail)->first();
+                if ($existingUser) {
+                    // 이메일이 이미 존재하면 타임스탬프 추가
+                    $autoEmail = strtolower($autoCode) . '_' . time() . '@ykp.com';
+                }
+
+                $storeUser = User::create([
+                    'name' => $request->name . ' 매장',
+                    'email' => $autoEmail,
+                    'password' => Hash::make($autoPassword),
+                    'role' => 'store',
+                    'branch_id' => $request->branch_id,
+                    'store_id' => $store->id,
+                    'is_active' => true,
+                    'created_by_user_id' => strval($currentUser->id) // string으로 변환
+                ]);
+
+                $accountCreated = true;
+                $accountData = [
                     'email' => $autoEmail,
                     'password' => $autoPassword,
                     'user_id' => $storeUser->id
-                ],
-                'message' => '매장과 계정이 성공적으로 생성되었습니다.'
+                ];
+
+            } catch (\Exception $userException) {
+                // User 생성 실패 시 로그 남기고 계속 진행
+                \Log::error('매장 계정 생성 실패: ' . $userException->getMessage(), [
+                    'store_id' => $store->id,
+                    'email' => $autoEmail,
+                    'error' => $userException->getMessage()
+                ]);
+
+                // 실패해도 기본 계정 정보는 전달 (나중에 수동 생성 가능하도록)
+                $accountData = [
+                    'email' => $autoEmail,
+                    'password' => $autoPassword,
+                    'user_id' => null,
+                    'error' => '계정 자동 생성 실패. 수동으로 생성해주세요.'
+                ];
+            }
+
+            // 항상 account 키를 포함한 응답 반환
+            return response()->json([
+                'success' => true,
+                'data' => $store,
+                'account' => $accountData, // 항상 account 키 포함
+                'message' => $accountCreated
+                    ? '매장과 계정이 성공적으로 생성되었습니다.'
+                    : '매장은 생성되었으나 계정 생성에 실패했습니다. 수동으로 계정을 생성해주세요.'
             ]);
+
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'account' => null // 실패해도 account 키는 포함
+            ], 500);
         }
     }
 
