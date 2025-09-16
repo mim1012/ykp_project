@@ -188,10 +188,17 @@
                         modal.style.display = 'none';
                     }
 
+                    // 🔍 디버깅: API 응답 내용 확인
+                    console.log('📊 API 응답 전체:', result);
+                    console.log('🔑 account 정보:', result.account);
+                    console.log('🏪 store 정보:', result.data);
+
                     // 🎉 계정 정보 모달 표시 (본사/지사 모두)
                     if (result.account) {
+                        console.log('✅ account 존재, 모달 호출 시작');
                         showStoreAccountModal(result.account, result.data);
                     } else {
+                        console.log('❌ account 정보 없음, alert 표시');
                         alert('매장이 성공적으로 생성되었습니다!');
                     }
 
@@ -3311,10 +3318,16 @@
                     // 매장 목록 실시간 업데이트
                     await refreshStoreList();
 
+                    // 🔍 디버깅: API 응답 내용 확인
+                    console.log('📊 API 응답 전체 (async):', storeResult);
+                    console.log('🔑 account 정보 (async):', storeResult.account);
+
                     // 🎉 계정 정보 모달 표시 (이미 계정이 생성되어 응답에 포함됨)
                     if (storeResult.account) {
+                        console.log('✅ account 존재 (async), 모달 호출 시작');
                         showStoreAccountModal(storeResult.account, storeResult.data);
                     } else {
+                        console.log('❌ account 정보 없음 (async), 토스트 표시');
                         showToast('매장이 성공적으로 추가되었습니다!', 'success');
                     }
                 } else {
