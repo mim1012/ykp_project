@@ -410,3 +410,22 @@ CREATE INDEX IF NOT EXISTS idx_activity_logs_type ON activity_logs(activity_type
 -- 신규 테이블 코멘트
 COMMENT ON TABLE goals IS '시스템/지사/매장별 목표 관리';
 COMMENT ON TABLE activity_logs IS '실시간 사용자 활동 로그';
+
+-- 🔄 Sales 테이블 필드 추가 (누락된 필드들)
+ALTER TABLE sales ADD COLUMN IF NOT EXISTS dealer_code VARCHAR(255);
+ALTER TABLE sales ADD COLUMN IF NOT EXISTS dealer_name VARCHAR(255);
+ALTER TABLE sales ADD COLUMN IF NOT EXISTS serial_number VARCHAR(255);
+ALTER TABLE sales ADD COLUMN IF NOT EXISTS customer_name VARCHAR(255);
+ALTER TABLE sales ADD COLUMN IF NOT EXISTS customer_birth_date DATE;
+
+-- 추가 필드 인덱스
+CREATE INDEX IF NOT EXISTS idx_sales_dealer_code ON sales(dealer_code);
+CREATE INDEX IF NOT EXISTS idx_sales_dealer_name ON sales(dealer_name);
+CREATE INDEX IF NOT EXISTS idx_sales_customer_name ON sales(customer_name);
+
+-- 필드 코멘트
+COMMENT ON COLUMN sales.dealer_code IS '대리점 코드';
+COMMENT ON COLUMN sales.dealer_name IS '대리점명';
+COMMENT ON COLUMN sales.serial_number IS '기기 시리얼번호';
+COMMENT ON COLUMN sales.customer_name IS '고객명';
+COMMENT ON COLUMN sales.customer_birth_date IS '고객 생년월일';
