@@ -589,7 +589,20 @@
                 }
             } catch (error) {
                 console.error('❌ 대리점 로드 오류:', error);
-                return [];
+                // 에러 발생 시에도 기본 목록 반환
+                dealersList = [
+                    {code: 'SM', name: 'SM'},
+                    {code: 'W', name: 'W'},
+                    {code: 'KING', name: '더킹'},
+                    {code: 'ENTER', name: '엔터'},
+                    {code: 'UP', name: '유피'},
+                    {code: 'CHOSI', name: '초시대'},
+                    {code: 'TAESUNG', name: '태성'},
+                    {code: 'PDM', name: '피디엠'},
+                    {code: 'HANJU', name: '한주'},
+                    {code: 'HAPPY', name: '해피'}
+                ];
+                return dealersList;
             }
         }
 
@@ -677,6 +690,14 @@
         document.addEventListener('DOMContentLoaded', async function() {
             // 🔥 대리점 목록 먼저 로드
             await loadDealers();
+
+            // 대리점 목록 로드 확인
+            console.log('📋 최종 대리점 목록:', dealersList);
+            if (dealersList && dealersList.length > 0) {
+                console.log('✅ 대리점 드롭다운 사용 가능:', dealersList.length + '개 대리점');
+            } else {
+                console.error('❌ 대리점 목록이 비어있습니다!');
+            }
 
             // 저장된 데이터 로드
             await loadExistingSalesData();

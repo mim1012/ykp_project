@@ -313,10 +313,6 @@
                 💼
                 <span class="tooltip-text">전체 통계</span>
             </div>
-            <div class="sidebar-icon tooltip" onclick="openManagement()">
-                📋
-                <span class="tooltip-text">완전한 판매관리</span>
-            </div>
             <div class="sidebar-icon tooltip" onclick="openAccountManagement()">
                 👥
                 <span class="tooltip-text">계정 관리</span>
@@ -331,10 +327,6 @@
             <div class="sidebar-icon tooltip" onclick="openMyBranchStatistics()">
                 💼
                 <span class="tooltip-text">지사 통계</span>
-            </div>
-            <div class="sidebar-icon tooltip" onclick="openManagement()">
-                📋
-                <span class="tooltip-text">완전한 판매관리</span>
             </div>
 
         @elseif(auth()->user()->role === 'store')
