@@ -166,6 +166,12 @@ Route::middleware(['web', 'auth', 'rbac'])->prefix('sales')->group(function () {
             $savedCount = 0;
             $errors = [];
 
+            \Log::info('Sales save attempt', [
+                'data_count' => count($salesData),
+                'first_row' => $salesData[0] ?? null,
+                'user_id' => auth()->id()
+            ]);
+
             $user = auth()->user();
 
             foreach ($salesData as $index => $sale) {
@@ -197,11 +203,24 @@ Route::middleware(['web', 'auth', 'rbac'])->prefix('sales')->group(function () {
                 }
 
                 try {
-                    App\Models\Sale::create($sale);
+                    \Log::info('Attempting to save row ' . ($index + 1), [
+                        'sale_data' => $sale,
+                        'missing_fields' => array_keys(array_filter($sale, fn($v) => is_null($v)))
+                    ]);
+
+                    $createdSale = App\Models\Sale::create($sale);
                     $savedCount++;
+
+                    \Log::info('Row ' . ($index + 1) . ' saved successfully', ['sale_id' => $createdSale->id]);
                 } catch (\Exception $e) {
-                    $errors[] = "행 " . ($index + 1) . ": " . $e->getMessage();
-                    \Log::warning('Sale save error for row ' . ($index + 1), ['error' => $e->getMessage(), 'data' => $sale]);
+                    $errorMsg = "행 " . ($index + 1) . ": " . $e->getMessage();
+                    $errors[] = $errorMsg;
+
+                    \Log::error('Sale save error for row ' . ($index + 1), [
+                        'error' => $e->getMessage(),
+                        'data' => $sale,
+                        'trace' => $e->getTraceAsString()
+                    ]);
                 }
             }
 

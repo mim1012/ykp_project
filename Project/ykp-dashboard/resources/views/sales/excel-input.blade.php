@@ -342,7 +342,7 @@
                 return row.model_name && row.model_name.trim(); // model_name이 있는 행만
             });
 
-            fetch('/api/sales/bulk', {
+            fetch('/api/sales/save', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
