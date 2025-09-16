@@ -92,7 +92,8 @@ class StoreManagementController extends Controller
                 'role' => 'store',
                 'branch_id' => $request->branch_id,
                 'store_id' => $store->id,
-                'is_active' => true
+                'is_active' => true,
+                'created_by_user_id' => $currentUser->id
             ]);
 
             return response()->json([
