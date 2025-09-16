@@ -237,7 +237,6 @@
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         <div class="text-sm text-gray-900 font-mono bg-gray-100 px-2 py-1 rounded">${account.email}</div>
-                        <div class="text-xs text-blue-600 font-mono mt-1">비밀번호: 123456</div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getRoleBadgeClass(account.role)}">

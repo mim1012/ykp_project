@@ -348,12 +348,6 @@
                 <span class="tooltip-text">내 매장 통계</span>
             </div>
 
-        @else
-            <!-- 개발자/기타 -->
-            <div class="sidebar-icon tooltip" onclick="openManagement()">
-                🛠️
-                <span class="tooltip-text">개발 도구</span>
-            </div>
         @endif
     </div>
 

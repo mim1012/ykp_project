@@ -466,7 +466,7 @@
                 credentials: 'same-origin',
                 body: JSON.stringify({
                     sales: validData.map(row => ({
-                        // 🔄 실제 로그인 사용자의 매장/지사 정보 (하드코딩 완전 제거)
+                        // PM 요구사항: DB 스키마와 1:1 매핑
                         store_id: window.userData?.store_id || null,
                         branch_id: window.userData?.branch_id || null,
                         sale_date: row.sale_date,
@@ -479,20 +479,19 @@
                         phone_number: row.phone_number,
                         customer_name: row.customer_name,
                         customer_birth_date: row.customer_birth_date,
-                        // 🔄 실제 Railway DB 컬럼명 사용
-                        price_setting: row.base_price,          // base_price → price_setting
+                        base_price: row.base_price,
                         verbal1: row.verbal1,
                         verbal2: row.verbal2,
                         grade_amount: row.grade_amount,
-                        addon_amount: row.additional_amount,     // additional_amount → addon_amount
-                        paper_cash: row.cash_activation,         // cash_activation → paper_cash
+                        additional_amount: row.additional_amount,
+                        cash_activation: row.cash_activation,
                         usim_fee: row.usim_fee,
-                        new_mnp_disc: row.new_mnp_discount,      // new_mnp_discount → new_mnp_disc
+                        new_mnp_discount: row.new_mnp_discount,
                         deduction: row.deduction,
                         rebate_total: row.rebate_total,
                         settlement_amount: row.settlement_amount,
                         tax: row.tax,
-                        cash_in: row.cash_received,              // cash_received → cash_in
+                        cash_received: row.cash_received,
                         payback: row.payback,
                         margin_before_tax: row.margin_before_tax,
                         margin_after_tax: row.margin_after_tax,
@@ -558,13 +557,7 @@
         // 대리점 목록 로드 함수
         async function loadDealers() {
             try {
-                const response = await fetch('/api/calculation/profiles', {
-                    headers: {
-                        'X-CSRF-TOKEN': window.csrfToken,
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    }
-                });
+                const response = await fetch('/api/calculation/profiles');
                 const data = await response.json();
 
                 if (data.success && data.data) {
@@ -578,63 +571,34 @@
                     console.log('✅ 대리점 목록 로드 완료:', dealersList.length, '개');
                     return dealersList;
                 } else {
-                    console.warn('⚠️ 대리점 API 응답 없음 - fallback 사용');
+                    console.error('❌ 대리점 목록 로드 실패');
+                    // 폴백: 하드코딩된 목록 사용
+                    dealersList = [
+                        {code: 'SM', name: 'SM'},
+                        {code: 'W', name: 'W'},
+                        {code: 'KING', name: '더킹'},
+                        {code: 'ENTER', name: '엔터'},
+                        {code: 'UP', name: '유피'},
+                        {code: 'CHOSI', name: '초시대'},
+                        {code: 'TAESUNG', name: '태성'},
+                        {code: 'PDM', name: '피디엠'},
+                        {code: 'HANJU', name: '한주'},
+                        {code: 'HAPPY', name: '해피'}
+                    ];
+                    return dealersList;
                 }
             } catch (error) {
                 console.error('❌ 대리점 로드 오류:', error);
+                return [];
             }
-
-            // 🔄 API 실패하거나 데이터 없으면 fallback 사용
-            if (!dealersList || dealersList.length === 0) {
-                console.log('🔄 기본 대리점 목록 사용');
-                dealersList = [
-                    {code: 'SM', name: 'SM'},
-                    {code: 'W', name: 'W'},
-                    {code: 'KING', name: '더킹'},
-                    {code: 'ENTER', name: '엔터'},
-                    {code: 'UP', name: '유피'},
-                    {code: 'CHOSI', name: '초시대'},
-                    {code: 'TAESUNG', name: '태성'},
-                    {code: 'PDM', name: '피디엠'},
-                    {code: 'HANJU', name: '한주'},
-                    {code: 'HAPPY', name: '해피'}
-                ];
-            }
-
-            console.log(`✅ 최종 대리점 목록: ${dealersList.length}개`);
-            return dealersList;
         }
 
-        document.addEventListener('DOMContentLoaded', async function() {
-            // 🔥 대리점 목록 먼저 로드
-            await loadDealers();
-
-            // 🔄 저장된 개통표 데이터 로드 (매장별)
-            await loadExistingSalesData();
-
-            // 기본 행 추가 (데이터가 없을 때만)
-            if (salesData.length === 0) {
-                addNewRow();
-            }
-
-            // 버튼 이벤트 - Excel 스타일 UX
-            document.getElementById('add-row-btn').addEventListener('click', addNewRow);
-            document.getElementById('save-btn').addEventListener('click', saveAllData);
-            document.getElementById('bulk-delete-btn').addEventListener('click', bulkDelete);
-            document.getElementById('calculate-all-btn').addEventListener('click', () => {
-                salesData.forEach(row => calculateRow(row.id));
-                showStatus('전체 재계산 완료', 'success');
-            });
-            
-            console.log('✅ PM 요구사항 27컬럼 완전한 개통표 시스템 초기화 완료');
-        });
-
-        // 🔄 기존 저장된 개통표 데이터 로드 함수
+        // 기존 저장된 데이터 로드 함수
         async function loadExistingSalesData() {
             try {
                 console.log('📊 저장된 개통표 데이터 로딩 시작...');
 
-                // 현재 매장의 최근 개통표 데이터 조회 (오늘 또는 최근)
+                // 현재 매장의 최근 개통표 데이터 조회
                 const storeId = window.userData?.store_id;
                 if (!storeId) {
                     console.warn('⚠️ 매장 정보 없음 - 데이터 로드 건너뛰기');
@@ -651,44 +615,43 @@
                         'Accept': 'application/json'
                     }
                 });
-                console.log('📡 API 응답 상태:', response.status);
 
                 if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('❌ API 응답 에러:', errorText);
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    throw new Error(`HTTP ${response.status}`);
                 }
 
                 const data = await response.json();
                 console.log('📊 API 응답 데이터:', data);
 
-                if (data.success && data.data && data.data.length > 0) {
-                    console.log(`📊 기존 개통표 ${data.data.length}건 발견`);
+                // Laravel 페이지네이션 응답 처리
+                const salesList = data.data || data;
+
+                if (salesList && Array.isArray(salesList) && salesList.length > 0) {
+                    console.log(`📊 기존 개통표 ${salesList.length}건 발견`);
 
                     // 기존 데이터를 그리드에 로드
-                    salesData = data.data.map((sale, index) => ({
+                    salesData = salesList.map((sale, index) => ({
                         id: sale.id || (Date.now() + index),
                         salesperson: sale.salesperson || '',
                         dealer_name: sale.dealer_name || '',
                         carrier: sale.carrier || 'SK',
                         activation_type: sale.activation_type || '신규',
                         model_name: sale.model_name || '',
+                        sale_date: sale.sale_date ? sale.sale_date.split('T')[0] : new Date().toISOString().split('T')[0],
                         serial_number: sale.serial_number || '',
                         phone_number: sale.phone_number || '',
                         customer_name: sale.customer_name || '',
-                        customer_birth_date: sale.customer_birth_date || '',
-
-                        // 금액 필드들 (DB에서 가져온 실제 값)
+                        customer_birth_date: sale.customer_birth_date ? sale.customer_birth_date.split('T')[0] : '',
                         base_price: parseFloat(sale.price_setting || 0),
                         verbal1: parseFloat(sale.verbal1 || 0),
                         verbal2: parseFloat(sale.verbal2 || 0),
                         grade_amount: parseFloat(sale.grade_amount || 0),
                         additional_amount: parseFloat(sale.addon_amount || 0),
-                        rebate_total: parseFloat(sale.rebate_total || 0),
                         cash_activation: parseFloat(sale.paper_cash || 0),
                         usim_fee: parseFloat(sale.usim_fee || 0),
                         new_mnp_discount: parseFloat(sale.new_mnp_disc || 0),
                         deduction: parseFloat(sale.deduction || 0),
+                        rebate_total: parseFloat(sale.rebate_total || 0),
                         settlement_amount: parseFloat(sale.settlement_amount || 0),
                         tax: parseFloat(sale.tax || 0),
                         margin_before_tax: parseFloat(sale.margin_before_tax || 0),
@@ -701,36 +664,39 @@
                     // 그리드 렌더링
                     renderTableRows();
                     console.log(`✅ 기존 개통표 ${salesData.length}건 로드 완료`);
-
                     showStatus(`📊 기존 개통표 ${salesData.length}건을 불러왔습니다.`, 'info');
                 } else {
                     console.log('ℹ️ 저장된 개통표 데이터 없음 - 새로 시작');
                 }
             } catch (error) {
                 console.error('❌ 기존 데이터 로드 실패:', error);
-
-                // 🔄 대안 API 시도 (다른 엔드포인트)
-                try {
-                    console.log('🔄 대안 API 시도...');
-                    const fallbackUrl = `/dev/stores/sales?store_id=${storeId}`;
-                    const fallbackResponse = await fetch(fallbackUrl);
-
-                    if (fallbackResponse.ok) {
-                        const fallbackData = await fallbackResponse.json();
-                        if (fallbackData.success && fallbackData.data && fallbackData.data.length > 0) {
-                            console.log(`✅ 대안 API로 ${fallbackData.data.length}건 로드 성공`);
-                            // 동일한 데이터 변환 로직 적용
-                            // ... (데이터 변환 코드)
-                        }
-                    }
-                } catch (fallbackError) {
-                    console.warn('⚠️ 대안 API도 실패:', fallbackError.message);
-                }
-
-                console.log('🔄 빈 상태로 시작 (저장된 데이터 로드 실패)');
-                showStatus('⚠️ 기존 데이터 로드에 실패했습니다. 새로 시작합니다.', 'warning');
+                console.log('🔄 빈 상태로 시작');
             }
         }
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            // 🔥 대리점 목록 먼저 로드
+            await loadDealers();
+
+            // 저장된 데이터 로드
+            await loadExistingSalesData();
+
+            // 데이터가 없을 때만 기본 행 추가
+            if (salesData.length === 0) {
+                addNewRow();
+            }
+
+            // 버튼 이벤트 - Excel 스타일 UX
+            document.getElementById('add-row-btn').addEventListener('click', addNewRow);
+            document.getElementById('save-btn').addEventListener('click', saveAllData);
+            document.getElementById('bulk-delete-btn').addEventListener('click', bulkDelete);
+            document.getElementById('calculate-all-btn').addEventListener('click', () => {
+                salesData.forEach(row => calculateRow(row.id));
+                showStatus('전체 재계산 완료', 'success');
+            });
+            
+            console.log('✅ PM 요구사항 27컬럼 완전한 개통표 시스템 초기화 완료');
+        });
     </script>
 </body>
 </html>
