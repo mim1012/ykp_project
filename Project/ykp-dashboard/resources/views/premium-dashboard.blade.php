@@ -1358,7 +1358,7 @@
         }
 
         // 시스템 전체 목표 설정
-        function setSystemGoal() {
+        async function setSystemGoal() {
             const currentMonth = new Date().toISOString().slice(0, 7);
 
             let goalInput = `📊 시스템 전체 목표 설정 (${currentMonth})\n`;
@@ -1560,7 +1560,7 @@
                 // 목표 달성률 계산 (실제 매출 데이터 기반)
                 fetch('/api/dashboard/overview')
                     .then(response => response.json())
-                    .then(data => {
+                    .then(async data => {
                         if (data.success && data.data) {
                             const monthSales = data.data.month?.sales;
                             let monthTarget = data.data.month?.target;
@@ -1598,7 +1598,7 @@
                 // 지사별 목표 설정 (실제 데이터 또는 기본값)
                 fetch(`/api/dashboard/overview?branch=${branchId}`)
                     .then(response => response.json())
-                    .then(data => {
+                    .then(async data => {
                         if (data.success && data.data) {
                             const monthSales = data.data.month?.sales || 0;
                             let branchTarget = data.data.month?.target;
