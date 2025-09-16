@@ -14,7 +14,6 @@ RUN npm ci --no-audit --no-fund --prefer-offline --cache /tmp/npm-cache --legacy
 COPY Project/ykp-dashboard/ ./
 RUN npm run build
 
-
 # ===== 2) PHP 8.3 Apache runtime =====
 FROM php:8.3-apache-bookworm
 WORKDIR /var/www/html
@@ -34,20 +33,24 @@ ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 RUN sed -ri 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/000-default.conf \
  && sed -ri 's!AllowOverride None!AllowOverride All!g' /etc/apache2/apache2.conf
 
-# 앱 소스 복사
+# Install Composer first
+RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
+ && php composer-setup.php --install-dir=/usr/local/bin --filename=composer \
+ && rm composer-setup.php
+
+# RECOMMENDED APPROACH: Copy composer files first, install, then copy app
+COPY Project/ykp-dashboard/composer.json ./
+COPY Project/ykp-dashboard/composer.lock ./
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress
+
+# Copy application code AFTER vendor is installed
 COPY Project/ykp-dashboard/ ./
 
 # 프론트 빌드 산출물 복사
 COPY --from=frontend_build /build/public/build ./public/build
 
-# ⚡ 핵심: 미리 생성해둔 vendor/를 그대로 주입 (네 레포/아티팩트에서 가져옴)
-COPY Project/ykp-dashboard/vendor ./vendor
-
-# autoload 최적화(네트워크 없이 수행)
-RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
- && php composer-setup.php --install-dir=/usr/local/bin --filename=composer \
- && rm composer-setup.php \
- && composer dump-autoload -o
+# autoload 최적화
+RUN composer dump-autoload -o
 
 # 권한
 RUN chown -R www-data:www-data storage bootstrap/cache \
