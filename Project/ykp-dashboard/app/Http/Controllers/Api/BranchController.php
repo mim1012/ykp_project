@@ -57,7 +57,7 @@ class BranchController extends Controller
             $manager = User::create([
                 'name' => ($request->manager_name ?? $request->name . ' 관리자'),
                 'email' => $managerEmail,
-                'password' => Hash::make('123456'),
+                'password' => Hash::make(config('app.default_password', '123456')),
                 'role' => 'branch',
                 'branch_id' => $branch->id,
                 'store_id' => null,

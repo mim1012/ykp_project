@@ -56,7 +56,12 @@ Route::get('/test-integration', function () {
 })->name('test.integration');
 
 // 배포 상태 디버그 (임시)
-Route::get('/debug/users', function () {
+// 🚨 SECURITY: Debug route with authentication
+Route::middleware(['auth'])->get('/debug/users', function () {
+    // 본사 관리자만 접근 가능
+    if (auth()->user()->role !== 'headquarters') {
+        abort(403, '본사 관리자만 접근 가능합니다.');
+    }
     $users = \App\Models\User::whereIn('role', ['headquarters', 'branch'])
         ->orderBy('role')
         ->orderBy('email')
@@ -97,7 +102,17 @@ Route::get('/debug/users', function () {
 })->name('debug.users');
 
 // 긴급 DB 초기화 (Railway 전용)
-Route::get('/emergency/init-db', function () {
+// 🚨 CRITICAL SECURITY: Emergency route with strict authentication
+Route::middleware(['auth'])->get('/emergency/init-db', function () {
+    // 본사 관리자만 접근 가능
+    if (auth()->user()->role !== 'headquarters') {
+        abort(403, '본사 관리자만 접근 가능합니다.');
+    }
+
+    // 추가 보안: IP 화이트리스트 또는 특별 토큰 체크
+    if (!in_array(request()->ip(), ['127.0.0.1', 'localhost']) && !request()->has('emergency_token')) {
+        abort(403, '승인되지 않은 접근입니다.');
+    }
     try {
         // 1. 마이그레이션 실행
         \Artisan::call('migrate', ['--force' => true]);
@@ -153,8 +168,17 @@ Route::get('/emergency/init-db', function () {
     }
 })->name('emergency.init');
 
-// 비밀번호 강제 초기화 (로그인 문제 해결용)
-Route::get('/fix/passwords', function () {
+// 🚨 CRITICAL SECURITY: Password reset with strict authentication
+Route::middleware(['auth'])->get('/fix/passwords', function () {
+    // 본사 관리자만 접근 가능
+    if (auth()->user()->role !== 'headquarters') {
+        abort(403, '본사 관리자만 접근 가능합니다.');
+    }
+
+    // 특별 토큰 체크 (추가 보안)
+    if (!request()->has('emergency_token') || request('emergency_token') !== 'YKP_EMERGENCY_2025') {
+        abort(403, '긴급 토큰이 필요합니다.');
+    }
     try {
         $updated_users = [];
         $password_hash = \Hash::make('123456');
@@ -994,7 +1018,12 @@ Route::get('/api/sales/count', function () {
 });
 
 // 디버깅: DB 상태 확인
-Route::get('/debug-db-state', function () {
+// 🚨 SECURITY: DB debug route with authentication
+Route::middleware(['auth'])->get('/debug-db-state', function () {
+    // 본사 관리자만 접근 가능
+    if (auth()->user()->role !== 'headquarters') {
+        abort(403, '본사 관리자만 접근 가능합니다.');
+    }
     try {
         return response()->json([
             'branches' => \App\Models\Branch::select('id', 'name')->get(),
