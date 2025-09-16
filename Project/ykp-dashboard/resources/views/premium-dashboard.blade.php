@@ -1082,19 +1082,21 @@
                 
                 // 🔄 실시간 API 호출들 - 병렬 처리로 성능 향상
                 const apiCalls = [
-                    // 매장 수 조회
-                    fetch('/api/stores/count').then(res => res.json()).then(data => {
-                        if (data.success) {
-                            apiResults.stores = data.count || data.data?.count || apiResults.stores;
-                            console.log('✅ 매장 수 실시간 업데이트:', apiResults.stores);
+                    // 매장 수 조회 (계정관리와 동일한 기준)
+                    fetch('/api/stores').then(res => res.json()).then(data => {
+                        if (data.success && Array.isArray(data.data)) {
+                            // 활성 매장만 카운트 (계정관리와 동일)
+                            apiResults.stores = data.data.filter(store => store.status === 'active').length;
+                            console.log('✅ 활성 매장 수 실시간 업데이트:', apiResults.stores);
                         }
                     }).catch(e => console.warn('⚠️ 매장 수 로드 실패:', e.message)),
 
-                    // 사용자 수 조회
-                    fetch('/api/users/count').then(res => res.json()).then(data => {
-                        if (data.success) {
-                            apiResults.users = data.count || data.data?.count || apiResults.users;
-                            console.log('✅ 사용자 수 실시간 업데이트:', apiResults.users);
+                    // 사용자 수 조회 (계정관리와 동일한 기준)
+                    fetch('/api/users').then(res => res.json()).then(data => {
+                        if (data.success && Array.isArray(data.data)) {
+                            // 활성 사용자만 카운트 (계정관리와 동일)
+                            apiResults.users = data.data.filter(user => user.is_active).length;
+                            console.log('✅ 활성 사용자 수 실시간 업데이트:', apiResults.users);
                         }
                     }).catch(e => console.warn('⚠️ 사용자 수 로드 실패:', e.message)),
 

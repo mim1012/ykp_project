@@ -194,10 +194,11 @@
             }
         }
 
-        // 모든 계정 로드
+        // 모든 계정 로드 (대시보드와 동일한 API 사용)
         async function loadAccounts() {
             try {
-                const response = await fetch('/api/accounts/all');
+                console.log('📊 계정관리: 대시보드와 동일한 API 호출');
+                const response = await fetch('/api/users'); // 대시보드와 동일한 API
                 const data = await response.json();
                 
                 if (data.success) {
