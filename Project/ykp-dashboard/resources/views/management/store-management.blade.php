@@ -1592,12 +1592,12 @@
                 owner_name: document.getElementById('modal-owner-name').value,
                 phone: document.getElementById('modal-phone').value
             };
-            
+
             if (!storeData.name.trim()) {
                 showToast('매장명을 입력해주세요.', 'error');
                 return;
             }
-            
+
             fetch('/api/stores/add', {
                 method: 'POST',
                 headers: {
@@ -1611,6 +1611,12 @@
                 if (data.success) {
                     showToast('✅ 매장이 성공적으로 추가되었습니다!', 'success');
                     closeAddStoreModal();
+
+                    // 계정 정보 모달 표시
+                    if (data.account) {
+                        showStoreAccountModal(data.account, data.data);
+                    }
+
                     loadStores(); // 목록 새로고침
                 } else {
                     showToast('❌ ' + (data.message || data.error || '매장 추가 실패'), 'error');
@@ -3431,7 +3437,143 @@
                 console.log('✅ 매장 목록 실시간 업데이트 완료');
             }
         }
-        
+
+        // 매장 계정 정보 모달 표시
+        function showStoreAccountModal(account, store) {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                    <div class="text-center mb-6">
+                        <div class="text-2xl mb-2">🎉</div>
+                        <h3 class="text-lg font-bold text-gray-900">매장 계정 생성 완료</h3>
+                        <p class="text-sm text-gray-600 mt-2">${store.name} 매장의 로그인 계정이 생성되었습니다.</p>
+                    </div>
+
+                    <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 uppercase">로그인 아이디</label>
+                                <div class="mt-1 flex items-center">
+                                    <span class="font-mono text-sm bg-white px-3 py-2 rounded border flex-1">${account.email}</span>
+                                    <button onclick="copyToClipboard('${account.email}')" class="ml-2 px-2 py-2 text-gray-500 hover:text-blue-500">
+                                        📋
+                                    </button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 uppercase">임시 비밀번호</label>
+                                <div class="mt-1 flex items-center">
+                                    <span class="font-mono text-sm bg-white px-3 py-2 rounded border flex-1">${account.password}</span>
+                                    <button onclick="copyToClipboard('${account.password}')" class="ml-2 px-2 py-2 text-gray-500 hover:text-blue-500">
+                                        📋
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6">
+                        <div class="flex">
+                            <div class="text-blue-400 mr-2">ℹ️</div>
+                            <div class="text-xs text-blue-700">
+                                <p class="font-medium mb-1">중요 안내사항</p>
+                                <ul class="space-y-1">
+                                    <li>• 매장 담당자에게 위 정보를 안전하게 전달해주세요</li>
+                                    <li>• 첫 로그인 후 비밀번호 변경을 권장합니다</li>
+                                    <li>• 계정 정보는 보안상 다시 확인할 수 없습니다</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex space-x-3">
+                        <button onclick="printAccountInfo('${account.email}', '${account.password}', '${store.name}')"
+                                class="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200">
+                            🖨️ 인쇄
+                        </button>
+                        <button onclick="closeAccountModal()"
+                                class="flex-1 px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
+                            확인
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            // 모달 클릭 시 닫기
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeAccountModal();
+                }
+            });
+        }
+
+        // 계정 모달 닫기
+        function closeAccountModal() {
+            const modal = document.querySelector('.fixed.inset-0');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        // 클립보드 복사
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('📋 클립보드에 복사되었습니다', 'success');
+            }).catch(() => {
+                showToast('❌ 복사 실패', 'error');
+            });
+        }
+
+        // 계정 정보 인쇄
+        function printAccountInfo(email, password, storeName) {
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html>
+                    <head>
+                        <title>매장 계정 정보 - ${storeName}</title>
+                        <style>
+                            body { font-family: Arial, sans-serif; padding: 20px; }
+                            .header { text-align: center; margin-bottom: 30px; }
+                            .info-box { border: 1px solid #ccc; padding: 15px; margin: 10px 0; }
+                            .label { font-weight: bold; color: #555; }
+                            .value { font-family: monospace; background: #f5f5f5; padding: 5px; }
+                        </style>
+                    </head>
+                    <body>
+                        <div class="header">
+                            <h2>YKP ERP 시스템</h2>
+                            <h3>${storeName} 매장 계정 정보</h3>
+                            <p>발급일: ${new Date().toLocaleDateString('ko-KR')}</p>
+                        </div>
+
+                        <div class="info-box">
+                            <div class="label">로그인 아이디:</div>
+                            <div class="value">${email}</div>
+                        </div>
+
+                        <div class="info-box">
+                            <div class="label">임시 비밀번호:</div>
+                            <div class="value">${password}</div>
+                        </div>
+
+                        <div style="margin-top: 30px; border-top: 1px solid #ccc; padding-top: 15px;">
+                            <p><strong>중요 안내사항:</strong></p>
+                            <ul>
+                                <li>첫 로그인 후 반드시 비밀번호를 변경해주세요</li>
+                                <li>계정 정보를 안전하게 보관해주세요</li>
+                                <li>타인에게 계정 정보가 노출되지 않도록 주의해주세요</li>
+                            </ul>
+                        </div>
+                    </body>
+                </html>
+            `);
+            printWindow.document.close();
+            printWindow.print();
+        }
+
     </script>
 </body>
 </html>

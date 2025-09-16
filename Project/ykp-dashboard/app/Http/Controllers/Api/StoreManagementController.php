@@ -68,7 +68,8 @@ class StoreManagementController extends Controller
             $branch = Branch::find($request->branch_id);
             $storeCount = Store::where('branch_id', $request->branch_id)->count();
             $autoCode = $branch->code . '-' . str_pad($storeCount + 1, 3, '0', STR_PAD_LEFT);
-            
+
+            // 매장 생성
             $store = Store::create([
                 'name' => $request->name,
                 'code' => $autoCode,
@@ -79,8 +80,31 @@ class StoreManagementController extends Controller
                 'status' => 'active',
                 'opened_at' => now()
             ]);
-            
-            return response()->json(['success' => true, 'data' => $store]);
+
+            // 매장 계정 자동 생성
+            $autoPassword = 'store' . str_pad($store->id, 4, '0', STR_PAD_LEFT); // store0001 형태
+            $autoEmail = $autoCode . '@ykp.com'; // 지사코드-매장번호@ykp.com
+
+            $storeUser = User::create([
+                'name' => $request->name . ' 매장',
+                'email' => $autoEmail,
+                'password' => Hash::make($autoPassword),
+                'role' => 'store',
+                'branch_id' => $request->branch_id,
+                'store_id' => $store->id,
+                'is_active' => true
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => $store,
+                'account' => [
+                    'email' => $autoEmail,
+                    'password' => $autoPassword,
+                    'user_id' => $storeUser->id
+                ],
+                'message' => '매장과 계정이 성공적으로 생성되었습니다.'
+            ]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
