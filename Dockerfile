@@ -41,7 +41,8 @@ RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
 # RECOMMENDED APPROACH: Copy composer files first, install, then copy app
 COPY Project/ykp-dashboard/composer.json ./
 COPY Project/ykp-dashboard/composer.lock ./
-RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress
+COPY Project/ykp-dashboard/artisan ./
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress --no-scripts
 
 # Copy application code AFTER vendor is installed
 COPY Project/ykp-dashboard/ ./
