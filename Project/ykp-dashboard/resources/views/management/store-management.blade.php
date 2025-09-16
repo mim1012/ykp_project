@@ -160,7 +160,7 @@
             }
             
             // API 호출 (세션 인증 포함)
-            fetch('/api/stores', {
+            fetch('/api/stores/add', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -180,22 +180,24 @@
             .then(result => {
                 if (result.success) {
                     console.log('✅ 매장 생성 성공');
-                    
+
                     // 모달 닫기
                     const modal = document.getElementById('add-store-modal');
                     if (modal) {
                         modal.classList.add('hidden');
                         modal.style.display = 'none';
                     }
-                    
-                    // 🔥 PM 긴급 요구사항: 지사 계정은 자동 계정 생성 + 모달 표시
-                    const userRole = '{{ auth()->user()->role }}';
-                    if (userRole === 'branch') {
-                        console.log('🔥 지사 계정 - 자동 계정 생성 및 모달 표시 시작');
-                        createAccountAndShowCredentials(result.data.id, result.data);
+
+                    // 🎉 계정 정보 모달 표시 (본사/지사 모두)
+                    if (result.account) {
+                        showStoreAccountModal(result.account, result.data);
                     } else {
                         alert('매장이 성공적으로 생성되었습니다!');
-                        location.reload();
+                    }
+
+                    // 목록 새로고침 (페이지 리로드 대신)
+                    if (typeof loadStores === 'function') {
+                        loadStores();
                     }
                 } else {
                     alert('매장 생성 실패: ' + (result.error || '알 수 없는 오류'));
@@ -3291,7 +3293,7 @@
             
             try {
                 // 매장 생성
-                const storeResponse = await fetch('/api/stores', {
+                const storeResponse = await fetch('/api/stores/add', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -3299,22 +3301,19 @@
                     },
                     body: JSON.stringify(formData)
                 });
-                
+
                 const storeResult = await storeResponse.json();
-                
+
                 if (storeResult.success) {
                     // 매장 생성 성공 - 모달 닫기
                     closeAddStoreModal();
-                    
-                    // 계정 자동 생성
-                    const accountResult = await createAccountForNewStore(storeResult.data.id);
-                    
+
                     // 매장 목록 실시간 업데이트
                     await refreshStoreList();
-                    
-                    // 성공 메시지
-                    if (accountResult && accountResult.data && accountResult.data.account) {
-                        showPMAccountCreatedModal(accountResult.data.account, storeResult.data);
+
+                    // 🎉 계정 정보 모달 표시 (이미 계정이 생성되어 응답에 포함됨)
+                    if (storeResult.account) {
+                        showStoreAccountModal(storeResult.account, storeResult.data);
                     } else {
                         showToast('매장이 성공적으로 추가되었습니다!', 'success');
                     }

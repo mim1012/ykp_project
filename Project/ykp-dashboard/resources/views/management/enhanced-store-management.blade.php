@@ -726,7 +726,7 @@
             };
 
             try {
-                const response = await fetch('/api/stores', {
+                const response = await fetch('/api/stores/add', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
