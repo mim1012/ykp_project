@@ -1,11 +1,11 @@
-# ========== NUCLEAR CACHE BUST ==========
-ARG NUCLEAR_BUST=20250916_FINAL
+# ========== RECOMMENDED SOLUTION ==========
+ARG CACHE_BUST=20250916_RECOMMENDED
 
 # ========== Node Build Stage ==========
 FROM node:20-alpine AS frontend_build
 WORKDIR /app
 
-RUN echo "🚀 NUCLEAR BUILD v20250916 - ABSOLUTE FINAL @ $(date)" && sleep 3
+RUN echo "✅ RECOMMENDED SOLUTION v$CACHE_BUST - NO VENDOR COPY @ $(date)" && sleep 3
 
 COPY ykp-dashboard/package*.json ./
 RUN npm ci --no-audit --no-fund --prefer-offline
@@ -18,8 +18,8 @@ RUN npm run build
 FROM php:8.3-apache-bookworm
 WORKDIR /var/www/html
 
-ARG NUCLEAR_BUST=20250916_FINAL
-RUN echo "💥 NUCLEAR CACHE BUST v$NUCLEAR_BUST - ZERO VENDOR COPY @ $(date)" && sleep 2
+ARG CACHE_BUST=20250916_RECOMMENDED
+RUN echo "🎯 RECOMMENDED PHP STAGE v$CACHE_BUST - COMPOSER INSTALL @ $(date)" && sleep 2
 
 # Apache modules
 RUN a2enmod rewrite headers
@@ -44,13 +44,12 @@ RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
     && php composer-setup.php --install-dir=/usr/local/bin --filename=composer \
     && rm composer-setup.php
 
-# Copy composer files for caching
-COPY ykp-dashboard/composer.json ykp-dashboard/composer.lock ./
-
-# Install dependencies with composer
+# RECOMMENDED APPROACH: Copy composer files first, install, then copy app
+COPY ykp-dashboard/composer.json ./
+COPY ykp-dashboard/composer.lock ./
 RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress
 
-# Copy application code
+# Copy application code AFTER vendor is installed
 COPY ykp-dashboard/ ./
 
 # Copy frontend build output
