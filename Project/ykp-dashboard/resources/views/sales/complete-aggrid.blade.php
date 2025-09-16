@@ -129,6 +129,19 @@
     </main>
 
     <script>
+        // 전역 사용자 데이터 설정
+        window.userData = {
+            id: {{ auth()->user()->id ?? 'null' }},
+            name: '{{ auth()->user()->name ?? "" }}',
+            email: '{{ auth()->user()->email ?? "" }}',
+            role: '{{ auth()->user()->role ?? "store" }}',
+            store_id: {{ auth()->user()->store_id ?? 'null' }},
+            branch_id: {{ auth()->user()->branch_id ?? 'null' }}
+        };
+
+        // CSRF 토큰 설정
+        window.csrfToken = '{{ csrf_token() }}';
+
         // PM 요구사항: 27개 필드 완전 매핑된 데이터 구조
         let salesData = [];
         let nextId = 1;
@@ -446,7 +459,7 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'X-CSRF-TOKEN': window.csrfToken,
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest'
                 },
@@ -545,7 +558,13 @@
         // 대리점 목록 로드 함수
         async function loadDealers() {
             try {
-                const response = await fetch('/api/calculation/profiles');
+                const response = await fetch('/api/calculation/profiles', {
+                    headers: {
+                        'X-CSRF-TOKEN': window.csrfToken,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    }
+                });
                 const data = await response.json();
 
                 if (data.success && data.data) {
@@ -625,7 +644,13 @@
                 const apiUrl = `/api/sales?store_id=${storeId}&days=7`;
                 console.log('📡 API 호출:', apiUrl);
 
-                const response = await fetch(apiUrl);
+                const response = await fetch(apiUrl, {
+                    headers: {
+                        'X-CSRF-TOKEN': window.csrfToken,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    }
+                });
                 console.log('📡 API 응답 상태:', response.status);
 
                 if (!response.ok) {
@@ -674,7 +699,7 @@
                     }));
 
                     // 그리드 렌더링
-                    renderGrid();
+                    renderTableRows();
                     console.log(`✅ 기존 개통표 ${salesData.length}건 로드 완료`);
 
                     showStatus(`📊 기존 개통표 ${salesData.length}건을 불러왔습니다.`, 'info');
