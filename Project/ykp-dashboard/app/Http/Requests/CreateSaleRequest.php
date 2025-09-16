@@ -19,16 +19,17 @@ class CreateSaleRequest extends FormRequest
             'sales.*.carrier' => ['required', 'in:SK,KT,LG,MVNO'],
             'sales.*.activation_type' => ['required', 'in:신규,기변,MNP'],
             'sales.*.model_name' => ['required', 'string', 'max:100'],
-            'sales.*.base_price' => ['nullable', 'numeric', 'min:0'],
+            // 🔄 DB 스키마와 일치하는 필드명으로 수정
+            'sales.*.price_setting' => ['nullable', 'numeric', 'min:0'],     // base_price → price_setting
             'sales.*.verbal1' => ['nullable', 'numeric'],
             'sales.*.verbal2' => ['nullable', 'numeric'],
             'sales.*.grade_amount' => ['nullable', 'numeric'],
-            'sales.*.additional_amount' => ['nullable', 'numeric'],
-            'sales.*.cash_activation' => ['nullable', 'numeric'],
+            'sales.*.addon_amount' => ['nullable', 'numeric'],               // additional_amount → addon_amount
+            'sales.*.paper_cash' => ['nullable', 'numeric'],                 // cash_activation → paper_cash
             'sales.*.usim_fee' => ['nullable', 'numeric'],
-            'sales.*.new_mnp_discount' => ['nullable', 'numeric'],
+            'sales.*.new_mnp_disc' => ['nullable', 'numeric'],               // new_mnp_discount → new_mnp_disc
             'sales.*.deduction' => ['nullable', 'numeric'],
-            'sales.*.cash_received' => ['nullable', 'numeric'],
+            'sales.*.cash_in' => ['nullable', 'numeric'],                    // cash_received → cash_in
             'sales.*.payback' => ['nullable', 'numeric'],
             'sales.*.monthly_fee' => ['nullable', 'numeric'],
             'sales.*.phone_number' => ['nullable', 'string', 'max:20'],
