@@ -559,26 +559,31 @@
                     console.log('✅ 대리점 목록 로드 완료:', dealersList.length, '개');
                     return dealersList;
                 } else {
-                    console.error('❌ 대리점 목록 로드 실패');
-                    // 폴백: 하드코딩된 목록 사용
-                    dealersList = [
-                        {code: 'SM', name: 'SM'},
-                        {code: 'W', name: 'W'},
-                        {code: 'KING', name: '더킹'},
-                        {code: 'ENTER', name: '엔터'},
-                        {code: 'UP', name: '유피'},
-                        {code: 'CHOSI', name: '초시대'},
-                        {code: 'TAESUNG', name: '태성'},
-                        {code: 'PDM', name: '피디엠'},
-                        {code: 'HANJU', name: '한주'},
-                        {code: 'HAPPY', name: '해피'}
-                    ];
-                    return dealersList;
+                    console.warn('⚠️ 대리점 API 응답 없음 - fallback 사용');
                 }
             } catch (error) {
                 console.error('❌ 대리점 로드 오류:', error);
-                return [];
             }
+
+            // 🔄 API 실패하거나 데이터 없으면 fallback 사용
+            if (!dealersList || dealersList.length === 0) {
+                console.log('🔄 기본 대리점 목록 사용');
+                dealersList = [
+                    {code: 'SM', name: 'SM'},
+                    {code: 'W', name: 'W'},
+                    {code: 'KING', name: '더킹'},
+                    {code: 'ENTER', name: '엔터'},
+                    {code: 'UP', name: '유피'},
+                    {code: 'CHOSI', name: '초시대'},
+                    {code: 'TAESUNG', name: '태성'},
+                    {code: 'PDM', name: '피디엠'},
+                    {code: 'HANJU', name: '한주'},
+                    {code: 'HAPPY', name: '해피'}
+                ];
+            }
+
+            console.log(`✅ 최종 대리점 목록: ${dealersList.length}개`);
+            return dealersList;
         }
 
         document.addEventListener('DOMContentLoaded', async function() {
