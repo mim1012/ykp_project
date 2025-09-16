@@ -104,7 +104,7 @@ class StoreManagementController extends Controller
                     'branch_id' => $request->branch_id,
                     'store_id' => $store->id,
                     'is_active' => true,
-                    'created_by_user_id' => strval($currentUser->id) // string으로 변환
+                    'created_by_user_id' => $currentUser ? strval($currentUser->id) : null // null 체크 추가
                 ]);
 
                 $accountCreated = true;
@@ -119,7 +119,8 @@ class StoreManagementController extends Controller
                 \Log::error('매장 계정 생성 실패: ' . $userException->getMessage(), [
                     'store_id' => $store->id,
                     'email' => $autoEmail,
-                    'error' => $userException->getMessage()
+                    'error' => $userException->getMessage(),
+                    'trace' => $userException->getTraceAsString()
                 ]);
 
                 // 실패해도 기본 계정 정보는 전달 (나중에 수동 생성 가능하도록)
