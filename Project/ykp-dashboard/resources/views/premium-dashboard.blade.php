@@ -372,6 +372,7 @@
                     <!-- 본사 전용 액션 -->
                     <button class="btn btn-success" onclick="openStoreManagement()">+ 새 지사 추가</button>
                     <button class="btn btn-success" onclick="openStoreManagement()">+ 새 매장 추가</button>
+                    <button class="btn btn-primary" onclick="openGoalSetting()">🎯 목표 설정</button>
                     <button class="btn btn-outline" onclick="downloadSystemReport()">전체 리포트</button>
                     <button class="btn btn-outline" onclick="location.reload()">🔄 새로고침</button>
                 @elseif(auth()->user()->role === 'branch')
@@ -1329,6 +1330,103 @@
         function downloadSystemReport() {
             // 본사 전체 리포트 = 통계 페이지로 이동
             window.location.href = '/statistics';
+        }
+
+        // 🎯 목표 설정 함수 (본사 관리자 전용)
+        function openGoalSetting() {
+            console.log('🎯 목표 설정 시작');
+
+            let goalOptions = `🎯 목표 설정 옵션\n`;
+            goalOptions += `${'='.repeat(40)}\n\n`;
+            goalOptions += `어떤 목표를 설정하시겠습니까?\n\n`;
+            goalOptions += `1. 📊 시스템 전체 목표\n`;
+            goalOptions += `   (전사 월간 매출 목표)\n\n`;
+            goalOptions += `2. 🏢 지사별 목표 설정\n`;
+            goalOptions += `   (각 지사의 월간 목표)\n\n`;
+            goalOptions += `3. 🏪 매장별 목표 설정\n`;
+            goalOptions += `   (개별 매장 목표)\n\n`;
+            goalOptions += `선택하세요 (1, 2, 또는 3):`;
+
+            const choice = prompt(goalOptions);
+
+            switch(choice) {
+                case '1':
+                    setSystemGoal();
+                    break;
+                case '2':
+                    setBranchGoals();
+                    break;
+                case '3':
+                    setStoreGoals();
+                    break;
+                default:
+                    if (choice !== null) {
+                        alert('❌ 올바른 옵션을 선택해주세요 (1, 2, 또는 3)');
+                    }
+            }
+        }
+
+        // 시스템 전체 목표 설정
+        function setSystemGoal() {
+            const currentMonth = new Date().toISOString().slice(0, 7);
+
+            let goalInput = `📊 시스템 전체 목표 설정 (${currentMonth})\n`;
+            goalInput += `${'='.repeat(45)}\n\n`;
+
+            const salesTarget = prompt(goalInput + '월간 매출 목표 (원):', '50000000');
+            if (!salesTarget || isNaN(salesTarget)) {
+                alert('❌ 올바른 매출 목표를 입력해주세요.');
+                return;
+            }
+
+            const activationTarget = prompt('월간 개통 건수 목표:', '200');
+            if (!activationTarget || isNaN(activationTarget)) {
+                alert('❌ 올바른 개통 건수를 입력해주세요.');
+                return;
+            }
+
+            const notes = prompt('목표 설정 사유 (선택사항):', '');
+
+            if (confirm(`📊 시스템 목표 설정 확인\n\n매출 목표: ${Number(salesTarget).toLocaleString()}원\n개통 목표: ${activationTarget}건\n\n설정하시겠습니까?`)) {
+                fetch('/api/goals/system', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({
+                        sales_target: parseInt(salesTarget),
+                        activation_target: parseInt(activationTarget),
+                        period_start: new Date().toISOString().slice(0, 10),
+                        period_end: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().slice(0, 10),
+                        notes: notes
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(`✅ 시스템 목표가 설정되었습니다!\n\n📊 매출 목표: ${Number(salesTarget).toLocaleString()}원\n📱 개통 목표: ${activationTarget}건\n\n대시보드가 새로고침됩니다.`);
+                        location.reload();
+                    } else {
+                        alert('❌ 목표 설정 실패: ' + (data.error || '알 수 없는 오류'));
+                    }
+                })
+                .catch(error => {
+                    alert('❌ 목표 설정 중 오류가 발생했습니다.');
+                });
+            }
+        }
+
+        // 지사별 목표 설정
+        function setBranchGoals() {
+            alert('🏢 지사별 목표 설정\n\n지사 관리 페이지에서 각 지사의 목표를 개별 설정할 수 있습니다.\n\n지사 관리 → 지사 선택 → 목표 설정');
+            window.location.href = '/management/branches';
+        }
+
+        // 매장별 목표 설정
+        function setStoreGoals() {
+            alert('🏪 매장별 목표 설정\n\n매장 관리 페이지에서 각 매장의 목표를 개별 설정할 수 있습니다.\n\n매장 관리 → 매장 선택 → 목표 설정');
+            window.location.href = '/management/stores';
         }
 
         function downloadBranchReport() {
