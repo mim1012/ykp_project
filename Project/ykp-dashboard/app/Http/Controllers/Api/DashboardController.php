@@ -46,57 +46,50 @@ class DashboardController extends Controller
             }
             // 본사: 전체 데이터 (필터링 없음)
 
-            // 전체/활성 구분된 통계 (clone 사용하여 쿼리 중첩 방지)
-            $totalStores = $storeQuery->clone()->count();
-            $activeStores = $storeQuery->clone()->where('status', 'active')->count();
-            $totalBranches = $branchQuery->clone()->count();
-            $activeBranches = $branchQuery->clone()->where('status', 'active')->count();
-            $totalUsers = $userQuery->clone()->count();
-            $activeUsers = $userQuery->clone()->where('status', 'active')->count();
+            // 전체/활성 구분된 통계 (안전한 clone 사용)
+            $totalStores = (clone $storeQuery)->count();
+            $activeStores = (clone $storeQuery)->where('status', 'active')->count();
+            $totalBranches = (clone $branchQuery)->count();
+            $activeBranches = (clone $branchQuery)->where('status', 'active')->count();
+            $totalUsers = (clone $userQuery)->count();
+            $activeUsers = (clone $userQuery)->where('status', 'active')->count();
 
-            // 매출 데이터가 있는 매장 수 (실제 활동 매장) - PostgreSQL/SQLite 호환
-            $thisMonth = now()->format('Y-m');
-            $dateFunction = config('database.default') === 'pgsql'
-                ? "TO_CHAR(sale_date, 'YYYY-MM')"
-                : "strftime('%Y-%m', sale_date)";
+            // 날짜 범위 계산 - DB 독립적인 방법 사용
+            $startOfMonth = now()->startOfMonth()->format('Y-m-d');
+            $endOfMonth = now()->endOfMonth()->format('Y-m-d');
+            $today = now()->format('Y-m-d');
 
-            $salesActiveStores = $saleQuery->clone()
-                                   ->whereRaw("{$dateFunction} = ?", [$thisMonth])
+            // 매출 데이터가 있는 매장 수 (실제 활동 매장)
+            $salesActiveStores = (clone $saleQuery)
+                                   ->whereBetween('sale_date', [$startOfMonth, $endOfMonth])
                                    ->distinct('store_id')
                                    ->count();
 
-            // 이번달 매출 (실제 데이터) - PostgreSQL/SQLite 호환
-            $thisMonthSales = $saleQuery->clone()
-                                ->whereRaw("{$dateFunction} = ?", [$thisMonth])
+            // 이번달 매출 (실제 데이터)
+            $thisMonthSales = (clone $saleQuery)
+                                ->whereBetween('sale_date', [$startOfMonth, $endOfMonth])
                                 ->sum('settlement_amount');
 
             // 오늘 개통 건수
-            $todaySales = $saleQuery->clone()->whereDate('sale_date', today())->count();
+            $todaySales = (clone $saleQuery)->whereDate('sale_date', $today)->count();
 
             // 디버깅: 실제 매출 데이터 확인
             Log::info('Dashboard Sales Query Debug', [
                 'user_role' => $user->role,
                 'user_branch_id' => $user->branch_id,
                 'user_store_id' => $user->store_id,
-                'this_month' => $thisMonth,
-                'total_sales_count' => $saleQuery->clone()->count(),
-                'this_month_sales_count' => $saleQuery->clone()->whereRaw("{$dateFunction} = ?", [$thisMonth])->count(),
+                'date_range' => [$startOfMonth, $endOfMonth],
+                'total_sales_count' => (clone $saleQuery)->count(),
+                'this_month_sales_count' => (clone $saleQuery)->whereBetween('sale_date', [$startOfMonth, $endOfMonth])->count(),
                 'this_month_sales_amount' => $thisMonthSales,
             ]);
             
-            // 🔄 목표 달성률 계산 (실제 목표 API 기반, 하드코딩 제거)
-            $goalQuery = \App\Models\Goal::where('target_type', 'system')
+            // 🔄 목표 달성률 계산 - DB 독립적인 방법
+            $goal = \App\Models\Goal::where('target_type', 'system')
                 ->where('period_type', 'monthly')
-                ->where('is_active', true);
-
-            // PostgreSQL/SQLite 호환
-            if (config('database.default') === 'pgsql') {
-                $goalQuery->whereRaw("TO_CHAR(period_start, 'YYYY-MM') = ?", [now()->format('Y-m')]);
-            } else {
-                $goalQuery->whereRaw("strftime('%Y-%m', period_start) = ?", [now()->format('Y-m')]);
-            }
-
-            $goal = $goalQuery->first();
+                ->where('is_active', true)
+                ->whereBetween('period_start', [$startOfMonth, $endOfMonth])
+                ->first();
 
             $monthlyTarget = $goal ? $goal->sales_target : config('sales.default_targets.system.monthly_sales');
             $achievementRate = $thisMonthSales > 0 ? round(($thisMonthSales / $monthlyTarget) * 100, 1) : 0;
@@ -273,14 +266,14 @@ class DashboardController extends Controller
     {
         try {
             $yearMonth = $request->get('year_month', now()->format('Y-m'));
+            list($year, $month) = explode('-', $yearMonth);
 
-            // PostgreSQL/SQLite 호환
-            $dateFunction = config('database.default') === 'pgsql'
-                ? "TO_CHAR(sale_date, 'YYYY-MM')"
-                : "strftime('%Y-%m', sale_date)";
+            // 날짜 범위 계산
+            $startDate = date('Y-m-d', mktime(0, 0, 0, $month, 1, $year));
+            $endDate = date('Y-m-t', mktime(0, 0, 0, $month, 1, $year)); // 해당 월의 마지막 날
 
             $performances = Sale::with(['store', 'store.branch'])
-                              ->whereRaw("{$dateFunction} = ?", [$yearMonth])
+                              ->whereBetween('sale_date', [$startDate, $endDate])
                               ->select('agency')
                               ->selectRaw('COUNT(*) as count')
                               ->selectRaw('SUM(settlement_amount) as total_amount')
@@ -488,8 +481,8 @@ class DashboardController extends Controller
             $user = auth()->user();
 
             // 날짜 범위 계산
-            $endDate = now()->endOfDay();
-            $startDate = now()->subDays($days - 1)->startOfDay();
+            $endDate = now()->endOfDay()->format('Y-m-d H:i:s');
+            $startDate = now()->subDays($days - 1)->startOfDay()->format('Y-m-d H:i:s');
 
             // 권한별 필터링
             $query = Sale::query();
@@ -500,19 +493,21 @@ class DashboardController extends Controller
                 $query->where('store_id', $user->store_id);
             }
 
-            // 일별 집계
+            // 일별 집계 - DB 독립적
             $dailyData = $query->whereBetween('sale_date', [$startDate, $endDate])
-                ->selectRaw('DATE(sale_date) as date')
+                ->selectRaw('sale_date as date')
                 ->selectRaw('COUNT(*) as activations')
                 ->selectRaw('SUM(settlement_amount) as sales')
-                ->groupBy('date')
-                ->orderBy('date')
+                ->groupBy('sale_date')
+                ->orderBy('sale_date')
                 ->get();
 
             // 날짜별 데이터 맵 생성
             $dataMap = [];
             foreach ($dailyData as $data) {
-                $dataMap[$data->date] = [
+                // date를 Y-m-d 형식으로 변환
+                $dateKey = date('Y-m-d', strtotime($data->date));
+                $dataMap[$dateKey] = [
                     'activations' => $data->activations,
                     'sales' => floatval($data->sales)
                 ];
@@ -564,20 +559,17 @@ class DashboardController extends Controller
     private function calculateStoreTargetAchievement($storeId, $actualSales)
     {
         try {
-            // 매장별 목표 조회
-            $goalQuery = \App\Models\Goal::where('target_type', 'store')
+            // 날짜 범위 계산
+            $startOfMonth = now()->startOfMonth()->format('Y-m-d');
+            $endOfMonth = now()->endOfMonth()->format('Y-m-d');
+
+            // 매장별 목표 조회 - DB 독립적
+            $goal = \App\Models\Goal::where('target_type', 'store')
                 ->where('target_id', $storeId)
                 ->where('period_type', 'monthly')
-                ->where('is_active', true);
-
-            // PostgreSQL/SQLite 호환
-            if (config('database.default') === 'pgsql') {
-                $goalQuery->whereRaw("TO_CHAR(period_start, 'YYYY-MM') = ?", [now()->format('Y-m')]);
-            } else {
-                $goalQuery->whereRaw("strftime('%Y-%m', period_start) = ?", [now()->format('Y-m')]);
-            }
-
-            $goal = $goalQuery->first();
+                ->where('is_active', true)
+                ->whereBetween('period_start', [$startOfMonth, $endOfMonth])
+                ->first();
 
             $storeTarget = $goal ? $goal->sales_target : config('sales.default_targets.store.monthly_sales');
 

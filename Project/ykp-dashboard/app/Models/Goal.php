@@ -51,14 +51,11 @@ class Goal extends Model
     // 스코프
     public function scopeCurrentMonth($query)
     {
-        $currentMonth = now()->format('Y-m');
+        // DB 독립적인 날짜 범위 방식 사용
+        $startOfMonth = now()->startOfMonth()->format('Y-m-d');
+        $endOfMonth = now()->endOfMonth()->format('Y-m-d');
 
-        // PostgreSQL/SQLite 호환
-        if (config('database.default') === 'pgsql') {
-            return $query->whereRaw("TO_CHAR(period_start, 'YYYY-MM') = ?", [$currentMonth]);
-        } else {
-            return $query->whereRaw("strftime('%Y-%m', period_start) = ?", [$currentMonth]);
-        }
+        return $query->whereBetween('period_start', [$startOfMonth, $endOfMonth]);
     }
 
     public function scopeActive($query)
