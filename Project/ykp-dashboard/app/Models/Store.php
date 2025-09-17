@@ -21,7 +21,7 @@ class Store extends Model
     ];
 
     protected $casts = [
-        'opened_at' => 'date',
+        'opened_at' => 'datetime',  // timestamp로 변경 (date가 아닌 datetime)
     ];
 
     public function branch()

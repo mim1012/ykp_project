@@ -78,7 +78,7 @@ class StoreManagementController extends Controller
                 'phone' => $request->phone ?? '',
                 'address' => $request->address ?? '',
                 'status' => 'active',
-                'opened_at' => now()
+                'opened_at' => now()->toDateTimeString() // PostgreSQL timestamp 호환 형식
             ]);
 
             // 매장 계정 자동 생성 (더 안전한 방식)
@@ -103,7 +103,7 @@ class StoreManagementController extends Controller
                     'role' => 'store',
                     'branch_id' => $request->branch_id,
                     'store_id' => $store->id,
-                    'is_active' => true,
+                    'is_active' => \DB::raw('true'),  // PostgreSQL boolean 명시적 사용
                     'created_by_user_id' => $currentUser ? strval($currentUser->id) : null // null 체크 추가
                 ]);
 
