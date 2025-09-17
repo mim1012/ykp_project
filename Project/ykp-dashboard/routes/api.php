@@ -445,8 +445,20 @@ Route::middleware(['web', 'auth'])->prefix('payroll')->group(function () {
 | 메인 대시보드용 실시간 데이터 제공
 */
 
-// 웹 대시보드용 API (임시 인증 제거 - 실배포 테스트용)
-Route::prefix('dashboard')->group(function () {
+// 웹 대시보드용 API (세션 기반 인증)
+Route::middleware(['web', 'auth'])->prefix('dashboard')->group(function () {
+    // DashboardController를 사용한 권한별 필터링 적용
+    Route::get('/overview', [App\Http\Controllers\Api\DashboardController::class, 'overview']);
+    Route::get('/store-ranking', [App\Http\Controllers\Api\DashboardController::class, 'storeRanking']);
+    Route::get('/financial-summary', [App\Http\Controllers\Api\DashboardController::class, 'financialSummary']);
+    Route::get('/dealer-performance', [App\Http\Controllers\Api\DashboardController::class, 'dealerPerformance']);
+    Route::get('/rankings', [App\Http\Controllers\Api\DashboardController::class, 'rankings']);
+    Route::get('/top-list', [App\Http\Controllers\Api\DashboardController::class, 'topList']);
+    Route::get('/sales-trend', [App\Http\Controllers\Api\DashboardController::class, 'salesTrend']);
+});
+
+// 기존 익명함수 라우트들 (이후 제거 예정)
+Route::prefix('dashboard-old')->group(function () {
     // 대시보드 개요 (통계 페이지 메인) - 통일된 응답 구조
     Route::get('/overview', function() {
         try {

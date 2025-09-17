@@ -187,12 +187,14 @@
                     finRes.json()
                 ]);
 
-                // KPI 업데이트
-                const monthSales = overview.data?.month?.sales || 0;
+                // KPI 업데이트 - API 응답 구조에 맞게 수정
+                const monthSales = overview.data?.this_month_sales || 0;
+                const managedStores = overview.data?.stores?.total || 0;
                 document.getElementById('branch-total-sales').textContent = `₩${Number(monthSales).toLocaleString()}`;
+                document.getElementById('branch-managed-stores').textContent = `${managedStores}개`;
 
-                // 지사 소속 매장 수는 실제 매장 데이터에서 가져오기
-                loadBranchStoresCount();
+                // 지사 소속 매장 수는 실제 매장 데이터에서 가져오기 (필요시)
+                // loadBranchStoresCount();
 
                 // 소속 매장별 성과 차트
                 const stores = (ranking.data?.rankings || []);

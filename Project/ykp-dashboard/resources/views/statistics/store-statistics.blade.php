@@ -177,10 +177,11 @@
                     statsRes.json()
                 ]);
                 
-                const today = overview.data?.today ?? { activations: 0 };
-                const month = overview.data?.month ?? { sales: 0 };
-                document.getElementById('today-activations').textContent = `${today.activations}건`;
-                document.getElementById('month-sales').textContent = `₩${Number(month.sales || 0).toLocaleString()}`;
+                // API 응답 구조에 맞게 수정
+                const todayActivations = overview.data?.today_activations ?? 0;
+                const monthSales = overview.data?.this_month_sales ?? 0;
+                document.getElementById('today-activations').textContent = `${todayActivations}건`;
+                document.getElementById('month-sales').textContent = `₩${Number(monthSales).toLocaleString()}`;
 
                 // 일별 개통 실적 차트 (30일)
                 const dailyChart = new Chart(document.getElementById('dailyActivationsChart'), {

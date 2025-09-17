@@ -21,31 +21,57 @@ class DashboardController extends Controller
     {
         try {
             Log::info('Dashboard overview API called', ['user_id' => auth()->id()]);
-            
+
+            $user = auth()->user();
+
+            // 권한별 쿼리 스코프 설정
+            $storeQuery = Store::query();
+            $branchQuery = Branch::query();
+            $userQuery = User::query();
+            $saleQuery = Sale::query();
+
+            // 지사 계정: 자기 지사 데이터만
+            if ($user->isBranch()) {
+                $storeQuery->where('branch_id', $user->branch_id);
+                $branchQuery->where('id', $user->branch_id);
+                $userQuery->where('branch_id', $user->branch_id);
+                $saleQuery->where('branch_id', $user->branch_id);
+            }
+            // 매장 계정: 자기 매장 데이터만
+            elseif ($user->isStore()) {
+                $storeQuery->where('id', $user->store_id);
+                $branchQuery->where('id', $user->branch_id);
+                $userQuery->where('store_id', $user->store_id);
+                $saleQuery->where('store_id', $user->store_id);
+            }
+            // 본사: 전체 데이터 (필터링 없음)
+
             // 전체/활성 구분된 통계
-            $totalStores = Store::count();
-            $activeStores = Store::where('status', 'active')->count();
-            $totalBranches = Branch::count();
-            $activeBranches = Branch::where('status', 'active')->count();
-            $totalUsers = User::count();
-            $activeUsers = User::where('status', 'active')->count();
-            
+            $totalStores = $storeQuery->count();
+            $activeStores = $storeQuery->where('status', 'active')->count();
+            $totalBranches = $branchQuery->count();
+            $activeBranches = $branchQuery->where('status', 'active')->count();
+            $totalUsers = $userQuery->count();
+            $activeUsers = $userQuery->where('status', 'active')->count();
+
             // 매출 데이터가 있는 매장 수 (실제 활동 매장) - PostgreSQL/SQLite 호환
             $thisMonth = now()->format('Y-m');
-            $dateFunction = config('database.default') === 'pgsql' 
-                ? "TO_CHAR(sale_date, 'YYYY-MM')" 
+            $dateFunction = config('database.default') === 'pgsql'
+                ? "TO_CHAR(sale_date, 'YYYY-MM')"
                 : "strftime('%Y-%m', sale_date)";
-                
-            $salesActiveStores = Sale::whereRaw("{$dateFunction} = ?", [$thisMonth])
+
+            $salesActiveStores = $saleQuery->clone()
+                                   ->whereRaw("{$dateFunction} = ?", [$thisMonth])
                                    ->distinct('store_id')
                                    ->count();
-            
+
             // 이번달 매출 (실제 데이터) - PostgreSQL/SQLite 호환
-            $thisMonthSales = Sale::whereRaw("{$dateFunction} = ?", [$thisMonth])
+            $thisMonthSales = $saleQuery->clone()
+                                ->whereRaw("{$dateFunction} = ?", [$thisMonth])
                                 ->sum('settlement_amount');
-            
+
             // 오늘 개통 건수
-            $todaySales = Sale::whereDate('sale_date', today())->count();
+            $todaySales = $saleQuery->clone()->whereDate('sale_date', today())->count();
             
             // 🔄 목표 달성률 계산 (실제 목표 API 기반, 하드코딩 제거)
             $goal = \App\Models\Goal::where('target_type', 'system')
@@ -425,6 +451,86 @@ class DashboardController extends Controller
             
         } catch (\Exception $e) {
             Log::error('Top list API error', ['error' => $e->getMessage(), 'type' => $request->query('type')]);
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * 판매 추세 데이터 (권한별 필터링)
+     */
+    public function salesTrend(Request $request)
+    {
+        try {
+            $days = min($request->get('days', 30), 90); // 최대 90일
+            $user = auth()->user();
+
+            // 날짜 범위 계산
+            $endDate = now()->endOfDay();
+            $startDate = now()->subDays($days - 1)->startOfDay();
+
+            // 권한별 필터링
+            $query = Sale::query();
+
+            if ($user->isBranch()) {
+                $query->where('branch_id', $user->branch_id);
+            } elseif ($user->isStore()) {
+                $query->where('store_id', $user->store_id);
+            }
+
+            // 일별 집계
+            $dailyData = $query->whereBetween('sale_date', [$startDate, $endDate])
+                ->selectRaw('DATE(sale_date) as date')
+                ->selectRaw('COUNT(*) as activations')
+                ->selectRaw('SUM(settlement_amount) as sales')
+                ->groupBy('date')
+                ->orderBy('date')
+                ->get();
+
+            // 날짜별 데이터 맵 생성
+            $dataMap = [];
+            foreach ($dailyData as $data) {
+                $dataMap[$data->date] = [
+                    'activations' => $data->activations,
+                    'sales' => floatval($data->sales)
+                ];
+            }
+
+            // 모든 날짜에 대한 데이터 생성 (빈 날짜 포함)
+            $trendData = [];
+            for ($i = 0; $i < $days; $i++) {
+                $date = now()->subDays($days - 1 - $i)->format('Y-m-d');
+                $dayLabel = now()->subDays($days - 1 - $i)->format('m/d');
+
+                $trendData[] = [
+                    'date' => $date,
+                    'day_label' => $dayLabel,
+                    'activations' => $dataMap[$date]['activations'] ?? 0,
+                    'sales' => $dataMap[$date]['sales'] ?? 0
+                ];
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'trend_data' => $trendData,
+                    'summary' => [
+                        'total_activations' => array_sum(array_column($trendData, 'activations')),
+                        'total_sales' => array_sum(array_column($trendData, 'sales')),
+                        'average_daily_activations' => round(array_sum(array_column($trendData, 'activations')) / $days, 1),
+                        'average_daily_sales' => round(array_sum(array_column($trendData, 'sales')) / $days, 0)
+                    ]
+                ],
+                'meta' => [
+                    'days' => $days,
+                    'start_date' => $startDate->format('Y-m-d'),
+                    'end_date' => $endDate->format('Y-m-d'),
+                    'user_role' => $user->role,
+                    'generated_at' => now()->toISOString()
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Sales trend API error', ['error' => $e->getMessage()]);
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
     }
