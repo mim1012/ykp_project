@@ -517,6 +517,68 @@ Route::get('/api/dashboard/overview', function () {
     }
 })->name('web.api.dashboard.overview');
 
+// 순위 데이터 API (권한별 차별화)
+Route::get('/api/dashboard/rankings', function () {
+    try {
+        $user = auth()->user();
+        $response = ['success' => true];
+
+        // 본사/지사: 지사 순위 제공
+        if ($user && ($user->role === 'headquarters' || $user->role === 'branch')) {
+            $branchRankings = \App\Models\Sale::with('store.branch')
+                ->select('stores.branch_id')
+                ->join('stores', 'sales.store_id', '=', 'stores.id')
+                ->selectRaw('SUM(settlement_amount) as total_sales')
+                ->groupBy('stores.branch_id')
+                ->orderBy('total_sales', 'desc')
+                ->get();
+
+            $branchRank = 0;
+            if ($user->branch_id) {
+                foreach ($branchRankings as $index => $ranking) {
+                    if ($ranking->branch_id == $user->branch_id) {
+                        $branchRank = $index + 1;
+                        break;
+                    }
+                }
+            }
+
+            $response['branch'] = [
+                'rank' => $branchRank ?: null,
+                'total' => $branchRankings->count()
+            ];
+        }
+
+        // 매장 순위 (모든 권한)
+        if ($user && $user->store_id) {
+            $storeRankings = \App\Models\Sale::where('store_id', $user->store_id)
+                ->select('store_id')
+                ->selectRaw('SUM(settlement_amount) as total_sales')
+                ->groupBy('store_id')
+                ->orderBy('total_sales', 'desc')
+                ->get();
+
+            $storeRank = 0;
+            foreach ($storeRankings as $index => $ranking) {
+                if ($ranking->store_id == $user->store_id) {
+                    $storeRank = $index + 1;
+                    break;
+                }
+            }
+
+            $response['store'] = [
+                'rank' => $storeRank ?: null,
+                'total' => \App\Models\Store::count(),
+                'scope' => $user->role === 'store' ? 'branch' : 'nationwide'
+            ];
+        }
+
+        return response()->json($response);
+    } catch (\Exception $e) {
+        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+    }
+})->name('api.dashboard.rankings');
+
 Route::get('/api/dashboard/store-ranking', function () {
     try {
         $rankings = \App\Models\Sale::with(['store', 'store.branch'])

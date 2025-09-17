@@ -1144,33 +1144,42 @@
         async function loadRankings() {
             try {
                 const response = await fetch('/api/dashboard/rankings');
+
+                // 404 또는 다른 오류 시 무시
+                if (!response.ok) {
+                    console.warn('Rankings API not available or returned error');
+                    return;
+                }
+
                 const result = await response.json();
-                
+
                 if (result.success) {
-                    const { branch, store } = result.data;
-                    
+                    // result.data가 아닌 result 직접 접근
+                    const { branch, store } = result;
+
                     // 지사 순위 업데이트
-                    if (branch.rank && window.userData.role !== 'headquarters') {
+                    if (branch && branch.rank && window.userData.role !== 'headquarters') {
                         const branchRankingEl = document.getElementById('branch-ranking-position');
                         if (branchRankingEl) {
                             branchRankingEl.textContent = `${branch.rank}위 / ${branch.total}개`;
                         }
                     }
-                    
-                    // 매장 순위 업데이트  
-                    if (store.rank) {
-                        const storeRankingEl = document.getElementById('store-ranking-position') || 
+
+                    // 매장 순위 업데이트
+                    if (store && store.rank) {
+                        const storeRankingEl = document.getElementById('store-ranking-position') ||
                                              document.getElementById('my-store-ranking-position');
                         if (storeRankingEl) {
                             const scope = store.scope === 'nationwide' ? '전국' : '지사 내';
                             storeRankingEl.textContent = `${store.rank}위 / ${store.total}개 (${scope})`;
                         }
                     }
-                    
-                    console.log('순위 데이터 로드 완료:', { branch: branch.rank, store: store.rank });
+
+                    console.log('순위 데이터 로드 완료:', { branch: branch, store: store });
                 }
             } catch (error) {
-                console.error('순위 데이터 로드 실패:', error);
+                console.warn('순위 데이터 로드 건너뜀:', error);
+                // 에러 시에도 계속 진행
             }
         }
 
