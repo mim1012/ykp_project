@@ -937,32 +937,54 @@
                     
                     // 지사 계정일 때 매장 수와 매출 업데이트
                     if (window.userData.role === 'branch') {
-                        const accessibleStores = overviewData.debug?.accessible_stores || 0;
+                        // API에서 제공하는 실제 데이터 사용
+                        const branchStoreCount = data.branch?.store_count || overviewData.debug?.accessible_stores || 0;
                         const monthSales = data.month?.sales || 0;
-                        // 지사 목표를 Goals API에서 가져오기
-                        let monthTarget = data.month?.target;
-                        if (!monthTarget) {
-                            monthTarget = await getBranchGoalFromAPI(userData.branch_id);
-                        }
-                        const achievementRate = monthSales > 0 ? Math.round((monthSales / monthTarget) * 100) : 0;
-                        
+                        const todaySales = data.today?.sales || 0;
+                        const todayActivations = data.today?.activations || 0;
+
+                        // 지사 목표 및 달성률 (API에서 직접 제공)
+                        const monthTarget = data.goals?.monthly_target || 50000000;
+                        const achievementRate = data.goals?.achievement_rate || 0;
+
                         // 지사 KPI 업데이트
                         const branchStoresCount = document.getElementById('branch-stores-count');
                         if (branchStoresCount) {
-                            branchStoresCount.textContent = `${accessibleStores}개 매장`;
+                            branchStoresCount.textContent = `${branchStoreCount}개 매장`;
+                            branchStoresCount.className = 'kpi-value text-blue-600';
                         }
-                        
+
                         const branchTotalSales = document.getElementById('branch-total-sales');
                         if (branchTotalSales) {
                             branchTotalSales.textContent = `₩${monthSales.toLocaleString()}`;
+                            branchTotalSales.className = 'kpi-value text-green-600';
                         }
-                        
+
+                        // 오늘 매출/개통도 업데이트
+                        const todaySalesEl = document.getElementById('today-sales');
+                        if (todaySalesEl) {
+                            todaySalesEl.textContent = `₩${todaySales.toLocaleString()}`;
+                        }
+
+                        const todayActivationsEl = document.getElementById('today-activations');
+                        if (todayActivationsEl) {
+                            todayActivationsEl.textContent = `${todayActivations}건`;
+                        }
+
                         const branchGoalAchievement = document.getElementById('branch-goal-achievement');
                         if (branchGoalAchievement) {
                             branchGoalAchievement.textContent = `${achievementRate}% 달성`;
+                            // 달성률에 따른 색상 변경
+                            if (achievementRate >= 100) {
+                                branchGoalAchievement.className = 'kpi-value text-green-600';
+                            } else if (achievementRate >= 80) {
+                                branchGoalAchievement.className = 'kpi-value text-blue-600';
+                            } else {
+                                branchGoalAchievement.className = 'kpi-value text-orange-600';
+                            }
                         }
-                        
-                        console.log(`지사 데이터 업데이트: ${accessibleStores}개 매장, ₩${monthSales.toLocaleString()}, ${achievementRate}%`);
+
+                        console.log(`✅ 지사 실시간 데이터 업데이트: ${branchStoreCount}개 매장, ₩${monthSales.toLocaleString()}, ${achievementRate}% 달성`);
                     }
                     
                     // 순위 데이터 로드

@@ -501,6 +501,20 @@ Route::get('/api/dashboard/overview', function () {
 
         $achievementRate = $monthlySales > 0 ? round(($monthlySales / $systemTarget) * 100, 1) : 0;
 
+        // 권한별 추가 정보
+        $branchStoreCount = 0;
+        $userRole = 'guest';
+        if ($user) {
+            $userRole = $user->role;
+            if ($user->role === 'branch' && $user->branch_id) {
+                $branchStoreCount = \App\Models\Store::where('branch_id', $user->branch_id)
+                    ->where('status', 'active')
+                    ->count();
+            } elseif ($user->role === 'headquarters') {
+                $branchStoreCount = $storeCount; // 본사는 전체 매장 수
+            }
+        }
+
         return response()->json([
             'success' => true,
             'data' => [
@@ -520,11 +534,14 @@ Route::get('/api/dashboard/overview', function () {
                 'goals' => [
                     'monthly_target' => $systemTarget,
                     'achievement_rate' => $achievementRate
+                ],
+                'branch' => [
+                    'store_count' => $branchStoreCount  // 지사 소속 매장 수
                 ]
             ],
             'timestamp' => now(),
-            'user_role' => 'headquarters',
-            'debug' => ['user_id' => 1, 'accessible_stores' => $storeCount]
+            'user_role' => $userRole,
+            'debug' => ['user_id' => $user ? $user->id : null, 'accessible_stores' => $branchStoreCount]
         ]);
     } catch (\Exception $e) {
         // DB 오류시 안전한 기본값 반환

@@ -65,6 +65,14 @@ class AuthController extends Controller
                 'user_agent' => $request->userAgent(),
             ]);
 
+            // 명시적으로 대시보드로 리다이렉션 (intended 경로가 이상한 경우 대비)
+            $intendedUrl = redirect()->intended('/dashboard')->getTargetUrl();
+
+            // /api/activities/recent 같은 API 경로면 무시하고 대시보드로
+            if (strpos($intendedUrl, '/api/') !== false) {
+                return redirect('/dashboard');
+            }
+
             return redirect()->intended('/dashboard');
         }
 
