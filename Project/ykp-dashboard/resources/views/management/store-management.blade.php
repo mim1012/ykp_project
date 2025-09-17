@@ -130,6 +130,113 @@
             }
         };
 
+        // 클립보드 복사 함수
+        window.copyToClipboard = function(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('📋 클립보드에 복사되었습니다', 'success');
+            }).catch(() => {
+                const input = document.createElement('textarea');
+                input.value = text;
+                document.body.appendChild(input);
+                input.select();
+                document.execCommand('copy');
+                document.body.removeChild(input);
+                showToast('📋 클립보드에 복사되었습니다', 'success');
+            });
+        };
+
+        // 계정 정보 출력 함수
+        window.printAccountInfo = function(email, password, storeName) {
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html>
+                <head>
+                    <title>${storeName} 계정 정보</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 40px; }
+                        h1 { color: #333; }
+                        .info { margin: 20px 0; padding: 20px; border: 1px solid #ddd; }
+                        .label { font-weight: bold; color: #666; }
+                    </style>
+                </head>
+                <body>
+                    <h1>${storeName} 매장 계정 정보</h1>
+                    <div class="info">
+                        <p><span class="label">로그인 아이디:</span> ${email}</p>
+                        <p><span class="label">임시 비밀번호:</span> ${password}</p>
+                    </div>
+                    <p>※ 첫 로그인 후 비밀번호를 변경해주세요.</p>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+            printWindow.print();
+        };
+
+        // 매장 계정 정보 모달 표시 함수 (submitAddStore보다 먼저 정의)
+        window.showStoreAccountModal = function(account, store) {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                    <div class="text-center mb-6">
+                        <div class="text-2xl mb-2">🎉</div>
+                        <h3 class="text-lg font-bold text-gray-900">매장 계정 생성 완료</h3>
+                        <p class="text-sm text-gray-600 mt-2">${store.name} 매장의 로그인 계정이 생성되었습니다.</p>
+                    </div>
+
+                    <div class="bg-gray-50 rounded-lg p-4 mb-6">
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 uppercase">로그인 아이디</label>
+                                <div class="mt-1 flex items-center">
+                                    <span class="font-mono text-sm bg-white px-3 py-2 rounded border flex-1">${account.email}</span>
+                                    <button onclick="copyToClipboard('${account.email}')" class="ml-2 px-2 py-2 text-gray-500 hover:text-blue-500">
+                                        📋
+                                    </button>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-medium text-gray-500 uppercase">임시 비밀번호</label>
+                                <div class="mt-1 flex items-center">
+                                    <span class="font-mono text-sm bg-white px-3 py-2 rounded border flex-1">${account.password}</span>
+                                    <button onclick="copyToClipboard('${account.password}')" class="ml-2 px-2 py-2 text-gray-500 hover:text-blue-500">
+                                        📋
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6">
+                        <div class="flex">
+                            <div class="text-blue-400 mr-2">ℹ️</div>
+                            <div class="text-xs text-blue-700">
+                                <p class="font-medium mb-1">중요 안내사항</p>
+                                <ul class="space-y-1">
+                                    <li>• 매장 담당자에게 위 정보를 안전하게 전달해주세요</li>
+                                    <li>• 첫 로그인 후 비밀번호 변경을 권장합니다</li>
+                                    <li>• 계정 정보는 보안상 다시 확인할 수 없습니다</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex space-x-3">
+                        <button onclick="printAccountInfo('${account.email}', '${account.password}', '${store.name}')"
+                                class="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors">
+                            🖨️ 인쇄하기
+                        </button>
+                        <button onclick="this.parentElement.parentElement.parentElement.remove()"
+                                class="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">
+                            ✅ 확인
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        };
+
         window.submitAddStore = function() {
             console.log('✅ 매장 추가 제출 시작');
 
@@ -196,13 +303,14 @@
                     // 🎉 계정 정보 모달 표시 (본사/지사 모두)
                     if (result.account && result.account.user_id) {
                         console.log('✅ account 정상 생성됨, 모달 호출 시작');
-                        showStoreAccountModal(result.account, result.data);
+                        // 함수는 이미 정의되어 있으므로 직접 호출
+                        window.showStoreAccountModal(result.account, result.data);
                     } else if (result.account && result.account.error) {
                         console.log('⚠️ 매장은 생성됨, 계정 생성 실패:', result.account.error);
                         alert(`매장이 생성되었습니다!\n\n⚠️ ${result.account.error}\n\n수동 계정 정보:\n이메일: ${result.account.email}\n비밀번호: ${result.account.password}`);
                     } else if (result.account) {
                         console.log('✅ account 존재 (user_id 없음), 모달 호출');
-                        showStoreAccountModal(result.account, result.data);
+                        window.showStoreAccountModal(result.account, result.data);
                     } else {
                         console.log('❌ account 정보 없음, alert 표시');
                         alert('매장이 성공적으로 생성되었습니다!');
@@ -3456,7 +3564,8 @@
             }
         }
 
-        // 매장 계정 정보 모달 표시
+        // 중복 함수 제거 - 이미 상단에 정의됨
+        /*
         window.showStoreAccountModal = function(account, store) {
             const modal = document.createElement('div');
             modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
@@ -3527,6 +3636,7 @@
                 }
             });
         }
+        */
 
         // 계정 모달 닫기
         function closeAccountModal() {
