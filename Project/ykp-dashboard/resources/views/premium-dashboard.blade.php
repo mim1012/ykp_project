@@ -370,8 +370,6 @@
                 @elseif(auth()->user()->role === 'store')
                     <!-- 매장 전용 액션 -->
                     <button class="btn btn-success" onclick="openSimpleInput()">개통표 입력</button>
-                    <button class="btn btn-outline" onclick="downloadStoreReport()">매장 통계</button>
-                    <button class="btn btn-outline" onclick="openSettlement()">💰 정산 확인</button>
                     <button class="btn btn-outline" onclick="location.reload()">🔄 새로고침</button>
                 @else
                     <!-- 기본 액션 -->
