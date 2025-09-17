@@ -368,9 +368,7 @@
                     <button class="btn btn-outline" onclick="openStoreManagement()">👥 매장 관리</button>
                     <button class="btn btn-outline" onclick="location.reload()">🔄 새로고침</button>
                 @elseif(auth()->user()->role === 'store')
-                    <!-- 매장 전용 액션 -->
-                    <button class="btn btn-success" onclick="openSimpleInput()">개통표 입력</button>
-                    <button class="btn btn-outline" onclick="location.reload()">🔄 새로고침</button>
+                    <!-- 매장 전용 액션 (간소화) -->
                 @else
                     <!-- 기본 액션 -->
                     <button class="btn btn-outline" onclick="location.reload()">새로고침</button>

@@ -2364,8 +2364,35 @@ Route::middleware(['web', 'api.auth'])->group(function () {
     // KPI 데이터 - Redis 캐싱 적용된 최적화 버전
     Route::get('/api/statistics/kpi', function (Illuminate\Http\Request $request) {
         try {
+            $user = auth()->user();
             $days = intval($request->get('days', 30));
             $storeId = $request->get('store') ? intval($request->get('store')) : null;
+
+            // 권한별 데이터 필터링
+            if ($user && $user->role === 'branch') {
+                // 지사 계정: 소속 매장들만 조회 가능
+                $branchStoreIds = \App\Models\Store::where('branch_id', $user->branch_id)->pluck('id')->toArray();
+                if ($storeId && !in_array($storeId, $branchStoreIds)) {
+                    return response()->json([
+                        'success' => false,
+                        'error' => '해당 매장에 대한 접근 권한이 없습니다.',
+                        'accessible_stores' => $branchStoreIds
+                    ], 403);
+                }
+                // 매장 ID가 지정되지 않은 경우 지사 전체 매장 대상
+                if (!$storeId) {
+                    $storeId = $branchStoreIds; // 배열로 전달하여 whereIn 사용
+                }
+            } elseif ($user && $user->role === 'store') {
+                // 매장 계정: 자신의 매장만 조회 가능
+                if ($storeId && $storeId !== $user->store_id) {
+                    return response()->json([
+                        'success' => false,
+                        'error' => '해당 매장에 대한 접근 권한이 없습니다.'
+                    ], 403);
+                }
+                $storeId = $user->store_id;
+            }
             
             // 입력값 검증
             if ($days <= 0 || $days > 365) {
@@ -2418,9 +2445,13 @@ Route::middleware(['web', 'api.auth'])->group(function () {
                 
                 // PostgreSQL 완전 호환 집계 쿼리
                 $query = \App\Models\Sale::whereBetween('sale_date', [$startDate, $endDate]);
-                
+
                 if ($storeId) {
-                    $query->where('store_id', $storeId);
+                    if (is_array($storeId)) {
+                        $query->whereIn('store_id', $storeId);
+                    } else {
+                        $query->where('store_id', $storeId);
+                    }
                 }
                 
                 // PostgreSQL 100% 호환 집계 (DB 함수 최소화)
@@ -2430,15 +2461,19 @@ Route::middleware(['web', 'api.auth'])->group(function () {
                 $avgDaily = $days > 0 ? round($totalActivations / $days, 1) : 0;
                 $profitMargin = $totalRevenue > 0 ? round(($netProfit / $totalRevenue) * 100, 1) : 0;
             
-                // 활성 매장 수 (매장 필터가 있으면 1, 없으면 전체 활성 매장)
-                $activeStores = $storeId ? 1 : \App\Models\Store::where('status', 'active')->count();
+                // 활성 매장 수 (권한별 처리)
+                $activeStores = $storeId ? (is_array($storeId) ? count($storeId) : 1) : \App\Models\Store::where('status', 'active')->count();
                 
                 // 성장률 계산 (이전 동일 기간 대비) - 안전한 계산식
                 $prevStartDate = now()->subDays($days * 2)->startOfDay();
                 $prevEndDate = now()->subDays($days)->endOfDay();
                 $prevQuery = \App\Models\Sale::whereBetween('sale_date', [$prevStartDate, $prevEndDate]);
                 if ($storeId) {
-                    $prevQuery->where('store_id', $storeId);
+                    if (is_array($storeId)) {
+                        $prevQuery->whereIn('store_id', $storeId);
+                    } else {
+                        $prevQuery->where('store_id', $storeId);
+                    }
                 }
                 $prevRevenue = $prevQuery->sum('settlement_amount') ?? 0;
                 $revenueGrowth = $prevRevenue > 0 
@@ -2596,8 +2631,21 @@ Route::middleware(['web', 'api.auth'])->group(function () {
     // 지사별 성과 - N+1 쿼리 제거된 최적화 버전
     Route::get('/api/statistics/branch-performance', function (Illuminate\Http\Request $request) {
         try {
+            $user = auth()->user();
             $days = intval($request->get('days', 30));
             $storeId = $request->get('store') ? intval($request->get('store')) : null;
+
+            // 권한별 접근 제한
+            if ($user && $user->role === 'branch') {
+                // 지사 계정은 자신의 지사 데이터만 조회 가능
+                $allowedBranchId = $user->branch_id;
+            } elseif ($user && $user->role === 'store') {
+                // 매장 계정은 지사별 성과 조회 불가
+                return response()->json([
+                    'success' => false,
+                    'error' => '매장 계정은 지사별 성과를 조회할 수 없습니다.'
+                ], 403);
+            }
             
             if ($days <= 0 || $days > 365) {
                 return response()->json(['success' => false, 'error' => '조회 기간은 1-365일 사이여야 합니다.'], 400);
@@ -2616,7 +2664,12 @@ Route::middleware(['web', 'api.auth'])->group(function () {
                     COALESCE(AVG(settlement_amount), 0) as avg_price
                 ')
                 ->groupBy('branch_id');
-            
+
+            // 권한별 지사 필터링
+            if (isset($allowedBranchId)) {
+                $currentQuery->where('branch_id', $allowedBranchId);
+            }
+
             // 매장 필터 적용
             if ($storeId) {
                 $currentQuery->where('store_id', $storeId);
@@ -2629,13 +2682,18 @@ Route::middleware(['web', 'api.auth'])->group(function () {
             $prevEndDate = now()->subDays($days)->endOfDay();
             
             $prevQuery = \App\Models\Sale::whereBetween('sale_date', [
-                    $prevStartDate->format('Y-m-d H:i:s'), 
+                    $prevStartDate->format('Y-m-d H:i:s'),
                     $prevEndDate->format('Y-m-d H:i:s')
                 ])
                 ->select('branch_id')
                 ->selectRaw('COALESCE(SUM(settlement_amount), 0) as prev_revenue')
                 ->groupBy('branch_id');
-                
+
+            // 권한별 지사 필터링
+            if (isset($allowedBranchId)) {
+                $prevQuery->where('branch_id', $allowedBranchId);
+            }
+
             if ($storeId) {
                 $prevQuery->where('store_id', $storeId);
             }
