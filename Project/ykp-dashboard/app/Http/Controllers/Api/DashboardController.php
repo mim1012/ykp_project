@@ -74,7 +74,7 @@ class DashboardController extends Controller
             $todaySales = (clone $saleQuery)->whereDate('sale_date', $today)->count();
 
             // 디버깅: 실제 매출 데이터 확인
-            Log::info('Dashboard Sales Query Debug', [
+            $debugInfo = [
                 'user_role' => $user->role,
                 'user_branch_id' => $user->branch_id,
                 'user_store_id' => $user->store_id,
@@ -82,7 +82,31 @@ class DashboardController extends Controller
                 'total_sales_count' => (clone $saleQuery)->count(),
                 'this_month_sales_count' => (clone $saleQuery)->whereBetween('sale_date', [$startOfMonth, $endOfMonth])->count(),
                 'this_month_sales_amount' => $thisMonthSales,
-            ]);
+            ];
+
+            // 지사 계정인 경우 실제 sales 테이블의 branch_id 확인
+            if ($user->isBranch()) {
+                $salesBranchIds = Sale::distinct('branch_id')->pluck('branch_id')->toArray();
+                $debugInfo['sales_table_branch_ids'] = $salesBranchIds;
+                $debugInfo['user_branch_matches_sales'] = in_array($user->branch_id, $salesBranchIds);
+
+                // 해당 지사의 매장들 확인
+                $branchStoreIds = Store::where('branch_id', $user->branch_id)->pluck('id')->toArray();
+                $debugInfo['branch_store_ids'] = $branchStoreIds;
+
+                // Sales 테이블에서 해당 매장들의 데이터 직접 확인
+                $directSalesCount = Sale::whereIn('store_id', $branchStoreIds)
+                    ->whereBetween('sale_date', [$startOfMonth, $endOfMonth])
+                    ->count();
+                $directSalesSum = Sale::whereIn('store_id', $branchStoreIds)
+                    ->whereBetween('sale_date', [$startOfMonth, $endOfMonth])
+                    ->sum('settlement_amount');
+
+                $debugInfo['direct_sales_count_by_store'] = $directSalesCount;
+                $debugInfo['direct_sales_sum_by_store'] = $directSalesSum;
+            }
+
+            Log::info('Dashboard Sales Query Debug', $debugInfo);
             
             // 🔄 목표 달성률 계산 - DB 독립적인 방법
             $goal = \App\Models\Goal::where('target_type', 'system')
@@ -104,7 +128,7 @@ class DashboardController extends Controller
                 'achievement_rate' => $achievementRate
             ]);
             
-            return response()->json([
+            $responseData = [
                 'success' => true,
                 'data' => [
                     'stores' => [
@@ -130,10 +154,19 @@ class DashboardController extends Controller
                     'currency' => 'KRW',
                     'meta' => [
                         'generated_at' => now()->toISOString(),
-                        'period' => $thisMonth
+                        'period' => now()->format('Y-m'),
+                        'user_branch_id' => $user->branch_id,
+                        'user_store_id' => $user->store_id
                     ]
                 ]
-            ]);
+            ];
+
+            // 개발 환경에서만 디버그 정보 추가
+            if (config('app.debug')) {
+                $responseData['debug'] = $debugInfo;
+            }
+
+            return response()->json($responseData);
             
         } catch (\Exception $e) {
             Log::error('Dashboard overview API error', [
