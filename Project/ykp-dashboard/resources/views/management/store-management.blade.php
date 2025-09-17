@@ -160,7 +160,7 @@
             }
             
             // API 호출 (세션 인증 포함)
-            fetch('/api/stores/add', {
+            fetch('/api/stores', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1613,7 +1613,7 @@
                 return;
             }
 
-            fetch('/api/stores/add', {
+            fetch('/api/stores', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1697,7 +1697,7 @@
                 // 코드, 주소는 자동 처리
             };
             
-            fetch('/api/stores/add', {
+            fetch('/api/stores', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

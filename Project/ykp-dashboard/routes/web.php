@@ -912,39 +912,7 @@ Route::middleware(['web', 'auth'])->get('/api/stores', function (Illuminate\Http
     return response()->json(['success' => true, 'data' => $stores]);
 });
 
-Route::middleware(['web', 'auth'])->post('/api/stores/add', function (Illuminate\Http\Request $request) {
-    // 권한 검증: 본사와 지사만 매장 추가 가능
-    $currentUser = auth()->user();
-    if (!in_array($currentUser->role, ['headquarters', 'branch'])) {
-        return response()->json(['success' => false, 'error' => '매장 추가 권한이 없습니다.'], 403);
-    }
-    
-    // 지사 계정은 자기 지사에만 매장 추가 가능
-    if ($currentUser->role === 'branch' && $request->branch_id != $currentUser->branch_id) {
-        return response()->json(['success' => false, 'error' => '다른 지사에 매장을 추가할 권한이 없습니다.'], 403);
-    }
-    
-    try {
-        $branch = App\Models\Branch::find($request->branch_id);
-        $storeCount = App\Models\Store::where('branch_id', $request->branch_id)->count();
-        $autoCode = $branch->code . '-' . str_pad($storeCount + 1, 3, '0', STR_PAD_LEFT);
-        
-        $store = App\Models\Store::create([
-            'name' => $request->name,
-            'code' => $autoCode,
-            'branch_id' => $request->branch_id,
-            'owner_name' => $request->owner_name ?? '',
-            'phone' => $request->phone ?? '',
-            'address' => '',
-            'status' => 'active',
-            'opened_at' => now()
-        ]);
-        
-        return response()->json(['success' => true, 'data' => $store]);
-    } catch (Exception $e) {
-        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
-    }
-});
+// /api/stores/add 제거 - RESTful API 사용 (/api/stores POST)
 
 Route::middleware(['web'])->post('/api/sales/save', function (Illuminate\Http\Request $request) {
     try {
