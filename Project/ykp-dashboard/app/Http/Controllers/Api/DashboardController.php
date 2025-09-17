@@ -72,13 +72,31 @@ class DashboardController extends Controller
 
             // 오늘 개통 건수
             $todaySales = $saleQuery->clone()->whereDate('sale_date', today())->count();
+
+            // 디버깅: 실제 매출 데이터 확인
+            Log::info('Dashboard Sales Query Debug', [
+                'user_role' => $user->role,
+                'user_branch_id' => $user->branch_id,
+                'user_store_id' => $user->store_id,
+                'this_month' => $thisMonth,
+                'total_sales_count' => $saleQuery->clone()->count(),
+                'this_month_sales_count' => $saleQuery->clone()->whereRaw("{$dateFunction} = ?", [$thisMonth])->count(),
+                'this_month_sales_amount' => $thisMonthSales,
+            ]);
             
             // 🔄 목표 달성률 계산 (실제 목표 API 기반, 하드코딩 제거)
-            $goal = \App\Models\Goal::where('target_type', 'system')
+            $goalQuery = \App\Models\Goal::where('target_type', 'system')
                 ->where('period_type', 'monthly')
-                ->where('is_active', true)
-                ->whereRaw("DATE_FORMAT(period_start, '%Y-%m') = ?", [now()->format('Y-m')])
-                ->first();
+                ->where('is_active', true);
+
+            // PostgreSQL/SQLite 호환
+            if (config('database.default') === 'pgsql') {
+                $goalQuery->whereRaw("TO_CHAR(period_start, 'YYYY-MM') = ?", [now()->format('Y-m')]);
+            } else {
+                $goalQuery->whereRaw("strftime('%Y-%m', period_start) = ?", [now()->format('Y-m')]);
+            }
+
+            $goal = $goalQuery->first();
 
             $monthlyTarget = $goal ? $goal->sales_target : config('sales.default_targets.system.monthly_sales');
             $achievementRate = $thisMonthSales > 0 ? round(($thisMonthSales / $monthlyTarget) * 100, 1) : 0;
@@ -255,9 +273,14 @@ class DashboardController extends Controller
     {
         try {
             $yearMonth = $request->get('year_month', now()->format('Y-m'));
-            
+
+            // PostgreSQL/SQLite 호환
+            $dateFunction = config('database.default') === 'pgsql'
+                ? "TO_CHAR(sale_date, 'YYYY-MM')"
+                : "strftime('%Y-%m', sale_date)";
+
             $performances = Sale::with(['store', 'store.branch'])
-                              ->whereRaw("DATE_FORMAT(sale_date, '%Y-%m') = ?", [$yearMonth])
+                              ->whereRaw("{$dateFunction} = ?", [$yearMonth])
                               ->select('agency')
                               ->selectRaw('COUNT(*) as count')
                               ->selectRaw('SUM(settlement_amount) as total_amount')
@@ -542,12 +565,19 @@ class DashboardController extends Controller
     {
         try {
             // 매장별 목표 조회
-            $goal = \App\Models\Goal::where('target_type', 'store')
+            $goalQuery = \App\Models\Goal::where('target_type', 'store')
                 ->where('target_id', $storeId)
                 ->where('period_type', 'monthly')
-                ->where('is_active', true)
-                ->whereRaw("DATE_FORMAT(period_start, '%Y-%m') = ?", [now()->format('Y-m')])
-                ->first();
+                ->where('is_active', true);
+
+            // PostgreSQL/SQLite 호환
+            if (config('database.default') === 'pgsql') {
+                $goalQuery->whereRaw("TO_CHAR(period_start, 'YYYY-MM') = ?", [now()->format('Y-m')]);
+            } else {
+                $goalQuery->whereRaw("strftime('%Y-%m', period_start) = ?", [now()->format('Y-m')]);
+            }
+
+            $goal = $goalQuery->first();
 
             $storeTarget = $goal ? $goal->sales_target : config('sales.default_targets.store.monthly_sales');
 

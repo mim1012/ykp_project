@@ -923,10 +923,13 @@
                 // 대시보드 개요 데이터 로드
                 const overviewResponse = await fetch(apiUrl);
                 const overviewData = await overviewResponse.json();
-                
+
+                console.log('📊 Dashboard API Response:', overviewData);
+
                 if (overviewData.success) {
                     const data = overviewData.data;
-                    
+                    console.log('📊 Dashboard Data:', data);
+
                     // 지사 계정일 때 매장 수와 매출 업데이트
                     if (window.userData.role === 'branch') {
                         // API에서 제공하는 실제 데이터 사용 (수정된 API 구조에 맞춤)
@@ -937,6 +940,14 @@
                         // 지사 목표 및 달성률 (API에서 직접 제공)
                         const monthTarget = data.monthly_target || 50000000;
                         const achievementRate = data.achievement_rate || 0;
+
+                        console.log('📊 Branch Data:', {
+                            branchStoreCount,
+                            monthSales,
+                            todayActivations,
+                            monthTarget,
+                            achievementRate
+                        });
 
                         // 지사 KPI 업데이트
                         const branchStoresCount = document.getElementById('branch-stores-count');
