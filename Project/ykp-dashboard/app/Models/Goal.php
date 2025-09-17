@@ -60,6 +60,10 @@ class Goal extends Model
 
     public function scopeActive($query)
     {
+        // PostgreSQL boolean 타입 호환성을 위해 직접 쿼리
+        if (config('database.default') === 'pgsql') {
+            return $query->whereRaw('is_active = true');
+        }
         return $query->where('is_active', true);
     }
 

@@ -491,8 +491,8 @@ Route::prefix('dashboard-old')->group(function () {
             // 🔄 실제 목표 API에서 가져오기 (하드코딩 제거)
             $goal = App\Models\Goal::where('target_type', 'system')
                 ->where('period_type', 'monthly')
-                ->where('is_active', true)
-                ->whereRaw("DATE_FORMAT(period_start, '%Y-%m') = ?", [now()->format('Y-m')])
+                ->where('is_active', '=', config('database.default') === 'pgsql' ? \DB::raw('true') : true)
+                ->whereBetween('period_start', [now()->startOfMonth()->format('Y-m-d'), now()->endOfMonth()->format('Y-m-d')])
                 ->first();
 
             $monthlyTarget = $goal ? $goal->sales_target : config('sales.default_targets.system.monthly_sales');

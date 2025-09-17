@@ -111,7 +111,7 @@ class DashboardController extends Controller
             // 🔄 목표 달성률 계산 - DB 독립적인 방법
             $goal = \App\Models\Goal::where('target_type', 'system')
                 ->where('period_type', 'monthly')
-                ->where('is_active', true)
+                ->where('is_active', '=', config('database.default') === 'pgsql' ? \DB::raw('true') : true)
                 ->whereBetween('period_start', [$startOfMonth, $endOfMonth])
                 ->first();
 
@@ -600,7 +600,7 @@ class DashboardController extends Controller
             $goal = \App\Models\Goal::where('target_type', 'store')
                 ->where('target_id', $storeId)
                 ->where('period_type', 'monthly')
-                ->where('is_active', true)
+                ->where('is_active', '=', config('database.default') === 'pgsql' ? \DB::raw('true') : true)
                 ->whereBetween('period_start', [$startOfMonth, $endOfMonth])
                 ->first();
 

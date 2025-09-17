@@ -494,8 +494,8 @@ Route::get('/api/dashboard/overview', function () {
         // 시스템 목표 조회
         $goal = \App\Models\Goal::where('target_type', 'system')
             ->where('period_type', 'monthly')
-            ->where('is_active', true)
-            ->whereRaw("DATE_FORMAT(period_start, '%Y-%m') = ?", [now()->format('Y-m')])
+            ->where('is_active', '=', config('database.default') === 'pgsql' ? \DB::raw('true') : true)
+            ->whereBetween('period_start', [now()->startOfMonth()->format('Y-m-d'), now()->endOfMonth()->format('Y-m-d')])
             ->first();
         $systemTarget = $goal ? $goal->sales_target : 50000000;  // 목표는 추후 업데이트 예정
 
@@ -1303,8 +1303,8 @@ Route::get('/api/dashboard/overview', function () {
         // 시스템 목표 조회
         $goal = \App\Models\Goal::where('target_type', 'system')
             ->where('period_type', 'monthly')
-            ->where('is_active', true)
-            ->whereRaw("DATE_FORMAT(period_start, '%Y-%m') = ?", [now()->format('Y-m')])
+            ->where('is_active', '=', config('database.default') === 'pgsql' ? \DB::raw('true') : true)
+            ->whereBetween('period_start', [now()->startOfMonth()->format('Y-m-d'), now()->endOfMonth()->format('Y-m-d')])
             ->first();
         $systemTarget = $goal ? $goal->sales_target : 50000000;
 
@@ -1693,8 +1693,8 @@ Route::get('/api/stores/{id}/stats', function ($id) {
         $storeGoal = \App\Models\Goal::where('target_type', 'store')
             ->where('target_id', $id)
             ->where('period_type', 'monthly')
-            ->where('is_active', true)
-            ->whereRaw("DATE_FORMAT(period_start, '%Y-%m') = ?", [now()->format('Y-m')])
+            ->where('is_active', '=', config('database.default') === 'pgsql' ? \DB::raw('true') : true)
+            ->whereBetween('period_start', [now()->startOfMonth()->format('Y-m-d'), now()->endOfMonth()->format('Y-m-d')])
             ->first();
         $storeTarget = $storeGoal ? $storeGoal->sales_target : 5000000;
 
@@ -2961,8 +2961,8 @@ Route::middleware(['web', 'api.auth'])->group(function () {
                 $storeGoal = \App\Models\Goal::where('target_type', 'store')
                     ->where('target_id', $storeId)
                     ->where('period_type', 'monthly')
-                    ->where('is_active', true)
-                    ->whereRaw("DATE_FORMAT(period_start, '%Y-%m') = ?", [now()->format('Y-m')])
+                    ->where('is_active', '=', config('database.default') === 'pgsql' ? \DB::raw('true') : true)
+                    ->whereBetween('period_start', [now()->startOfMonth()->format('Y-m-d'), now()->endOfMonth()->format('Y-m-d')])
                     ->first();
                 $revenueTarget = $storeGoal ? $storeGoal->sales_target : 2000000;
                 $activationTarget = $storeGoal ? $storeGoal->activation_target : 10;
@@ -2971,8 +2971,8 @@ Route::middleware(['web', 'api.auth'])->group(function () {
                 // 전체 목표
                 $systemGoal = \App\Models\Goal::where('target_type', 'system')
                     ->where('period_type', 'monthly')
-                    ->where('is_active', true)
-                    ->whereRaw("DATE_FORMAT(period_start, '%Y-%m') = ?", [now()->format('Y-m')])
+                    ->where('is_active', '=', config('database.default') === 'pgsql' ? \DB::raw('true') : true)
+                    ->whereBetween('period_start', [now()->startOfMonth()->format('Y-m-d'), now()->endOfMonth()->format('Y-m-d')])
                     ->first();
                 $revenueTarget = $systemGoal ? $systemGoal->sales_target : 50000000;
                 $activationTarget = 200;       // 전체 월 200건 목표
@@ -3026,8 +3026,8 @@ Route::middleware(['web', 'auth'])->group(function () {
             $goal = App\Models\Goal::where('target_type', $type)
                 ->where('target_id', $id)
                 ->where('period_type', 'monthly')
-                ->whereRaw("DATE_FORMAT(period_start, '%Y-%m') = ?", [$currentMonth])
-                ->where('is_active', true)
+                ->whereBetween('period_start', [now()->startOfMonth()->format('Y-m-d'), now()->endOfMonth()->format('Y-m-d')])
+                ->where('is_active', '=', config('database.default') === 'pgsql' ? \DB::raw('true') : true)
                 ->first();
 
             if ($goal) {
