@@ -988,11 +988,50 @@
 
                         console.log(`✅ 지사 실시간 데이터 업데이트: ${branchStoreCount}개 매장, ₩${monthSales.toLocaleString()}, ${achievementRate}% 달성`);
                     }
-                    
+
+                    // 매장 계정일 때 오늘 개통과 매출 업데이트
+                    if (window.userData.role === 'store') {
+                        // API에서 제공하는 실제 데이터 사용
+                        const todayActivations = data.today_activations || 0;
+                        const monthSales = data.this_month_sales || 0;
+
+                        // 오늘 개통 카드 업데이트 (#storeToday)
+                        const storeTodayCard = document.getElementById('storeToday');
+                        if (storeTodayCard) {
+                            const todayValueEl = storeTodayCard.querySelector('.kpi-value');
+                            const todayTrendEl = storeTodayCard.querySelector('.kpi-trend');
+
+                            if (todayValueEl) {
+                                todayValueEl.textContent = `${todayActivations}건 개통`;
+                            }
+                            if (todayTrendEl) {
+                                todayTrendEl.textContent = `= ${todayActivations}건`;
+                                todayTrendEl.className = todayActivations > 0 ? 'kpi-trend trend-up' : 'kpi-trend trend-stable';
+                            }
+                        }
+
+                        // 매장 매출 카드 업데이트 (#storeSales)
+                        const storeSalesCard = document.getElementById('storeSales');
+                        if (storeSalesCard) {
+                            const salesValueEl = storeSalesCard.querySelector('.kpi-value');
+                            const salesTrendEl = storeSalesCard.querySelector('.kpi-trend');
+
+                            if (salesValueEl) {
+                                salesValueEl.textContent = `₩${Number(monthSales).toLocaleString()}`;
+                            }
+                            if (salesTrendEl) {
+                                salesTrendEl.textContent = monthSales > 0 ? `= ₩${Number(monthSales).toLocaleString()}` : '= 0원';
+                                salesTrendEl.className = monthSales > 0 ? 'kpi-trend trend-up' : 'kpi-trend trend-stable';
+                            }
+                        }
+
+                        console.log('✅ 매장 계정 데이터 업데이트 완료:', { todayActivations, monthSales });
+                    }
+
                     // 순위 데이터 로드
                     await loadRankings();
-                    
-                    // TOP N 리스트 로드  
+
+                    // TOP N 리스트 로드
                     await loadTopLists();
                     
                     // KPI 카드 업데이트 (API 응답 구조에 맞게 수정)
