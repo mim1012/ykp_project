@@ -915,17 +915,9 @@
         async function loadRealTimeData() {
             try {
                 console.log('🔄 실시간 데이터 로드 시작 - 사용자:', window.userData?.role);
-                // 사용자 권한별 API 엔드포인트 구성
-                let apiUrl = '/api/dashboard/overview';
-                if (window.userData.role !== 'headquarters') {
-                    // 지사/매장 사용자는 접근 가능한 매장 ID를 파라미터로 전달
-                    const storeIds = window.userData.store_id ? [window.userData.store_id] : 
-                                   window.userData.branch_id ? `branch_${window.userData.branch_id}` : '';
-                    if (storeIds) {
-                        apiUrl += `?store_ids=${storeIds}`;
-                    }
-                }
-                
+                // API는 이미 서버에서 권한별 필터링 처리
+                const apiUrl = '/api/dashboard/overview';
+
                 console.log('API 호출:', apiUrl, '권한:', window.userData.role);
                 
                 // 대시보드 개요 데이터 로드
@@ -1180,24 +1172,31 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    // result.data가 아닌 result 직접 접근
-                    const { branch, store } = result;
+                    // result.data로 올바르게 접근
+                    const { branch, store } = result.data;
 
-                    // 지사 순위 업데이트
-                    if (branch && branch.rank && window.userData.role !== 'headquarters') {
-                        const branchRankingEl = document.getElementById('branch-ranking-position');
-                        if (branchRankingEl) {
-                            branchRankingEl.textContent = `${branch.rank}위 / ${branch.total}개`;
+                    // 지사 순위 업데이트 (올바른 ID 사용)
+                    if (branch && window.userData.role !== 'headquarters') {
+                        const branchRankEl = document.getElementById('branch-rank-position');
+                        if (branchRankEl) {
+                            if (branch.rank) {
+                                branchRankEl.textContent = `${branch.rank} / ${branch.total}`;
+                            } else {
+                                branchRankEl.textContent = '- / -';
+                            }
                         }
                     }
 
                     // 매장 순위 업데이트
-                    if (store && store.rank) {
-                        const storeRankingEl = document.getElementById('store-ranking-position') ||
-                                             document.getElementById('my-store-ranking-position');
+                    if (store) {
+                        const storeRankingEl = document.getElementById('store-ranking-position');
                         if (storeRankingEl) {
-                            const scope = store.scope === 'nationwide' ? '전국' : '지사 내';
-                            storeRankingEl.textContent = `${store.rank}위 / ${store.total}개 (${scope})`;
+                            if (store.rank) {
+                                const scope = store.scope === 'nationwide' ? '전국' : '지사 내';
+                                storeRankingEl.textContent = `${store.rank} / ${store.total}`;
+                            } else {
+                                storeRankingEl.textContent = '- / -';
+                            }
                         }
                     }
 
