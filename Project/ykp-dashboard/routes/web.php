@@ -441,6 +441,28 @@ Route::get('/api/users/branches', function () {
 // 모든 API를 고정 데이터로 교체 (Railway 500 오류 해결)
 Route::get('/api/dashboard/overview', function () {
     try {
+        // 사용자 권한별 데이터 필터링
+        $user = auth()->user();
+        $query = \App\Models\Sale::query();
+
+        // 매장 권한별 필터링
+        if ($user) {
+            if ($user->role === 'store' && $user->store_id) {
+                // 매장 계정: 자기 매장 데이터만
+                $query->where('store_id', $user->store_id);
+            } elseif ($user->role === 'branch' && $user->branch_id) {
+                // 지사 계정: 소속 매장들 데이터
+                $storeIds = \App\Models\Store::where('branch_id', $user->branch_id)->pluck('id');
+                $query->whereIn('store_id', $storeIds);
+            }
+            // 본사는 전체 데이터 (필터링 없음)
+        }
+
+        // URL 파라미터로도 필터링 가능 (선택적)
+        if (request()->has('store')) {
+            $query->where('store_id', request('store'));
+        }
+
         // PostgreSQL 호환 쿼리로 데이터 조회
         $today = now();
         $startOfMonth = $today->copy()->startOfMonth();
@@ -448,22 +470,22 @@ Route::get('/api/dashboard/overview', function () {
         $startOfDay = $today->copy()->startOfDay();  // copy() 추가로 원본 보존
         $endOfDay = $today->copy()->endOfDay();
 
-        // 이번달 매출과 활성화 건수 (전체 기간이 아닌 현재 월만)
-        $monthlySales = \App\Models\Sale::whereBetween('sale_date', [$startOfMonth, $endOfMonth])
+        // 이번달 매출과 활성화 건수 (필터링된 데이터)
+        $monthlySales = (clone $query)->whereBetween('sale_date', [$startOfMonth, $endOfMonth])
                         ->sum('settlement_amount') ?: 0;
-        $monthlyActivations = \App\Models\Sale::whereBetween('sale_date', [$startOfMonth, $endOfMonth])
+        $monthlyActivations = (clone $query)->whereBetween('sale_date', [$startOfMonth, $endOfMonth])
                              ->count() ?: 0;
 
-        // 오늘 매출과 활성화 건수
-        $todaySales = \App\Models\Sale::whereBetween('sale_date', [$startOfDay, $endOfDay])
+        // 오늘 매출과 활성화 건수 (필터링된 데이터)
+        $todaySales = (clone $query)->whereBetween('sale_date', [$startOfDay, $endOfDay])
                       ->sum('settlement_amount') ?: 0;
-        $todayActivations = \App\Models\Sale::whereBetween('sale_date', [$startOfDay, $endOfDay])
+        $todayActivations = (clone $query)->whereBetween('sale_date', [$startOfDay, $endOfDay])
                            ->count() ?: 0;
 
-        // 평균 마진률 실제 계산
+        // 평균 마진률 실제 계산 (필터링된 데이터)
         $avgMarginRate = 0;
         if ($monthlySales > 0) {
-            $monthlyMargin = \App\Models\Sale::whereBetween('sale_date', [$startOfMonth, $endOfMonth])
+            $monthlyMargin = (clone $query)->whereBetween('sale_date', [$startOfMonth, $endOfMonth])
                             ->sum('total_margin') ?: 0;
             $avgMarginRate = round(($monthlyMargin / $monthlySales) * 100, 1);
         }
@@ -551,8 +573,8 @@ Route::get('/api/dashboard/rankings', function () {
 
         // 매장 순위 (모든 권한)
         if ($user && $user->store_id) {
-            $storeRankings = \App\Models\Sale::where('store_id', $user->store_id)
-                ->select('store_id')
+            // 전체 매장 순위 계산
+            $storeRankings = \App\Models\Sale::select('store_id')
                 ->selectRaw('SUM(settlement_amount) as total_sales')
                 ->groupBy('store_id')
                 ->orderBy('total_sales', 'desc')
