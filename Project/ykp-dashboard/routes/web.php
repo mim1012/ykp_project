@@ -1378,8 +1378,12 @@ Route::delete('/api/branches/{id}', function ($id) {
             ], 400);
         }
         
-        // 지사 관리자 계정 비활성화
-        App\Models\User::where('branch_id', $id)->update(['is_active' => false]);
+        // 지사 관리자 계정 비활성화 (PostgreSQL 호환)
+        if (config('database.default') === 'pgsql') {
+            App\Models\User::where('branch_id', $id)->update(['is_active' => \DB::raw('false')]);
+        } else {
+            App\Models\User::where('branch_id', $id)->update(['is_active' => false]);
+        }
         
         // 지사 삭제
         $branch->delete();
@@ -1828,8 +1832,12 @@ Route::post('/api/stores/{id}/deactivate', function($id) {
         // 매장 상태를 비활성으로 변경 (데이터는 보존)
         $store->update(['status' => 'inactive']);
 
-        // 관련 사용자 계정 비활성화 (삭제하지 않음)
-        App\Models\User::where('store_id', $id)->update(['is_active' => false]);
+        // 관련 사용자 계정 비활성화 (삭제하지 않음) - PostgreSQL 호환
+        if (config('database.default') === 'pgsql') {
+            App\Models\User::where('store_id', $id)->update(['is_active' => \DB::raw('false')]);
+        } else {
+            App\Models\User::where('store_id', $id)->update(['is_active' => false]);
+        }
 
         \Log::info("매장 폐점 처리: {$store->name}", [
             'preserved_sales' => $salesCount,
@@ -1855,7 +1863,12 @@ Route::post('/api/stores/{id}/deactivate', function($id) {
 Route::post('/api/stores/{id}/disable-accounts', function($id) {
     try {
         $store = App\Models\Store::findOrFail($id);
-        $affectedUsers = App\Models\User::where('store_id', $id)->update(['is_active' => false]);
+        // PostgreSQL 호환 boolean 업데이트
+        if (config('database.default') === 'pgsql') {
+            $affectedUsers = App\Models\User::where('store_id', $id)->update(['is_active' => \DB::raw('false')]);
+        } else {
+            $affectedUsers = App\Models\User::where('store_id', $id)->update(['is_active' => false]);
+        }
 
         return response()->json([
             'success' => true,

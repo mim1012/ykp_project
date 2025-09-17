@@ -267,8 +267,12 @@ class StoreController extends Controller
                     'deleted_at' => now()
                 ]);
                 
-                // 매장 사용자들도 비활성화
-                $store->users()->update(['is_active' => false]);
+                // 매장 사용자들도 비활성화 (PostgreSQL 호환)
+                if (config('database.default') === 'pgsql') {
+                    $store->users()->update(['is_active' => \DB::raw('false')]);
+                } else {
+                    $store->users()->update(['is_active' => false]);
+                }
                 
                 $message = '판매 데이터가 있어 매장이 비활성화되었습니다.';
             } else {

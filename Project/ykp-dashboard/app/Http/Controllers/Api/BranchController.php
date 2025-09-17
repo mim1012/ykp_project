@@ -150,8 +150,12 @@ class BranchController extends Controller
                 ], 400);
             }
 
-            // 지사 관리자 계정 비활성화
-            User::where('branch_id', $id)->update(['is_active' => false]);
+            // 지사 관리자 계정 비활성화 (PostgreSQL 호환)
+            if (config('database.default') === 'pgsql') {
+                User::where('branch_id', $id)->update(['is_active' => \DB::raw('false')]);
+            } else {
+                User::where('branch_id', $id)->update(['is_active' => false]);
+            }
             
             $branch->delete();
 
