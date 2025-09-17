@@ -1034,45 +1034,39 @@
                     // TOP N 리스트 로드
                     await loadTopLists();
                     
-                    // KPI 카드 업데이트 (API 응답 구조에 맞게 수정)
-                    const todaySalesElement = document.querySelector('#todaySales .kpi-value');
-                    if (todaySalesElement) {
-                        // today_activations는 개통 건수, 매출은 계산 필요
-                        const todayActivations = data.today_activations || 0;
-                        todaySalesElement.textContent = `${todayActivations}건`;
-                    } else {
-                        console.log('ℹ️ todaySales 요소 없음 - 지사/매장 대시보드에서는 표시하지 않음');
-                    }
+                    // 본사 계정 전용 KPI 카드 업데이트
+                    if (window.userData.role === 'headquarters') {
+                        const todaySalesElement = document.querySelector('#todaySales .kpi-value');
+                        if (todaySalesElement) {
+                            const todayActivations = data.today_activations || 0;
+                            todaySalesElement.textContent = `${todayActivations}건`;
+                        }
 
-                    const monthSalesElement = document.querySelector('#monthSales .kpi-value');
-                    if (monthSalesElement) {
-                        monthSalesElement.textContent = '₩' + Number(data.this_month_sales || 0).toLocaleString();
-                    } else {
-                        console.log('ℹ️ monthSales 요소 없음 - 지사/매장 대시보드에서는 표시하지 않음');
-                    }
+                        const monthSalesElement = document.querySelector('#monthSales .kpi-value');
+                        if (monthSalesElement) {
+                            monthSalesElement.textContent = '₩' + Number(data.this_month_sales || 0).toLocaleString();
+                        }
 
-                    const vatSalesElement = document.querySelector('#vatSales .kpi-value');
-                    if (vatSalesElement) {
-                        // VAT 포함 매출 계산 (임시)
-                        const vatIncludedSales = (data.this_month_sales || 0) * 1.1;
-                        vatSalesElement.textContent = '₩' + Number(vatIncludedSales).toLocaleString();
-                    } else {
-                        console.log('ℹ️ vatSales 요소 없음 - 지사/매장 대시보드에서는 표시하지 않음');
-                    }
+                        const vatSalesElement = document.querySelector('#vatSales .kpi-value');
+                        if (vatSalesElement) {
+                            const vatIncludedSales = (data.this_month_sales || 0) * 1.1;
+                            vatSalesElement.textContent = '₩' + Number(vatIncludedSales).toLocaleString();
+                        }
 
-                    const goalProgressElement = document.querySelector('#goalProgress .kpi-value');
-                    if (goalProgressElement) {
-                        goalProgressElement.textContent = Math.round(data.achievement_rate || 0) + ' / 100';
-                    } else {
-                        console.log('ℹ️ goalProgress 요소 없음 - 지사/매장 대시보드에서는 표시하지 않음');
-                    }
+                        const goalProgressElement = document.querySelector('#goalProgress .kpi-value');
+                        if (goalProgressElement) {
+                            goalProgressElement.textContent = Math.round(data.achievement_rate || 0) + ' / 100';
+                        }
 
-                    // 증감률 업데이트 (현재 API에서 제공하지 않으므로 임시 처리)
-                    const growthElement = document.querySelector('#monthSales .kpi-trend');
-                    if (growthElement) {
-                        const growthRate = 0; // API에서 제공 시 data.growth_rate 사용
-                        growthElement.textContent = (growthRate >= 0 ? '+' : '') + growthRate + '%';
-                        growthElement.className = growthRate >= 0 ? 'kpi-trend trend-up' : 'kpi-trend trend-down';
+                        // 증감률 업데이트 (현재 API에서 제공하지 않으므로 임시 처리)
+                        const growthElement = document.querySelector('#monthSales .kpi-trend');
+                        if (growthElement) {
+                            const growthRate = 0; // API에서 제공 시 data.growth_rate 사용
+                            growthElement.textContent = (growthRate >= 0 ? '+' : '') + growthRate + '%';
+                            growthElement.className = growthRate >= 0 ? 'kpi-trend trend-up' : 'kpi-trend trend-down';
+                        }
+
+                        console.log('✅ 본사 계정 KPI 카드 업데이트 완료');
                     }
                 }
                 
