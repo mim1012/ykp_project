@@ -46,13 +46,13 @@ class DashboardController extends Controller
             }
             // 본사: 전체 데이터 (필터링 없음)
 
-            // 전체/활성 구분된 통계
-            $totalStores = $storeQuery->count();
-            $activeStores = $storeQuery->where('status', 'active')->count();
-            $totalBranches = $branchQuery->count();
-            $activeBranches = $branchQuery->where('status', 'active')->count();
-            $totalUsers = $userQuery->count();
-            $activeUsers = $userQuery->where('status', 'active')->count();
+            // 전체/활성 구분된 통계 (clone 사용하여 쿼리 중첩 방지)
+            $totalStores = $storeQuery->clone()->count();
+            $activeStores = $storeQuery->clone()->where('status', 'active')->count();
+            $totalBranches = $branchQuery->clone()->count();
+            $activeBranches = $branchQuery->clone()->where('status', 'active')->count();
+            $totalUsers = $userQuery->clone()->count();
+            $activeUsers = $userQuery->clone()->where('status', 'active')->count();
 
             // 매출 데이터가 있는 매장 수 (실제 활동 매장) - PostgreSQL/SQLite 호환
             $thisMonth = now()->format('Y-m');
