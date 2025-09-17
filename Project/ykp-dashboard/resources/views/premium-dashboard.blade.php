@@ -932,14 +932,14 @@
 
                     // 지사 계정일 때 매장 수와 매출 업데이트
                     if (window.userData.role === 'branch') {
-                        // API에서 제공하는 실제 데이터 사용 (수정된 API 구조에 맞춤)
-                        const branchStoreCount = data.stores?.total || 0;
-                        const monthSales = data.this_month_sales || 0;
-                        const todayActivations = data.today_activations || 0;
+                        // API에서 제공하는 실제 데이터 사용 (올바른 구조)
+                        const branchStoreCount = data.branch?.store_count || 0;
+                        const monthSales = data.month?.sales || 0;
+                        const todayActivations = data.today?.activations || 0;
 
                         // 지사 목표 및 달성률 (API에서 직접 제공)
-                        const monthTarget = data.monthly_target || 50000000;
-                        const achievementRate = data.achievement_rate || 0;
+                        const monthTarget = data.goals?.monthly_target || 50000000;
+                        const achievementRate = data.goals?.achievement_rate || 0;
 
                         console.log('📊 Branch Data:', {
                             branchStoreCount,
@@ -965,7 +965,7 @@
                         // 오늘 매출/개통도 업데이트
                         const todaySalesEl = document.getElementById('today-sales');
                         if (todaySalesEl) {
-                            const todaySales = data.today_sales || 0; // API에서 제공하는 실제 오늘 매출
+                            const todaySales = data.today?.sales || 0; // API에서 제공하는 실제 오늘 매출
                             todaySalesEl.textContent = `₩${Number(todaySales).toLocaleString()}`;
                         }
 
@@ -992,9 +992,9 @@
 
                     // 매장 계정일 때 오늘 개통과 매출 업데이트
                     if (window.userData.role === 'store') {
-                        // API에서 제공하는 실제 데이터 사용
-                        const todayActivations = data.today_activations || 0;
-                        const monthSales = data.this_month_sales || 0;
+                        // API에서 제공하는 실제 데이터 사용 (올바른 구조)
+                        const todayActivations = data.today?.activations || 0;
+                        const monthSales = data.month?.sales || 0;
 
                         // 오늘 개통 카드 업데이트 (#storeToday)
                         const storeTodayCard = document.getElementById('storeToday');
@@ -1039,24 +1039,24 @@
                     if (window.userData.role === 'headquarters') {
                         const todaySalesElement = document.querySelector('#todaySales .kpi-value');
                         if (todaySalesElement) {
-                            const todayActivations = data.today_activations || 0;
+                            const todayActivations = data.today?.activations || 0;
                             todaySalesElement.textContent = `${todayActivations}건`;
                         }
 
                         const monthSalesElement = document.querySelector('#monthSales .kpi-value');
                         if (monthSalesElement) {
-                            monthSalesElement.textContent = '₩' + Number(data.this_month_sales || 0).toLocaleString();
+                            monthSalesElement.textContent = '₩' + Number(data.month?.sales || 0).toLocaleString();
                         }
 
                         const vatSalesElement = document.querySelector('#vatSales .kpi-value');
                         if (vatSalesElement) {
-                            const vatIncludedSales = (data.this_month_sales || 0) * 1.1;
+                            const vatIncludedSales = data.month?.vat_included_sales || 0;
                             vatSalesElement.textContent = '₩' + Number(vatIncludedSales).toLocaleString();
                         }
 
                         const goalProgressElement = document.querySelector('#goalProgress .kpi-value');
                         if (goalProgressElement) {
-                            goalProgressElement.textContent = Math.round(data.achievement_rate || 0) + ' / 100';
+                            goalProgressElement.textContent = Math.round(data.goals?.achievement_rate || 0) + ' / 100';
                         }
 
                         // 증감률 업데이트 (현재 API에서 제공하지 않으므로 임시 처리)
