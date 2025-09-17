@@ -115,14 +115,25 @@ class ReportController extends Controller
      */
     private function getTimeSeries($query, $from, $to, $group)
     {
-        $dateFormat = match ($group) {
-            'month' => '%Y-%m',
-            'week' => '%Y-W%V',
-            default => '%Y-%m-%d'
-        };
+        // DB 타입에 따른 날짜 포맷 함수 선택
+        if (config('database.default') === 'pgsql') {
+            $dateFormat = match ($group) {
+                'month' => 'YYYY-MM',
+                'week' => 'YYYY-"W"IW',
+                default => 'YYYY-MM-DD'
+            };
+            $dateFunction = "TO_CHAR(sale_date, '{$dateFormat}')";
+        } else {
+            $dateFormat = match ($group) {
+                'month' => '%Y-%m',
+                'week' => '%Y-W%V',
+                default => '%Y-%m-%d'
+            };
+            $dateFunction = "strftime('{$dateFormat}', sale_date)";
+        }
 
         $results = $query->select(
-            DB::raw("DATE_FORMAT(sale_date, '{$dateFormat}') as label"),
+            DB::raw("{$dateFunction} as label"),
             DB::raw('SUM(settlement_amount) as value'),
             DB::raw('COUNT(*) as count')
         )
