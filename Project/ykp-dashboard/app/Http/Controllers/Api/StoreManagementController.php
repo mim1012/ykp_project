@@ -89,11 +89,14 @@ class StoreManagementController extends Controller
             $accountData = null;
 
             try {
+                \Log::info('User 생성 시작', ['email' => $autoEmail, 'store_id' => $store->id]);
+
                 // 이메일 중복 체크
                 $existingUser = User::where('email', $autoEmail)->first();
                 if ($existingUser) {
                     // 이메일이 이미 존재하면 타임스탬프 추가
                     $autoEmail = strtolower($autoCode) . '_' . time() . '@ykp.com';
+                    \Log::info('이메일 중복, 새 이메일 생성', ['new_email' => $autoEmail]);
                 }
 
                 $storeUser = User::create([
@@ -113,6 +116,12 @@ class StoreManagementController extends Controller
                     'password' => $autoPassword,
                     'user_id' => $storeUser->id
                 ];
+
+                \Log::info('User 생성 성공', [
+                    'user_id' => $storeUser->id,
+                    'email' => $autoEmail,
+                    'store_id' => $store->id
+                ]);
 
             } catch (\Exception $userException) {
                 // User 생성 실패 시 로그 남기고 계속 진행
