@@ -24,6 +24,15 @@ class DashboardController extends Controller
 
             $user = auth()->user();
 
+            // 사용자 정보 상세 로깅
+            Log::info('Dashboard user details', [
+                'user_id' => $user->id,
+                'user_name' => $user->name,
+                'user_role' => $user->role,
+                'store_id' => $user->store_id,
+                'branch_id' => $user->branch_id
+            ]);
+
             // 권한별 쿼리 스코프 설정
             $storeQuery = Store::query();
             $branchQuery = Branch::query();
