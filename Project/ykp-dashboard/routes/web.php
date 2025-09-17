@@ -445,7 +445,7 @@ Route::get('/api/dashboard/overview', function () {
         $today = now();
         $startOfMonth = $today->copy()->startOfMonth();
         $endOfMonth = $today->copy()->endOfMonth();
-        $startOfDay = $today->startOfDay();
+        $startOfDay = $today->copy()->startOfDay();  // copy() 추가로 원본 보존
         $endOfDay = $today->copy()->endOfDay();
 
         // 이번달 매출과 활성화 건수 (전체 기간이 아닌 현재 월만)
@@ -459,6 +459,14 @@ Route::get('/api/dashboard/overview', function () {
                       ->sum('settlement_amount') ?: 0;
         $todayActivations = \App\Models\Sale::whereBetween('sale_date', [$startOfDay, $endOfDay])
                            ->count() ?: 0;
+
+        // 평균 마진률 실제 계산
+        $avgMarginRate = 0;
+        if ($monthlySales > 0) {
+            $monthlyMargin = \App\Models\Sale::whereBetween('sale_date', [$startOfMonth, $endOfMonth])
+                            ->sum('total_margin') ?: 0;
+            $avgMarginRate = round(($monthlyMargin / $monthlySales) * 100, 1);
+        }
         $storeCount = \App\Models\Store::count() ?: 0;
         
         // 시스템 목표 조회
@@ -467,16 +475,16 @@ Route::get('/api/dashboard/overview', function () {
             ->where('is_active', true)
             ->whereRaw("DATE_FORMAT(period_start, '%Y-%m') = ?", [now()->format('Y-m')])
             ->first();
-        $systemTarget = $goal ? $goal->sales_target : 50000000;
+        $systemTarget = $goal ? $goal->sales_target : 50000000;  // 목표는 추후 업데이트 예정
 
         $achievementRate = $monthlySales > 0 ? round(($monthlySales / $systemTarget) * 100, 1) : 0;
-        
+
         return response()->json([
             'success' => true,
             'data' => [
                 'today' => [
                     'sales' => $todaySales,
-                    'activations' => $todayActivations, 
+                    'activations' => $todayActivations,
                     'date' => today()->format('Y-m-d')
                 ],
                 'month' => [
@@ -484,8 +492,8 @@ Route::get('/api/dashboard/overview', function () {
                     'activations' => $monthlyActivations,
                     'vat_included_sales' => $monthlySales * 1.1,
                     'year_month' => now()->format('Y-m'),
-                    'growth_rate' => 8.2,
-                    'avg_margin' => 15.3
+                    'growth_rate' => 8.2,  // TODO: 실제 성장률 계산 필요
+                    'avg_margin' => $avgMarginRate  // 실제 계산된 평균 마진률
                 ],
                 'goals' => [
                     'monthly_target' => $systemTarget,
