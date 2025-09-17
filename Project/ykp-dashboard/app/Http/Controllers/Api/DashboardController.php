@@ -70,8 +70,9 @@ class DashboardController extends Controller
                                 ->whereBetween('sale_date', [$startOfMonth, $endOfMonth])
                                 ->sum('settlement_amount');
 
-            // 오늘 개통 건수
-            $todaySales = (clone $saleQuery)->whereDate('sale_date', $today)->count();
+            // 오늘 개통 건수 및 매출액
+            $todayActivations = (clone $saleQuery)->whereDate('sale_date', $today)->count();
+            $todaySalesAmount = (clone $saleQuery)->whereDate('sale_date', $today)->sum('settlement_amount');
 
             // 디버깅: 실제 매출 데이터 확인
             $debugInfo = [
@@ -83,7 +84,8 @@ class DashboardController extends Controller
                 'total_sales_count' => (clone $saleQuery)->count(),
                 'this_month_sales_count' => (clone $saleQuery)->whereBetween('sale_date', [$startOfMonth, $endOfMonth])->count(),
                 'this_month_sales_amount' => $thisMonthSales,
-                'today_activations' => $todaySales,
+                'today_activations' => $todayActivations,
+                'today_sales_amount' => $todaySalesAmount,
             ];
 
             // 지사 계정인 경우 실제 sales 테이블의 branch_id 확인
@@ -161,7 +163,8 @@ class DashboardController extends Controller
                         'store_staff' => User::where('role', 'store')->count()
                     ],
                     'this_month_sales' => floatval($thisMonthSales),
-                    'today_activations' => $todaySales,
+                    'today_activations' => $todayActivations,
+                    'today_sales' => floatval($todaySalesAmount),
                     'monthly_target' => $monthlyTarget,
                     'achievement_rate' => $achievementRate,
                     'currency' => 'KRW',

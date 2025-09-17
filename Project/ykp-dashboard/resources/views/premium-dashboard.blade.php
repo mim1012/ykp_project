@@ -965,7 +965,8 @@
                         // 오늘 매출/개통도 업데이트
                         const todaySalesEl = document.getElementById('today-sales');
                         if (todaySalesEl) {
-                            todaySalesEl.textContent = `₩${todaySales.toLocaleString()}`;
+                            const todaySales = data.today_sales || 0; // API에서 제공하는 실제 오늘 매출
+                            todaySalesEl.textContent = `₩${Number(todaySales).toLocaleString()}`;
                         }
 
                         const todayActivationsEl = document.getElementById('today-activations');
