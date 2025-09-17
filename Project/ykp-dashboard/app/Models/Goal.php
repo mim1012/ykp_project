@@ -52,7 +52,13 @@ class Goal extends Model
     public function scopeCurrentMonth($query)
     {
         $currentMonth = now()->format('Y-m');
-        return $query->whereRaw("DATE_FORMAT(period_start, '%Y-%m') = ?", [$currentMonth]);
+
+        // PostgreSQL/SQLite 호환
+        if (config('database.default') === 'pgsql') {
+            return $query->whereRaw("TO_CHAR(period_start, 'YYYY-MM') = ?", [$currentMonth]);
+        } else {
+            return $query->whereRaw("strftime('%Y-%m', period_start) = ?", [$currentMonth]);
+        }
     }
 
     public function scopeActive($query)
