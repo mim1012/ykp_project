@@ -61,7 +61,7 @@ class DashboardController extends Controller
             $totalBranches = (clone $branchQuery)->count();
             $activeBranches = (clone $branchQuery)->where('status', 'active')->count();
             $totalUsers = (clone $userQuery)->count();
-            $activeUsers = (clone $userQuery)->where('status', 'active')->count();
+            $activeUsers = (clone $userQuery)->where('is_active', true)->count();
 
             // 날짜 범위 계산 - DB 독립적인 방법 사용
             $startOfMonth = now()->startOfMonth()->format('Y-m-d');
