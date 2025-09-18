@@ -61,8 +61,13 @@ RUN COMPOSER_ALLOW_SUPERUSER=1 composer install \
     --no-interaction \
     --no-progress \
     --no-scripts \
-    --ignore-platform-reqs \
-    && composer dump-autoload --optimize --no-dev --classmap-authoritative
+    --ignore-platform-reqs
+
+# Fix Filament autoload issue for production
+RUN php fix-filament-autoload.php
+
+# Regenerate optimized autoload without testing helpers
+RUN composer dump-autoload --optimize --no-dev --classmap-authoritative
 
 # Copy frontend build output
 COPY --from=frontend_build /app/public/build ./public/build
@@ -70,8 +75,8 @@ COPY --from=frontend_build /app/public/build ./public/build
 # Create .env file with basic configuration
 RUN cp .env.example .env || echo "APP_KEY=" > .env
 
-# Run only essential artisan commands
-RUN php artisan package:discover --ansi 2>/dev/null || true
+# Run package discovery safely
+RUN php artisan package:discover --ansi || echo "Package discovery completed with warnings"
 
 # Create necessary directories and set permissions
 RUN mkdir -p storage/app/public storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
