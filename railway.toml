@@ -6,5 +6,5 @@ dockerfilePath = "./Dockerfile.apache"
 healthcheckPath = "/health.txt"
 healthcheckTimeout = 60
 restartPolicyType = "ON_FAILURE"
-internalPort = 80
+internalPort = 8080
 # Start command is handled by Dockerfile ENTRYPOINT
