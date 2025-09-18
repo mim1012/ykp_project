@@ -47,20 +47,20 @@ RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
     && php composer-setup.php --install-dir=/usr/local/bin --filename=composer \
     && rm composer-setup.php
 
-# Copy composer files for caching
-COPY composer.json composer.lock ./
-
-# Install dependencies with composer (NO VENDOR COPY!)
-RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress
-
-# Copy application code
+# Copy application code first (needed for artisan commands)
 COPY . ./
+
+# Then install composer dependencies
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress --no-scripts
 
 # Copy frontend build output
 COPY --from=frontend_build /app/public/build ./public/build
 
-# Optimize autoloader
-RUN composer dump-autoload --optimize
+# Run post-install scripts
+RUN composer dump-autoload --optimize \
+    && php artisan config:clear \
+    && php artisan route:clear \
+    && php artisan view:clear
 
 # Set permissions
 RUN chown -R www-data:www-data storage bootstrap/cache \
