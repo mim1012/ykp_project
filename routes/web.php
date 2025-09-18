@@ -5,6 +5,28 @@ use App\Http\Controllers\AuthController;
 use App\Services\PerformanceService;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\DB;
+
+/*
+|--------------------------------------------------------------------------
+| Health Check Route (Must be first - no middleware)
+|--------------------------------------------------------------------------
+*/
+Route::get('/health', function () {
+    try {
+        // Check database connection
+        DB::connection()->getPdo();
+        $database = true;
+    } catch (\Exception $e) {
+        $database = false;
+    }
+
+    return response()->json([
+        'status' => 'healthy',
+        'database' => $database,
+        'timestamp' => now()->toIso8601String(),
+    ]);
+});
 
 /*
 |--------------------------------------------------------------------------
