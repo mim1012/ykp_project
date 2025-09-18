@@ -2,7 +2,7 @@
 FROM php:8.3-apache
 
 # Cache bust to force rebuild (update this value to force rebuild)
-ARG CACHE_BUST=2024-12-20-v16-telescope-fix
+ARG CACHE_BUST=2024-12-20-v17-git-fix
 
 WORKDIR /var/www/html
 
@@ -79,6 +79,11 @@ RUN php artisan key:generate --force 2>/dev/null || true
 # Disable Telescope in production (remove from providers)
 RUN sed -i '/TelescopeServiceProvider/d' bootstrap/providers.php \
     && echo "Telescope disabled for production"
+
+# Fix git error in version.php - replace git commands with static values
+RUN sed -i "s/trim(exec('git rev-parse --short HEAD') ?: 'unknown')/'production'/g" config/version.php \
+    && sed -i "s/trim(exec('git rev-parse --abbrev-ref HEAD') ?: 'unknown')/'staging'/g" config/version.php \
+    && echo "Git commands disabled in version.php"
 
 # Clear Laravel caches
 RUN php artisan config:clear \
