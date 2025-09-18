@@ -12,7 +12,7 @@ return [
     |
     */
 
-    'current' => '2.0.0',
+    'current' => '2.1.0',
 
     /*
     |--------------------------------------------------------------------------
@@ -23,7 +23,7 @@ return [
     |
     */
 
-    'released_at' => '2025-01-18',
+    'released_at' => '2025-01-19',
 
     /*
     |--------------------------------------------------------------------------
@@ -34,7 +34,7 @@ return [
     |
     */
 
-    'codename' => 'Evolution',
+    'codename' => 'Phoenix',
 
     /*
     |--------------------------------------------------------------------------
@@ -62,6 +62,8 @@ return [
     */
 
     'history' => [
+        '2.1.0' => '2025-01-19', // Phoenix - Railway deployment stabilization
+        '2.0.0' => '2025-01-18', // Evolution - Complete infrastructure overhaul
         '1.2.0' => '2025-09-17', // Emergency release - Dashboard data binding fix
         '1.1.1' => '2025-09-13', // UI/UX fixes and accuracy improvements
         '1.1.0' => '2025-09-13', // PostgreSQL compatibility and account management
