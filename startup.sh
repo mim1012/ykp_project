@@ -32,64 +32,90 @@ fi
 chown -R www-data:www-data storage bootstrap/cache 2>/dev/null || true
 chmod -R 775 storage bootstrap/cache 2>/dev/null || true
 
-# Configure Apache to use PORT from environment
+# 1) Configure Apache ports and vhost
 echo ""
 echo "📡 Configuring Apache to listen on 0.0.0.0:${PORT}..."
-
-# Update ports.conf with actual PORT value
 echo "Listen 0.0.0.0:${PORT}" > /etc/apache2/ports.conf
 
 # Replace PORT placeholder in VirtualHost config
 sed -i "s/\${PORT}/${PORT}/g" /etc/apache2/sites-available/001-app.conf
 
+# Ensure correct sites are enabled
+a2dissite 000-default >/dev/null 2>&1 || true
+a2ensite 001-app >/dev/null 2>&1 || true
+
 # Ensure ServerName is set
 grep -q "ServerName" /etc/apache2/apache2.conf || echo "ServerName localhost" >> /etc/apache2/apache2.conf
 
-# CRITICAL DIAGNOSTICS
+# 2) CRITICAL DIAGNOSTICS
 echo ""
 echo "🔍 === APACHE CONFIGURATION DIAGNOSTICS ==="
 echo ""
 echo "---- apache2ctl -S (VirtualHost Configuration) ----"
 apache2ctl -S || true
 echo ""
-echo "---- DocumentRoot search in configs ----"
-grep -R "DocumentRoot" /etc/apache2/sites-available /etc/apache2/apache2.conf 2>/dev/null | head -10
+echo "---- ports.conf ----"
+cat /etc/apache2/ports.conf
+echo ""
+echo "---- 001-app.conf (first 50 lines) ----"
+head -50 /etc/apache2/sites-available/001-app.conf
 echo ""
 echo "---- Active sites in sites-enabled ----"
 ls -la /etc/apache2/sites-enabled/
 echo ""
-echo "---- VirtualHost config (001-app.conf) ----"
-cat /etc/apache2/sites-available/001-app.conf | head -30
-echo ""
-echo "---- ports.conf ----"
-cat /etc/apache2/ports.conf
+echo "---- DocumentRoot search ----"
+grep -n "DocumentRoot" /etc/apache2/sites-available/001-app.conf || true
 echo ""
 echo "---- File existence check ----"
-echo "📍 Current directory: $(pwd)"
+echo "📍 Working directory: $(pwd)"
+echo "📍 health.txt exists: $(test -f /var/www/html/public/health.txt && echo 'YES ✅' || echo 'NO ❌')"
 echo "📍 health.php exists: $(test -f /var/www/html/public/health.php && echo 'YES ✅' || echo 'NO ❌')"
 echo "📍 .htaccess exists: $(test -f /var/www/html/public/.htaccess && echo 'YES ✅' || echo 'NO ❌')"
 echo "📍 index.php exists: $(test -f /var/www/html/public/index.php && echo 'YES ✅' || echo 'NO ❌')"
-echo ""
-
-# Test health endpoint internally with PHP CLI
-echo "🔍 Testing health.php with PHP CLI..."
-php /var/www/html/public/health.php && echo " ✅ PHP CLI test passed" || echo " ❌ PHP CLI test failed"
 echo ""
 
 # Test Apache configuration
 echo "🔍 Testing Apache configuration..."
 apache2ctl configtest
 
-# Test internal HTTP access (requires Apache to be running)
+# 3) Start Apache temporarily for internal tests
 echo ""
-echo "🌐 Internal HTTP test will run after Apache starts..."
+echo "🧪 Starting Apache for internal tests..."
+apache2-foreground &
+APACHE_PID=$!
+
+# Wait for Apache to start
+sleep 3
+
+# Internal HTTP tests
+echo ""
+echo "🌐 === INTERNAL HTTP TESTS ==="
+echo "Testing with curl from inside container..."
+echo ""
+echo -n "health.txt: "
+curl -sS -o /dev/null -w "%{http_code}\n" http://127.0.0.1:${PORT}/health.txt || echo "FAILED"
+echo -n "health.php: "
+curl -sS -o /dev/null -w "%{http_code}\n" http://127.0.0.1:${PORT}/health.php || echo "FAILED"
+echo -n "index.php: "
+curl -sS -o /dev/null -w "%{http_code}\n" http://127.0.0.1:${PORT}/ || echo "FAILED"
 echo ""
 
-# Start Apache in foreground
+# Check Apache error log
+echo "---- Last 20 lines of Apache error log ----"
+tail -20 /var/log/apache2/error.log 2>/dev/null || echo "No error log found"
+echo ""
+
+# Kill test Apache
+kill $APACHE_PID 2>/dev/null || true
+wait $APACHE_PID 2>/dev/null || true
+
+# 4) Final startup
 echo "================================================"
-echo "✅ Starting Apache on 0.0.0.0:${PORT}..."
+echo "✅ Starting Apache on 0.0.0.0:${PORT} (production mode)..."
 echo "📡 Apache is binding to all network interfaces"
-echo "🌐 Health check endpoint: http://0.0.0.0:${PORT}/health.php"
+echo "🌐 Health check endpoints:"
+echo "   - Static: http://0.0.0.0:${PORT}/health.txt"
+echo "   - PHP: http://0.0.0.0:${PORT}/health.php"
 echo "================================================"
 echo ""
 
