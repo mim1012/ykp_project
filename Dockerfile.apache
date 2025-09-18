@@ -2,7 +2,7 @@
 FROM php:8.3-apache
 
 # Cache bust to force rebuild (update this value to force rebuild)
-ARG CACHE_BUST=2024-12-20-v3
+ARG CACHE_BUST=2024-12-20-v4-filament-fix
 
 WORKDIR /var/www/html
 
@@ -39,9 +39,10 @@ COPY . .
 RUN echo "OK" > /var/www/html/public/health.txt \
     && echo '<?php http_response_code(200); echo "OK";' > /var/www/html/public/health.php
 
-# Install dependencies
-RUN composer install --no-dev --optimize-autoloader --no-scripts --ignore-platform-reqs \
-    && sed -i '/use Test/d' vendor/nesbot/carbon/src/Carbon/Traits/Date.php 2>/dev/null || true
+# Install dependencies (without --no-dev to avoid Filament autoload issues)
+RUN composer install --optimize-autoloader --no-scripts --ignore-platform-reqs \
+    && sed -i '/use Test/d' vendor/nesbot/carbon/src/Carbon/Traits/Date.php 2>/dev/null || true \
+    && find vendor/filament -name "helpers.php" -type f | head -5
 
 # Fix permissions
 RUN mkdir -p storage/app/public storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
