@@ -47,14 +47,10 @@ RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
     && php composer-setup.php --install-dir=/usr/local/bin --filename=composer \
     && rm composer-setup.php
 
-# Copy application code first (needed for artisan commands)
+# Copy application code first
 COPY . ./
 
-# Create .env file first (needed for artisan commands)
-RUN if [ -f .env.example ]; then cp .env.example .env; else echo "APP_KEY=" > .env; fi \
-    && php artisan key:generate
-
-# Then install composer dependencies (without dev dependencies and without scripts)
+# Install composer dependencies FIRST (needed for artisan commands)
 RUN COMPOSER_ALLOW_SUPERUSER=1 composer install \
     --no-dev \
     --optimize-autoloader \
@@ -62,6 +58,10 @@ RUN COMPOSER_ALLOW_SUPERUSER=1 composer install \
     --no-progress \
     --no-scripts \
     --ignore-platform-reqs
+
+# THEN create .env file and generate key (after composer install)
+RUN if [ -f .env.example ]; then cp .env.example .env; else echo "APP_KEY=" > .env; fi \
+    && php artisan key:generate
 
 # Copy frontend build output
 COPY --from=frontend_build /app/public/build ./public/build
