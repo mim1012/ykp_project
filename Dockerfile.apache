@@ -2,7 +2,7 @@
 FROM php:8.3-apache
 
 # Cache bust to force rebuild (update this value to force rebuild)
-ARG CACHE_BUST=2024-12-20-v11-complete-carbon
+ARG CACHE_BUST=2024-12-20-v12-remove-carbon-test
 
 WORKDIR /var/www/html
 
@@ -44,45 +44,10 @@ RUN composer clear-cache \
     && rm -rf vendor composer.lock \
     && composer install --optimize-autoloader --no-scripts --ignore-platform-reqs
 
-# Fix Carbon Test trait issues - Create stub with ALL interface methods
-RUN mkdir -p vendor/nesbot/carbon/src/Carbon/Traits \
-    && echo '<?php \
-namespace Carbon\Traits; \
-\
-use Closure; \
-use Carbon\CarbonInterface; \
-use DateTimeZone; \
-\
-trait Test { \
-    private static $testNow; \
-\
-    public static function setTestNow(mixed $testNow = null): void { \
-        static::$testNow = $testNow; \
-    } \
-\
-    public static function setTestNowAndTimezone(mixed $testNow = null, DateTimeZone|string|null $timezone = null): void { \
-        static::$testNow = $testNow; \
-    } \
-\
-    public static function getTestNow(): Closure|CarbonInterface|null { \
-        return static::$testNow; \
-    } \
-\
-    public static function hasTestNow(): bool { \
-        return static::$testNow !== null; \
-    } \
-\
-    public static function withTestNow(mixed $testNow, callable $callback): mixed { \
-        static::setTestNow($testNow); \
-        $result = $callback(); \
-        static::setTestNow(null); \
-        return $result; \
-    } \
-\
-    public static function testNow(mixed $testNow = null) { \
-        static::setTestNow($testNow); \
-    } \
-}' > vendor/nesbot/carbon/src/Carbon/Traits/Test.php
+# Remove Carbon Test trait completely - not needed for production
+RUN sed -i '/use Traits\\\\Test;/d' vendor/nesbot/carbon/src/Carbon/Traits/Date.php \
+    && sed -i '/use Test;/d' vendor/nesbot/carbon/src/Carbon/Traits/Date.php \
+    && rm -f vendor/nesbot/carbon/src/Carbon/Traits/Test.php
 
 # Create dummy helper files as fallback (if they still don't exist)
 RUN mkdir -p vendor/filament/notifications/src/Testing \
