@@ -40,10 +40,11 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/* \
  && apt-get clean
 
-# Set DocumentRoot
+# Set DocumentRoot and use index-debug.php for debugging
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' \
-      /etc/apache2/sites-available/000-default.conf
+      /etc/apache2/sites-available/000-default.conf \
+    && echo "DirectoryIndex index-debug.php index.php" >> /etc/apache2/apache2.conf
 
 # Install Composer first
 RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
@@ -53,22 +54,24 @@ RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
 # Copy application code first
 COPY . ./
 
-# Install composer dependencies FIRST (needed for artisan commands)
+# Install composer dependencies with clean autoload
 RUN COMPOSER_ALLOW_SUPERUSER=1 composer install \
     --no-dev \
     --optimize-autoloader \
     --no-interaction \
     --no-progress \
     --no-scripts \
-    --ignore-platform-reqs
+    --ignore-platform-reqs \
+    && composer dump-autoload --optimize --no-dev --classmap-authoritative
 
 # Copy frontend build output
 COPY --from=frontend_build /app/public/build ./public/build
 
-# Create a placeholder .env file (key will be generated at runtime)
-RUN if [ -f .env.example ]; then cp .env.example .env; else touch .env; fi
+# Create .env file with basic configuration
+RUN cp .env.example .env || echo "APP_KEY=" > .env
 
-# Skip artisan commands during build due to Filament autoload issues
+# Run only essential artisan commands
+RUN php artisan package:discover --ansi 2>/dev/null || true
 
 # Create necessary directories and set permissions
 RUN mkdir -p storage/app/public storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \

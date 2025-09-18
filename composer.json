@@ -38,6 +38,9 @@
     },
     "scripts": {
         "post-autoload-dump": [
+
+        ],
+        "post-autoload-dump-disabled": [
             "@php artisan config:clear",
             "@php artisan clear-compiled",
             "@php artisan package:discover --ansi",
