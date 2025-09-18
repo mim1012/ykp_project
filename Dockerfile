@@ -59,15 +59,13 @@ RUN COMPOSER_ALLOW_SUPERUSER=1 composer install \
     --no-scripts \
     --ignore-platform-reqs
 
-# THEN create .env file and generate key (after composer install)
-RUN if [ -f .env.example ]; then cp .env.example .env; else echo "APP_KEY=" > .env; fi \
-    && php artisan key:generate
-
 # Copy frontend build output
 COPY --from=frontend_build /app/public/build ./public/build
 
-# Manually run necessary post-install commands (skip problematic ones)
-RUN php artisan package:discover --ansi || true
+# Create a placeholder .env file (key will be generated at runtime)
+RUN if [ -f .env.example ]; then cp .env.example .env; else touch .env; fi
+
+# Skip artisan commands during build due to Filament autoload issues
 
 # Set permissions
 RUN chown -R www-data:www-data storage bootstrap/cache \
