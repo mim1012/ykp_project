@@ -2,7 +2,7 @@
 FROM php:8.3-apache
 
 # Cache bust to force rebuild (update this value to force rebuild)
-ARG CACHE_BUST=2024-12-20-v17-git-fix
+ARG CACHE_BUST=2024-12-20-v18-complete-git-fix
 
 WORKDIR /var/www/html
 
@@ -80,10 +80,32 @@ RUN php artisan key:generate --force 2>/dev/null || true
 RUN sed -i '/TelescopeServiceProvider/d' bootstrap/providers.php \
     && echo "Telescope disabled for production"
 
-# Fix git error in version.php - replace git commands with static values
-RUN sed -i "s/trim(exec('git rev-parse --short HEAD') ?: 'unknown')/'production'/g" config/version.php \
-    && sed -i "s/trim(exec('git rev-parse --abbrev-ref HEAD') ?: 'unknown')/'staging'/g" config/version.php \
-    && echo "Git commands disabled in version.php"
+# Fix git error in version.php - completely rewrite the build array
+RUN cat > config/version-build.php << 'EOF'
+<?php
+return [
+    'current' => '2.0.0',
+    'released_at' => '2025-01-18',
+    'codename' => 'Evolution',
+    'build' => [
+        'number' => env('BUILD_NUMBER', 'production'),
+        'commit' => env('BUILD_COMMIT', 'deployed'),
+        'branch' => env('BUILD_BRANCH', 'staging'),
+        'timestamp' => env('BUILD_TIMESTAMP', date('Y-m-d H:i:s')),
+    ],
+    'history' => [
+        '1.2.0' => '2025-09-17',
+        '1.1.1' => '2025-09-13',
+        '1.1.0' => '2025-09-13',
+        '1.0.0' => '2025-09-13',
+        '0.9.0' => '2025-01-10',
+        '0.8.0' => '2025-01-05',
+        '0.7.0' => '2024-12-20',
+    ],
+];
+EOF
+RUN mv config/version-build.php config/version.php \
+    && echo "Git commands completely removed from version.php"
 
 # Clear Laravel caches
 RUN php artisan config:clear \
