@@ -39,13 +39,20 @@ php-fpm -t || echo "⚠️ PHP-FPM test failed"
 echo "🔍 Testing Nginx..."
 nginx -t || echo "⚠️ Nginx test failed"
 
-# Create test endpoint
+# Create test endpoints
 cat > /var/www/html/public/test-fpm.php << 'EOF'
 <?php
 echo "PHP-FPM is working!\n";
 echo "PHP Version: " . PHP_VERSION . "\n";
 echo "Server: " . php_sapi_name() . "\n";
 EOF
+
+# Create absolute minimal test
+echo '<?php echo "MINIMAL OK";' > /var/www/html/public/minimal.php
+
+# Test internal connection
+echo "🔍 Testing internal connection..."
+curl -I http://127.0.0.1:8080/minimal.php 2>&1 || echo "⚠️ Internal test failed"
 
 echo "✅ Starting supervisor..."
 exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
