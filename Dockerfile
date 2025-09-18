@@ -33,8 +33,7 @@ RUN apt-get update \
  && apt-get install -y --no-install-recommends \
       git unzip curl ca-certificates \
       libicu-dev libzip-dev zlib1g-dev libpq-dev pkg-config \
- && docker-php-ext-configure pdo_pgsql --with-pgsql=/usr \
- && docker-php-ext-install -j"$(nproc)" intl zip pdo_pgsql \
+ && docker-php-ext-install -j"$(nproc)" intl zip pdo pdo_pgsql \
  && rm -rf /var/lib/apt/lists/* \
  && apt-get clean
 
