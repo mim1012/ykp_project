@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>YKP ERP - 완전한 테스트 가이드라인</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .test-step { border: 2px solid #10b981; margin: 1rem 0; padding: 1rem; border-radius: 8px; }
+        .warning-box { background: #fef3cd; border: 1px solid #fbbf24; padding: 1rem; border-radius: 6px; }
+        .success-box { background: #d1fae5; border: 1px solid #10b981; padding: 1rem; border-radius: 6px; }
+        .code-box { background: #f3f4f6; padding: 0.5rem; border-radius: 4px; font-family: monospace; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="max-w-6xl mx-auto p-6">
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-green-600 mb-4">🧪 YKP ERP 완전한 테스트 가이드라인</h1>
+            <p class="text-xl text-gray-600">계정 생성부터 개통표 입력까지 전체 워크플로우 검증</p>
+        </div>
+
+        <!-- 테스트 목표 -->
+        <div class="bg-blue-50 border border-blue-200 p-6 rounded-lg mb-8">
+            <h2 class="text-2xl font-bold text-blue-800 mb-4">🎯 1차 Release 테스트 목표</h2>
+            <div class="grid md:grid-cols-2 gap-4">
+                <div class="bg-white p-4 rounded">
+                    <h3 class="font-bold text-blue-700">✅ 핵심 비즈니스 기능</h3>
+                    <ul class="text-sm space-y-1 mt-2">
+                        <li>• 완전한 개통표 입력 (40개 필드)</li>
+                        <li>• 실시간 매출 통계</li>
+                        <li>• 권한별 데이터 접근 제어</li>
+                        <li>• 매장/지사별 성과 추적</li>
+                    </ul>
+                </div>
+                <div class="bg-white p-4 rounded">
+                    <h3 class="font-bold text-blue-700">🔄 CRUD 워크플로우</h3>
+                    <ul class="text-sm space-y-1 mt-2">
+                        <li>• 본사 → 매장/지사 생성</li>
+                        <li>• 본사 → 계정 생성/삭제</li>
+                        <li>• 매장/지사 → 로그인 가능</li>
+                        <li>• 권한별 → 개통표 입력</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 테스트 단계 1: 본사 관리 -->
+        <div class="test-step">
+            <h2 class="text-2xl font-bold text-green-800 mb-4">1️⃣ 본사 관리자 테스트</h2>
+            
+            <div class="mb-6">
+                <h3 class="text-lg font-bold text-green-700 mb-2">🔑 로그인</h3>
+                <div class="code-box mb-2">
+                    <strong>계정:</strong> hq@ykp.com / 123456<br>
+                    <strong>URL:</strong> https://ykpproject-production.up.railway.app/
+                </div>
+                <div class="success-box">
+                    <strong>✅ 검증:</strong> "🏢 본사 관리자" 권한 표시, 전체 시스템 접근 가능
+                </div>
+            </div>
+
+            <div class="mb-6">
+                <h3 class="text-lg font-bold text-green-700 mb-2">🏪 새 매장 생성</h3>
+                <ol class="bg-gray-100 p-4 rounded space-y-2">
+                    <li><strong>1.</strong> 사이드바 🏪 클릭 → 매장 관리</li>
+                    <li><strong>2.</strong> "➕ 매장 추가" 클릭</li>
+                    <li><strong>3.</strong> 매장명: "테스트매장", 지사: "서울지점", 점주: "김테스트"</li>
+                    <li><strong>4.</strong> 매장 목록에서 신규 매장 확인</li>
+                </ol>
+                <div class="success-box">
+                    <strong>✅ 검증:</strong> Supabase stores 테이블에 새 매장 저장됨
+                </div>
+            </div>
+
+            <div class="mb-6">
+                <h3 class="text-lg font-bold text-green-700 mb-2">👤 매장 계정 생성</h3>
+                <ol class="bg-gray-100 p-4 rounded space-y-2">
+                    <li><strong>1.</strong> 새로 생성한 매장에서 "계정생성" 클릭</li>
+                    <li><strong>2.</strong> 사용자명: "테스트매니저", 이메일: "test-store@ykp.com"</li>
+                    <li><strong>3.</strong> 비밀번호: 123456 (기본값)</li>
+                    <li><strong>4.</strong> "👤 계정 생성" 클릭</li>
+                    <li><strong>5.</strong> "매장 사용자 계정이 생성되었습니다" 성공 메시지</li>
+                </ol>
+                <div class="success-box">
+                    <strong>✅ 검증:</strong> Supabase users 테이블에 새 계정 저장 (role: store)
+                </div>
+            </div>
+        </div>
+
+        <!-- 테스트 단계 2: 매장 계정 -->
+        <div class="test-step">
+            <h2 class="text-2xl font-bold text-green-800 mb-4">2️⃣ 매장 계정 테스트</h2>
+            
+            <div class="mb-6">
+                <h3 class="text-lg font-bold text-green-700 mb-2">🔑 신규 계정 로그인</h3>
+                <div class="code-box mb-2">
+                    <strong>계정:</strong> test-store@ykp.com / 123456<br>
+                    <strong>새 탭/시크릿 브라우저 사용</strong>
+                </div>
+                <div class="success-box">
+                    <strong>✅ 검증:</strong> "🏪 매장 직원" 권한 표시, 제한된 메뉴 확인
+                </div>
+            </div>
+
+            <div class="mb-6">
+                <h3 class="text-lg font-bold text-green-700 mb-2">📋 개통표 입력 권한</h3>
+                <ol class="bg-gray-100 p-4 rounded space-y-2">
+                    <li><strong>1.</strong> 사이드바 📋 클릭 → 완전한 판매관리</li>
+                    <li><strong>2.</strong> 자신의 매장 데이터만 표시되는지 확인</li>
+                    <li><strong>3.</strong> 새 개통 등록 → 데이터 입력</li>
+                    <li><strong>4.</strong> 저장 후 해당 매장에만 데이터 저장되는지 확인</li>
+                </ol>
+                <div class="warning-box">
+                    <strong>⚠️ 중요:</strong> 다른 매장 데이터는 보이지 않아야 함
+                </div>
+            </div>
+        </div>
+
+        <!-- 테스트 단계 3: 지사 계정 -->
+        <div class="test-step">
+            <h2 class="text-2xl font-bold text-green-800 mb-4">3️⃣ 지사 계정 테스트</h2>
+            
+            <div class="mb-6">
+                <h3 class="text-lg font-bold text-green-700 mb-2">🔑 지사 계정 로그인</h3>
+                <div class="code-box mb-2">
+                    <strong>계정:</strong> branch@ykp.com / 123456
+                </div>
+                <div class="success-box">
+                    <strong>✅ 검증:</strong> "🏬 지사 관리자" 권한, 소속 매장만 관리 가능
+                </div>
+            </div>
+
+            <div class="mb-6">
+                <h3 class="text-lg font-bold text-green-700 mb-2">🏪 소속 매장 관리 권한</h3>
+                <ol class="bg-gray-100 p-4 rounded space-y-2">
+                    <li><strong>1.</strong> 매장 관리에서 소속 매장들만 표시</li>
+                    <li><strong>2.</strong> 소속 매장 계정 생성 가능</li>
+                    <li><strong>3.</strong> 소속 매장 데이터 입력/수정 가능</li>
+                    <li><strong>4.</strong> 다른 지사 매장은 접근 불가</li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- 테스트 단계 4: 권한 검증 -->
+        <div class="test-step">
+            <h2 class="text-2xl font-bold text-green-800 mb-4">4️⃣ 권한체계 검증</h2>
+            
+            <div class="grid md:grid-cols-3 gap-4 mb-6">
+                <div class="bg-green-50 p-4 rounded">
+                    <h3 class="font-bold text-green-800">🏢 본사 권한</h3>
+                    <ul class="text-sm space-y-1 mt-2">
+                        <li>• 전체 매장/지사 관리</li>
+                        <li>• 모든 계정 생성/삭제</li>
+                        <li>• 전체 데이터 조회/수정</li>
+                        <li>• 시스템 설정 접근</li>
+                    </ul>
+                </div>
+                <div class="bg-blue-50 p-4 rounded">
+                    <h3 class="font-bold text-blue-800">🏬 지사 권한</h3>
+                    <ul class="text-sm space-y-1 mt-2">
+                        <li>• 소속 매장만 관리</li>
+                        <li>• 소속 매장 계정 생성</li>
+                        <li>• 소속 매장 데이터만 조회</li>
+                        <li>• 지사별 통계 확인</li>
+                    </ul>
+                </div>
+                <div class="bg-orange-50 p-4 rounded">
+                    <h3 class="font-bold text-orange-800">🏪 매장 권한</h3>
+                    <ul class="text-sm space-y-1 mt-2">
+                        <li>• 자신의 매장만 관리</li>
+                        <li>• 자신의 데이터만 입력</li>
+                        <li>• 자신의 통계만 확인</li>
+                        <li>• 다른 매장 접근 불가</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 테스트 단계 5: 개통표 워크플로우 -->
+        <div class="test-step">
+            <h2 class="text-2xl font-bold text-green-800 mb-4">5️⃣ 개통표 입력 전체 워크플로우</h2>
+            
+            <div class="mb-6">
+                <h3 class="text-lg font-bold text-green-700 mb-2">📊 권한별 데이터 접근 테스트</h3>
+                <div class="bg-gray-100 p-4 rounded">
+                    <h4 class="font-bold mb-2">시나리오:</h4>
+                    <ol class="space-y-2">
+                        <li><strong>1.</strong> 본사 계정 → 매장A 개통표 입력</li>
+                        <li><strong>2.</strong> 매장A 계정 → 자신의 데이터만 확인</li>
+                        <li><strong>3.</strong> 매장B 계정 → 매장A 데이터 접근 불가</li>
+                        <li><strong>4.</strong> 지사 계정 → 소속 매장들 데이터만 확인</li>
+                    </ol>
+                </div>
+            </div>
+
+            <div class="mb-6">
+                <h3 class="text-lg font-bold text-green-700 mb-2">🔄 실시간 계산 검증</h3>
+                <div class="bg-gray-100 p-4 rounded">
+                    <ol class="space-y-2">
+                        <li><strong>1.</strong> 액면가 100,000원 입력</li>
+                        <li><strong>2.</strong> 전체 재계산 클릭</li>
+                        <li><strong>3.</strong> 정산금: 100,000원, 세금: 10,000원 자동 계산 확인</li>
+                        <li><strong>4.</strong> 마진: 90,000원 자동 계산 확인</li>
+                    </ol>
+                </div>
+            </div>
+
+            <div class="mb-6">
+                <h3 class="text-lg font-bold text-green-700 mb-2">💾 데이터 저장 및 동기화</h3>
+                <div class="bg-gray-100 p-4 rounded">
+                    <ol class="space-y-2">
+                        <li><strong>1.</strong> 일괄 저장 실행</li>
+                        <li><strong>2.</strong> Supabase sales 테이블에 저장 확인</li>
+                        <li><strong>3.</strong> 다른 계정에서 권한에 따른 데이터 조회</li>
+                        <li><strong>4.</strong> 실시간 통계 업데이트 확인</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+
+        <!-- 검증 체크리스트 -->
+        <div class="bg-yellow-50 border border-yellow-200 p-6 rounded-lg mb-8">
+            <h2 class="text-2xl font-bold text-yellow-800 mb-4">📋 필수 검증 체크리스트</h2>
+            <div class="grid md:grid-cols-2 gap-4">
+                <div class="space-y-2">
+                    <h3 class="font-bold text-yellow-700">🔧 시스템 기능</h3>
+                    <ul class="text-sm space-y-1">
+                        <li>□ 로그인/로그아웃 정상</li>
+                        <li>□ 매장 생성 → DB 저장</li>
+                        <li>□ 계정 생성 → DB 저장</li>
+                        <li>□ 계정 삭제 → DB 삭제</li>
+                        <li>□ 권한별 메뉴 제한</li>
+                    </ul>
+                </div>
+                <div class="space-y-2">
+                    <h3 class="font-bold text-yellow-700">📊 비즈니스 로직</h3>
+                    <ul class="text-sm space-y-1">
+                        <li>□ 개통표 입력 정상</li>
+                        <li>□ 실시간 계산 정확</li>
+                        <li>□ 권한별 데이터 필터링</li>
+                        <li>□ 엑셀 내보내기 정상</li>
+                        <li>□ Supabase 실시간 동기화</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 테스트 계정 정보 -->
+        <div class="bg-gray-100 p-6 rounded-lg mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">📝 테스트 계정 정보</h2>
+            <div class="grid md:grid-cols-3 gap-4">
+                <div class="bg-white p-4 rounded">
+                    <h3 class="font-bold text-green-600">🏢 본사</h3>
+                    <p class="text-sm"><strong>이메일:</strong> hq@ykp.com</p>
+                    <p class="text-sm"><strong>비밀번호:</strong> 123456</p>
+                    <p class="text-sm"><strong>권한:</strong> 전체 관리</p>
+                </div>
+                <div class="bg-white p-4 rounded">
+                    <h3 class="font-bold text-blue-600">🏬 지사</h3>
+                    <p class="text-sm"><strong>이메일:</strong> branch@ykp.com</p>
+                    <p class="text-sm"><strong>비밀번호:</strong> 123456</p>
+                    <p class="text-sm"><strong>권한:</strong> 소속 매장만</p>
+                </div>
+                <div class="bg-white p-4 rounded">
+                    <h3 class="font-bold text-orange-600">🏪 매장</h3>
+                    <p class="text-sm"><strong>이메일:</strong> store@ykp.com</p>
+                    <p class="text-sm"><strong>비밀번호:</strong> 123456</p>
+                    <p class="text-sm"><strong>권한:</strong> 자신 매장만</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 문제 해결 가이드 -->
+        <div class="bg-red-50 border border-red-200 p-6 rounded-lg mb-8">
+            <h2 class="text-2xl font-bold text-red-800 mb-4">🚨 문제 발생 시 해결 가이드</h2>
+            <div class="space-y-4">
+                <div>
+                    <h3 class="font-bold text-red-700">🔑 로그인 실패</h3>
+                    <p class="text-sm">계정 정보 재확인, 비밀번호 오타, 세션 문제</p>
+                </div>
+                <div>
+                    <h3 class="font-bold text-red-700">👤 계정 생성 실패</h3>
+                    <p class="text-sm">API 에러 로그 확인, Supabase 연결 상태, CSRF 토큰</p>
+                </div>
+                <div>
+                    <h3 class="font-bold text-red-700">📊 데이터 표시 오류</h3>
+                    <p class="text-sm">권한 설정 확인, 매장/지사 ID 연결 상태</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 링크 -->
+        <div class="text-center space-y-4">
+            <div class="inline-flex space-x-4">
+                <a href="/" class="bg-green-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-green-700">
+                    🚀 YKP ERP 시작
+                </a>
+                <a href="/verify-accounts.php" class="bg-blue-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-blue-700">
+                    📊 계정 현황 확인
+                </a>
+            </div>
+        </div>
+
+        <div class="mt-8 text-center text-sm text-gray-500">
+            <p>YKP ERP 1차 Release - 완전한 테스트 가이드라인</p>
+            <p>모든 항목이 통과해야 사용자 공개 가능</p>
+        </div>
+    </div>
+</body>
+</html>

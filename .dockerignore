@@ -1,0 +1,122 @@
+# 🚀 Railway 빌드 속도 최적화
+
+# Git 및 버전 관리
+.git
+.github
+*.git*
+
+# 개발 도구 및 테스트
+**/tests
+**/Test*
+**/testing*
+**/.phpunit*
+phpunit.xml
+**/coverage
+**/*test*.php
+**/*Test*.php
+
+# 로그 및 임시 파일
+**/storage/logs/*
+**/storage/framework/cache/*
+**/storage/framework/sessions/*
+**/storage/framework/views/*
+**/storage/app/public/*
+**/*.log
+**/*.tmp
+**/tmp
+
+# Node.js 및 프론트엔드
+node_modules
+**/node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.npm
+.yarn
+package-lock.json
+yarn.lock
+
+# 빌드 및 컴파일 결과
+**/build
+**/dist
+**/public/build
+**/public/hot
+**/mix-manifest.json
+**/hot
+
+# IDE 및 에디터 파일
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# 백업 및 임시 파일
+**/*.backup
+**/*.bak
+**/*.old
+**/*.orig
+**/*.rej
+**/*.temp
+**/*.swp
+
+# 데이터베이스 파일
+**/*.sqlite
+**/*.db
+**/*.sql
+
+# 에러 리포트
+**/error.log
+**/access.log
+**/debug.log
+
+# 캐시 파일
+**/caches
+**/.cache
+**/cache
+
+# 플레이라이트 테스트
+**/playwright-report
+**/.playwright*
+**/test-results
+
+# 문서 및 마크다운
+**/*.md
+**/docs
+**/documentation
+README*
+CHANGELOG*
+LICENSE*
+
+# 이미지 및 미디어 (대용량)
+**/*.jpg
+**/*.jpeg
+**/*.png
+**/*.gif
+**/*.svg
+**/*.ico
+**/*.pdf
+**/*.zip
+**/*.tar.gz
+
+# 환경설정 파일
+**/.env*
+.env
+.env.*
+
+# Docker 관련 파일
+Dockerfile.old
+Dockerfile.debug
+docker-compose.yml
+docker-compose.*.yml
+
+# OS 생성 파일
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

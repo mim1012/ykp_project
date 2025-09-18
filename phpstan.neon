@@ -1,0 +1,22 @@
+parameters:
+    level: 5
+    paths:
+        - app/Helpers/
+        - app/Application/
+        - app/Http/Controllers/
+        - app/Http/Requests/
+    ignoreErrors:
+        # DealerProfile 모델의 동적 스코프와 속성
+        -
+            message: '#Call to an undefined static method App\\Models\\DealerProfile::active\(\)#'
+            path: app/Helpers/SalesCalculator.php
+        -
+            message: '#Access to an undefined property App\\Models\\DealerProfile::\$custom_calculation_rules#'
+            path: app/Helpers/SalesCalculator.php
+        # ProcessBatchCalculationJob의 DealerProfile 관련
+        -
+            message: '#Call to an undefined static method App\\Models\\DealerProfile::active\(\)#'
+            path: app/Jobs/ProcessBatchCalculationJob.php
+        -
+            message: '#Call to an undefined method App\\Models\\DealerProfile::byDealerCode\(\)#'
+            path: app/Jobs/ProcessBatchCalculationJob.php

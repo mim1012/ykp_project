@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>매장 관리 테스트</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 p-6">
+    <h1 class="text-2xl font-bold mb-4">🏪 매장 관리 테스트</h1>
+    
+    <button onclick="loadStores()" class="bg-blue-500 text-white px-4 py-2 rounded mb-4">
+        매장 목록 로드
+    </button>
+    
+    <div id="result" class="bg-white p-4 rounded border">
+        여기에 매장 목록이 표시됩니다.
+    </div>
+
+    <script>
+        async function loadStores() {
+            const result = document.getElementById('result');
+            result.innerHTML = '로딩 중...';
+            
+            try {
+                const response = await fetch('/test-api/stores');
+                const data = await response.json();
+                
+                if (data.success) {
+                    result.innerHTML = '<h3>매장 목록 (' + data.data.length + '개)</h3>';
+                    
+                    data.data.forEach(store => {
+                        result.innerHTML += `
+                            <div class="border p-3 mb-2 rounded">
+                                <strong>${store.name}</strong> (ID: ${store.id})<br>
+                                지사: ${store.branch?.name || '없음'}<br>
+                                점주: ${store.owner_name || '미등록'}
+                            </div>
+                        `;
+                    });
+                } else {
+                    result.innerHTML = '❌ 에러: ' + data.error;
+                }
+            } catch (error) {
+                result.innerHTML = '❌ API 호출 실패: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>
