@@ -21,9 +21,9 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Copy application code
 COPY . .
 
-# Install PHP dependencies (include dev to avoid missing test dependencies)
-RUN composer install --optimize-autoloader --no-scripts --no-interaction \
-    && php -r "if (file_exists('vendor/nesbot/carbon/src/Carbon/Traits/Test.php')) unlink('vendor/nesbot/carbon/src/Carbon/Traits/Test.php');" \
+# Install PHP dependencies WITHOUT dev packages
+RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interaction \
+    && sed -i '/use Test/d' vendor/nesbot/carbon/src/Carbon/Traits/Date.php || true \
     && mkdir -p vendor/nesbot/carbon/src/Carbon/Traits \
     && echo '<?php namespace Carbon\Traits; trait Test {}' > vendor/nesbot/carbon/src/Carbon/Traits/Test.php
 
