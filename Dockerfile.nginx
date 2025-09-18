@@ -13,7 +13,8 @@ RUN apk add --no-cache \
     curl \
     && docker-php-ext-configure intl \
     && docker-php-ext-install pdo pdo_pgsql zip opcache intl \
-    && rm -rf /var/cache/apk/*
+    && rm -rf /var/cache/apk/* \
+    && apk add --no-cache curl
 
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
