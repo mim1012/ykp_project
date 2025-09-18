@@ -1,24 +1,10 @@
 #!/bin/bash
-set -e
+# Don't use set -e to allow graceful failures
 
 echo "🚀 Starting YKP Dashboard..."
 
-# Wait for database to be ready (if configured)
-if [ ! -z "$DB_HOST" ]; then
-    echo "⏳ Waiting for database at $DB_HOST:${DB_PORT:-5432}..."
-    timeout=30
-    while ! timeout 1 bash -c "echo > /dev/tcp/$DB_HOST/${DB_PORT:-5432}" 2>/dev/null && [ $timeout -gt 0 ]; do
-        sleep 1
-        ((timeout--))
-        echo "Waiting... ($timeout seconds left)"
-    done
-
-    if [ $timeout -eq 0 ]; then
-        echo "⚠️ Database connection timeout, continuing anyway..."
-    else
-        echo "✅ Database is ready!"
-    fi
-fi
+# Skip database check to speed up startup
+echo "📝 Environment: ${APP_ENV:-production}"
 
 # Generate APP_KEY if not set
 if [ -z "$APP_KEY" ]; then
