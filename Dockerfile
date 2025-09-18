@@ -25,8 +25,9 @@ WORKDIR /var/www/html
 ARG FINAL_SOLUTION=20250916_SUCCESS
 RUN echo "✅ FINAL PHP STAGE v$FINAL_SOLUTION - NO VENDOR COPY @ $(date)" && sleep 2
 
-# Apache modules
-RUN a2enmod rewrite headers
+# Apache modules and configuration
+RUN a2enmod rewrite headers \
+    && echo "ServerName localhost" >> /etc/apache2/apache2.conf
 
 # Install dependencies
 RUN apt-get update \
