@@ -8,9 +8,11 @@ RUN apk add --no-cache \
     nginx \
     postgresql-dev \
     libzip-dev \
+    icu-dev \
     supervisor \
     curl \
-    && docker-php-ext-install pdo pdo_pgsql zip opcache \
+    && docker-php-ext-configure intl \
+    && docker-php-ext-install pdo pdo_pgsql zip opcache intl \
     && rm -rf /var/cache/apk/*
 
 # Install Composer
