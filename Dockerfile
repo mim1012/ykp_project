@@ -25,11 +25,10 @@ WORKDIR /var/www/html
 ARG FINAL_SOLUTION=20250916_SUCCESS
 RUN echo "✅ FINAL PHP STAGE v$FINAL_SOLUTION - NO VENDOR COPY @ $(date)" && sleep 2
 
-# Apache modules and configuration for Railway
+# Apache modules and PHP configuration for Railway
 RUN a2enmod rewrite headers \
     && echo "ServerName localhost" >> /etc/apache2/apache2.conf \
-    && sed -i 's/Listen 80/Listen ${PORT}/g' /etc/apache2/ports.conf \
-    && sed -i 's/:80/:${PORT}/g' /etc/apache2/sites-available/000-default.conf
+    && echo "Listen 8080" > /etc/apache2/ports.conf
 
 # Install dependencies
 RUN apt-get update \
@@ -91,6 +90,9 @@ ENV APP_DEBUG=false
 # Railway uses dynamic PORT, default to 8080
 ENV PORT=8080
 EXPOSE 8080
+
+# Copy Apache configuration
+COPY apache-site.conf /etc/apache2/sites-available/000-default.conf
 
 # Copy entrypoint script
 COPY docker-entrypoint-simple.sh /usr/local/bin/docker-entrypoint.sh

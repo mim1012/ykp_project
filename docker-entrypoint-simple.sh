@@ -1,12 +1,16 @@
 #!/bin/bash
 echo "🚀 Starting YKP Dashboard on port ${PORT:-8080}..."
 
-# Update Apache to listen on Railway's PORT
-if [ ! -z "$PORT" ]; then
-    echo "🔧 Configuring Apache for port $PORT..."
-    sed -i "s/Listen 80/Listen $PORT/g" /etc/apache2/ports.conf
-    sed -i "s/:80/:$PORT/g" /etc/apache2/sites-available/000-default.conf
+# Railway PORT 설정
+if [ ! -z "$PORT" ] && [ "$PORT" != "8080" ]; then
+    echo "🔧 Updating port from 8080 to $PORT..."
+    sed -i "s/8080/$PORT/g" /etc/apache2/ports.conf
+    sed -i "s/8080/$PORT/g" /etc/apache2/sites-available/000-default.conf
 fi
+
+# PHP 모듈 확인
+echo "📝 Checking PHP module..."
+apache2ctl -M | grep php || echo "⚠️ PHP module not loaded!"
 
 # Sync Railway environment variables to .env file
 if [ -f "sync-env-vars.php" ]; then
