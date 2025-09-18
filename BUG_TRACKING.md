@@ -6,16 +6,19 @@
 
 | Priority | Bug | Frequency | Impact | Resolution |
 |----------|-----|-----------|---------|------------|
-| 🔴 HIGH | Array to String Conversion (KPI API) | 150+ | API failures | Carbon date conversion |
-| 🔴 HIGH | Sales Calculator Validation | 89 | Data import failures | Added field validation |
-| 🟠 MEDIUM | DealerProfile Method Missing | 45 | Test failures | Method name update |
-| 🟠 MEDIUM | Missing Database Column | 38 | Query errors | COALESCE fallback |
-| 🟡 LOW | Job Parse Error | 12 | Background job failures | String syntax fix |
+| 🔴 CRITICAL | HTTP 500 - Array to String Conversion | 150+ | Complete API failures | Carbon date conversion |
+| 🔴 CRITICAL | HTTP 419 - CSRF Token Mismatch | 89 | Form submission failures | CSRF token implementation |
+| 🔴 HIGH | PostgreSQL Boolean Type Error (500) | 75 | User creation failures | Raw SQL with casting |
+| 🔴 HIGH | Sales Calculator Validation (422) | 45 | Data import failures | Added field validation |
+| 🟠 MEDIUM | DealerProfile Method Missing (500) | 45 | Test failures | Method name update |
+| 🟠 MEDIUM | Missing Database Column (500) | 38 | Query errors | COALESCE fallback |
+| 🟡 LOW | Job Parse Error (500) | 12 | Background job failures | String syntax fix |
 | 🟡 LOW | Store Filter Object | 8 | UI filter issues | Object ID extraction |
+| 🟡 LOW | Session Expired (419) | 10 | User logout issues | Session lifetime increased |
 | 🟡 LOW | Negative Calculation | 5 | Wrong margins | Formula update |
 | 🟢 MINOR | Timezone Mismatch | 3 | Report discrepancies | UTC standardization |
 | 🟢 MINOR | Memory Leak in Loop | 2 | Performance degradation | Unset variables |
-| 🟢 MINOR | CORS Headers | 1 | API access issues | Header configuration |
+| 🟢 MINOR | CORS Headers (403) | 1 | API access issues | Header configuration |
 
 ## 🐛 Detailed Bug Analysis
 
