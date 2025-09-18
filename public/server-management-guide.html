@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>YKP ERP - 서버 운영 및 유지보수 가이드</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .urgent-box { background: #fee2e2; border: 2px solid #ef4444; padding: 1rem; border-radius: 8px; }
+        .important-box { background: #fef3cd; border: 1px solid #f59e0b; padding: 1rem; border-radius: 6px; }
+        .tip-box { background: #dbeafe; border: 1px solid #3b82f6; padding: 1rem; border-radius: 6px; }
+        .code-snippet { background: #f3f4f6; padding: 0.75rem; border-radius: 4px; font-family: monospace; }
+        .checklist li { margin: 0.5rem 0; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="max-w-6xl mx-auto p-6">
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-blue-600 mb-4">🛠️ YKP ERP 서버 운영 가이드</h1>
+            <p class="text-xl text-gray-600">첫 상용 서비스 운영을 위한 실무 가이드</p>
+        </div>
+
+        <!-- 긴급 상황 대응 -->
+        <div class="urgent-box mb-8">
+            <h2 class="text-2xl font-bold text-red-800 mb-4">🚨 긴급 상황 대응 가이드</h2>
+            
+            <div class="grid md:grid-cols-2 gap-4 mb-4">
+                <div class="bg-white p-4 rounded">
+                    <h3 class="font-bold text-red-700 mb-2">🔥 서버 다운</h3>
+                    <ol class="text-sm space-y-1">
+                        <li>1. Railway 대시보드 → Deployments 확인</li>
+                        <li>2. 에러 로그 확인</li>
+                        <li>3. 이전 배포 버전으로 Rollback</li>
+                        <li>4. 사용자들에게 긴급 공지</li>
+                    </ol>
+                </div>
+                <div class="bg-white p-4 rounded">
+                    <h3 class="font-bold text-red-700 mb-2">🔐 로그인 불가</h3>
+                    <ol class="text-sm space-y-1">
+                        <li>1. Supabase → Authentication 확인</li>
+                        <li>2. 데이터베이스 연결 상태 점검</li>
+                        <li>3. Railway Variables 확인</li>
+                        <li>4. 계정 상태 확인</li>
+                    </ol>
+                </div>
+            </div>
+            
+            <div class="bg-red-100 p-4 rounded">
+                <h3 class="font-bold text-red-800 mb-2">📞 긴급 연락처</h3>
+                <p class="text-sm">서비스 다운 시 즉시 연락: <strong>[관리자 연락처]</strong></p>
+                <p class="text-sm">복구 예상 시간을 사용자들에게 안내하세요.</p>
+            </div>
+        </div>
+
+        <!-- 일상 관리 체크리스트 -->
+        <div class="important-box mb-8">
+            <h2 class="text-2xl font-bold text-yellow-800 mb-4">📅 일상 관리 체크리스트</h2>
+            
+            <div class="grid md:grid-cols-3 gap-4">
+                <div class="bg-white p-4 rounded">
+                    <h3 class="font-bold text-green-600 mb-2">🌅 매일 (5분)</h3>
+                    <ul class="text-sm checklist">
+                        <li>□ 서버 상태 확인</li>
+                        <li>□ 로그인 테스트</li>
+                        <li>□ 개통표 입력 테스트</li>
+                        <li>□ 에러 로그 확인</li>
+                    </ul>
+                    <div class="code-snippet mt-2 text-xs">
+                        Railway → Metrics<br>
+                        Supabase → Logs
+                    </div>
+                </div>
+                
+                <div class="bg-white p-4 rounded">
+                    <h3 class="font-bold text-blue-600 mb-2">📊 주간 (30분)</h3>
+                    <ul class="text-sm checklist">
+                        <li>□ 데이터베이스 백업 확인</li>
+                        <li>□ 사용량 통계 확인</li>
+                        <li>□ 사용자 피드백 수집</li>
+                        <li>□ 성능 모니터링</li>
+                    </ul>
+                    <div class="code-snippet mt-2 text-xs">
+                        Supabase → Database → Backup<br>
+                        Railway → Usage
+                    </div>
+                </div>
+                
+                <div class="bg-white p-4 rounded">
+                    <h3 class="font-bold text-purple-600 mb-2">🔄 월간 (2시간)</h3>
+                    <ul class="text-sm checklist">
+                        <li>□ 전체 시스템 점검</li>
+                        <li>□ 보안 업데이트</li>
+                        <li>□ 사용자 계정 정리</li>
+                        <li>□ 데이터 정리/최적화</li>
+                    </ul>
+                    <div class="code-snippet mt-2 text-xs">
+                        대용량 데이터 아카이빙<br>
+                        비활성 계정 정리
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 데이터베이스 관리 -->
+        <div class="tip-box mb-8">
+            <h2 class="text-2xl font-bold text-blue-800 mb-4">🗄️ 데이터베이스 관리 팁</h2>
+            
+            <div class="mb-6">
+                <h3 class="text-lg font-bold text-blue-700 mb-2">💾 백업 전략</h3>
+                <div class="bg-white p-4 rounded mb-4">
+                    <h4 class="font-bold mb-2">자동 백업 설정:</h4>
+                    <ol class="text-sm space-y-2">
+                        <li><strong>1.</strong> Supabase → Project → Settings → Database</li>
+                        <li><strong>2.</strong> "Point in Time Recovery" 활성화 (7일 복구 가능)</li>
+                        <li><strong>3.</strong> 매주 일요일 새벽 수동 백업 다운로드</li>
+                    </ol>
+                </div>
+                
+                <div class="important-box">
+                    <strong>⚠️ 중요:</strong> 매월 1일에는 반드시 전체 백업을 로컬에 다운로드하세요!
+                </div>
+            </div>
+
+            <div class="mb-6">
+                <h3 class="text-lg font-bold text-blue-700 mb-2">📈 성능 최적화</h3>
+                <div class="grid md:grid-cols-2 gap-4">
+                    <div class="bg-white p-4 rounded">
+                        <h4 class="font-bold mb-2">데이터베이스:</h4>
+                        <ul class="text-sm space-y-1">
+                            <li>• 인덱스 활용 (이미 설정됨)</li>
+                            <li>• 오래된 sales 데이터 아카이빙</li>
+                            <li>• 정기적 VACUUM 실행</li>
+                            <li>• 연결 풀 모니터링</li>
+                        </ul>
+                    </div>
+                    <div class="bg-white p-4 rounded">
+                        <h4 class="font-bold mb-2">서버:</h4>
+                        <ul class="text-sm space-y-1">
+                            <li>• 메모리 사용량 모니터링</li>
+                            <li>• 로그 파일 정리</li>
+                            <li>• CDN 캐시 최적화</li>
+                            <li>• 이미지/파일 압축</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 보안 관리 -->
+        <div class="urgent-box mb-8">
+            <h2 class="text-2xl font-bold text-red-800 mb-4">🔒 보안 관리 (매우 중요!)</h2>
+            
+            <div class="mb-6">
+                <h3 class="text-lg font-bold text-red-700 mb-2">🛡️ 필수 보안 조치</h3>
+                <div class="bg-white p-4 rounded">
+                    <h4 class="font-bold text-red-600 mb-2">즉시 변경해야 할 것들:</h4>
+                    <ul class="text-sm space-y-2">
+                        <li><strong>1.</strong> 모든 기본 비밀번호 변경 (hq@ykp.com, branch@ykp.com, store@ykp.com)</li>
+                        <li><strong>2.</strong> Supabase 데이터베이스 비밀번호 변경</li>
+                        <li><strong>3.</strong> Laravel APP_KEY 재생성</li>
+                        <li><strong>4.</strong> 관리자 이메일을 실제 이메일로 변경</li>
+                    </ul>
+                </div>
+                
+                <div class="code-snippet mt-4">
+                    <strong>비밀번호 변경 방법:</strong><br>
+                    Supabase SQL Editor에서 실행:<br>
+                    <code>UPDATE users SET password = crypt('새비밀번호', gen_salt('bf')) WHERE email = 'hq@ykp.com';</code>
+                </div>
+            </div>
+
+            <div class="mb-6">
+                <h3 class="text-lg font-bold text-red-700 mb-2">🔐 지속적 보안 관리</h3>
+                <ul class="text-sm space-y-2 bg-white p-4 rounded">
+                    <li>• <strong>정기 비밀번호 변경:</strong> 3개월마다</li>
+                    <li>• <strong>접근 로그 모니터링:</strong> 비정상 로그인 감지</li>
+                    <li>• <strong>권한 정기 검토:</strong> 불필요한 계정 삭제</li>
+                    <li>• <strong>보안 업데이트:</strong> Laravel/PHP 보안 패치 적용</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- 사용량 모니터링 -->
+        <div class="tip-box mb-8">
+            <h2 class="text-2xl font-bold text-blue-800 mb-4">📊 사용량 모니터링</h2>
+            
+            <div class="grid md:grid-cols-2 gap-4">
+                <div class="bg-white p-4 rounded">
+                    <h3 class="font-bold text-blue-700 mb-2">📈 Supabase 한도 관리</h3>
+                    <ul class="text-sm space-y-1">
+                        <li>• <strong>Database 크기:</strong> 500MB 무료 (Pro: 8GB)</li>
+                        <li>• <strong>API 요청:</strong> 월 50,000회 무료</li>
+                        <li>• <strong>동시 연결:</strong> 60개 무료</li>
+                        <li>• <strong>Bandwidth:</strong> 월 5GB 무료</li>
+                    </ul>
+                    <div class="important-box mt-2">
+                        <strong>💡 팁:</strong> Usage 탭에서 매주 확인!
+                    </div>
+                </div>
+                
+                <div class="bg-white p-4 rounded">
+                    <h3 class="font-bold text-blue-700 mb-2">⚡ Railway 리소스</h3>
+                    <ul class="text-sm space-y-1">
+                        <li>• <strong>메모리:</strong> 1GB 기본 제공</li>
+                        <li>• <strong>CPU:</strong> 공유 vCPU</li>
+                        <li>• <strong>빌드 시간:</strong> 월 500분 무료</li>
+                        <li>• <strong>실행 시간:</strong> 월 500시간 무료</li>
+                    </ul>
+                    <div class="important-box mt-2">
+                        <strong>💡 팁:</strong> Metrics 탭에서 실시간 확인!
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 장애 대응 시나리오 -->
+        <div class="bg-gray-100 p-6 rounded-lg mb-8">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">🆘 장애 대응 시나리오</h2>
+            
+            <div class="space-y-6">
+                <div class="bg-white p-4 rounded">
+                    <h3 class="font-bold text-red-600 mb-2">시나리오 1: 로그인이 안됨</h3>
+                    <div class="text-sm">
+                        <p><strong>원인:</strong> 데이터베이스 연결 끊김, 계정 문제</p>
+                        <p><strong>해결:</strong></p>
+                        <ol class="ml-4 space-y-1">
+                            <li>1. `/healthz.php` 접속 → 서버 상태 확인</li>
+                            <li>2. `/verify-accounts.php` 접속 → DB 연결 확인</li>
+                            <li>3. Railway Variables → DATABASE_URL 확인</li>
+                            <li>4. Supabase 프로젝트 상태 확인</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded">
+                    <h3 class="font-bold text-orange-600 mb-2">시나리오 2: 개통표 저장 안됨</h3>
+                    <div class="text-sm">
+                        <p><strong>원인:</strong> API 에러, 권한 문제, DB 용량 초과</p>
+                        <p><strong>해결:</strong></p>
+                        <ol class="ml-4 space-y-1">
+                            <li>1. 브라우저 개발자 도구 → Network 탭 에러 확인</li>
+                            <li>2. Railway → Logs에서 Laravel 에러 확인</li>
+                            <li>3. Supabase → Logs에서 SQL 에러 확인</li>
+                            <li>4. 임시로 다른 계정으로 테스트</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded">
+                    <h3 class="font-bold text-blue-600 mb-2">시나리오 3: 사이트가 느림</h3>
+                    <div class="text-sm">
+                        <p><strong>원인:</strong> 데이터 증가, 동시 접속자 증가</p>
+                        <p><strong>해결:</strong></p>
+                        <ol class="ml-4 space-y-1">
+                            <li>1. Railway → Metrics에서 리소스 사용량 확인</li>
+                            <li>2. Supabase → Database → Performance 확인</li>
+                            <li>3. 오래된 sales 데이터 아카이빙</li>
+                            <li>4. 필요시 Plan 업그레이드</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 데이터 관리 -->
+        <div class="bg-green-50 border border-green-200 p-6 rounded-lg mb-8">
+            <h2 class="text-2xl font-bold text-green-800 mb-4">📊 데이터 관리 전략</h2>
+            
+            <div class="mb-6">
+                <h3 class="text-lg font-bold text-green-700 mb-2">🗂️ 데이터 정리 주기</h3>
+                <div class="bg-white p-4 rounded">
+                    <ul class="space-y-2 text-sm">
+                        <li><strong>매주:</strong> 테스트 데이터 삭제</li>
+                        <li><strong>매월:</strong> 6개월 이전 sales 데이터 아카이빙</li>
+                        <li><strong>분기:</strong> 비활성 사용자 계정 정리</li>
+                        <li><strong>연간:</strong> 전체 데이터 백업 및 정리</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="mb-6">
+                <h3 class="text-lg font-bold text-green-700 mb-2">🔍 데이터 품질 관리</h3>
+                <div class="code-snippet">
+                    <strong>정기 실행할 SQL:</strong><br>
+                    <code>
+                    -- 중복 데이터 확인<br>
+                    SELECT email, COUNT(*) FROM users GROUP BY email HAVING COUNT(*) > 1;<br><br>
+                    -- 빈 데이터 확인<br>
+                    SELECT * FROM sales WHERE model_name IS NULL OR customer_name IS NULL;<br><br>
+                    -- 오래된 데이터 확인<br>
+                    SELECT COUNT(*) FROM sales WHERE created_at < NOW() - INTERVAL '6 months';
+                    </code>
+                </div>
+            </div>
+        </div>
+
+        <!-- 업데이트 관리 -->
+        <div class="bg-purple-50 border border-purple-200 p-6 rounded-lg mb-8">
+            <h2 class="text-2xl font-bold text-purple-800 mb-4">🔄 업데이트 관리</h2>
+            
+            <div class="mb-6">
+                <h3 class="text-lg font-bold text-purple-700 mb-2">🚀 안전한 배포 절차</h3>
+                <div class="bg-white p-4 rounded">
+                    <ol class="space-y-2 text-sm">
+                        <li><strong>1단계:</strong> staging 브랜치에서 개발</li>
+                        <li><strong>2단계:</strong> 로컬에서 충분한 테스트</li>
+                        <li><strong>3단계:</strong> staging 환경에서 실제 테스트</li>
+                        <li><strong>4단계:</strong> deploy-test로 merge</li>
+                        <li><strong>5단계:</strong> Railway 자동 배포</li>
+                        <li><strong>6단계:</strong> Production 즉시 테스트</li>
+                    </ol>
+                </div>
+                
+                <div class="important-box mt-4">
+                    <strong>⚠️ 주의:</strong> 업무시간 중에는 업데이트 금지! (오전 9시-오후 6시)
+                </div>
+            </div>
+        </div>
+
+        <!-- 사용자 지원 -->
+        <div class="bg-indigo-50 border border-indigo-200 p-6 rounded-lg mb-8">
+            <h2 class="text-2xl font-bold text-indigo-800 mb-4">👥 사용자 지원 체계</h2>
+            
+            <div class="grid md:grid-cols-2 gap-4">
+                <div class="bg-white p-4 rounded">
+                    <h3 class="font-bold text-indigo-700 mb-2">📞 문의 유형별 대응</h3>
+                    <ul class="text-sm space-y-2">
+                        <li><strong>로그인 문제:</strong> 계정 확인 → 비밀번호 리셋</li>
+                        <li><strong>데이터 입력 오류:</strong> 권한 확인 → 가이드 제공</li>
+                        <li><strong>계산 오류:</strong> 수식 설명 → 재계산 안내</li>
+                        <li><strong>시스템 오류:</strong> 즉시 확인 → 빠른 복구</li>
+                    </ul>
+                </div>
+                <div class="bg-white p-4 rounded">
+                    <h3 class="font-bold text-indigo-700 mb-2">📚 사용자 교육</h3>
+                    <ul class="text-sm space-y-2">
+                        <li>• 초기 교육: 1시간 화면공유</li>
+                        <li>• 정기 교육: 월 1회 새 기능</li>
+                        <li>• FAQ 업데이트: 문의사항 정리</li>
+                        <li>• 사용 팁 공유: 효율적 사용법</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 유용한 링크 -->
+        <div class="bg-gray-200 p-6 rounded-lg">
+            <h2 class="text-2xl font-bold text-gray-800 mb-4">🔗 관리자 전용 링크</h2>
+            <div class="grid md:grid-cols-2 gap-4">
+                <div class="space-y-2">
+                    <h3 class="font-bold text-gray-700">🛠️ 시스템 관리</h3>
+                    <ul class="text-sm space-y-1">
+                        <li><a href="/verify-accounts.php" class="text-blue-600">계정 현황 확인</a></li>
+                        <li><a href="/healthz.php" class="text-blue-600">서버 상태 확인</a></li>
+                        <li><a href="/check-logs.php" class="text-blue-600">에러 로그 확인</a></li>
+                    </ul>
+                </div>
+                <div class="space-y-2">
+                    <h3 class="font-bold text-gray-700">📚 문서 및 가이드</h3>
+                    <ul class="text-sm space-y-1">
+                        <li><a href="/training-guide.html" class="text-blue-600">사용자 교육 가이드</a></li>
+                        <li><a href="/complete-test-guide.html" class="text-blue-600">테스트 가이드라인</a></li>
+                        <li><a href="/headquarters-guide.html" class="text-blue-600">본사 사용자 가이드</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-8">
+            <div class="inline-flex space-x-4">
+                <a href="/" class="bg-green-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-green-700">
+                    🚀 YKP ERP 메인으로
+                </a>
+            </div>
+        </div>
+
+        <div class="mt-8 text-center text-sm text-gray-500">
+            <p>YKP ERP v1.0 - Server Management Guide</p>
+            <p>안전하고 안정적인 서비스 운영을 위해 이 가이드를 주기적으로 참고하세요.</p>
+        </div>
+    </div>
+</body>
+</html>

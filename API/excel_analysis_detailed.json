@@ -1,0 +1,587 @@
+{
+  "개통표": {
+    "dimensions": {
+      "rows": 1048524,
+      "cols": 118
+    },
+    "data_areas": {
+      "Area_1_대리점": {
+        "title": "대리점",
+        "range": "B8:U10",
+        "start_row": 8,
+        "end_row": 10,
+        "start_col": 2,
+        "end_col": 21,
+        "size": "3x20"
+      }
+    },
+    "tables": [
+      {
+        "area_title": "대리점",
+        "table_type": "dealer_settlement",
+        "header_row": 0,
+        "columns": [
+          "대리점",
+          "통신사",
+          "개통\n방식",
+          "요 금 제",
+          "모 델 명",
+          "접 수 일",
+          "개 통 일",
+          "고 객 명",
+          "개 통 번 호",
+          "생년월일",
+          "공시/선약",
+          "방문경로",
+          "액면/셋팅가",
+          "구두1",
+          "구두2",
+          "구두3",
+          "구두4",
+          "부가1",
+          "부가2",
+          "그레이드"
+        ],
+        "data_types": {
+          "액면/셋팅가": "numeric"
+        },
+        "sample_data": {
+          "액면/셋팅가": [
+            "990000",
+            "990000"
+          ]
+        },
+        "row_count": 2,
+        "api_endpoint_suggestion": "/api/settlements/dealer"
+      }
+    ],
+    "summary": {}
+  },
+  "월마감정산": {
+    "dimensions": {
+      "rows": 145,
+      "cols": 17
+    },
+    "data_areas": {
+      "Area_1_대리점 총정산금(자": {
+        "title": "대리점 총정산금(자동입력)",
+        "range": "B2:F17",
+        "start_row": 2,
+        "end_row": 17,
+        "start_col": 2,
+        "end_col": 6,
+        "size": "16x5"
+      },
+      "Area_2_대리점 선정산금(자": {
+        "title": "대리점 선정산금(자동입력)",
+        "range": "B4:F17",
+        "start_row": 4,
+        "end_row": 17,
+        "start_col": 2,
+        "end_col": 6,
+        "size": "14x5"
+      },
+      "Area_3_총지출(지출,환수,": {
+        "title": "총지출(지출,환수,직원급여) (자동입력)",
+        "range": "D4:E6",
+        "start_row": 4,
+        "end_row": 6,
+        "start_col": 4,
+        "end_col": 5,
+        "size": "3x2"
+      },
+      "Area_4_받은 총 현금 합계": {
+        "title": "받은 총 현금 합계",
+        "range": "B8:F17",
+        "start_row": 8,
+        "end_row": 17,
+        "start_col": 2,
+        "end_col": 6,
+        "size": "10x5"
+      },
+      "Area_5_고객페이백 합계": {
+        "title": "고객페이백 합계",
+        "range": "B9:F17",
+        "start_row": 9,
+        "end_row": 17,
+        "start_col": 2,
+        "end_col": 6,
+        "size": "9x5"
+      },
+      "Area_6_직원상담비(뽀찌) ": {
+        "title": "직원상담비(뽀찌) 합계",
+        "range": "B10:F17",
+        "start_row": 10,
+        "end_row": 17,
+        "start_col": 2,
+        "end_col": 6,
+        "size": "8x5"
+      },
+      "Area_7_메일접수비 합계": {
+        "title": "메일접수비 합계",
+        "range": "B11:F17",
+        "start_row": 11,
+        "end_row": 17,
+        "start_col": 2,
+        "end_col": 6,
+        "size": "7x5"
+      },
+      "Area_8_대리점 선정산금": {
+        "title": "대리점 선정산금",
+        "range": "B13:F19",
+        "start_row": 13,
+        "end_row": 19,
+        "start_col": 2,
+        "end_col": 6,
+        "size": "7x5"
+      },
+      "Area_9_대리점정산금+현재있": {
+        "title": "대리점정산금+현재있어야하는현금(자동)",
+        "range": "D13:F19",
+        "start_row": 13,
+        "end_row": 19,
+        "start_col": 4,
+        "end_col": 6,
+        "size": "7x3"
+      },
+      "Area_10_총지출 합계": {
+        "title": "총지출 합계",
+        "range": "B14:F19",
+        "start_row": 14,
+        "end_row": 19,
+        "start_col": 2,
+        "end_col": 6,
+        "size": "6x5"
+      },
+      "Area_11_대리점 정산금": {
+        "title": "대리점 정산금",
+        "range": "B15:E27",
+        "start_row": 15,
+        "end_row": 27,
+        "start_col": 2,
+        "end_col": 5,
+        "size": "13x4"
+      },
+      "Area_12_월 마감시 입금 해": {
+        "title": "월 마감시 입금 해야할 금액 (자동)",
+        "range": "D15:E23",
+        "start_row": 15,
+        "end_row": 23,
+        "start_col": 4,
+        "end_col": 5,
+        "size": "9x2"
+      },
+      "Area_13_직원인센합계": {
+        "title": "직원인센합계",
+        "range": "B16:E27",
+        "start_row": 16,
+        "end_row": 27,
+        "start_col": 2,
+        "end_col": 5,
+        "size": "12x4"
+      },
+      "Area_14_점장급여(수기입력)": {
+        "title": "점장급여(수기입력)+표기",
+        "range": "B19:E27",
+        "start_row": 19,
+        "end_row": 27,
+        "start_col": 2,
+        "end_col": 5,
+        "size": "9x4"
+      },
+      "Area_15_순수익(순매출-점장": {
+        "title": "순수익(순매출-점장급여)(자동입력)",
+        "range": "D19:E23",
+        "start_row": 19,
+        "end_row": 23,
+        "start_col": 4,
+        "end_col": 5,
+        "size": "5x2"
+      }
+    },
+    "tables": [
+      {
+        "area_title": "대리점 총정산금(자동입력)",
+        "table_type": "dealer_settlement",
+        "header_row": null,
+        "columns": [],
+        "data_types": {},
+        "sample_data": {},
+        "row_count": 16,
+        "api_endpoint_suggestion": "/api/settlements/dealer"
+      },
+      {
+        "area_title": "대리점 선정산금(자동입력)",
+        "table_type": "dealer_settlement",
+        "header_row": null,
+        "columns": [],
+        "data_types": {},
+        "sample_data": {},
+        "row_count": 14,
+        "api_endpoint_suggestion": "/api/settlements/dealer"
+      },
+      {
+        "area_title": "총지출(지출,환수,직원급여) (자동입력)",
+        "table_type": "refunds",
+        "header_row": null,
+        "columns": [],
+        "data_types": {},
+        "sample_data": {},
+        "row_count": 3,
+        "api_endpoint_suggestion": "/api/refunds"
+      },
+      {
+        "area_title": "받은 총 현금 합계",
+        "table_type": "general_data",
+        "header_row": null,
+        "columns": [],
+        "data_types": {},
+        "sample_data": {},
+        "row_count": 10,
+        "api_endpoint_suggestion": "/api/data/general"
+      },
+      {
+        "area_title": "고객페이백 합계",
+        "table_type": "general_data",
+        "header_row": null,
+        "columns": [],
+        "data_types": {},
+        "sample_data": {},
+        "row_count": 9,
+        "api_endpoint_suggestion": "/api/data/general"
+      },
+      {
+        "area_title": "직원상담비(뽀찌) 합계",
+        "table_type": "general_data",
+        "header_row": null,
+        "columns": [],
+        "data_types": {},
+        "sample_data": {},
+        "row_count": 8,
+        "api_endpoint_suggestion": "/api/data/general"
+      },
+      {
+        "area_title": "메일접수비 합계",
+        "table_type": "general_data",
+        "header_row": null,
+        "columns": [],
+        "data_types": {},
+        "sample_data": {},
+        "row_count": 7,
+        "api_endpoint_suggestion": "/api/data/general"
+      },
+      {
+        "area_title": "대리점 선정산금",
+        "table_type": "dealer_settlement",
+        "header_row": null,
+        "columns": [],
+        "data_types": {},
+        "sample_data": {},
+        "row_count": 7,
+        "api_endpoint_suggestion": "/api/settlements/dealer"
+      },
+      {
+        "area_title": "대리점정산금+현재있어야하는현금(자동)",
+        "table_type": "dealer_settlement",
+        "header_row": null,
+        "columns": [],
+        "data_types": {},
+        "sample_data": {},
+        "row_count": 7,
+        "api_endpoint_suggestion": "/api/settlements/dealer"
+      },
+      {
+        "area_title": "총지출 합계",
+        "table_type": "general_data",
+        "header_row": null,
+        "columns": [],
+        "data_types": {},
+        "sample_data": {},
+        "row_count": 6,
+        "api_endpoint_suggestion": "/api/data/general"
+      },
+      {
+        "area_title": "대리점 정산금",
+        "table_type": "dealer_settlement",
+        "header_row": null,
+        "columns": [],
+        "data_types": {},
+        "sample_data": {},
+        "row_count": 13,
+        "api_endpoint_suggestion": "/api/settlements/dealer"
+      },
+      {
+        "area_title": "월 마감시 입금 해야할 금액 (자동)",
+        "table_type": "general_data",
+        "header_row": null,
+        "columns": [],
+        "data_types": {},
+        "sample_data": {},
+        "row_count": 9,
+        "api_endpoint_suggestion": "/api/data/general"
+      },
+      {
+        "area_title": "직원인센합계",
+        "table_type": "general_data",
+        "header_row": null,
+        "columns": [],
+        "data_types": {},
+        "sample_data": {},
+        "row_count": 12,
+        "api_endpoint_suggestion": "/api/data/general"
+      },
+      {
+        "area_title": "점장급여(수기입력)+표기",
+        "table_type": "payroll",
+        "header_row": null,
+        "columns": [],
+        "data_types": {},
+        "sample_data": {},
+        "row_count": 9,
+        "api_endpoint_suggestion": "/api/payroll"
+      },
+      {
+        "area_title": "순수익(순매출-점장급여)(자동입력)",
+        "table_type": "payroll",
+        "header_row": null,
+        "columns": [],
+        "data_types": {},
+        "sample_data": {},
+        "row_count": 5,
+        "api_endpoint_suggestion": "/api/payroll"
+      }
+    ],
+    "summary": {}
+  },
+  "대리점별정산금": {
+    "dimensions": {
+      "rows": 65,
+      "cols": 13
+    },
+    "data_areas": {
+      "Area_1_내 정산서 총정산금": {
+        "title": "내 정산서 총정산금",
+        "range": "D2:M51",
+        "start_row": 2,
+        "end_row": 51,
+        "start_col": 4,
+        "end_col": 13,
+        "size": "50x10"
+      },
+      "Area_2_대리점 마감정산합계": {
+        "title": "대리점 마감정산합계",
+        "range": "E2:M51",
+        "start_row": 2,
+        "end_row": 51,
+        "start_col": 5,
+        "end_col": 13,
+        "size": "50x9"
+      },
+      "Area_3_대리점": {
+        "title": "대리점",
+        "range": "B5:G54",
+        "start_row": 5,
+        "end_row": 54,
+        "start_col": 2,
+        "end_col": 7,
+        "size": "50x6"
+      },
+      "Area_4_내 정산서": {
+        "title": "내 정산서",
+        "range": "D5:G54",
+        "start_row": 5,
+        "end_row": 54,
+        "start_col": 4,
+        "end_col": 7,
+        "size": "50x4"
+      },
+      "Area_5_대리점 정산서\n(수": {
+        "title": "대리점 정산서\n(수기입력)",
+        "range": "E5:G54",
+        "start_row": 5,
+        "end_row": 54,
+        "start_col": 5,
+        "end_col": 7,
+        "size": "50x3"
+      }
+    },
+    "tables": [
+      {
+        "area_title": "내 정산서 총정산금",
+        "table_type": "settlement",
+        "header_row": 0,
+        "columns": [
+          "내 정산서 총정산금",
+          "대리점 마감정산합계",
+          "총차액금",
+          "순매출",
+          "차액금 (-표기)",
+          "진짜순수익"
+        ],
+        "data_types": {
+          "내 정산서 총정산금": "numeric",
+          "대리점 마감정산합계": "text",
+          "총차액금": "numeric",
+          "순매출": "text",
+          "진짜순수익": "text"
+        },
+        "sample_data": {
+          "내 정산서 총정산금": [
+            "0",
+            "내 정산서",
+            "0"
+          ],
+          "대리점 마감정산합계": [
+            "0",
+            "대리점 정산서\n(수기입력)"
+          ],
+          "총차액금": [
+            "0",
+            "차액금",
+            "0"
+          ],
+          "순매출": [
+            "비고"
+          ],
+          "진짜순수익": [
+            "마이너스면-표기"
+          ]
+        },
+        "row_count": 49,
+        "api_endpoint_suggestion": "/api/settlements"
+      },
+      {
+        "area_title": "대리점 마감정산합계",
+        "table_type": "dealer_settlement",
+        "header_row": 0,
+        "columns": [
+          "대리점 마감정산합계",
+          "총차액금",
+          "순매출",
+          "차액금 (-표기)",
+          "진짜순수익"
+        ],
+        "data_types": {
+          "대리점 마감정산합계": "text",
+          "총차액금": "numeric",
+          "순매출": "text",
+          "진짜순수익": "text"
+        },
+        "sample_data": {
+          "대리점 마감정산합계": [
+            "0",
+            "대리점 정산서\n(수기입력)"
+          ],
+          "총차액금": [
+            "0",
+            "차액금",
+            "0"
+          ],
+          "순매출": [
+            "비고"
+          ],
+          "진짜순수익": [
+            "마이너스면-표기"
+          ]
+        },
+        "row_count": 49,
+        "api_endpoint_suggestion": "/api/settlements/dealer"
+      },
+      {
+        "area_title": "대리점",
+        "table_type": "dealer_settlement",
+        "header_row": 0,
+        "columns": [
+          "대리점",
+          "개통수",
+          "내 정산서",
+          "대리점 정산서\n(수기입력)",
+          "차액금",
+          "비고"
+        ],
+        "data_types": {
+          "대리점": "text",
+          "개통수": "numeric",
+          "내 정산서": "numeric",
+          "차액금": "numeric"
+        },
+        "sample_data": {
+          "대리점": [
+            "이앤티",
+            "앤투윈",
+            "초시대"
+          ],
+          "개통수": [
+            "0",
+            "0",
+            "0"
+          ],
+          "내 정산서": [
+            "0",
+            "0",
+            "0"
+          ],
+          "차액금": [
+            "0",
+            "0",
+            "0"
+          ]
+        },
+        "row_count": 49,
+        "api_endpoint_suggestion": "/api/settlements/dealer"
+      },
+      {
+        "area_title": "내 정산서",
+        "table_type": "settlement",
+        "header_row": 0,
+        "columns": [
+          "내 정산서",
+          "대리점 정산서\n(수기입력)",
+          "차액금",
+          "비고"
+        ],
+        "data_types": {
+          "내 정산서": "numeric",
+          "차액금": "numeric"
+        },
+        "sample_data": {
+          "내 정산서": [
+            "0",
+            "0",
+            "0"
+          ],
+          "차액금": [
+            "0",
+            "0",
+            "0"
+          ]
+        },
+        "row_count": 49,
+        "api_endpoint_suggestion": "/api/settlements"
+      },
+      {
+        "area_title": "대리점 정산서\n(수기입력)",
+        "table_type": "dealer_settlement",
+        "header_row": 0,
+        "columns": [
+          "대리점 정산서\n(수기입력)",
+          "차액금",
+          "비고"
+        ],
+        "data_types": {
+          "차액금": "numeric"
+        },
+        "sample_data": {
+          "차액금": [
+            "0",
+            "0",
+            "0"
+          ]
+        },
+        "row_count": 49,
+        "api_endpoint_suggestion": "/api/settlements/dealer"
+      }
+    ],
+    "summary": {}
+  }
+}

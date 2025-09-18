@@ -1,0 +1,45 @@
+{
+    "$schema": "https://json.schemastore.org/package.json",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "build": "vite build",
+        "dev": "vite",
+        "dev:staging": "vite --host 0.0.0.0 --port ${VITE_PORT:-5173}",
+        "start:php": "php artisan serve --host 0.0.0.0 --port ${PORT:-8080}",
+        "preview": "vite preview",
+        "build:dashboard": "node build-dashboard.js",
+        "analyze": "vite build --mode analyze",
+        "test:smoke": "playwright test -g \"Deploy Smoke\"",
+        "predeploy": "vite build && php artisan config:cache && php artisan route:cache && php artisan view:cache"
+    },
+    "dependencies": {
+        "@tanstack/react-query": "^5.85.3",
+        "@tanstack/react-query-devtools": "^5.85.3",
+        "ag-grid-community": "^34.1.1",
+        "ag-grid-react": "^34.1.1",
+        "chart.js": "^4.4.6",
+        "framer-motion": "^12.23.12",
+        "lucide-react": "^0.462.0",
+        "react": "^18.3.1",
+        "react-dom": "^18.3.1",
+        "react-intersection-observer": "^9.16.0",
+        "react-virtualized-auto-sizer": "^1.0.26",
+        "react-window": "^1.8.11",
+        "react-window-infinite-loader": "^1.0.10",
+        "workbox-webpack-plugin": "^7.3.0"
+    },
+    "devDependencies": {
+        "@playwright/test": "^1.55.0",
+        "@tailwindcss/vite": "^4.0.0",
+        "@types/react": "^18.3.12",
+        "@types/react-dom": "^18.3.1",
+        "@vitejs/plugin-react": "^4.3.4",
+        "axios": "^1.11.0",
+        "concurrently": "^9.0.1",
+        "laravel-vite-plugin": "^2.0.0",
+        "supabase": "^2.40.7",
+        "tailwindcss": "^4.0.0",
+        "vite": "^7.0.4"
+    }
+}

@@ -1,0 +1,64 @@
+*.log
+.DS_Store
+
+# 🚨 SECURITY CRITICAL - Environment files
+.env
+.env.*
+!.env.example
+.env.backup
+.env.production
+.env.local
+.env.laragon
+.env.railway
+
+# Build artifacts and reports
+/playwright-report/
+/test-results/
+/coverage/
+*.log.*
+/public/build
+/public/hot
+/public/storage
+
+# Development files
+.phpactor.json
+.phpunit.result.cache
+/.fleet
+/.idea
+/.nova
+/.phpunit.cache
+/.vscode
+/.zed
+/auth.json
+/node_modules
+/storage/*.key
+/storage/pail
+/vendor  # Laravel vendor directory excluded
+
+# Temporary files
+*.tmp
+*.temp
+/tmp/
+nul
+
+# Windows system files (CRITICAL SECURITY)
+/System Volume Information/
+C:/Windows/
+/etc/hosts
+desktop.ini
+
+# Playwright and testing
+/.playwright/
+/playwright/.auth/
+/.playwright-mcp/
+
+# IDE and OS
+Homestead.json
+Homestead.yaml
+Thumbs.db
+
+# Cache and generated files
+/bootstrap/cache/*
+!/bootstrap/cache/.gitkeep
+/storage/framework/cache/*
+!/storage/framework/cache/.gitkeep

@@ -1,0 +1,350 @@
+/* Dashboard-specific styles */
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+/* Custom font family */
+* { 
+    font-family: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, system-ui, Roboto, sans-serif; 
+}
+
+/* Custom scrollbar styles */
+.scrollbar-thin::-webkit-scrollbar { 
+    width: 6px; 
+    height: 6px; 
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb { 
+    background: #cbd5e1; 
+    border-radius: 3px; 
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover { 
+    background: #94a3b8; 
+}
+
+/* Chart container optimizations */
+.chart-container {
+    position: relative;
+    height: 300px;
+}
+
+.chart-container canvas {
+    max-height: 100%;
+}
+
+/* Loading animations */
+.loading-shimmer {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+/* Performance optimizations */
+.gpu-accelerated {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+}
+
+/* Mobile-specific improvements */
+@media (max-width: 768px) {
+    /* Responsive table improvements */
+    .mobile-table-scroll {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Touch-friendly interactions */
+    button, .btn, [role="button"] {
+        min-height: 44px;
+        min-width: 44px;
+    }
+    
+    /* Improved touch targets for mobile */
+    .touch-target {
+        min-height: 44px;
+        min-width: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    /* Mobile form improvements */
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    select,
+    textarea {
+        font-size: 16px; /* Prevents zoom on iOS */
+        min-height: 44px;
+    }
+    
+    /* Mobile card spacing */
+    .mobile-card {
+        margin: 0 -1rem;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+    }
+    
+    /* Safe area padding for notched devices */
+    .mobile-safe-area {
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+    }
+    
+    /* Mobile sticky positioning */
+    .mobile-sticky-header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: white;
+        border-bottom: 1px solid #e5e7eb;
+    }
+}
+
+/* Breakpoint-specific optimizations */
+@media (max-width: 414px) {
+    /* Very small screens (iPhone SE, etc.) */
+    .text-responsive {
+        font-size: 0.875rem;
+    }
+    
+    .p-responsive {
+        padding: 0.75rem;
+    }
+}
+
+@media (max-width: 375px) {
+    /* iPhone 8 and smaller */
+    .grid-responsive {
+        grid-template-columns: 1fr;
+    }
+    
+    .gap-responsive {
+        gap: 0.5rem;
+    }
+}
+
+@media (max-width: 320px) {
+    /* Very small devices */
+    .text-xs-responsive {
+        font-size: 0.75rem;
+    }
+    
+    .px-xs-responsive {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+}
+
+/* High-DPI and Retina display optimizations */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .chart-container canvas {
+        image-rendering: -webkit-optimize-contrast;
+        image-rendering: crisp-edges;
+    }
+}
+
+/* Dark mode support (if needed later) */
+@media (prefers-color-scheme: dark) {
+    .auto-dark {
+        background-color: #1f2937;
+        color: #f9fafb;
+    }
+}
+
+/* Enhanced mobile breakpoint testing */
+@media (max-width: 768px) {
+    /* Test utilities for breakpoint verification */
+    .debug-breakpoint::after {
+        content: "Mobile: ≤768px";
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        background: #ef4444;
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        z-index: 9999;
+        display: none; /* Enable for debugging */
+    }
+}
+
+@media (max-width: 414px) {
+    .debug-breakpoint::after {
+        content: "Small Mobile: ≤414px";
+        background: #f59e0b;
+    }
+}
+
+@media (max-width: 375px) {
+    .debug-breakpoint::after {
+        content: "iPhone 8: ≤375px";
+        background: #8b5cf6;
+    }
+}
+
+@media (max-width: 320px) {
+    .debug-breakpoint::after {
+        content: "iPhone SE: ≤320px";
+        background: #10b981;
+    }
+}
+
+/* Landscape orientation optimizations */
+@media (max-width: 768px) and (orientation: landscape) {
+    .landscape-optimize {
+        height: calc(100vh - 56px); /* Account for mobile header */
+    }
+    
+    /* Reduce vertical padding in landscape */
+    .landscape-compact {
+        padding-top: 0.5rem;
+        padding-bottom: 0.5rem;
+    }
+}
+
+/* Print styles */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    .print-optimize {
+        background: white !important;
+        color: black !important;
+        box-shadow: none !important;
+    }
+}
+
+/* Performance optimizations */
+.gpu-accelerated {
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000;
+}
+
+/* Smooth scrolling with performance optimization */
+.smooth-scroll {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Animation utilities */
+.fade-in {
+    animation: fadeIn 0.3s ease-out forwards;
+}
+
+.slide-up {
+    animation: slideUp 0.4s ease-out forwards;
+}
+
+.scale-in {
+    animation: scaleIn 0.2s ease-out forwards;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes scaleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Loading states */
+.skeleton-pulse {
+    animation: skeletonPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes skeletonPulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* Improved focus styles for accessibility */
+.focus-ring {
+    @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2;
+}
+
+/* Virtual scrolling optimizations */
+.virtual-list {
+    contain: layout style paint;
+    will-change: scroll-position;
+}
+
+.virtual-list-item {
+    contain: layout style paint;
+}
+
+/* Image loading optimizations */
+.image-placeholder {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+}
+
+/* Motion accessibility */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+    
+    .skeleton-pulse,
+    .loading-shimmer,
+    .image-placeholder {
+        animation: none !important;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .auto-contrast {
+        border: 2px solid currentColor;
+        background: white;
+        color: black;
+    }
+}
