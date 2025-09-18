@@ -6,7 +6,7 @@ return [
     'dsn' => env('SENTRY_LARAVEL_DSN', env('SENTRY_DSN')),
 
     // Capture release version
-    'release' => trim(exec('git describe --tags --abbrev=0')) ?: null,
+    'release' => env('SENTRY_RELEASE', '2.0.0'),
 
     // Environment name
     'environment' => env('APP_ENV', 'production'),
