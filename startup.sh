@@ -36,10 +36,15 @@ echo ""
 echo "🔍 Testing Apache configuration..."
 apache2ctl configtest
 
-# Ensure Apache listens on port 80
-echo "📡 Configuring Apache to listen on port 80..."
-echo "Listen 80" > /etc/apache2/ports.conf
+# Ensure Apache listens on all interfaces on port 80
+echo "📡 Configuring Apache to listen on 0.0.0.0:80..."
+echo "Listen 0.0.0.0:80" > /etc/apache2/ports.conf
 echo "ServerName localhost" >> /etc/apache2/apache2.conf
 
-echo "✅ Starting Apache on port 80..."
+# Verify listening configuration
+echo "🔍 Verifying Apache will listen on:"
+cat /etc/apache2/ports.conf
+
+echo "✅ Starting Apache on 0.0.0.0:80..."
+echo "📡 Apache will bind to all network interfaces"
 exec apache2-foreground
