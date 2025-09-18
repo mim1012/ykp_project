@@ -32,8 +32,9 @@ COPY . .
 RUN composer install --no-dev --optimize-autoloader --no-scripts --ignore-platform-reqs \
     && sed -i '/use Test/d' vendor/nesbot/carbon/src/Carbon/Traits/Date.php 2>/dev/null || true
 
-# Fix permissions
-RUN chown -R www-data:www-data storage bootstrap/cache \
+# Fix permissions (create directories if they don't exist)
+RUN mkdir -p storage/app/public storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
+    && chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
 # Create .env
