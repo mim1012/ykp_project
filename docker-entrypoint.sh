@@ -3,6 +3,14 @@ set -e
 
 echo "🚀 Starting YKP Dashboard..."
 
+# Generate APP_KEY if not set
+if [ -z "$APP_KEY" ] && [ -f .env ]; then
+    if ! grep -q "^APP_KEY=.\+" .env; then
+        echo "🔑 Generating application key..."
+        php artisan key:generate --force
+    fi
+fi
+
 # Run migrations if in production
 if [ "$APP_ENV" = "production" ]; then
     echo "📦 Running production migrations..."
