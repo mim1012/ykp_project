@@ -100,7 +100,8 @@
       "Bash(git init:*)",
       "Bash(git tag:*)",
       "Bash(git log:*)",
-      "Bash(awk:*)"
+      "Bash(awk:*)",
+      "Bash(docker run:*)"
     ],
     "defaultMode": "acceptEdits",
     "additionalDirectories": [
