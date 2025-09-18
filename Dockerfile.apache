@@ -2,7 +2,7 @@
 FROM php:8.3-apache
 
 # Cache bust to force rebuild (update this value to force rebuild)
-ARG CACHE_BUST=2024-12-20-v18-complete-git-fix
+ARG CACHE_BUST=2024-12-20-v19-heredoc-fix
 
 WORKDIR /var/www/html
 
@@ -80,8 +80,8 @@ RUN php artisan key:generate --force 2>/dev/null || true
 RUN sed -i '/TelescopeServiceProvider/d' bootstrap/providers.php \
     && echo "Telescope disabled for production"
 
-# Fix git error in version.php - completely rewrite the build array
-RUN cat > config/version-build.php << 'EOF'
+# Fix git error in version.php - completely rewrite without git commands
+RUN cat << 'EOF' > config/version.php
 <?php
 return [
     'current' => '2.0.0',
@@ -104,8 +104,6 @@ return [
     ],
 ];
 EOF
-RUN mv config/version-build.php config/version.php \
-    && echo "Git commands completely removed from version.php"
 
 # Clear Laravel caches
 RUN php artisan config:clear \
