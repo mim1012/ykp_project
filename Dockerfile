@@ -7,8 +7,12 @@ WORKDIR /app
 
 RUN echo "🎯 FINAL SOLUTION v$FINAL_SOLUTION - SUCCESS @ $(date)" && sleep 3
 
-COPY package*.json ./
-RUN npm ci --no-audit --no-fund --prefer-offline
+# Copy package files
+COPY package.json ./
+COPY package-lock.json* ./
+
+# Try npm ci first, fallback to npm install if it fails
+RUN npm ci --no-audit --no-fund || (echo "npm ci failed, using npm install..." && npm install --no-audit --no-fund)
 
 COPY . ./
 ENV NODE_OPTIONS=--max-old-space-size=2048

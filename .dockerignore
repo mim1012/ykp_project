@@ -33,8 +33,8 @@ yarn-debug.log*
 yarn-error.log*
 .npm
 .yarn
-package-lock.json
-yarn.lock
+# package-lock.json is needed for npm ci - DO NOT IGNORE
+# yarn.lock
 
 # 빌드 및 컴파일 결과
 **/build
