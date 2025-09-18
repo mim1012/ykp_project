@@ -49,5 +49,12 @@ RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-av
 
 EXPOSE 80
 
-# Start Apache in foreground
-CMD ["apache2-foreground"]
+# Copy and run startup script
+COPY startup.sh /usr/local/bin/startup.sh
+RUN chmod +x /usr/local/bin/startup.sh
+
+# Ensure Apache ServerName is set
+RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
+
+# Start Apache via startup script
+CMD ["/usr/local/bin/startup.sh"]

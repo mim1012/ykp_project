@@ -3,8 +3,9 @@ builder = "DOCKERFILE"
 dockerfilePath = "./Dockerfile.apache"
 
 [deploy]
-healthcheckPath = "/health.php"
-healthcheckTimeout = 300
+healthcheckPath = "/healthz"
+healthcheckTimeout = 60
+startCommand = "/usr/local/bin/startup.sh"
 restartPolicyType = "ON_FAILURE"
 internalPort = 80
 # Start command is handled by Dockerfile ENTRYPOINT
