@@ -79,12 +79,14 @@ ENV APP_DEBUG=false
 EXPOSE 80
 
 # Copy entrypoint script
-COPY docker-entrypoint.sh /usr/local/bin/
+COPY docker-entrypoint-simple.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# Health check
+# Install curl for health check
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=5 \
-  CMD curl -f http://localhost/health || exit 1
+
+# Simple health check using curl
+HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=10 \
+  CMD curl -f http://localhost/health.php || exit 1
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
