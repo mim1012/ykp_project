@@ -57,8 +57,8 @@ php_admin_flag[log_errors] = on
 php_admin_value[error_log] = /dev/stderr
 EOF
 
-# Create nginx user
-RUN adduser -D -S -h /var/cache/nginx -s /sbin/nologin -G nginx nginx
+# Ensure nginx user exists (skip if already exists)
+RUN id -u nginx &>/dev/null || adduser -D -S -h /var/cache/nginx -s /sbin/nologin -G nginx nginx
 
 # Configure Nginx
 COPY nginx.conf /etc/nginx/nginx.conf
