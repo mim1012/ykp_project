@@ -51,7 +51,7 @@ RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
 COPY . ./
 
 # Create .env file first (needed for artisan commands)
-RUN cp .env.example .env \
+RUN if [ -f .env.example ]; then cp .env.example .env; else echo "APP_KEY=" > .env; fi \
     && php artisan key:generate
 
 # Then install composer dependencies (without dev dependencies and without scripts)

@@ -101,10 +101,13 @@ LICENSE*
 **/*.zip
 **/*.tar.gz
 
-# 환경설정 파일
-**/.env*
+# 환경설정 파일 (keep .env.example for Docker build)
 .env
-.env.*
+.env.local
+.env.production
+.env.supabase*
+# Keep .env.example - needed for Docker build
+# .env.example
 
 # Docker 관련 파일
 Dockerfile.old
