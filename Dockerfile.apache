@@ -2,7 +2,7 @@
 FROM php:8.3-apache
 
 # Cache bust to force rebuild (update this value to force rebuild)
-ARG CACHE_BUST=2024-12-20-v9-mixed-type
+ARG CACHE_BUST=2024-12-20-v10-exact-signatures
 
 WORKDIR /var/www/html
 
@@ -44,7 +44,7 @@ RUN composer clear-cache \
     && rm -rf vendor composer.lock \
     && composer install --optimize-autoloader --no-scripts --ignore-platform-reqs
 
-# Fix Carbon Test trait issues - Create stub with exact interface signatures
+# Fix Carbon Test trait issues - Create stub with EXACT interface signatures
 RUN mkdir -p vendor/nesbot/carbon/src/Carbon/Traits \
     && echo '<?php \
 namespace Carbon\Traits; \
@@ -67,13 +67,11 @@ trait Test { \
         return static::$testNow !== null; \
     } \
 \
-    public static function withTestNow(mixed $testNow = null, callable $callback = null) { \
+    public static function withTestNow(mixed $testNow, callable $callback): mixed { \
         static::setTestNow($testNow); \
-        if ($callback) { \
-            $result = $callback(); \
-            static::setTestNow(null); \
-            return $result; \
-        } \
+        $result = $callback(); \
+        static::setTestNow(null); \
+        return $result; \
     } \
 \
     public static function testNow(mixed $testNow = null) { \
