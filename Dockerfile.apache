@@ -1,7 +1,13 @@
 # Simple Apache + PHP for Railway
 FROM php:8.3-apache
 
+# Cache bust to force rebuild
+ARG CACHE_BUST=1
+
 WORKDIR /var/www/html
+
+# Laravel public을 아파치 루트로
+ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 
 # Install system dependencies and PHP extensions
 RUN apt-get update && apt-get install -y \
@@ -46,8 +52,7 @@ RUN cp .env.example .env 2>/dev/null || echo "APP_KEY=" > .env
 # Create simple test file
 RUN echo '<?php echo "Apache + PHP Working! " . PHP_VERSION;' > public/apache-test.php
 
-# Set document root
-ENV APACHE_DOCUMENT_ROOT /var/www/html/public
+# Apply document root to Apache configs (ENV already set above)
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
     && sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
@@ -59,6 +64,9 @@ RUN chmod +x /usr/local/bin/startup.sh
 
 # Ensure Apache ServerName is set
 RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
+
+# Verify sites are properly enabled
+RUN a2ensite 001-app && a2dissite 000-default || true
 
 # Start Apache via startup script
 CMD ["/usr/local/bin/startup.sh"]
