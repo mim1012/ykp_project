@@ -25,9 +25,11 @@ WORKDIR /var/www/html
 ARG FINAL_SOLUTION=20250916_SUCCESS
 RUN echo "✅ FINAL PHP STAGE v$FINAL_SOLUTION - NO VENDOR COPY @ $(date)" && sleep 2
 
-# Apache modules and configuration
+# Apache modules and configuration for Railway
 RUN a2enmod rewrite headers \
-    && echo "ServerName localhost" >> /etc/apache2/apache2.conf
+    && echo "ServerName localhost" >> /etc/apache2/apache2.conf \
+    && sed -i 's/Listen 80/Listen ${PORT}/g' /etc/apache2/ports.conf \
+    && sed -i 's/:80/:${PORT}/g' /etc/apache2/sites-available/000-default.conf
 
 # Install dependencies
 RUN apt-get update \
@@ -76,7 +78,10 @@ RUN mkdir -p storage/app/public storage/framework/cache storage/framework/sessio
 # Environment
 ENV APP_ENV=production
 ENV APP_DEBUG=false
-EXPOSE 80
+
+# Railway uses dynamic PORT, default to 8080
+ENV PORT=8080
+EXPOSE 8080
 
 # Copy entrypoint script
 COPY docker-entrypoint-simple.sh /usr/local/bin/docker-entrypoint.sh
@@ -85,8 +90,8 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 # Install curl for health check
 RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
 
-# Simple health check using curl
+# Simple health check using curl with dynamic port
 HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=10 \
-  CMD curl -f http://localhost/health.php || exit 1
+  CMD curl -f http://localhost:${PORT:-8080}/health.php || exit 1
 
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
