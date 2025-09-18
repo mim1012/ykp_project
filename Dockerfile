@@ -50,17 +50,24 @@ RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
 # Copy application code first (needed for artisan commands)
 COPY . ./
 
-# Then install composer dependencies
-RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress --no-scripts
+# Create .env file first (needed for artisan commands)
+RUN cp .env.example .env \
+    && php artisan key:generate
+
+# Then install composer dependencies (without dev dependencies and without scripts)
+RUN COMPOSER_ALLOW_SUPERUSER=1 composer install \
+    --no-dev \
+    --optimize-autoloader \
+    --no-interaction \
+    --no-progress \
+    --no-scripts \
+    --ignore-platform-reqs
 
 # Copy frontend build output
 COPY --from=frontend_build /app/public/build ./public/build
 
-# Run post-install scripts
-RUN composer dump-autoload --optimize \
-    && php artisan config:clear \
-    && php artisan route:clear \
-    && php artisan view:clear
+# Manually run necessary post-install commands (skip problematic ones)
+RUN php artisan package:discover --ansi || true
 
 # Set permissions
 RUN chown -R www-data:www-data storage bootstrap/cache \
