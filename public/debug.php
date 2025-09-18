@@ -1,77 +1,153 @@
 <?php
-
 /**
- * Railway Debug Information Page
- * Laravel 500 에러 디버깅용 임시 페이지
+ * Debug script for Railway 502 errors
  */
-echo '<h1>🐛 Railway Debug Info</h1>';
 
-// PHP 정보
-echo '<h2>📋 PHP Info</h2>';
-echo 'PHP Version: '.phpversion().'<br>';
-echo 'Server: '.$_SERVER['SERVER_SOFTWARE'] ?? 'Unknown'.'<br>';
-echo 'Document Root: '.$_SERVER['DOCUMENT_ROOT'] ?? 'Unknown'.'<br>';
+header('Content-Type: text/plain; charset=utf-8');
+echo "=== YKP Dashboard Debug Info ===\n\n";
 
-// 환경변수 확인 (민감한 정보 마스킹)
-echo '<h2>🔧 Environment Variables</h2>';
-$env_vars = [
-    'APP_ENV', 'APP_DEBUG', 'APP_KEY', 'APP_URL',
-    'DB_CONNECTION', 'DATABASE_URL',
-    'FEATURE_EXCEL_INPUT', 'FEATURE_ADVANCED_REPORTS',
+// 1. PHP 정보
+echo "1. PHP Version: " . PHP_VERSION . "\n";
+echo "   SAPI: " . PHP_SAPI . "\n";
+echo "   Memory Limit: " . ini_get('memory_limit') . "\n\n";
+
+// 2. 파일 시스템 체크
+echo "2. File System Check:\n";
+$checks = [
+    'vendor/autoload.php' => __DIR__ . '/../vendor/autoload.php',
+    '.env' => __DIR__ . '/../.env',
+    'bootstrap/app.php' => __DIR__ . '/../bootstrap/app.php',
+    'storage/logs' => __DIR__ . '/../storage/logs',
 ];
 
-foreach ($env_vars as $var) {
-    $value = getenv($var) ?: $_ENV[$var] ?? 'Not Set';
+foreach ($checks as $name => $path) {
+    echo "   - $name: " . (file_exists($path) ? "✅ EXISTS" : "❌ MISSING") . "\n";
+}
 
-    // 민감한 정보 마스킹
-    if (in_array($var, ['APP_KEY', 'DATABASE_URL']) && $value !== 'Not Set') {
-        $value = substr($value, 0, 10).'***MASKED***';
+// 3. 환경 변수 체크
+echo "\n3. Environment Variables:\n";
+$envVars = ['APP_KEY', 'APP_ENV', 'DB_HOST', 'DB_DATABASE', 'DB_USERNAME', 'PORT'];
+foreach ($envVars as $var) {
+    $value = $_ENV[$var] ?? getenv($var) ?? 'NOT SET';
+    if ($var === 'APP_KEY' && $value !== 'NOT SET') {
+        $value = substr($value, 0, 20) . '...'; // 일부만 표시
     }
-
-    echo "$var: <code>$value</code><br>";
+    echo "   - $var: $value\n";
 }
 
-// Laravel 경로 확인
-echo '<h2>📁 Laravel Paths</h2>';
-$laravel_paths = [
-    'Bootstrap' => '../bootstrap/app.php',
-    'Vendor Autoload' => '../vendor/autoload.php',
-    'Config' => '../config/app.php',
-    '.env' => '../.env',
-];
-
-foreach ($laravel_paths as $name => $path) {
-    $exists = file_exists($path) ? '✅' : '❌';
-    echo "$name: $exists <code>$path</code><br>";
-}
-
-// Laravel 부트스트랩 시도
-echo '<h2>🚀 Laravel Bootstrap Test</h2>';
-try {
-    if (file_exists('../vendor/autoload.php')) {
-        require_once '../vendor/autoload.php';
-        echo '✅ Autoload successful<br>';
-
-        if (file_exists('../bootstrap/app.php')) {
-            $app = require_once '../bootstrap/app.php';
-            echo '✅ App bootstrap successful<br>';
-
-            // 기본 설정 확인
-            if (method_exists($app, 'make')) {
-                $config = $app->make('config');
-                echo '✅ Config service available<br>';
-                echo 'App Name: '.$config->get('app.name', 'Unknown').'<br>';
-                echo 'App Env: '.$config->get('app.env', 'Unknown').'<br>';
+// 4. .env 파일 내용 (일부)
+echo "\n4. .env File Check:\n";
+$envFile = __DIR__ . '/../.env';
+if (file_exists($envFile)) {
+    $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        if (strpos($line, 'APP_') === 0 || strpos($line, 'DB_') === 0) {
+            // 민감한 정보 마스킹
+            if (strpos($line, 'PASSWORD') !== false || strpos($line, 'KEY') !== false) {
+                $parts = explode('=', $line, 2);
+                echo "   " . $parts[0] . "=***HIDDEN***\n";
+            } else {
+                echo "   $line\n";
             }
-        } else {
-            echo '❌ Bootstrap file not found<br>';
         }
+    }
+} else {
+    echo "   ❌ .env file not found\n";
+}
+
+// 5. Composer Autoload 테스트
+echo "\n5. Composer Autoload Test:\n";
+try {
+    require_once __DIR__ . '/../vendor/autoload.php';
+    echo "   ✅ Autoload successful\n";
+
+    // Filament 클래스 체크
+    if (class_exists('Filament\Support\ServiceProvider')) {
+        echo "   ✅ Filament classes loaded\n";
     } else {
-        echo '❌ Vendor autoload not found<br>';
+        echo "   ⚠️ Filament classes not found\n";
     }
 } catch (Exception $e) {
-    echo '❌ Laravel Bootstrap Error: '.$e->getMessage().'<br>';
-    echo 'Stack trace:<br><pre>'.$e->getTraceAsString().'</pre>';
+    echo "   ❌ Autoload failed: " . $e->getMessage() . "\n";
 }
 
-echo '<hr><small>Generated at: '.date('Y-m-d H:i:s T').'</small>';
+// 6. 데이터베이스 연결 테스트
+echo "\n6. Database Connection Test:\n";
+if (extension_loaded('pdo_pgsql')) {
+    echo "   ✅ PDO PostgreSQL extension loaded\n";
+
+    // .env에서 DB 정보 읽기
+    if (file_exists($envFile)) {
+        $envContent = file_get_contents($envFile);
+        preg_match('/DB_HOST=(.+)/', $envContent, $host);
+        preg_match('/DB_PORT=(.+)/', $envContent, $port);
+        preg_match('/DB_DATABASE=(.+)/', $envContent, $db);
+        preg_match('/DB_USERNAME=(.+)/', $envContent, $user);
+        preg_match('/DB_PASSWORD=(.+)/', $envContent, $pass);
+
+        if ($host && $db && $user && $pass) {
+            try {
+                $dsn = "pgsql:host={$host[1]};port=" . ($port[1] ?? '5432') . ";dbname={$db[1]}";
+                $pdo = new PDO($dsn, $user[1], $pass[1], [
+                    PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                    PDO::ATTR_TIMEOUT => 5
+                ]);
+                echo "   ✅ Database connection successful\n";
+
+                // 간단한 쿼리 테스트
+                $stmt = $pdo->query("SELECT VERSION()");
+                $version = $stmt->fetchColumn();
+                echo "   PostgreSQL: " . substr($version, 0, 50) . "...\n";
+            } catch (PDOException $e) {
+                echo "   ❌ Database connection failed: " . $e->getMessage() . "\n";
+            }
+        } else {
+            echo "   ❌ Database credentials not found in .env\n";
+        }
+    }
+} else {
+    echo "   ❌ PDO PostgreSQL extension not loaded\n";
+}
+
+// 7. Laravel Bootstrap 테스트
+echo "\n7. Laravel Bootstrap Test:\n";
+try {
+    $app = require_once __DIR__ . '/../bootstrap/app.php';
+    echo "   ✅ Laravel app created\n";
+
+    // 커널 생성 테스트
+    $kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
+    echo "   ✅ HTTP Kernel created\n";
+
+} catch (Exception $e) {
+    echo "   ❌ Laravel bootstrap failed: " . $e->getMessage() . "\n";
+    echo "   File: " . $e->getFile() . ":" . $e->getLine() . "\n";
+}
+
+// 8. 로그 파일 체크
+echo "\n8. Log Files:\n";
+$logDir = __DIR__ . '/../storage/logs';
+if (is_dir($logDir)) {
+    $logs = glob($logDir . '/*.log');
+    foreach ($logs as $log) {
+        $size = filesize($log);
+        $modified = date('Y-m-d H:i:s', filemtime($log));
+        echo "   - " . basename($log) . " (Size: {$size}B, Modified: $modified)\n";
+
+        // 최근 에러 표시
+        if (basename($log) === 'laravel.log' && $size > 0) {
+            $lines = file($log);
+            $lastErrors = array_slice($lines, -5);
+            if ($lastErrors) {
+                echo "   Last errors:\n";
+                foreach ($lastErrors as $line) {
+                    echo "     " . trim($line) . "\n";
+                }
+            }
+        }
+    }
+} else {
+    echo "   ❌ Log directory not found\n";
+}
+
+echo "\n=== End Debug Info ===\n";

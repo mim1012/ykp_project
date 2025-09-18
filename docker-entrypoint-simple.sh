@@ -8,6 +8,12 @@ if [ ! -z "$PORT" ]; then
     sed -i "s/:80/:$PORT/g" /etc/apache2/sites-available/000-default.conf
 fi
 
+# Sync Railway environment variables to .env file
+if [ -f "sync-env-vars.php" ]; then
+    echo "🔄 Syncing environment variables to .env..."
+    php sync-env-vars.php || true
+fi
+
 # Always fix Filament autoload at runtime (safety check)
 if [ -f "fix-filament-autoload.php" ]; then
     echo "🔧 Fixing Filament autoload..."
