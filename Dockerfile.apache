@@ -2,7 +2,7 @@
 FROM php:8.3-apache
 
 # Cache bust to force rebuild (update this value to force rebuild)
-ARG CACHE_BUST=2024-12-20-v7-syntax-fix
+ARG CACHE_BUST=2024-12-20-v8-carbon-signatures
 
 WORKDIR /var/www/html
 
@@ -44,27 +44,30 @@ RUN composer clear-cache \
     && rm -rf vendor composer.lock \
     && composer install --optimize-autoloader --no-scripts --ignore-platform-reqs
 
-# Fix Carbon Test trait issues - Create empty stub with required methods
+# Fix Carbon Test trait issues - Create stub with proper signatures
 RUN mkdir -p vendor/nesbot/carbon/src/Carbon/Traits \
     && echo '<?php \
 namespace Carbon\Traits; \
 \
+use Closure; \
+use Carbon\CarbonInterface; \
+\
 trait Test { \
     private static $testNow; \
 \
-    public static function setTestNow($testNow = null) { \
+    public static function setTestNow(Closure|CarbonInterface|null $testNow = null): void { \
         static::$testNow = $testNow; \
     } \
 \
-    public static function getTestNow() { \
+    public static function getTestNow(): Closure|CarbonInterface|null { \
         return static::$testNow; \
     } \
 \
-    public static function hasTestNow() { \
+    public static function hasTestNow(): bool { \
         return static::$testNow !== null; \
     } \
 \
-    public static function withTestNow($testNow = null, $callback = null) { \
+    public static function withTestNow(Closure|CarbonInterface|null $testNow = null, callable $callback = null) { \
         static::setTestNow($testNow); \
         if ($callback) { \
             $result = $callback(); \
@@ -73,7 +76,7 @@ trait Test { \
         } \
     } \
 \
-    public static function testNow($testNow = null) { \
+    public static function testNow(Closure|CarbonInterface|null $testNow = null) { \
         static::setTestNow($testNow); \
     } \
 }' > vendor/nesbot/carbon/src/Carbon/Traits/Test.php
