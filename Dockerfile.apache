@@ -18,9 +18,8 @@ RUN apt-get update && apt-get install -y \
 # Enable Apache modules
 RUN a2enmod rewrite headers
 
-# Configure Apache for Railway - Listen on all interfaces
-RUN echo "Listen 0.0.0.0:80" > /etc/apache2/ports.conf \
-    && a2dissite 000-default
+# Configure Apache - ports will be set by startup script
+RUN a2dissite 000-default
 
 # Copy custom VirtualHost configuration
 COPY apache-vhost.conf /etc/apache2/sites-available/001-app.conf

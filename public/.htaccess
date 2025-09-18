@@ -1,9 +1,18 @@
+# Bypass for healthcheck FIRST
+<Files "health.php">
+    Require all granted
+</Files>
+
 <IfModule mod_rewrite.c>
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes
     </IfModule>
 
     RewriteEngine On
+
+    # health.php는 절대 리라이트하지 않음
+    RewriteCond %{REQUEST_URI} ^/health\.php$ [NC]
+    RewriteRule ^ - [L]
 
     # Handle Authorization Header
     RewriteCond %{HTTP:Authorization} .
