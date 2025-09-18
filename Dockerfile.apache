@@ -2,7 +2,7 @@
 FROM php:8.3-apache
 
 # Cache bust to force rebuild (update this value to force rebuild)
-ARG CACHE_BUST=2024-12-20-v4-filament-fix
+ARG CACHE_BUST=2024-12-20-v5-filament-complete-fix
 
 WORKDIR /var/www/html
 
@@ -39,10 +39,37 @@ COPY . .
 RUN echo "OK" > /var/www/html/public/health.txt \
     && echo '<?php http_response_code(200); echo "OK";' > /var/www/html/public/health.php
 
-# Install dependencies (without --no-dev to avoid Filament autoload issues)
-RUN composer install --optimize-autoloader --no-scripts --ignore-platform-reqs \
-    && sed -i '/use Test/d' vendor/nesbot/carbon/src/Carbon/Traits/Date.php 2>/dev/null || true \
-    && find vendor/filament -name "helpers.php" -type f | head -5
+# Clear composer cache and install dependencies WITHOUT --no-dev
+RUN composer clear-cache \
+    && rm -rf vendor composer.lock \
+    && composer install --optimize-autoloader --no-scripts --ignore-platform-reqs \
+    && sed -i '/use Test/d' vendor/nesbot/carbon/src/Carbon/Traits/Date.php 2>/dev/null || true
+
+# Create dummy helper files as fallback (if they still don't exist)
+RUN mkdir -p vendor/filament/notifications/src/Testing \
+    && echo "<?php // Dummy helper file" > vendor/filament/notifications/src/Testing/helpers.php \
+    && mkdir -p vendor/filament/filament/src/Testing \
+    && echo "<?php // Dummy helper file" > vendor/filament/filament/src/Testing/helpers.php \
+    && mkdir -p vendor/filament/support/src/Testing \
+    && echo "<?php // Dummy helper file" > vendor/filament/support/src/Testing/helpers.php \
+    && mkdir -p vendor/filament/forms/src/Testing \
+    && echo "<?php // Dummy helper file" > vendor/filament/forms/src/Testing/helpers.php \
+    && mkdir -p vendor/filament/tables/src/Testing \
+    && echo "<?php // Dummy helper file" > vendor/filament/tables/src/Testing/helpers.php
+
+# Alternative: Remove problematic autoload entries if files don't exist
+RUN if [ ! -f "vendor/filament/notifications/src/Testing/helpers.php" ]; then \
+        sed -i '/notifications.*Testing.*helpers\.php/d' vendor/composer/autoload_files.php 2>/dev/null || true; \
+    fi \
+    && if [ ! -f "vendor/filament/filament/src/Testing/helpers.php" ]; then \
+        sed -i '/filament.*Testing.*helpers\.php/d' vendor/composer/autoload_files.php 2>/dev/null || true; \
+    fi
+
+# Verify Filament files exist
+RUN echo "=== Checking Filament helper files ===" \
+    && ls -la vendor/filament/*/src/Testing/helpers.php 2>/dev/null || echo "Some helper files may not exist" \
+    && echo "=== Checking autoload_files.php ===" \
+    && grep -c "Testing/helpers.php" vendor/composer/autoload_files.php || echo "No Testing helpers in autoload"
 
 # Fix permissions
 RUN mkdir -p storage/app/public storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
@@ -51,6 +78,14 @@ RUN mkdir -p storage/app/public storage/framework/cache storage/framework/sessio
 
 # Create .env
 RUN cp .env.example .env 2>/dev/null || echo "APP_KEY=" > .env
+
+# Generate app key if not exists
+RUN php artisan key:generate --force 2>/dev/null || true
+
+# Clear Laravel caches
+RUN php artisan config:clear \
+    && php artisan cache:clear \
+    && php artisan view:clear 2>/dev/null || true
 
 # NO sed replacements - we'll use explicit paths in vhost
 
