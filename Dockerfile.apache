@@ -2,7 +2,7 @@
 FROM php:8.3-apache
 
 # Cache bust to force rebuild (update this value to force rebuild)
-ARG CACHE_BUST=2024-12-20-v5-filament-complete-fix
+ARG CACHE_BUST=2024-12-20-v6-carbon-fix
 
 WORKDIR /var/www/html
 
@@ -42,8 +42,43 @@ RUN echo "OK" > /var/www/html/public/health.txt \
 # Clear composer cache and install dependencies WITHOUT --no-dev
 RUN composer clear-cache \
     && rm -rf vendor composer.lock \
-    && composer install --optimize-autoloader --no-scripts --ignore-platform-reqs \
-    && sed -i '/use Test/d' vendor/nesbot/carbon/src/Carbon/Traits/Date.php 2>/dev/null || true
+    && composer install --optimize-autoloader --no-scripts --ignore-platform-reqs
+
+# Fix Carbon Test trait issues - Create empty stub with required methods
+RUN mkdir -p vendor/nesbot/carbon/src/Carbon/Traits \
+    && cat > vendor/nesbot/carbon/src/Carbon/Traits/Test.php << 'EOF'
+<?php
+namespace Carbon\Traits;
+
+trait Test {
+    private static $testNow;
+
+    public static function setTestNow($testNow = null) {
+        static::$testNow = $testNow;
+    }
+
+    public static function getTestNow() {
+        return static::$testNow;
+    }
+
+    public static function hasTestNow() {
+        return static::$testNow !== null;
+    }
+
+    public static function withTestNow($testNow = null, $callback = null) {
+        static::setTestNow($testNow);
+        if ($callback) {
+            $result = $callback();
+            static::setTestNow(null);
+            return $result;
+        }
+    }
+
+    public static function testNow($testNow = null) {
+        static::setTestNow($testNow);
+    }
+}
+EOF
 
 # Create dummy helper files as fallback (if they still don't exist)
 RUN mkdir -p vendor/filament/notifications/src/Testing \
