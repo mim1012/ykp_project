@@ -15,6 +15,12 @@ if [ -f "fix-filament-autoload.php" ]; then
     php fix-filament-autoload.php || true
 fi
 
+# Fix Carbon Test trait issue
+if [ -f "fix-carbon-production.php" ]; then
+    echo "🔧 Fixing Carbon Test trait..."
+    php fix-carbon-production.php || true
+fi
+
 # Generate app key if needed
 if ! grep -q "^APP_KEY=.\+" .env 2>/dev/null; then
     echo "🔑 Generating application key..."

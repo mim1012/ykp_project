@@ -21,8 +21,8 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Copy application code
 COPY . .
 
-# Install PHP dependencies
-RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interaction
+# Install PHP dependencies (include dev to avoid missing test dependencies)
+RUN composer install --optimize-autoloader --no-scripts --no-interaction
 
 # Fix permissions
 RUN mkdir -p storage/logs storage/framework/cache storage/framework/sessions storage/framework/views bootstrap/cache \
