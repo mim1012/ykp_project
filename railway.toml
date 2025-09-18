@@ -1,8 +1,8 @@
 [build]
-builder = "NIXPACKS"
-buildCommand = "npm install && npm run build && composer install --no-dev --optimize-autoloader"
+builder = "DOCKERFILE"
+dockerfilePath = "./Dockerfile"
 
 [deploy]
 healthcheckPath = "/"
 restartPolicyType = "ON_FAILURE"
-startCommand = "php artisan migrate --force && php artisan config:clear && php artisan route:clear && php artisan view:clear && php artisan cache:clear"
+# Start command is handled by Dockerfile CMD
