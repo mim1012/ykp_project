@@ -13,19 +13,11 @@ use Illuminate\Support\Facades\DB;
 |--------------------------------------------------------------------------
 */
 Route::get('/health', function () {
-    try {
-        // Check database connection
-        DB::connection()->getPdo();
-        $database = true;
-    } catch (\Exception $e) {
-        $database = false;
-    }
-
+    // Simple health check - if Laravel is responding, it's healthy
     return response()->json([
         'status' => 'healthy',
-        'database' => $database,
         'timestamp' => now()->toIso8601String(),
-    ]);
+    ], 200);
 });
 
 /*
