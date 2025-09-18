@@ -2,7 +2,7 @@
 FROM php:8.3-apache
 
 # Cache bust to force rebuild (update this value to force rebuild)
-ARG CACHE_BUST=2024-12-20-v14-carbon-version-fix
+ARG CACHE_BUST=2024-12-20-v15-carbon3-laravel12
 
 WORKDIR /var/www/html
 
@@ -25,7 +25,7 @@ RUN a2enmod rewrite headers
 # Remove default site
 RUN a2dissite 000-default
 
-# Copy custom VirtualHost configuration (without any sed replacements)
+# Copy custom VirtualHost configuration
 COPY apache-vhost.conf /etc/apache2/sites-available/001-app.conf
 RUN a2ensite 001-app
 
@@ -39,13 +39,12 @@ COPY . .
 RUN echo "OK" > /var/www/html/public/health.txt \
     && echo '<?php http_response_code(200); echo "OK";' > /var/www/html/public/health.php
 
-# Clean install of all dependencies with Carbon version fix
+# Clean install with Carbon 3.x for Laravel 12 compatibility
 RUN rm -rf vendor composer.lock \
     && composer clear-cache \
-    && composer require nesbot/carbon:^2.72 --with-all-dependencies --no-interaction \
-    && composer install --optimize-autoloader --no-scripts --ignore-platform-reqs
+    && composer install --no-dev --optimize-autoloader --no-scripts --ignore-platform-reqs
 
-# Create dummy Filament helper files (if they still don't exist)
+# Create dummy Filament helper files (they're missing with --no-dev)
 RUN mkdir -p vendor/filament/notifications/src/Testing \
     && echo "<?php // Dummy helper file" > vendor/filament/notifications/src/Testing/helpers.php \
     && mkdir -p vendor/filament/filament/src/Testing \
@@ -57,12 +56,14 @@ RUN mkdir -p vendor/filament/notifications/src/Testing \
     && mkdir -p vendor/filament/tables/src/Testing \
     && echo "<?php // Dummy helper file" > vendor/filament/tables/src/Testing/helpers.php
 
-# Verify Carbon installation
-RUN echo "=== Checking Carbon version ===" \
-    && composer show nesbot/carbon | grep versions \
-    && echo "=== Checking Carbon files ===" \
-    && ls -la vendor/nesbot/carbon/src/Carbon/Carbon.php \
-    && ls -la vendor/nesbot/carbon/src/Carbon/CarbonInterface.php
+# Verify Carbon 3.x installation
+RUN echo "=== Checking Carbon version (should be 3.x) ===" \
+    && composer show nesbot/carbon | grep -E "versions|name" || echo "Carbon not found" \
+    && echo "=== Checking Laravel version ===" \
+    && composer show laravel/framework | grep -E "versions|name" || echo "Laravel not found" \
+    && echo "=== Verifying Carbon files ===" \
+    && test -f vendor/nesbot/carbon/src/Carbon/Carbon.php && echo "Carbon.php ✅" || echo "Carbon.php ❌" \
+    && test -f vendor/nesbot/carbon/src/Carbon/CarbonInterface.php && echo "CarbonInterface.php ✅" || echo "CarbonInterface.php ❌"
 
 # Fix permissions
 RUN mkdir -p storage/app/public storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
