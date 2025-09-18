@@ -1,6 +1,6 @@
 [build]
 builder = "DOCKERFILE"
-dockerfilePath = "./Dockerfile.nginx"
+dockerfilePath = "./Dockerfile.apache"
 
 [deploy]
 healthcheckPath = "/health.php"
