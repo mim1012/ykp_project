@@ -2,7 +2,7 @@
 FROM php:8.3-apache
 
 # Cache bust to force rebuild (update this value to force rebuild)
-ARG CACHE_BUST=2024-12-20-v10-exact-signatures
+ARG CACHE_BUST=2024-12-20-v11-complete-carbon
 
 WORKDIR /var/www/html
 
@@ -44,18 +44,23 @@ RUN composer clear-cache \
     && rm -rf vendor composer.lock \
     && composer install --optimize-autoloader --no-scripts --ignore-platform-reqs
 
-# Fix Carbon Test trait issues - Create stub with EXACT interface signatures
+# Fix Carbon Test trait issues - Create stub with ALL interface methods
 RUN mkdir -p vendor/nesbot/carbon/src/Carbon/Traits \
     && echo '<?php \
 namespace Carbon\Traits; \
 \
 use Closure; \
 use Carbon\CarbonInterface; \
+use DateTimeZone; \
 \
 trait Test { \
     private static $testNow; \
 \
     public static function setTestNow(mixed $testNow = null): void { \
+        static::$testNow = $testNow; \
+    } \
+\
+    public static function setTestNowAndTimezone(mixed $testNow = null, DateTimeZone|string|null $timezone = null): void { \
         static::$testNow = $testNow; \
     } \
 \
