@@ -467,13 +467,15 @@ echo "📌 Next: Push to remote and deploy"
 gh release create v1.1.0 \
     --title "v1.1.0 - Evolution" \
     --notes-file RELEASE_NOTES.md \
-    --target main
+    --target main \
+    --repo mim1012/ykp_project
 ```
 
 ---
 
 ## 📚 Resources
 
+- [Project Repository](https://github.com/mim1012/ykp_project)
 - [Semantic Versioning](https://semver.org/)
 - [Keep a Changelog](https://keepachangelog.com/)
 - [GitHub Releases](https://docs.github.com/en/repositories/releasing-projects-on-github)

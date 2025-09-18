@@ -413,7 +413,7 @@ LIMIT 10;
 
 ## 📚 Resources
 
-- [Bug Tracking Tools](https://github.com/ykp/dashboard/issues)
+- [Bug Tracking Tools](https://github.com/mim1012/ykp_project/issues)
 - [Sentry Dashboard](https://sentry.io/organizations/ykp/issues/)
 - [PHPStan Rules](./phpstan.neon)
 - [Test Coverage Report](./reports/coverage/index.html)
