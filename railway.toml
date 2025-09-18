@@ -7,4 +7,7 @@ healthcheckPath = "/health.txt"
 healthcheckTimeout = 60
 restartPolicyType = "ON_FAILURE"
 internalPort = 8080
+
+startCommand = "/usr/local/bin/startup.sh"
+ssh = true
 # Start command is handled by Dockerfile ENTRYPOINT
