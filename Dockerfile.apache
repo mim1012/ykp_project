@@ -2,7 +2,7 @@
 FROM php:8.3-apache
 
 # Cache bust to force rebuild (update this value to force rebuild)
-ARG CACHE_BUST=2024-12-20-v19-heredoc-fix
+ARG CACHE_BUST=2024-12-20-v20-echo-method
 
 WORKDIR /var/www/html
 
@@ -81,29 +81,27 @@ RUN sed -i '/TelescopeServiceProvider/d' bootstrap/providers.php \
     && echo "Telescope disabled for production"
 
 # Fix git error in version.php - completely rewrite without git commands
-RUN cat << 'EOF' > config/version.php
-<?php
-return [
-    'current' => '2.0.0',
-    'released_at' => '2025-01-18',
-    'codename' => 'Evolution',
-    'build' => [
-        'number' => env('BUILD_NUMBER', 'production'),
-        'commit' => env('BUILD_COMMIT', 'deployed'),
-        'branch' => env('BUILD_BRANCH', 'staging'),
-        'timestamp' => env('BUILD_TIMESTAMP', date('Y-m-d H:i:s')),
-    ],
-    'history' => [
-        '1.2.0' => '2025-09-17',
-        '1.1.1' => '2025-09-13',
-        '1.1.0' => '2025-09-13',
-        '1.0.0' => '2025-09-13',
-        '0.9.0' => '2025-01-10',
-        '0.8.0' => '2025-01-05',
-        '0.7.0' => '2024-12-20',
-    ],
-];
-EOF
+RUN echo '<?php \n\
+return [ \n\
+    "current" => "2.0.0", \n\
+    "released_at" => "2025-01-18", \n\
+    "codename" => "Evolution", \n\
+    "build" => [ \n\
+        "number" => env("BUILD_NUMBER", "production"), \n\
+        "commit" => env("BUILD_COMMIT", "deployed"), \n\
+        "branch" => env("BUILD_BRANCH", "staging"), \n\
+        "timestamp" => env("BUILD_TIMESTAMP", date("Y-m-d H:i:s")), \n\
+    ], \n\
+    "history" => [ \n\
+        "1.2.0" => "2025-09-17", \n\
+        "1.1.1" => "2025-09-13", \n\
+        "1.1.0" => "2025-09-13", \n\
+        "1.0.0" => "2025-09-13", \n\
+        "0.9.0" => "2025-01-10", \n\
+        "0.8.0" => "2025-01-05", \n\
+        "0.7.0" => "2024-12-20", \n\
+    ], \n\
+];' > config/version.php
 
 # Clear Laravel caches
 RUN php artisan config:clear \
