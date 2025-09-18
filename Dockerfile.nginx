@@ -28,12 +28,37 @@ RUN composer install --no-dev --optimize-autoloader --no-scripts --no-interactio
 RUN mkdir -p storage/logs storage/framework/cache storage/framework/sessions storage/framework/views bootstrap/cache \
     && chmod -R 777 storage bootstrap/cache
 
-# Configure PHP-FPM
-RUN echo "pm = dynamic" >> /usr/local/etc/php-fpm.d/www.conf \
-    && echo "pm.max_children = 50" >> /usr/local/etc/php-fpm.d/www.conf \
-    && echo "pm.start_servers = 5" >> /usr/local/etc/php-fpm.d/www.conf \
-    && echo "pm.min_spare_servers = 5" >> /usr/local/etc/php-fpm.d/www.conf \
-    && echo "pm.max_spare_servers = 35" >> /usr/local/etc/php-fpm.d/www.conf
+# Configure PHP-FPM with custom settings
+RUN cat > /usr/local/etc/php-fpm.d/zz-docker.conf <<EOF
+[global]
+daemonize = no
+error_log = /dev/stderr
+
+[www]
+listen = 127.0.0.1:9000
+listen.owner = nginx
+listen.group = nginx
+listen.mode = 0660
+
+user = nginx
+group = nginx
+
+pm = dynamic
+pm.max_children = 50
+pm.start_servers = 5
+pm.min_spare_servers = 5
+pm.max_spare_servers = 35
+
+clear_env = no
+catch_workers_output = yes
+decorate_workers_output = no
+
+php_admin_flag[log_errors] = on
+php_admin_value[error_log] = /dev/stderr
+EOF
+
+# Create nginx user
+RUN adduser -D -S -h /var/cache/nginx -s /sbin/nologin -G nginx nginx
 
 # Configure Nginx
 COPY nginx.conf /etc/nginx/nginx.conf
@@ -44,7 +69,11 @@ RUN cp .env.example .env || echo "APP_KEY=" > .env
 # Supervisor configuration
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
+# Copy and setup entrypoint
+COPY docker-entrypoint-nginx.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 EXPOSE 8080
 
-# Start supervisor
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+# Start via entrypoint
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
