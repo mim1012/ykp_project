@@ -97,7 +97,10 @@
       "WebSearch",
       "Bash(git reset:*)",
       "Bash(railway logs:*)",
-      "Bash(git init:*)"
+      "Bash(git init:*)",
+      "Bash(git tag:*)",
+      "Bash(git log:*)",
+      "Bash(awk:*)"
     ],
     "defaultMode": "acceptEdits",
     "additionalDirectories": [
