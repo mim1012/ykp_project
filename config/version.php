@@ -46,9 +46,9 @@ return [
     */
 
     'build' => [
-        'number' => env('BUILD_NUMBER', 'local'),
-        'commit' => env('BUILD_COMMIT', trim(exec('git rev-parse --short HEAD') ?: 'unknown')),
-        'branch' => env('BUILD_BRANCH', trim(exec('git rev-parse --abbrev-ref HEAD') ?: 'unknown')),
+        'number' => env('BUILD_NUMBER', 'prod'),
+        'commit' => env('BUILD_COMMIT', 'none'),
+        'branch' => env('BUILD_BRANCH', 'main'),
         'timestamp' => env('BUILD_TIMESTAMP', date('Y-m-d H:i:s')),
     ],
 
