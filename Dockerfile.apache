@@ -70,8 +70,11 @@ RUN mkdir -p storage/app/public storage/framework/cache storage/framework/sessio
     && chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-# Create .env
-RUN cp .env.example .env 2>/dev/null || echo "APP_KEY=" > .env
+# Create .env with production settings
+RUN cp .env.example .env 2>/dev/null || echo "APP_KEY=" > .env \
+    && echo "APP_ENV=production" >> .env \
+    && echo "APP_DEBUG=false" >> .env \
+    && echo "TELESCOPE_ENABLED=false" >> .env
 
 # Generate app key if not exists
 RUN php artisan key:generate --force 2>/dev/null || true
