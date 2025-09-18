@@ -8,9 +8,10 @@ if [ ! -z "$PORT" ]; then
     sed -i "s/:80/:$PORT/g" /etc/apache2/sites-available/000-default.conf
 fi
 
-# Fix Filament autoload if needed (runtime safety check)
+# Always fix Filament autoload at runtime (safety check)
 if [ -f "fix-filament-autoload.php" ]; then
-    php fix-filament-autoload.php 2>/dev/null || true
+    echo "🔧 Fixing Filament autoload..."
+    php fix-filament-autoload.php || true
 fi
 
 # Generate key if not set (suppress Filament errors)

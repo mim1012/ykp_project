@@ -63,11 +63,12 @@ RUN COMPOSER_ALLOW_SUPERUSER=1 composer install \
     --no-scripts \
     --ignore-platform-reqs
 
-# Fix Filament autoload issue for production
-RUN php fix-filament-autoload.php
+# Fix Filament autoload issue for production (run twice to ensure fix)
+RUN php fix-filament-autoload.php \
+    && php fix-filament-autoload.php
 
-# Regenerate optimized autoload without testing helpers
-RUN composer dump-autoload --optimize --no-dev --classmap-authoritative
+# Do NOT regenerate autoload as it will restore the problem
+# RUN composer dump-autoload --optimize --no-dev --classmap-authoritative
 
 # Copy frontend build output
 COPY --from=frontend_build /app/public/build ./public/build
