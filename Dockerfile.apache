@@ -1,8 +1,8 @@
 # Simple Apache + PHP for Railway
 FROM php:8.3-apache
 
-# Cache bust to force rebuild
-ARG CACHE_BUST=1
+# Cache bust to force rebuild (update this value to force rebuild)
+ARG CACHE_BUST=2024-12-20-v2
 
 WORKDIR /var/www/html
 
