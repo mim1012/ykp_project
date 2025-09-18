@@ -2,7 +2,7 @@
 FROM php:8.3-apache
 
 # Cache bust to force rebuild (update this value to force rebuild)
-ARG CACHE_BUST=2024-12-20-v12-remove-carbon-test
+ARG CACHE_BUST=2024-12-20-v13-carbon-methods
 
 WORKDIR /var/www/html
 
@@ -44,10 +44,40 @@ RUN composer clear-cache \
     && rm -rf vendor composer.lock \
     && composer install --optimize-autoloader --no-scripts --ignore-platform-reqs
 
-# Remove Carbon Test trait completely - not needed for production
+# Fix Carbon by adding empty test methods directly to the class
 RUN sed -i '/use Traits\\\\Test;/d' vendor/nesbot/carbon/src/Carbon/Traits/Date.php \
     && sed -i '/use Test;/d' vendor/nesbot/carbon/src/Carbon/Traits/Date.php \
-    && rm -f vendor/nesbot/carbon/src/Carbon/Traits/Test.php
+    && rm -f vendor/nesbot/carbon/src/Carbon/Traits/Test.php \
+    && sed -i '/^class Carbon extends DateTime implements CarbonInterface/a\\
+    private static $testNow = null;\\
+\\
+    public static function setTestNow($testNow = null): void {\\
+        self::$testNow = $testNow;\\
+    }\\
+\\
+    public static function setTestNowAndTimezone($testNow = null, $timezone = null): void {\\
+        self::$testNow = $testNow;\\
+    }\\
+\\
+    public static function getTestNow() {\\
+        return self::$testNow;\\
+    }\\
+\\
+    public static function hasTestNow(): bool {\\
+        return self::$testNow !== null;\\
+    }\\
+\\
+    public static function withTestNow($testNow, $callback) {\\
+        self::setTestNow($testNow);\\
+        $result = $callback();\\
+        self::setTestNow(null);\\
+        return $result;\\
+    }\\
+\\
+    public static function testNow($testNow = null) {\\
+        self::setTestNow($testNow);\\
+    }\\
+' vendor/nesbot/carbon/src/Carbon/Carbon.php
 
 # Create dummy helper files as fallback (if they still don't exist)
 RUN mkdir -p vendor/filament/notifications/src/Testing \
