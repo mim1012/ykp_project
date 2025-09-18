@@ -67,8 +67,9 @@ RUN if [ -f .env.example ]; then cp .env.example .env; else touch .env; fi
 
 # Skip artisan commands during build due to Filament autoload issues
 
-# Set permissions
-RUN chown -R www-data:www-data storage bootstrap/cache \
+# Create necessary directories and set permissions
+RUN mkdir -p storage/app/public storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
+ && chown -R www-data:www-data storage bootstrap/cache \
  && chmod -R 775 storage bootstrap/cache
 
 # Environment
