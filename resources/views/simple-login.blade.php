@@ -8,20 +8,9 @@
     <div style="max-width: 400px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px;">
         <h2>🔐 YKP 간단 로그인</h2>
         
+        <!-- 테스트 계정 정보 제거됨 (보안상 이유) -->
         <div style="margin: 20px 0;">
-            <h3>테스트 계정:</h3>
-            <div style="margin: 10px 0;">
-                <strong>본사:</strong> hq@ykp.com / 123456 
-                <a href="/quick-login/headquarters" style="margin-left: 10px; padding: 5px 10px; background: #007bff; color: white; text-decoration: none; border-radius: 4px; font-size: 12px;">빠른 로그인</a>
-            </div>
-            <div style="margin: 10px 0;">
-                <strong>지사:</strong> branch@ykp.com / 123456
-                <a href="/quick-login/branch" style="margin-left: 10px; padding: 5px 10px; background: #28a745; color: white; text-decoration: none; border-radius: 4px; font-size: 12px;">빠른 로그인</a>
-            </div>
-            <div style="margin: 10px 0;">
-                <strong>매장:</strong> store@ykp.com / 123456
-                <a href="/quick-login/store" style="margin-left: 10px; padding: 5px 10px; background: #ffc107; color: white; text-decoration: none; border-radius: 4px; font-size: 12px;">빠른 로그인</a>
-            </div>
+            <p style="color: #666;">관리자에게 계정 정보를 문의하세요.</p>
         </div>
 
         <hr style="margin: 20px 0;">
