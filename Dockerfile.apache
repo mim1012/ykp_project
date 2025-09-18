@@ -2,7 +2,7 @@
 FROM php:8.3-apache
 
 # Cache bust to force rebuild (update this value to force rebuild)
-ARG CACHE_BUST=2024-12-20-v13-carbon-methods
+ARG CACHE_BUST=2024-12-20-v14-carbon-version-fix
 
 WORKDIR /var/www/html
 
@@ -39,47 +39,13 @@ COPY . .
 RUN echo "OK" > /var/www/html/public/health.txt \
     && echo '<?php http_response_code(200); echo "OK";' > /var/www/html/public/health.php
 
-# Clear composer cache and install dependencies WITHOUT --no-dev
-RUN composer clear-cache \
-    && rm -rf vendor composer.lock \
+# Clean install of all dependencies with Carbon version fix
+RUN rm -rf vendor composer.lock \
+    && composer clear-cache \
+    && composer require nesbot/carbon:^2.72 --with-all-dependencies --no-interaction \
     && composer install --optimize-autoloader --no-scripts --ignore-platform-reqs
 
-# Fix Carbon by adding empty test methods directly to the class
-RUN sed -i '/use Traits\\\\Test;/d' vendor/nesbot/carbon/src/Carbon/Traits/Date.php \
-    && sed -i '/use Test;/d' vendor/nesbot/carbon/src/Carbon/Traits/Date.php \
-    && rm -f vendor/nesbot/carbon/src/Carbon/Traits/Test.php \
-    && sed -i '/^class Carbon extends DateTime implements CarbonInterface/a\\
-    private static $testNow = null;\\
-\\
-    public static function setTestNow($testNow = null): void {\\
-        self::$testNow = $testNow;\\
-    }\\
-\\
-    public static function setTestNowAndTimezone($testNow = null, $timezone = null): void {\\
-        self::$testNow = $testNow;\\
-    }\\
-\\
-    public static function getTestNow() {\\
-        return self::$testNow;\\
-    }\\
-\\
-    public static function hasTestNow(): bool {\\
-        return self::$testNow !== null;\\
-    }\\
-\\
-    public static function withTestNow($testNow, $callback) {\\
-        self::setTestNow($testNow);\\
-        $result = $callback();\\
-        self::setTestNow(null);\\
-        return $result;\\
-    }\\
-\\
-    public static function testNow($testNow = null) {\\
-        self::setTestNow($testNow);\\
-    }\\
-' vendor/nesbot/carbon/src/Carbon/Carbon.php
-
-# Create dummy helper files as fallback (if they still don't exist)
+# Create dummy Filament helper files (if they still don't exist)
 RUN mkdir -p vendor/filament/notifications/src/Testing \
     && echo "<?php // Dummy helper file" > vendor/filament/notifications/src/Testing/helpers.php \
     && mkdir -p vendor/filament/filament/src/Testing \
@@ -91,19 +57,12 @@ RUN mkdir -p vendor/filament/notifications/src/Testing \
     && mkdir -p vendor/filament/tables/src/Testing \
     && echo "<?php // Dummy helper file" > vendor/filament/tables/src/Testing/helpers.php
 
-# Alternative: Remove problematic autoload entries if files don't exist
-RUN if [ ! -f "vendor/filament/notifications/src/Testing/helpers.php" ]; then \
-        sed -i '/notifications.*Testing.*helpers\.php/d' vendor/composer/autoload_files.php 2>/dev/null || true; \
-    fi \
-    && if [ ! -f "vendor/filament/filament/src/Testing/helpers.php" ]; then \
-        sed -i '/filament.*Testing.*helpers\.php/d' vendor/composer/autoload_files.php 2>/dev/null || true; \
-    fi
-
-# Verify Filament files exist
-RUN echo "=== Checking Filament helper files ===" \
-    && ls -la vendor/filament/*/src/Testing/helpers.php 2>/dev/null || echo "Some helper files may not exist" \
-    && echo "=== Checking autoload_files.php ===" \
-    && grep -c "Testing/helpers.php" vendor/composer/autoload_files.php || echo "No Testing helpers in autoload"
+# Verify Carbon installation
+RUN echo "=== Checking Carbon version ===" \
+    && composer show nesbot/carbon | grep versions \
+    && echo "=== Checking Carbon files ===" \
+    && ls -la vendor/nesbot/carbon/src/Carbon/Carbon.php \
+    && ls -la vendor/nesbot/carbon/src/Carbon/CarbonInterface.php
 
 # Fix permissions
 RUN mkdir -p storage/app/public storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
@@ -120,10 +79,6 @@ RUN php artisan key:generate --force 2>/dev/null || true
 RUN php artisan config:clear \
     && php artisan cache:clear \
     && php artisan view:clear 2>/dev/null || true
-
-# NO sed replacements - we'll use explicit paths in vhost
-
-# Don't set ports here - will be set by startup script based on PORT env
 
 # Set ServerName to avoid warnings
 RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
