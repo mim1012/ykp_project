@@ -75,12 +75,30 @@ class StoreController extends Controller
             $branch = \App\Models\Branch::find($branchId);
             $branchCode = $branch ? $branch->code : 'BR'.str_pad($branchId, 3, '0', STR_PAD_LEFT);
 
-            // 해당 지사의 다음 매장 번호 계산
-            $lastStoreNumber = Store::where('branch_id', $branchId)
+            // 해당 지사의 마지막 매장 코드에서 번호 추출하여 다음 번호 계산
+            $lastStore = Store::where('branch_id', $branchId)
                 ->where('code', 'LIKE', $branchCode.'-%')
-                ->count();
+                ->orderBy('code', 'desc')
+                ->first();
 
-            $storeCode = $request->code ?: $branchCode.'-'.str_pad($lastStoreNumber + 1, 3, '0', STR_PAD_LEFT);
+            if ($lastStore && preg_match('/.*-(\d+)$/', $lastStore->code, $matches)) {
+                $nextNumber = intval($matches[1]) + 1;
+            } else {
+                // 해당 지사의 첫 매장인 경우
+                $nextNumber = 1;
+            }
+
+            // 중복 방지를 위해 루프로 확인
+            $attempts = 0;
+            do {
+                $storeCode = $request->code ?: $branchCode.'-'.str_pad($nextNumber + $attempts, 3, '0', STR_PAD_LEFT);
+                $exists = Store::where('code', $storeCode)->exists();
+                $attempts++;
+
+                if ($attempts > 100) {
+                    throw new \Exception('매장 코드 생성 실패: 사용 가능한 코드를 찾을 수 없습니다.');
+                }
+            } while ($exists);
 
             $store = Store::create([
                 'name' => $request->name,
