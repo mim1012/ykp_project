@@ -27,12 +27,12 @@ class SalesCalculator
         $L = (float) ($row['verbal1'] ?? 0);                                     // 구두1
         $M = (float) ($row['verbal2'] ?? 0);                                     // 구두2
         $N = (float) ($row['grade_amount'] ?? 0);                                // 그레이드
-        $O = (float) ($row['addon_amount'] ?? $row['additional_amount'] ?? 0);   // 부가추가
-        $P = (float) ($row['paper_cash'] ?? $row['cash_activation'] ?? 0);       // 서류상현금개통/현금개통비
+        $O = (float) ($row['additional_amount'] ?? $row['addon_amount'] ?? 0);   // 부가추가
+        $P = (float) ($row['cash_activation'] ?? $row['paper_cash'] ?? 0);       // 서류상현금개통/현금개통비
         $Q = (float) ($row['usim_fee'] ?? 0);                                    // 유심비(+)
-        $R = (float) ($row['new_mnp_disc'] ?? $row['new_mnp_discount'] ?? 0);   // 신규/MNP할인
+        $R = (float) ($row['new_mnp_discount'] ?? $row['new_mnp_disc'] ?? 0);   // 신규/MNP할인
         $S = (float) ($row['deduction'] ?? 0);                                   // 차감(-)
-        $W = (float) ($row['cash_in'] ?? $row['cash_received'] ?? 0);           // 현금받음
+        $W = (float) ($row['cash_received'] ?? $row['cash_in'] ?? 0);           // 현금받음
         $X = (float) ($row['payback'] ?? 0);                                     // 페이백
 
         // 계산 필드 (T~Z)
@@ -168,12 +168,12 @@ class SalesCalculator
         $L = (float) ($row['verbal1'] ?? 0);            // 구두1
         $M = (float) ($row['verbal2'] ?? 0);            // 구두2
         $N = (float) ($row['grade_amount'] ?? 0);       // 그레이드
-        $O = (float) ($row['addon_amount'] ?? 0);       // 부가추가
-        $P = (float) ($row['paper_cash'] ?? 0);         // 서류상현금개통
+        $O = (float) ($row['additional_amount'] ?? $row['addon_amount'] ?? 0);       // 부가추가
+        $P = (float) ($row['cash_activation'] ?? $row['paper_cash'] ?? 0);         // 서류상현금개통
         $Q = (float) ($row['usim_fee'] ?? 0);           // 유심비(+)
-        $R = (float) ($row['new_mnp_disc'] ?? 0);       // 신규/MNP할인
+        $R = (float) ($row['new_mnp_discount'] ?? $row['new_mnp_disc'] ?? 0);       // 신규/MNP할인
         $S = (float) ($row['deduction'] ?? 0);          // 차감(-)
-        $W = (float) ($row['cash_in'] ?? 0);            // 현금받음
+        $W = (float) ($row['cash_received'] ?? $row['cash_in'] ?? 0);            // 현금받음
         $X = (float) ($row['payback'] ?? 0);            // 페이백
 
         // 계산 필드 (T~Z)
