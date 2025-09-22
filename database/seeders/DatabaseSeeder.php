@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
             InitialDataSeeder::class,
             UserSeeder::class,
             DealerProfileSeeder::class,
+            CarrierSeeder::class,
         ]);
     }
 }

@@ -45,37 +45,62 @@
     <main class="max-w-full mx-auto py-6 px-4">
         <!-- 통계 카드 -->
         <div class="grid grid-cols-4 gap-4 mb-6">
-            <div class="bg-blue-500 text-white p-4 rounded-lg">
-                <div class="text-sm">총 개통건수</div>
+            <div class="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-4 rounded-lg shadow-lg">
+                <div class="text-sm opacity-90">총 개통건수</div>
                 <div class="text-2xl font-bold" id="total-count">0</div>
             </div>
-            <div class="bg-green-500 text-white p-4 rounded-lg">
-                <div class="text-sm">총 정산금</div>
+            <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white p-4 rounded-lg shadow-lg">
+                <div class="text-sm opacity-90">총 정산금</div>
                 <div class="text-2xl font-bold" id="total-settlement">₩0</div>
             </div>
-            <div class="bg-purple-500 text-white p-4 rounded-lg">
-                <div class="text-sm">총 마진</div>
+            <div class="bg-gradient-to-br from-violet-500 to-violet-600 text-white p-4 rounded-lg shadow-lg">
+                <div class="text-sm opacity-90">총 마진</div>
                 <div class="text-2xl font-bold" id="total-margin">₩0</div>
             </div>
-            <div class="bg-yellow-500 text-white p-4 rounded-lg">
-                <div class="text-sm">평균 마진율</div>
+            <div class="bg-gradient-to-br from-amber-500 to-amber-600 text-white p-4 rounded-lg shadow-lg">
+                <div class="text-sm opacity-90">평균 마진율</div>
                 <div class="text-2xl font-bold" id="average-margin">0%</div>
             </div>
         </div>
 
         <!-- 컨트롤 패널 -->
         <div class="bg-white rounded-lg shadow mb-6 p-4">
-            <div class="flex space-x-4 mb-3">
-                <button id="add-row-btn" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-                    ➕ 새 개통 등록
-                </button>
-                <button id="calculate-all-btn" class="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600">
-                    🔄 전체 재계산
-                </button>
-                <button id="save-btn" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
+            <div class="flex justify-between mb-3">
+                <div class="flex space-x-4">
+                    <button id="add-row-btn" class="px-4 py-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded hover:from-blue-600 hover:to-blue-700 transition-all shadow">
+                        ➕ 새 개통 등록
+                    </button>
+                    <button id="calculate-all-btn" class="px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded hover:from-purple-600 hover:to-purple-700 transition-all shadow">
+                        🔄 전체 재계산
+                    </button>
+                </div>
+                <div class="flex space-x-2">
+                    @if(auth()->user()->role === 'headquarters')
+                    <button onclick="openCarrierManagement()" class="px-4 py-2 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded hover:from-indigo-600 hover:to-indigo-700 transition-all shadow">
+                        📡 통신사 관리
+                    </button>
+                    @endif
+                    @if(in_array(auth()->user()->role, ['headquarters', 'branch']))
+                    <button onclick="openDealerManagement()" class="px-4 py-2 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded hover:from-indigo-600 hover:to-indigo-700 transition-all shadow">
+                        🏢 대리점 관리
+                    </button>
+                    @endif
+                    <button id="download-template-btn" class="px-4 py-2 bg-gradient-to-r from-slate-500 to-slate-600 text-white rounded hover:from-slate-600 hover:to-slate-700 transition-all shadow">
+                        📄 엑셀 템플릿
+                    </button>
+                    <button id="upload-excel-btn" class="px-4 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded hover:from-emerald-600 hover:to-emerald-700 transition-all shadow">
+                        📤 엑셀 업로드
+                    </button>
+                    <button id="download-excel-btn" class="px-4 py-2 bg-gradient-to-r from-teal-500 to-teal-600 text-white rounded hover:from-teal-600 hover:to-teal-700 transition-all shadow">
+                        📥 엑셀 다운로드
+                    </button>
+                    <input type="file" id="excel-file-input" accept=".xlsx,.xls,.csv" style="display: none;">
+                </div>
+            </div>
+                <button id="save-btn" class="px-4 py-2 bg-gradient-to-r from-green-500 to-green-600 text-white rounded hover:from-green-600 hover:to-green-700 transition-all shadow font-medium">
                     💾 전체 저장
                 </button>
-                <button id="bulk-delete-btn" class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">
+                <button id="bulk-delete-btn" class="px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded hover:from-red-600 hover:to-red-700 transition-all shadow">
                     🗑️ 일괄 삭제
                 </button>
                 <div id="status-indicator" class="px-3 py-2 bg-gray-100 text-gray-600 rounded">
@@ -86,11 +111,11 @@
             <div class="flex items-center space-x-3 border-t pt-3">
                 <span class="text-sm font-medium text-gray-700">날짜 필터:</span>
                 <input type="date" id="sale-date-filter" class="px-3 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <button onclick="selectToday()" class="px-3 py-1.5 bg-indigo-500 text-white text-sm rounded hover:bg-indigo-600">오늘</button>
-                <button onclick="selectYesterday()" class="px-3 py-1.5 bg-purple-500 text-white text-sm rounded hover:bg-purple-600">어제</button>
-                <button onclick="selectWeek()" class="px-3 py-1.5 bg-green-500 text-white text-sm rounded hover:bg-green-600">이번 주</button>
-                <button onclick="selectMonth()" class="px-3 py-1.5 bg-orange-500 text-white text-sm rounded hover:bg-orange-600">이번 달</button>
-                <button onclick="clearDateFilter()" class="px-3 py-1.5 bg-gray-500 text-white text-sm rounded hover:bg-gray-600">전체 보기</button>
+                <button onclick="selectToday()" class="px-3 py-1.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm rounded hover:from-blue-600 hover:to-blue-700 transition-all shadow-sm">오늘</button>
+                <button onclick="selectYesterday()" class="px-3 py-1.5 bg-gradient-to-r from-violet-500 to-violet-600 text-white text-sm rounded hover:from-violet-600 hover:to-violet-700 transition-all shadow-sm">어제</button>
+                <button onclick="selectWeek()" class="px-3 py-1.5 bg-gradient-to-r from-cyan-500 to-cyan-600 text-white text-sm rounded hover:from-cyan-600 hover:to-cyan-700 transition-all shadow-sm">이번 주</button>
+                <button onclick="selectMonth()" class="px-3 py-1.5 bg-gradient-to-r from-orange-500 to-orange-600 text-white text-sm rounded hover:from-orange-600 hover:to-orange-700 transition-all shadow-sm">이번 달</button>
+                <button onclick="clearDateFilter()" class="px-3 py-1.5 bg-gradient-to-r from-gray-500 to-gray-600 text-white text-sm rounded hover:from-gray-600 hover:to-gray-700 transition-all shadow-sm">전체 보기</button>
                 <span id="dateStatus" class="ml-4 px-3 py-1.5 bg-blue-50 text-blue-700 text-sm rounded font-medium"></span>
             </div>
         </div>
@@ -108,7 +133,6 @@
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">개통방식</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">모델명</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">개통일</th>
-                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">일련번호</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">휴대폰번호</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">고객명</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">생년월일</th>
@@ -118,16 +142,17 @@
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">그레이드</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">부가추가</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">서류상현금개통</th>
-                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase plus-field">유심비(+)</th>
-                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase minus-field">신규,번이(-800)</th>
-                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase minus-field">차감(-)</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase plus-field">유심비</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase minus-field">신규/번이할인</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase minus-field">차감</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase total-field">리베총계</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase total-field">정산금</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase bg-red-50">부/소세</th>
-                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase plus-field">현금받음(+)</th>
-                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase minus-field">페이백(-)</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase plus-field">현금받음</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase minus-field">페이백</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase margin-field">세전마진</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase margin-field">세후마진</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">메모</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">액션</th>
                         </tr>
                     </thead>
@@ -178,7 +203,6 @@
                     const day = String(today.getDate()).padStart(2, '0');
                     return `${year}-${month}-${day}`;
                 })(),
-                serial_number: '',
                 phone_number: '',
                 customer_name: '',
                 customer_birth_date: '',
@@ -214,7 +238,7 @@
                     </td>
                     <!-- 2. 판매자 -->
                     <td class="px-2 py-2">
-                        <input type="text" value="${row.salesperson}" 
+                        <input type="text" value="${row.salesperson || ''}"
                                onchange="updateRowData(${row.id}, 'salesperson', this.value)"
                                class="field-name" placeholder="판매자명">
                     </td>
@@ -226,17 +250,15 @@
                     </td>
                     <!-- 4. 통신사 -->
                     <td class="px-2 py-2">
-                        <select onchange="updateRowData(${row.id}, 'carrier', this.value)" class="field-carrier">
-                            <option value="SK" ${row.carrier === 'SK' ? 'selected' : ''}>SK</option>
-                            <option value="KT" ${row.carrier === 'KT' ? 'selected' : ''}>KT</option>
-                            <option value="LG" ${row.carrier === 'LG' ? 'selected' : ''}>LG</option>
+                        <select onchange="updateRowData(${row.id}, 'carrier', this.value)" class="field-carrier" id="carrier-select-${row.id}">
+                            ${generateCarrierOptions(row.carrier)}
                         </select>
                     </td>
                     <!-- 5. 개통방식 -->
                     <td class="px-2 py-2">
                         <select onchange="updateRowData(${row.id}, 'activation_type', this.value)" class="field-activation">
                             <option value="신규" ${row.activation_type === '신규' ? 'selected' : ''}>신규</option>
-                            <option value="MNP" ${row.activation_type === 'MNP' ? 'selected' : ''}>MNP</option>
+                            <option value="번이" ${row.activation_type === '번이' ? 'selected' : ''}>번이</option>
                             <option value="기변" ${row.activation_type === '기변' ? 'selected' : ''}>기변</option>
                         </select>
                     </td>
@@ -252,13 +274,7 @@
                                onchange="updateRowData(${row.id}, 'sale_date', this.value)"
                                class="field-date">
                     </td>
-                    <!-- 8. 일련번호 -->
-                    <td class="px-2 py-2">
-                        <input type="text" value="${row.serial_number}" 
-                               onchange="updateRowData(${row.id}, 'serial_number', this.value)"
-                               class="field-serial" placeholder="SN123456">
-                    </td>
-                    <!-- 9. 휴대폰번호 -->
+                    <!-- 8. 휴대폰번호 -->
                     <td class="px-2 py-2">
                         <input type="tel" value="${row.phone_number}" 
                                onchange="updateRowData(${row.id}, 'phone_number', this.value)"
@@ -312,7 +328,7 @@
                                onchange="updateRowData(${row.id}, 'cash_activation', parseInt(this.value) || 0); calculateRow(${row.id})"
                                class="field-amount" placeholder="0">
                     </td>
-                    <!-- 18. 유심비(+) -->
+                    <!-- 18. 유심비 -->
                     <td class="px-2 py-2">
                         <input type="number" value="${row.usim_fee}" 
                                onchange="updateRowData(${row.id}, 'usim_fee', parseInt(this.value) || 0); calculateRow(${row.id})"
@@ -324,7 +340,7 @@
                                onchange="updateRowData(${row.id}, 'new_mnp_discount', parseInt(this.value) || 0); calculateRow(${row.id})"
                                class="field-policy minus-field" placeholder="-800">
                     </td>
-                    <!-- 20. 차감(-) -->
+                    <!-- 20. 차감 -->
                     <td class="px-2 py-2">
                         <input type="number" value="${row.deduction}" 
                                onchange="updateRowData(${row.id}, 'deduction', parseInt(this.value) || 0); calculateRow(${row.id})"
@@ -342,13 +358,13 @@
                     <td class="px-2 py-2 bg-red-50">
                         <span class="field-calculated text-red-800" id="tax-${row.id}">${(row.tax || 0).toLocaleString()}원</span>
                     </td>
-                    <!-- 24. 현금받음(+) -->
+                    <!-- 24. 현금받음 -->
                     <td class="px-2 py-2">
                         <input type="number" value="${row.cash_received}" 
                                onchange="updateRowData(${row.id}, 'cash_received', parseInt(this.value) || 0); calculateRow(${row.id})"
                                class="field-money plus-field" placeholder="0">
                     </td>
-                    <!-- 25. 페이백(-) -->
+                    <!-- 25. 페이백 -->
                     <td class="px-2 py-2">
                         <input type="number" value="${row.payback}" 
                                onchange="updateRowData(${row.id}, 'payback', parseInt(this.value) || 0); calculateRow(${row.id})"
@@ -362,7 +378,13 @@
                     <td class="px-2 py-2 margin-field">
                         <span class="field-calculated text-green-800" id="margin-after-${row.id}">${(row.margin_after_tax || 0).toLocaleString()}원</span>
                     </td>
-                    <!-- 28. 액션 -->
+                    <!-- 28. 메모 -->
+                    <td class="px-2 py-2">
+                        <input type="text" value="${row.memo || ''}"
+                               onchange="updateRowData(${row.id}, 'memo', this.value)"
+                               class="w-32 px-1 py-1 border rounded text-xs" placeholder="메모 입력">
+                    </td>
+                    <!-- 29. 액션 -->
                     <td class="px-2 py-2">
                         <button onclick="deleteRow(${row.id})" class="px-2 py-1 bg-red-500 text-white rounded text-xs hover:bg-red-600">
                             🗑️ 삭제
@@ -379,7 +401,21 @@
             const row = salesData.find(r => r.id === id);
             if (row) {
                 row[field] = value;
-                // Row data updated
+
+                // 개통방식 변경 시 차감액 자동 설정
+                if (field === 'activation_type') {
+                    if (value === '신규' || value === '번이') {
+                        row['new_mnp_discount'] = -800;
+                    } else if (value === '기변') {
+                        row['new_mnp_discount'] = 0;
+                    }
+                    // 차감액 필드 업데이트
+                    const discountInput = document.querySelector(`#data-table-body tr:has(input[value="${row.id}"]) input[placeholder="-800"]`);
+                    if (discountInput) {
+                        discountInput.value = row['new_mnp_discount'];
+                    }
+                    calculateRow(id);
+                }
             }
         }
         
@@ -557,12 +593,17 @@
                 errors.push("판매일자 필수");
             }
 
-            if (!row.carrier || !['SK', 'KT', 'LG', 'MVNO'].includes(row.carrier)) {
-                errors.push("유효한 통신사 필수 (SK/KT/LG/MVNO)");
+            // 통신사 검증 - 동적 목록 사용
+            const validCarriers = carriersList.length > 0
+                ? carriersList.map(c => c.name)
+                : ['SK', 'KT', 'LG', '알뜰']; // 폴백
+
+            if (!row.carrier || !validCarriers.includes(row.carrier)) {
+                errors.push(`유효한 통신사 필수 (${validCarriers.join('/')})`);
             }
 
-            if (!row.activation_type || !['신규', '기변', 'MNP'].includes(row.activation_type)) {
-                errors.push("유효한 개통유형 필수 (신규/기변/MNP)");
+            if (!row.activation_type || !['신규', '번이', '기변'].includes(row.activation_type)) {
+                errors.push("유효한 개통유형 필수 (신규/번이/기변)");
             }
 
             if (!row.model_name || !row.model_name.trim()) {
@@ -684,7 +725,6 @@
                     carrier: row.carrier,
                     activation_type: row.activation_type,
                     model_name: row.model_name,
-                    serial_number: row.serial_number,
                     phone_number: row.phone_number,
                     customer_name: row.customer_name,
                     customer_birth_date: row.customer_birth_date,
@@ -785,6 +825,8 @@
         // 이벤트 리스너 등록
         // 전역 대리점 목록 저장
         let dealersList = [];
+        // 전역 통신사 목록 저장
+        let carriersList = [];
 
         // 대리점 옵션 HTML 생성 함수
         function generateDealerOptions(selectedValue = '') {
@@ -798,19 +840,66 @@
             return options;
         }
 
+        // 통신사 옵션 HTML 생성 함수
+        function generateCarrierOptions(selectedValue = '') {
+            let options = '';
+
+            // 통신사 목록이 비어있으면 기본값 사용
+            if (carriersList.length === 0) {
+                const defaultCarriers = [
+                    { code: 'SK', name: 'SK' },
+                    { code: 'KT', name: 'KT' },
+                    { code: 'LG', name: 'LG' },
+                    { code: 'MVNO', name: '알뜰' }
+                ];
+                defaultCarriers.forEach(carrier => {
+                    const selected = selectedValue === carrier.name ? 'selected' : '';
+                    options += `<option value="${carrier.name}" ${selected}>${carrier.name}</option>`;
+                });
+            } else {
+                carriersList.forEach(carrier => {
+                    const selected = selectedValue === carrier.name ? 'selected' : '';
+                    options += `<option value="${carrier.name}" ${selected}>${carrier.name}</option>`;
+                });
+            }
+
+            return options;
+        }
+
+        // 기존 행들의 대리점 드롭다운 업데이트
+        function updateDealerDropdowns() {
+            // 현재 테이블에 있는 모든 대리점 드롭다운 선택
+            const dealerSelects = document.querySelectorAll('[id^="dealer-select-"]');
+            dealerSelects.forEach(select => {
+                const currentValue = select.value;
+                select.innerHTML = generateDealerOptions(currentValue);
+            });
+        }
+
         // 대리점 목록 로드 함수
         async function loadDealers() {
             try {
-                const response = await fetch('/api/calculation/profiles');
+                const response = await fetch('/api/dealers', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    }
+                });
                 const data = await response.json();
 
                 if (data.success && data.data) {
                     dealersList = data.data
-                        .filter(dealer => dealer.status === 'active')
+                        .filter(dealer => !dealer.status || dealer.status === 'active' || dealer.status === null)
                         .map(dealer => ({
                             code: dealer.dealer_code,
                             name: dealer.dealer_name
                         }));
+
+                    console.log(`✅ 대리점 ${dealersList.length}개 로드 완료`);
+
+                    // 기존 행들의 대리점 드롭다운 업데이트
+                    updateDealerDropdowns();
 
                     // Dealers loaded successfully
                     return dealersList;
@@ -847,6 +936,135 @@
                     {code: 'HAPPY', name: '해피'}
                 ];
                 return dealersList;
+            }
+        }
+
+        // 통신사 목록 로드 함수
+        async function loadCarriers() {
+            try {
+                const response = await fetch('/api/carriers', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success) {
+                        // 활성 통신사만 필터링하고 정렬 순서대로 정렬
+                        carriersList = data.data
+                            .filter(carrier => carrier.is_active)
+                            .sort((a, b) => a.sort_order - b.sort_order)
+                            .map(carrier => ({
+                                code: carrier.code,
+                                name: carrier.name
+                            }));
+                        console.log('✅ 통신사 목록 로드 완료:', carriersList.length, '개');
+
+                        // 기존 행들의 통신사 드롭다운 업데이트
+                        updateCarrierDropdowns();
+                    }
+                }
+            } catch (error) {
+                console.error('❌ 통신사 목록 로드 실패:', error);
+                // 오류 시 기본값은 generateCarrierOptions에서 처리됨
+            }
+        }
+
+        // 기존 행들의 통신사 드롭다운 업데이트
+        function updateCarrierDropdowns() {
+            // 현재 테이블에 있는 모든 통신사 드롭다운 선택
+            const carrierSelects = document.querySelectorAll('[id^="carrier-select-"]');
+            carrierSelects.forEach(select => {
+                const currentValue = select.value;
+                select.innerHTML = generateCarrierOptions(currentValue);
+            });
+        }
+
+        // CSV 다운로드/업로드 핸들러 설정
+        function setupCsvHandlers() {
+            // 템플릿 다운로드
+            const templateBtn = document.getElementById('download-template-btn');
+            if (templateBtn) {
+                templateBtn.addEventListener('click', function() {
+                    window.location.href = '/api/sales-export/template';
+                });
+            }
+
+            // CSV 다운로드
+            const downloadBtn = document.getElementById('download-csv-btn');
+            if (downloadBtn) {
+                downloadBtn.addEventListener('click', function() {
+                    const startDate = document.getElementById('date-start')?.value || '';
+                    const endDate = document.getElementById('date-end')?.value || '';
+
+                    let url = '/api/sales-export/csv';
+                    if (startDate || endDate) {
+                        const params = new URLSearchParams();
+                        if (startDate) params.append('start_date', startDate);
+                        if (endDate) params.append('end_date', endDate);
+                        url += '?' + params.toString();
+                    }
+
+                    window.location.href = url;
+                    console.log('CSV 다운로드 시작...');
+                });
+            }
+
+            // CSV 업로드 버튼 클릭
+            const uploadBtn = document.getElementById('upload-csv-btn');
+            if (uploadBtn) {
+                uploadBtn.addEventListener('click', function() {
+                    document.getElementById('csv-file-input').click();
+                });
+            }
+
+            // 파일 선택 시 업로드
+            const fileInput = document.getElementById('csv-file-input');
+            if (fileInput) {
+                fileInput.addEventListener('change', async function(e) {
+                    const file = e.target.files[0];
+                    if (!file) return;
+
+                    if (!file.name.endsWith('.csv')) {
+                        alert('CSV 파일만 업로드 가능합니다.');
+                        return;
+                    }
+
+                    const formData = new FormData();
+                    formData.append('file', file);
+
+                    try {
+                        console.log('CSV 파일 업로드 중...');
+
+                        const response = await fetch('/api/sales-export/import', {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                            },
+                            body: formData
+                        });
+
+                        const result = await response.json();
+
+                        if (result.success) {
+                            alert(result.message);
+                            // 페이지 새로고침하여 데이터 반영
+                            setTimeout(() => {
+                                location.reload();
+                            }, 1500);
+                        } else {
+                            alert('업로드 실패: ' + result.message);
+                        }
+                    } catch (error) {
+                        console.error('Upload error:', error);
+                        alert('업로드 중 오류가 발생했습니다.');
+                    } finally {
+                        // 파일 입력 초기화
+                        e.target.value = '';
+                    }
+                });
             }
         }
 
@@ -924,7 +1142,6 @@
                             const day = String(today.getDate()).padStart(2, '0');
                             return `${year}-${month}-${day}`;
                         })(),
-                        serial_number: sale.serial_number || '',
                         phone_number: sale.phone_number || '',
                         customer_name: sale.customer_name || '',
                         customer_birth_date: sale.customer_birth_date ? sale.customer_birth_date.split('T')[0] : '',
@@ -1056,9 +1273,21 @@
         }
 
         function clearDateFilter() {
-            selectedDateFilter = { type: 'days', days: 7 };
+            // 전체보기 기본값을 이번달로 변경
+            const today = new Date();
+            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+            const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+            const startDateStr = `${firstDay.getFullYear()}-${String(firstDay.getMonth() + 1).padStart(2, '0')}-${String(firstDay.getDate()).padStart(2, '0')}`;
+            const endDateStr = `${lastDay.getFullYear()}-${String(lastDay.getMonth() + 1).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`;
+
+            selectedDateFilter = {
+                type: 'range',
+                startDate: startDateStr,
+                endDate: endDateStr
+            };
             document.getElementById('sale-date-filter').value = '';
-            updateDateStatus('최근 7일 데이터 표시중');
+            updateDateStatus('이번 달 데이터 표시중');
             loadExistingSalesData(selectedDateFilter);
         }
 
@@ -1069,14 +1298,35 @@
             }
         }
 
+        // localStorage 이벤트 리스너 - 다른 탭에서 통신사가 변경되면 업데이트
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'carriers_updated') {
+                console.log('📡 다른 탭에서 통신사 목록이 변경됨');
+                loadCarriers();
+            }
+            if (e.key === 'dealers_updated') {
+                console.log('🏢 다른 탭에서 대리점 목록이 변경됨');
+                loadDealers();
+            }
+        });
+
         document.addEventListener('DOMContentLoaded', async function() {
             // 🔥 대리점 목록 먼저 로드
             await loadDealers();
+            await loadCarriers();
 
-            // 대리점 목록 로드 확인
+            // 대리점 및 통신사 목록 로드 확인
 
-            // 날짜 필터 초기화 (오늘 날짜)
-            selectToday();
+            // 날짜 필터 초기화 (이번 달로 변경)
+            selectMonth();
+
+            // 30초마다 통신사 및 대리점 목록 업데이트
+            setInterval(() => {
+                loadCarriers();
+                loadDealers();
+            }, 30000);
+
+            // Excel 다운로드/업로드 핸들러는 이미 설정됨
 
             // 날짜 선택 이벤트 리스너
             const dateInput = document.getElementById('sale-date-filter');
@@ -1104,8 +1354,263 @@
                 showStatus('전체 재계산 완료', 'success');
             });
             
+            // 엑셀 업로드/다운로드 핸들러
+            document.getElementById('upload-excel-btn').addEventListener('click', () => {
+                document.getElementById('excel-file-input').click();
+            });
+
+            // Excel 파일 업로드 처리
+            document.getElementById('excel-file-input').addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    // 파일 읽기
+                    const reader = new FileReader();
+                    reader.onload = async function(event) {
+                        try {
+                            const text = event.target.result;
+                            const rows = text.split('\n').filter(row => row.trim());
+
+                            if (rows.length < 2) {
+                                showStatus('데이터가 없습니다', 'warning');
+                                return;
+                            }
+
+                            // 헤더 파싱
+                            const headers = rows[0].split(/[,\t]/).map(h => h.trim().replace(/^"|"$/g, ''));
+
+                            // 데이터 파싱 및 테이블에 추가
+                            let addedCount = 0;
+                            for (let i = 1; i < rows.length; i++) {
+                                const cols = rows[i].split(/[,\t]/).map(c => c.trim().replace(/^"|"$/g, ''));
+                                if (cols.length < headers.length) continue;
+
+                                // 개통일 처리 - undefined 방지
+                                let dateValue = cols[headers.indexOf('개통일')];
+                                if (!dateValue || dateValue === 'undefined' || dateValue === '') {
+                                    dateValue = new Date().toISOString().split('T')[0];
+                                }
+
+                                // 새 행 추가 - 새로운 템플릿 형식에 맞춤
+                                const newRowData = {
+                                    id: 'row-' + Date.now() + '-' + i,
+                                    sale_date: dateValue,
+                                    salesperson: cols[headers.indexOf('판매자')] || '{{ Auth::user()->name ?? '' }}',
+                                    dealer_code: cols[headers.indexOf('대리점')] || '',
+                                    carrier: cols[headers.indexOf('통신사')] || '',
+                                    activation_type: cols[headers.indexOf('개통방식')] || '',
+                                    model_name: cols[headers.indexOf('모델명')] || '',
+                                    phone_number: cols[headers.indexOf('휴대폰번호')] || '',
+                                    customer_name: cols[headers.indexOf('고객명')] || '',
+                                    customer_birth_date: cols[headers.indexOf('생년월일')] || '',
+                                    serial_number: '', // 일련번호는 사용하지 않음
+
+                                    // 금액 필드들
+                                    base_price: parseFloat(cols[headers.indexOf('액면/셋팅가')] || 0),
+                                    verbal1: parseFloat(cols[headers.indexOf('구두1')] || 0),
+                                    verbal2: parseFloat(cols[headers.indexOf('구두2')] || 0),
+                                    grade_amount: parseFloat(cols[headers.indexOf('그레이드')] || 0),
+                                    additional_amount: parseFloat(cols[headers.indexOf('부가추가')] || 0),
+                                    cash_activation: parseFloat(cols[headers.indexOf('서류상현금개통')] || 0),
+                                    usim_fee: parseFloat(cols[headers.indexOf('유심비')] || 0),
+                                    new_mnp_discount: parseFloat(cols[headers.indexOf('신규/번이할인')] || 0),
+                                    deduction: parseFloat(cols[headers.indexOf('차감')] || 0),
+                                    cash_received: parseFloat(cols[headers.indexOf('현금받음')] || 0),
+                                    payback: parseFloat(cols[headers.indexOf('페이백')] || 0),
+
+                                    // 메모 필드
+                                    memo: cols[headers.indexOf('메모')] || '',
+                                    isPersisted: false
+                                };
+
+                                // 자동 계산을 위한 값들
+                                const K = parseFloat(newRowData.base_price) || 0;
+                                const L = parseFloat(newRowData.verbal1) || 0;
+                                const M = parseFloat(newRowData.verbal2) || 0;
+                                const N = parseFloat(newRowData.grade_amount) || 0;
+                                const O = parseFloat(newRowData.additional_amount) || 0;
+                                const P = parseFloat(newRowData.cash_activation) || 0;
+                                const Q = parseFloat(newRowData.usim_fee) || 0;
+                                const R = parseFloat(newRowData.new_mnp_discount) || 0;
+                                const S = parseFloat(newRowData.deduction) || 0;
+                                const W = parseFloat(newRowData.cash_received) || 0;
+                                const X = parseFloat(newRowData.payback) || 0;
+
+                                // 계산 (SalesCalculator.php와 동일한 공식)
+                                const T = K + L + M + N + O; // 리베총계
+                                const U = T - P + Q + R + S; // 정산금
+                                const V = Math.round(U * 0.1); // 세금 (10%)
+                                const Y = U - V + W + X; // 세전마진
+                                const Z = V + Y; // 세후마진
+
+                                // 계산된 값 추가
+                                newRowData.total_rebate = T;
+                                newRowData.settlement_amount = U;
+                                newRowData.tax = V;
+                                newRowData.margin_before = Y;
+                                newRowData.margin_after = Z;
+
+                                // salesData 배열에 추가
+                                salesData.push(newRowData);
+                                addedCount++;
+                            }
+
+                            // 테이블 다시 그리기
+                            renderTableRows();
+
+                            showStatus(`${addedCount}개의 데이터를 테이블에 추가했습니다`, 'success');
+
+                            // 파일 입력 초기화
+                            e.target.value = '';
+                        } catch (error) {
+                            showStatus('Excel 파일 처리 중 오류 발생', 'error');
+                            console.error('Excel parsing error:', error);
+                        }
+                    };
+
+                    // CSV 또는 텍스트로 읽기
+                    reader.readAsText(file);
+                }
+            });
+
+            document.getElementById('download-excel-btn').addEventListener('click', async () => {
+                try {
+                    // 현재 표시된 데이터를 CSV로 변환
+                    const csvData = convertToCSV(salesData);
+                    downloadCSV(csvData, `개통표_${new Date().toISOString().split('T')[0]}.csv`);
+                    showStatus('엑셀 다운로드 완료', 'success');
+                } catch (error) {
+                    showStatus('엑셀 다운로드 실패', 'error');
+                    console.error('Excel download error:', error);
+                }
+            });
+
+            document.getElementById('download-template-btn').addEventListener('click', () => {
+                // Excel 템플릿 생성
+                const templateData = [
+                    ['판매자', '대리점', '통신사', '개통방식', '모델명', '개통일', '휴대폰번호', '고객명', '생년월일',
+                     '액면/셋팅가', '구두1', '구두2', '그레이드', '부가추가', '서류상현금개통', '유심비',
+                     '신규/번이할인', '차감', '리베총계', '정산금', '부/소세', '현금받음', '페이백',
+                     '세전마진', '세후마진', '메모'],
+                    ['홍길동', 'SM', 'SK', '신규', 'iPhone 15', '2024-01-15', '010-1234-5678', '김고객', '1990-01-01',
+                     '100000', '50000', '30000', '20000', '10000', '30000', '8800',
+                     '10000', '5000', '', '', '', '20000', '15000',
+                     '', '', '']
+                ];
+
+                // CSV 문자열 생성
+                let csvContent = '\uFEFF'; // UTF-8 BOM
+                templateData.forEach(row => {
+                    csvContent += row.map(cell => {
+                        if (String(cell).includes(',')) {
+                            return `"${cell}"`;
+                        }
+                        return cell;
+                    }).join(',') + '\n';
+                });
+
+                // 파일 다운로드
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `sales_template_${new Date().toISOString().split('T')[0]}.csv`;
+                link.style.display = 'none';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                showStatus('Excel 템플릿을 다운로드했습니다', 'success');
+            });
+
             // PM 요구사항 27컬럼 완전한 개통표 시스템 초기화 완료
         });
+
+        // CSV 변환 함수
+        function convertToCSV(data) {
+            if (!data || data.length === 0) {
+                return '';
+            }
+
+            // CSV 헤더
+            const headers = [
+                '날짜', '행번호', '대리점', '통신사', '개통방식', '시리얼넘버',
+                '모델명', '용량', '전화번호', '고객명', '생년월일',
+                '액면가', '구두1', '구두2', '그레이드', '부가추가',
+                '서류상현금개통', '유심비', '신규번이할인', '차감',
+                '리베총계', '정산금', '세금', '현금받음', '페이백',
+                '세전마진', '세후마진'
+            ];
+
+            // CSV 데이터 행
+            const rows = data.map(row => [
+                row.sale_date || '',
+                row.row_number || '',
+                row.dealer_name || '',
+                row.carrier || '',
+                row.activation_type || '',
+                row.serial_number || '',
+                row.model_name || '',
+                row.storage_capacity || '',
+                row.phone_number || '',
+                row.customer_name || '',
+                row.customer_birth_date || '',
+                row.base_price || 0,
+                row.verbal1 || 0,
+                row.verbal2 || 0,
+                row.grade_amount || 0,
+                row.additional_amount || 0,
+                row.cash_activation || 0,
+                row.usim_fee || 0,
+                row.new_mnp_discount || 0,
+                row.deduction || 0,
+                row.rebate_total || 0,
+                row.settlement_amount || 0,
+                row.tax || 0,
+                row.cash_received || 0,
+                row.payback || 0,
+                row.margin_before_tax || 0,
+                row.margin_after_tax || 0
+            ]);
+
+            // CSV 문자열 생성
+            let csvContent = headers.join(',') + '\n';
+            rows.forEach(row => {
+                const csvRow = row.map(cell => {
+                    // 쉼표나 줄바꿈이 포함된 경우 따옴표로 감싸기
+                    if (String(cell).includes(',') || String(cell).includes('\n')) {
+                        return `"${String(cell).replace(/"/g, '""')}"`;
+                    }
+                    return cell;
+                });
+                csvContent += csvRow.join(',') + '\n';
+            });
+
+            // UTF-8 BOM 추가 (한글 깨짐 방지)
+            return '\uFEFF' + csvContent;
+        }
+
+        // CSV 다운로드 함수
+        function downloadCSV(csvData, filename) {
+            const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // 통신사 관리 함수
+        function openCarrierManagement() {
+            // 대시보드의 통신사 관리로 이동
+            window.location.href = '/dashboard#carrier-management';
+        }
+
+        // 대리점 관리 함수
+        function openDealerManagement() {
+            // 대시보드의 대리점 관리로 이동
+            window.location.href = '/dashboard#dealer-management';
+        }
     </script>
 </body>
 </html>

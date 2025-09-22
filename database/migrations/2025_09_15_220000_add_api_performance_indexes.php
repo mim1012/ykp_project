@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -21,10 +22,34 @@ return new class extends Migration
             $table->index(['created_at', 'settlement_amount'], 'idx_sales_created_amount');
         });
 
-        Schema::table('stores', function (Blueprint $table) {
+        // 인덱스 존재 여부 확인 후 생성 (PostgreSQL 호환)
+        $existingIndexes = [];
+        if (DB::getDriverName() === 'pgsql') {
+            // PostgreSQL용 인덱스 조회
+            $indexList = DB::select("
+                SELECT indexname as name
+                FROM pg_indexes
+                WHERE tablename = 'stores' AND schemaname = 'public'
+            ");
+            $existingIndexes = array_column($indexList, 'name');
+        } elseif (DB::getDriverName() === 'sqlite') {
+            // SQLite용 인덱스 조회
+            try {
+                $indexList = DB::select("PRAGMA index_list('stores')");
+                $existingIndexes = array_column($indexList, 'name');
+            } catch (\Exception $e) {
+                // SQLite가 아닌 경우 무시
+            }
+        }
+
+        Schema::table('stores', function (Blueprint $table) use ($existingIndexes) {
             // 매장 관리 API 최적화용 인덱스
-            $table->index(['branch_id', 'status'], 'idx_stores_branch_status');
-            $table->index(['status', 'created_at'], 'idx_stores_status_created');
+            if (!in_array('idx_stores_branch_status', $existingIndexes)) {
+                $table->index(['branch_id', 'status'], 'idx_stores_branch_status');
+            }
+            if (!in_array('idx_stores_status_created', $existingIndexes)) {
+                $table->index(['status', 'created_at'], 'idx_stores_status_created');
+            }
         });
 
         Schema::table('users', function (Blueprint $table) {

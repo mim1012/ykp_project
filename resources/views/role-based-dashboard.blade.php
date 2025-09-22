@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>YKP ERP 대시보드 - {{ auth()->user()->name }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css" rel="stylesheet">
@@ -477,6 +478,16 @@
                 </div>
                 @endif
 
+                <!-- 본사 + 지사 대리점 관리 -->
+                @if(auth()->user()->isHeadquarters() || auth()->user()->isBranch())
+                <div style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                    <h4 style="font-weight: 600; margin-bottom: 12px;">🏢 대리점 관리</h4>
+                    <button onclick="openDealerManagement()" style="width: 100%; background: #6c5ce7; color: white; padding: 10px; border: none; border-radius: 6px; cursor: pointer;">
+                        대리점 관리
+                    </button>
+                </div>
+                @endif
+
                 <!-- 본사 + 개발자 -->
                 @if(auth()->user()->isSuperUser())
                 <div style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
@@ -590,6 +601,15 @@
             @endif
         }
 
+        function openDealerManagement() {
+            // 대리점 관리 모달 열기
+            const modal = document.getElementById('dealerManagementModal');
+            if (modal) {
+                modal.style.display = 'block';
+                loadDealers();
+            }
+        }
+
         // 권한별 실시간 데이터 로드
         async function loadRoleBasedData() {
             try {
@@ -639,5 +659,252 @@
             });
         });
     </script>
+
+    <!-- 대리점 관리 모달 -->
+    @if(in_array(auth()->user()->role, ['headquarters', 'branch']))
+    <div id="dealerManagementModal" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
+        <div style="background-color: white; margin: 50px auto; padding: 20px; border-radius: 8px; width: 90%; max-width: 800px; max-height: 80vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="font-size: 20px; font-weight: 600;">대리점 관리</h2>
+                <button onclick="closeDealerModal()" style="font-size: 24px; background: none; border: none; cursor: pointer;">&times;</button>
+            </div>
+
+            <!-- 대리점 추가 폼 -->
+            <div style="background: #f9fafb; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+                <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 15px;">새 대리점 추가</h3>
+                <form id="dealerForm" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                    <input type="hidden" id="dealerId" name="id">
+                    <div>
+                        <label style="display: block; font-size: 14px; margin-bottom: 4px;">대리점 코드 *</label>
+                        <input type="text" id="dealerCode" name="dealer_code" required style="width: 100%; padding: 8px; border: 1px solid #e5e7eb; border-radius: 4px;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 14px; margin-bottom: 4px;">대리점명 *</label>
+                        <input type="text" id="dealerName" name="dealer_name" required style="width: 100%; padding: 8px; border: 1px solid #e5e7eb; border-radius: 4px;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 14px; margin-bottom: 4px;">담당자명</label>
+                        <input type="text" id="contactPerson" name="contact_person" style="width: 100%; padding: 8px; border: 1px solid #e5e7eb; border-radius: 4px;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 14px; margin-bottom: 4px;">연락처</label>
+                        <input type="text" id="phone" name="phone" style="width: 100%; padding: 8px; border: 1px solid #e5e7eb; border-radius: 4px;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 14px; margin-bottom: 4px;">유심비</label>
+                        <input type="number" id="defaultSimFee" name="default_sim_fee" value="0" style="width: 100%; padding: 8px; border: 1px solid #e5e7eb; border-radius: 4px;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 14px; margin-bottom: 4px;">MNP할인</label>
+                        <input type="number" id="defaultMnpDiscount" name="default_mnp_discount" value="0" style="width: 100%; padding: 8px; border: 1px solid #e5e7eb; border-radius: 4px;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 14px; margin-bottom: 4px;">세율</label>
+                        <input type="number" id="taxRate" name="tax_rate" value="0.1" step="0.01" min="0" max="1" style="width: 100%; padding: 8px; border: 1px solid #e5e7eb; border-radius: 4px;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 14px; margin-bottom: 4px;">페이백율(%)</label>
+                        <input type="number" id="defaultPaybackRate" name="default_payback_rate" value="0" min="0" max="100" style="width: 100%; padding: 8px; border: 1px solid #e5e7eb; border-radius: 4px;">
+                    </div>
+                    <div style="grid-column: span 2;">
+                        <label style="display: block; font-size: 14px; margin-bottom: 4px;">주소</label>
+                        <input type="text" id="address" name="address" style="width: 100%; padding: 8px; border: 1px solid #e5e7eb; border-radius: 4px;">
+                    </div>
+                    <div style="grid-column: span 2; display: flex; gap: 10px;">
+                        <button type="submit" style="background: #10b981; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;">저장</button>
+                        <button type="button" onclick="resetDealerForm()" style="background: #6b7280; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;">취소</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 대리점 목록 -->
+            <div>
+                <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 15px;">대리점 목록</h3>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #f3f4f6;">
+                                <th style="padding: 8px; text-align: left; font-size: 14px;">코드</th>
+                                <th style="padding: 8px; text-align: left; font-size: 14px;">대리점명</th>
+                                <th style="padding: 8px; text-align: left; font-size: 14px;">담당자</th>
+                                <th style="padding: 8px; text-align: left; font-size: 14px;">연락처</th>
+                                <th style="padding: 8px; text-align: center; font-size: 14px;">상태</th>
+                                <th style="padding: 8px; text-align: center; font-size: 14px;">액션</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dealerTableBody">
+                            <!-- 동적으로 추가됨 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 대리점 관리 함수들
+        function closeDealerModal() {
+            document.getElementById('dealerManagementModal').style.display = 'none';
+            resetDealerForm();
+        }
+
+        function resetDealerForm() {
+            document.getElementById('dealerForm').reset();
+            document.getElementById('dealerId').value = '';
+        }
+
+        async function loadDealers() {
+            try {
+                const response = await fetch('/api/dealers', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                    }
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    const tbody = document.getElementById('dealerTableBody');
+                    tbody.innerHTML = '';
+
+                    data.data.forEach(dealer => {
+                        const row = tbody.insertRow();
+                        row.innerHTML = `
+                            <td style="padding: 8px; font-size: 14px;">${dealer.dealer_code}</td>
+                            <td style="padding: 8px; font-size: 14px;">${dealer.dealer_name}</td>
+                            <td style="padding: 8px; font-size: 14px;">${dealer.contact_person || '-'}</td>
+                            <td style="padding: 8px; font-size: 14px;">${dealer.phone || '-'}</td>
+                            <td style="padding: 8px; text-align: center;">
+                                <span style="padding: 2px 8px; background: ${dealer.status === 'active' ? '#dcfce7' : '#fee2e2'}; color: ${dealer.status === 'active' ? '#16a34a' : '#dc2626'}; border-radius: 4px; font-size: 12px;">
+                                    ${dealer.status === 'active' ? '활성' : '비활성'}
+                                </span>
+                            </td>
+                            <td style="padding: 8px; text-align: center;">
+                                <button onclick="editDealer(${dealer.id})" style="background: #3b82f6; color: white; padding: 4px 8px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; margin-right: 4px;">수정</button>
+                                @if(auth()->user()->role === 'headquarters')
+                                <button onclick="deleteDealer(${dealer.id})" style="background: #ef4444; color: white; padding: 4px 8px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">삭제</button>
+                                @endif
+                            </td>
+                        `;
+                    });
+                }
+            } catch (error) {
+                console.error('대리점 목록 로딩 실패:', error);
+                alert('대리점 목록을 불러오는데 실패했습니다.');
+            }
+        }
+
+        async function editDealer(id) {
+            try {
+                const response = await fetch('/api/dealers', {
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                    }
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    const dealer = data.data.find(d => d.id === id);
+                    if (dealer) {
+                        document.getElementById('dealerId').value = dealer.id;
+                        document.getElementById('dealerCode').value = dealer.dealer_code;
+                        document.getElementById('dealerName').value = dealer.dealer_name;
+                        document.getElementById('contactPerson').value = dealer.contact_person || '';
+                        document.getElementById('phone').value = dealer.phone || '';
+                        document.getElementById('defaultSimFee').value = dealer.default_sim_fee || 0;
+                        document.getElementById('defaultMnpDiscount').value = dealer.default_mnp_discount || 0;
+                        document.getElementById('taxRate').value = dealer.tax_rate || 0.1;
+                        document.getElementById('defaultPaybackRate').value = dealer.default_payback_rate || 0;
+                        document.getElementById('address').value = dealer.address || '';
+                    }
+                }
+            } catch (error) {
+                console.error('대리점 정보 로딩 실패:', error);
+                alert('대리점 정보를 불러오는데 실패했습니다.');
+            }
+        }
+
+        async function deleteDealer(id) {
+            if (!confirm('정말로 이 대리점을 삭제하시겠습니까?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/dealers/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                    }
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    alert(data.message);
+                    loadDealers();
+                } else {
+                    alert(data.message || '대리점 삭제에 실패했습니다.');
+                }
+            } catch (error) {
+                console.error('대리점 삭제 실패:', error);
+                alert('대리점 삭제 중 오류가 발생했습니다.');
+            }
+        }
+
+        // 대리점 폼 제출 처리
+        document.getElementById('dealerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData(e.target);
+            const dealerId = formData.get('id');
+            const url = dealerId ? `/api/dealers/${dealerId}` : '/api/dealers';
+            const method = dealerId ? 'PUT' : 'POST';
+
+            const body = {
+                dealer_code: formData.get('dealer_code'),
+                dealer_name: formData.get('dealer_name'),
+                contact_person: formData.get('contact_person'),
+                phone: formData.get('phone'),
+                address: formData.get('address'),
+                default_sim_fee: parseFloat(formData.get('default_sim_fee')) || 0,
+                default_mnp_discount: parseFloat(formData.get('default_mnp_discount')) || 0,
+                tax_rate: parseFloat(formData.get('tax_rate')) || 0.1,
+                default_payback_rate: parseFloat(formData.get('default_payback_rate')) || 0
+            };
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                    },
+                    body: JSON.stringify(body)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert(data.message);
+                    resetDealerForm();
+                    loadDealers();
+                } else {
+                    alert(data.message || '저장에 실패했습니다.');
+                }
+            } catch (error) {
+                console.error('대리점 저장 실패:', error);
+                alert('대리점 저장 중 오류가 발생했습니다.');
+            }
+        });
+
+        // 모달 외부 클릭시 닫기
+        window.onclick = function(event) {
+            const modal = document.getElementById('dealerManagementModal');
+            if (event.target == modal) {
+                closeDealerModal();
+            }
+        }
+    </script>
+    @endif
 </body>
 </html>
