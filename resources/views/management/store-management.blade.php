@@ -13,9 +13,12 @@
     <script>console.log('페이지 로드 시간: {{ now()->toISOString() }}');</script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css" rel="stylesheet">
-    
+
     {{-- 🔒 세션 안정성 강화 스크립트 --}}
     <script src="/js/session-stability.js"></script>
+
+    {{-- CSRF 토큰 자동 갱신 컴포넌트 --}}
+    @include('components.csrf-refresh')
     
     {{-- 🚨 긴급: 전역 함수 즉시 등록 (ReferenceError 방지) --}}
     <script>
@@ -252,26 +255,59 @@
                 address: '',
                 code: '' // 자동 생성됨
             };
-            
+
             console.log('매장 데이터:', formData);
             console.log('사용자 역할:', userRole, '지사 ID:', userBranchId);
-            
+
             if (!formData.name) {
                 alert('매장명을 입력해주세요');
                 return;
             }
-            
+
             if (!formData.branch_id) {
                 alert('지사를 선택해주세요');
                 return;
             }
-            
+
+            // CSRF 토큰 다시 확인 및 갱신
+            let csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+
+            // 토큰이 없거나 비어있으면 페이지에서 새로 찾기
+            if (!csrfToken) {
+                // Laravel 폼에서 토큰 찾기
+                const tokenInput = document.querySelector('input[name="_token"]');
+                if (tokenInput) {
+                    csrfToken = tokenInput.value;
+                }
+            }
+
+            // 그래도 없으면 쿠키에서 찾기
+            if (!csrfToken) {
+                const cookies = document.cookie.split(';');
+                for (let cookie of cookies) {
+                    const [name, value] = cookie.trim().split('=');
+                    if (name === 'XSRF-TOKEN') {
+                        csrfToken = decodeURIComponent(value);
+                        break;
+                    }
+                }
+            }
+
+            console.log('CSRF 토큰:', csrfToken ? '존재 (' + csrfToken.substring(0, 20) + '...)' : '없음');
+
+            if (!csrfToken) {
+                alert('보안 토큰을 찾을 수 없습니다. 페이지를 새로고침해주세요.');
+                location.reload();
+                return;
+            }
+
             // API 호출 (세션 인증 포함)
             fetch('/api/stores', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest',
                     'Accept': 'application/json'
                 },
                 credentials: 'same-origin', // 세션 쿠키 포함
@@ -393,8 +429,20 @@
                 } else if (error.message.includes('422')) {
                     errorMessage += '입력값 오류: 필수 항목을 모두 입력했는지 확인해주세요.';
                 } else if (error.message.includes('CSRF')) {
-                    errorMessage += '보안 토큰 오류: 페이지를 새로고침해주세요.';
-                    console.error('CSRF 토큰 오류');
+                    console.error('CSRF 토큰 오류 - 자동 갱신 시도');
+                    // CSRF 토큰 갱신 후 재시도
+                    if (window.handleCsrfError) {
+                        window.handleCsrfError().then(newToken => {
+                            if (newToken) {
+                                console.log('새 토큰으로 재시도');
+                                // submitAddStore 다시 호출
+                                setTimeout(() => window.submitAddStore(), 500);
+                            }
+                        });
+                        return;
+                    } else {
+                        errorMessage += '보안 토큰 오류: 페이지를 새로고침해주세요.';
+                    }
                 } else if (error.message.includes('서버로부터 응답을 받지 못했습니다')) {
                     errorMessage = '⚠️ 서버로부터 응답을 받지 못했습니다.\n\n네트워크 연결을 확인하거나 잠시 후 다시 시도해주세요.';
                 } else {
