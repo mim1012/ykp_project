@@ -95,7 +95,7 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => 'require', // Supabase는 SSL 필수
-            'options' => [
+            'options' => extension_loaded('pdo') ? [
                 // Railway PostgreSQL prepared statement 충돌 해결
                 PDO::ATTR_PERSISTENT => false,
                 PDO::ATTR_EMULATE_PREPARES => false,  // false로 변경하여 native prepared statements 사용
@@ -104,7 +104,7 @@ return [
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 // Statement name 충돌 방지
                 PDO::ATTR_STRINGIFY_FETCHES => false,
-            ],
+            ] : [],
             // Railway 환경 최적화
             'pool' => [
                 'size' => env('DB_POOL_SIZE', 10),
