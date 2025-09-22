@@ -282,6 +282,23 @@
                 const responseText = await response.text();
                 console.log('API 응답 내용:', responseText);
 
+                // 빈 응답 체크
+                if (!responseText || responseText.trim() === '') {
+                    console.error('서버로부터 빈 응답을 받았습니다');
+                    if (!response.ok) {
+                        if (response.status === 401) {
+                            throw new Error('인증이 필요합니다. 다시 로그인해주세요.');
+                        } else if (response.status === 403) {
+                            throw new Error('권한이 없습니다.');
+                        } else if (response.status === 500) {
+                            throw new Error('서버 내부 오류가 발생했습니다.');
+                        }
+                        throw new Error(`서버 오류: HTTP ${response.status}`);
+                    }
+                    // 빈 응답이지만 성공 상태인 경우
+                    return { success: false, error: '서버로부터 응답을 받지 못했습니다.' };
+                }
+
                 try {
                     const result = JSON.parse(responseText);
                     if (!response.ok) {
@@ -291,6 +308,17 @@
                 } catch (e) {
                     console.error('JSON 파싱 오류:', e);
                     console.error('응답 내용:', responseText);
+
+                    // HTML 응답인 경우 (Laravel 에러 페이지)
+                    if (responseText.includes('<!DOCTYPE') || responseText.includes('<html')) {
+                        if (response.status === 500) {
+                            throw new Error('서버 내부 오류가 발생했습니다. 관리자에게 문의하세요.');
+                        } else if (response.status === 419) {
+                            throw new Error('세션이 만료되었습니다. 페이지를 새로고침해주세요.');
+                        }
+                        throw new Error('서버 오류가 발생했습니다.');
+                    }
+
                     throw new Error(`서버 응답 오류: ${responseText.substring(0, 200)}`);
                 }
             })
@@ -341,23 +369,34 @@
                 // 더 자세한 에러 메시지 표시
                 let errorMessage = '매장 생성 중 오류가 발생했습니다.\n\n';
 
-                if (error.message.includes('401') || error.message.includes('Unauthenticated')) {
+                if (error.message.includes('인증이 필요') || error.message.includes('401') || error.message.includes('Unauthenticated')) {
                     errorMessage = '🔐 세션이 만료되었습니다.\n\n다시 로그인해주세요.';
                     console.error('인증 실패 - 로그인 페이지로 이동');
 
+                    alert(errorMessage);
                     // 3초 후 자동으로 로그인 페이지로 이동
                     setTimeout(() => {
                         window.location.href = '/login';
                     }, 3000);
-                } else if (error.message.includes('403')) {
+                    return;
+                } else if (error.message.includes('세션이 만료')) {
+                    errorMessage = '🔐 ' + error.message;
+                    alert(errorMessage);
+                    setTimeout(() => {
+                        location.reload();
+                    }, 2000);
+                    return;
+                } else if (error.message.includes('권한이 없') || error.message.includes('403')) {
                     errorMessage += '권한 오류: 매장을 추가할 권한이 없습니다.';
-                } else if (error.message.includes('500')) {
-                    errorMessage += '서버 오류: 잠시 후 다시 시도해주세요.';
+                } else if (error.message.includes('서버 내부 오류') || error.message.includes('500')) {
+                    errorMessage = '⚠️ 서버 내부 오류가 발생했습니다.\n\n잠시 후 다시 시도해주세요.';
                 } else if (error.message.includes('422')) {
                     errorMessage += '입력값 오류: 필수 항목을 모두 입력했는지 확인해주세요.';
                 } else if (error.message.includes('CSRF')) {
                     errorMessage += '보안 토큰 오류: 페이지를 새로고침해주세요.';
                     console.error('CSRF 토큰 오류');
+                } else if (error.message.includes('서버로부터 응답을 받지 못했습니다')) {
+                    errorMessage = '⚠️ 서버로부터 응답을 받지 못했습니다.\n\n네트워크 연결을 확인하거나 잠시 후 다시 시도해주세요.';
                 } else {
                     errorMessage += '오류 내용: ' + error.message;
                 }
