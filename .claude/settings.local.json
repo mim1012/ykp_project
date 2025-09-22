@@ -104,7 +104,10 @@
       "Bash(docker run:*)",
       "Bash(docker build:*)",
       "Bash(tasklist:*)",
-      "Bash(copy .env.example .env.production)"
+      "Bash(copy .env.example .env.production)",
+      "Read(//c/Users/PC_1M/Downloads/**)",
+      "Bash(gunzip:*)",
+      "Bash(git restore:*)"
     ],
     "defaultMode": "acceptEdits",
     "additionalDirectories": [
