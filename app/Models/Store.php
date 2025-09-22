@@ -18,10 +18,14 @@ class Store extends Model
         'address',
         'status',
         'opened_at',
+        'metadata',
+        'created_by',
     ];
 
     protected $casts = [
         'opened_at' => 'datetime',  // timestamp로 변경 (date가 아닌 datetime)
+        'metadata' => 'array',      // JSON 컬럼을 배열로 자동 변환
+        'sync_status' => 'array',   // JSON 컬럼을 배열로 자동 변환
     ];
 
     public function branch()
