@@ -15,7 +15,6 @@
         .field-activation { @apply w-20 px-1 py-1 border rounded text-xs; } /* 개통방식 */
         .field-model { @apply w-32 px-1 py-1 border rounded text-xs; } /* 모델명 */
         .field-date { @apply w-36 px-1 py-1 border rounded text-xs; } /* 개통일, 생년월일 */
-        .field-serial { @apply w-28 px-1 py-1 border rounded text-xs; } /* 일련번호 */
         .field-phone { @apply w-36 px-1 py-1 border rounded text-xs; } /* 휴대폰번호 */
         .field-money { @apply w-28 px-1 py-1 border rounded text-xs; } /* 액면가, 구두1/2 */
         .field-amount { @apply w-24 px-1 py-1 border rounded text-xs; } /* 그레이드, 부가추가 */
