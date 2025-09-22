@@ -44,32 +44,33 @@ class StoreController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        $user = Auth::user();
+        try {
+            $user = Auth::user();
 
-        // 본사와 지사만 매장 추가 가능
-        if (! in_array($user->role, ['headquarters', 'branch'])) {
-            return response()->json(['error' => '본사 또는 지사 관리자만 매장을 추가할 수 있습니다.'], 403);
-        }
+            // 본사와 지사만 매장 추가 가능
+            if (! in_array($user->role, ['headquarters', 'branch'])) {
+                return response()->json(['error' => '본사 또는 지사 관리자만 매장을 추가할 수 있습니다.'], 403);
+            }
 
-        $validationRules = [
-            'name' => 'required|string|max:255',
-            'code' => 'nullable|string|unique:stores,code', // 자동 생성되므로 nullable
-            'owner_name' => 'nullable|string|max:255',
-            'phone' => 'nullable|string|max:20',
-            'address' => 'nullable|string|max:500',
-        ];
+            $validationRules = [
+                'name' => 'required|string|max:255',
+                'code' => 'nullable|string|unique:stores,code', // 자동 생성되므로 nullable
+                'owner_name' => 'nullable|string|max:255',
+                'phone' => 'nullable|string|max:20',
+                'address' => 'nullable|string|max:500',
+            ];
 
-        // 본사는 지사 선택 가능, 지사는 자기 지사로 고정
-        if ($user->role === 'headquarters') {
-            $validationRules['branch_id'] = 'required|exists:branches,id';
-        }
+            // 본사는 지사 선택 가능, 지사는 자기 지사로 고정
+            if ($user->role === 'headquarters') {
+                $validationRules['branch_id'] = 'required|exists:branches,id';
+            }
 
-        $request->validate($validationRules);
+            $request->validate($validationRules);
 
-        // 지사인 경우 자기 지사로 강제 설정
-        $branchId = $user->role === 'branch' ? $user->branch_id : $request->branch_id;
+            // 지사인 경우 자기 지사로 강제 설정
+            $branchId = $user->role === 'branch' ? $user->branch_id : $request->branch_id;
 
-        return DB::transaction(function () use ($request, $user, $branchId) {
+            return DB::transaction(function () use ($request, $user, $branchId) {
             // 매장 코드 자동 생성 (PM 요구사항 반영)
             $branch = \App\Models\Branch::find($branchId);
             $branchCode = $branch ? $branch->code : 'BR'.str_pad($branchId, 3, '0', STR_PAD_LEFT);
@@ -169,6 +170,19 @@ class StoreController extends Controller
                 'account' => $accountInfo, // 계정 정보 포함
             ], 201);
         });
+        } catch (\Exception $e) {
+            Log::error('Store creation failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'request' => $request->all(),
+                'user_id' => Auth::id()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => '매장 생성 중 오류가 발생했습니다: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
