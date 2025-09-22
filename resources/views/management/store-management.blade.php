@@ -2738,27 +2738,51 @@
         
         // 🗑️ 중복 정의 제거됨 (통합된 함수 사용)
         
+        // 통합된 매장 삭제 함수 (올바른 API 엔드포인트 사용)
         window.deleteStore = function(storeId) {
-            if (confirm('정말로 이 매장을 삭제하시겠습니까?')) {
-                fetch('/api/dev/stores/' + storeId, {
-                    method: 'DELETE',
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert('매장이 삭제되었습니다.');
-                        location.reload();
-                    } else {
-                        alert('삭제 실패: ' + (data.error || '알 수 없는 오류'));
-                    }
-                })
-                .catch(error => {
-                    alert('삭제 중 오류가 발생했습니다.');
-                });
+            const store = allStores?.find(s => s.id === storeId);
+            const storeName = store?.name || `매장 ID ${storeId}`;
+
+            if (!confirm(`⚠️ 정말로 "${storeName}" 매장을 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`)) {
+                return;
             }
+
+            fetch(`/api/stores/${storeId}`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => {
+                if (!response.ok && response.status === 401) {
+                    throw new Error('인증이 필요합니다. 다시 로그인해주세요.');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    alert(`✅ "${storeName}" ${data.message || '매장이 삭제되었습니다.'}`);
+                    if (typeof loadStores === 'function') {
+                        loadStores(); // 목록 새로고침
+                    } else {
+                        location.reload();
+                    }
+                } else {
+                    alert('❌ 삭제 실패: ' + (data.error || '알 수 없는 오류'));
+                }
+            })
+            .catch(error => {
+                console.error('매장 삭제 오류:', error);
+                if (error.message.includes('인증')) {
+                    alert('❌ ' + error.message);
+                    window.location.href = '/login';
+                } else {
+                    alert('❌ 매장 삭제 중 오류가 발생했습니다: ' + error.message);
+                }
+            });
         };
         
         // ✨ 안전한 초기화 함수 + 버튼 이벤트 등록
@@ -2986,14 +3010,9 @@
             }
         };
         
-        // 강화된 매장 삭제 함수 (Foreign Key 제약 조건 처리)
-        window.deleteStore = function(storeId, storeName) {
-            console.log('🗑️ 매장 삭제 시작:', storeId, storeName);
-            deleteStoreWithConfirmation(storeId, storeName);
-        };
 
-        // 전역 매장 삭제 함수 (확인 및 강제 삭제 처리)
-        window.deleteStoreWithConfirmation = function(storeId, storeName, forceDelete = false) {
+        // 삭제됨 - deleteStore 함수로 통합
+        /* window.deleteStoreWithConfirmation = function(storeId, storeName, forceDelete = false) {
             console.log('🗑️ 매장 삭제 확인:', { storeId, storeName, forceDelete });
 
             // 첫 번째 확인
@@ -3274,40 +3293,13 @@
                     viewStoreStats(storeId, storeName);
                 } else if (target.classList.contains('store-delete-btn')) {
                     console.log('🗑️ 매장 삭제 클릭:', storeId, storeName);
-                    if (confirm('정말로 "' + storeName + '" 매장을 삭제하시겠습니까?')) {
-                        deleteStoreAPI(storeId, storeName);
-                    }
+                    deleteStore(storeId); // 통합된 함수 호출
                 }
             });
             
             console.log('✅ 매장 버튼 이벤트 등록 완료');
         }
         
-        // 🗑️ 매장 삭제 API 호출
-        function deleteStoreAPI(storeId, storeName) {
-            console.log('🗑️ 매장 삭제 API 호출:', storeId);
-            
-            fetch('/api/dev/stores/' + storeId, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('✅ "' + storeName + '" 매장이 삭제되었습니다.');
-                    location.reload(); // 페이지 새로고침
-                } else {
-                    alert('❌ 삭제 실패: ' + (data.error || '알 수 없는 오류'));
-                }
-            })
-            .catch(error => {
-                console.error('매장 삭제 오류:', error);
-                alert('매장 삭제 중 오류가 발생했습니다.');
-            });
-        }
         
         // 3가지 초기화 전략 (안전성 강화)
         document.addEventListener('DOMContentLoaded', initializeStoresPage);
@@ -3334,36 +3326,6 @@
             }
         }, 3000);
         
-        // 매장 삭제 기능 (1차 구현)
-        function deleteStore(storeId) {
-            const store = allStores?.find(s => s.id === storeId);
-            const storeName = store?.name || `매장 ID ${storeId}`;
-            
-            if (!confirm(`⚠️ 정말로 "${storeName}" 매장을 삭제하시겠습니까?\n\n삭제하면 다음 항목들이 함께 삭제됩니다:\n• 매장 정보\n• 매장 사용자 계정\n• 매장 관련 데이터\n\n이 작업은 되돌릴 수 없습니다.`)) {
-                return;
-            }
-
-            fetch(`/api/stores/${storeId}`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert(`✅ "${storeName}" 매장이 삭제되었습니다.`);
-                    loadStores(); // 목록 새로고침
-                } else {
-                    alert('❌ 매장 삭제 실패: ' + (data.error || '알 수 없는 오류'));
-                }
-            })
-            .catch(error => {
-                console.error('매장 삭제 오류:', error);
-                alert('매장 삭제 중 오류가 발생했습니다.');
-            });
-        }
 
         // 🚀 4단계 초기화 전략 실행
         
