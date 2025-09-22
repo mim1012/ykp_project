@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>개통표 버튼 테스트</title>
+</head>
+<body>
+    <h1>개통표 입력 페이지 네비게이션 테스트</h1>
+
+    <h2>직접 링크 테스트:</h2>
+    <ul>
+        <li><a href="http://localhost:8080/sales/complete-aggrid">sales/complete-aggrid (개통표 입력)</a></li>
+        <li><a href="http://localhost:8080/sales/excel-input">sales/excel-input (엑셀 입력)</a></li>
+        <li><a href="http://localhost:8080/sales/aggrid">sales/aggrid</a></li>
+    </ul>
+
+    <h2>JavaScript 함수 테스트:</h2>
+    <button onclick="window.location.href='/sales/complete-aggrid'">openManagement() 함수 테스트</button>
+
+    <script>
+        console.log('테스트 페이지 로드됨');
+
+        // 5초 후 자동으로 페이지 이동 테스트
+        setTimeout(() => {
+            console.log('5초 후 개통표 페이지로 이동 시도...');
+            // window.location.href = 'http://localhost:8080/sales/complete-aggrid';
+        }, 5000);
+    </script>
+</body>
+</html>

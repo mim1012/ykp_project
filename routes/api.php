@@ -748,6 +748,47 @@ Route::middleware(['web', 'auth'])->prefix('activities')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
+| 대리점 관리 API (Dealer Profile Management)
+|--------------------------------------------------------------------------
+| 본사 및 지사 권한으로 대리점 프로필 관리
+*/
+
+Route::middleware(['web', 'auth'])->prefix('dealers')->group(function () {
+    Route::get('/', [App\Http\Controllers\Api\DealerProfileController::class, 'index'])->name('api.dealers.index');
+    Route::post('/', [App\Http\Controllers\Api\DealerProfileController::class, 'store'])->name('api.dealers.store');
+    Route::put('/{id}', [App\Http\Controllers\Api\DealerProfileController::class, 'update'])->name('api.dealers.update');
+    Route::delete('/{id}', [App\Http\Controllers\Api\DealerProfileController::class, 'destroy'])->name('api.dealers.destroy');
+});
+
+/*
+|--------------------------------------------------------------------------
+| 판매 데이터 내보내기/가져오기 API
+|--------------------------------------------------------------------------
+| CSV/엑셀 파일 업로드/다운로드 기능
+*/
+
+Route::middleware(['web', 'auth'])->prefix('sales-export')->group(function () {
+    Route::get('/csv', [App\Http\Controllers\Api\SalesExportController::class, 'exportCsv'])->name('api.sales.export.csv');
+    Route::get('/template', [App\Http\Controllers\Api\SalesExportController::class, 'downloadTemplate'])->name('api.sales.export.template');
+    Route::post('/import', [App\Http\Controllers\Api\SalesExportController::class, 'importCsv'])->name('api.sales.import.csv');
+});
+
+/*
+|--------------------------------------------------------------------------
+| 통신사 관리 API (Carrier Management)
+|--------------------------------------------------------------------------
+| 본사 권한으로 통신사 추가/수정/삭제 관리
+*/
+
+Route::middleware(['web', 'auth'])->prefix('carriers')->group(function () {
+    Route::get('/', [App\Http\Controllers\Api\CarrierController::class, 'index'])->name('api.carriers.index');
+    Route::post('/', [App\Http\Controllers\Api\CarrierController::class, 'store'])->name('api.carriers.store');
+    Route::put('/{id}', [App\Http\Controllers\Api\CarrierController::class, 'update'])->name('api.carriers.update');
+    Route::delete('/{id}', [App\Http\Controllers\Api\CarrierController::class, 'destroy'])->name('api.carriers.destroy');
+});
+
+/*
+|--------------------------------------------------------------------------
 | 월마감정산 API (가장 핵심적인 기능)
 |--------------------------------------------------------------------------
 | 엑셀 "월마감정산" 시트의 모든 로직을 API로 구현

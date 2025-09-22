@@ -182,7 +182,10 @@ class DealerProfileSeeder extends Seeder
         ];
 
         foreach ($dealers as $dealer) {
-            DealerProfile::create($dealer);
+            DealerProfile::firstOrCreate(
+                ['dealer_code' => $dealer['dealer_code']],
+                $dealer
+            );
         }
 
         echo 'DealerProfile 시더 실행 완료: '.count($dealers)."개 대리점 생성\n";

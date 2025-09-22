@@ -358,13 +358,13 @@
                     <!-- 본사 전용 액션 -->
                     <button class="btn btn-success" onclick="openStoreManagement()">+ 새 지사 추가</button>
                     <button class="btn btn-success" onclick="openStoreManagement()">+ 새 매장 추가</button>
-                    <button class="btn btn-primary" onclick="openGoalSetting()">🎯 목표 설정</button>
-                    <button class="btn btn-outline" onclick="downloadSystemReport()">전체 리포트</button>
+                    <button class="btn btn-primary" onclick="openDealerManagement()">🏢 대리점 관리</button>
+                    <button class="btn btn-primary" onclick="openCarrierManagement()">📡 통신사 관리</button>
                     <button class="btn btn-outline" onclick="location.reload()">🔄 새로고침</button>
                 @elseif(auth()->user()->role === 'branch')
                     <!-- 지사 전용 액션 -->
                     <button class="btn btn-success" onclick="openStoreManagement()">+ 매장 추가</button>
-                    <button class="btn btn-outline" onclick="downloadBranchReport()">지사 리포트</button>
+                    <button class="btn btn-primary" onclick="openDealerManagement()">🏢 대리점 관리</button>
                     <button class="btn btn-outline" onclick="openStoreManagement()">👥 매장 관리</button>
                     <button class="btn btn-outline" onclick="location.reload()">🔄 새로고침</button>
                 @elseif(auth()->user()->role === 'store')
@@ -895,10 +895,19 @@
             // 매장 관리 (본사 전용)
             window.location.href = '/management/stores';
         }
-        
+
         function openBranchManagement() {
             // 지사 관리 (본사 전용)
             window.location.href = '/management/branches';
+        }
+
+        function openDealerManagement() {
+            // 대리점 관리 모달 열기
+            const modal = document.getElementById('dealerManagementModal');
+            if (modal) {
+                modal.style.display = 'block';
+                loadDealers();
+            }
         }
         
         function openAdmin() {
@@ -1962,5 +1971,709 @@
         // 실시간 업데이트 리스너 초기화 실행
         initRealtimeUpdateListeners();
     </script>
+
+    <!-- 대리점 관리 모달 -->
+    @if(in_array(auth()->user()->role, ['headquarters', 'branch']))
+    <div id="dealerManagementModal" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
+        <div style="background-color: white; margin: 50px auto; padding: 20px; border-radius: 8px; width: 90%; max-width: 800px; max-height: 80vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="font-size: 20px; font-weight: 600;">대리점 관리</h2>
+                <button onclick="closeDealerModal()" style="font-size: 24px; background: none; border: none; cursor: pointer;">&times;</button>
+            </div>
+
+            <!-- 대리점 추가 폼 -->
+            <div style="background: #f9fafb; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+                <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 15px;">새 대리점 추가</h3>
+                <form id="dealerForm" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+                    <input type="hidden" id="dealerId" name="id">
+                    <div>
+                        <label style="display: block; font-size: 14px; margin-bottom: 4px;">대리점 코드 *</label>
+                        <input type="text" id="dealerCode" name="dealer_code" required style="width: 100%; padding: 8px; border: 1px solid #e5e7eb; border-radius: 4px;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 14px; margin-bottom: 4px;">대리점명 *</label>
+                        <input type="text" id="dealerName" name="dealer_name" required style="width: 100%; padding: 8px; border: 1px solid #e5e7eb; border-radius: 4px;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 14px; margin-bottom: 4px;">담당자명</label>
+                        <input type="text" id="contactPerson" name="contact_person" style="width: 100%; padding: 8px; border: 1px solid #e5e7eb; border-radius: 4px;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 14px; margin-bottom: 4px;">연락처</label>
+                        <input type="text" id="phone" name="phone" style="width: 100%; padding: 8px; border: 1px solid #e5e7eb; border-radius: 4px;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 14px; margin-bottom: 4px;">유심비</label>
+                        <input type="number" id="defaultSimFee" name="default_sim_fee" value="0" style="width: 100%; padding: 8px; border: 1px solid #e5e7eb; border-radius: 4px;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 14px; margin-bottom: 4px;">MNP할인</label>
+                        <input type="number" id="defaultMnpDiscount" name="default_mnp_discount" value="0" style="width: 100%; padding: 8px; border: 1px solid #e5e7eb; border-radius: 4px;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 14px; margin-bottom: 4px;">세율</label>
+                        <input type="number" id="taxRate" name="tax_rate" value="0.1" step="0.01" min="0" max="1" style="width: 100%; padding: 8px; border: 1px solid #e5e7eb; border-radius: 4px;">
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 14px; margin-bottom: 4px;">페이백율(%)</label>
+                        <input type="number" id="defaultPaybackRate" name="default_payback_rate" value="0" min="0" max="100" style="width: 100%; padding: 8px; border: 1px solid #e5e7eb; border-radius: 4px;">
+                    </div>
+                    <div style="grid-column: span 2;">
+                        <label style="display: block; font-size: 14px; margin-bottom: 4px;">주소</label>
+                        <input type="text" id="address" name="address" style="width: 100%; padding: 8px; border: 1px solid #e5e7eb; border-radius: 4px;">
+                    </div>
+                    <div style="grid-column: span 2; display: flex; gap: 10px;">
+                        <button type="submit" style="background: #10b981; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;">저장</button>
+                        <button type="button" onclick="resetDealerForm()" style="background: #6b7280; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;">취소</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 대리점 목록 -->
+            <div>
+                <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 15px;">대리점 목록</h3>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #f3f4f6;">
+                                <th style="padding: 8px; text-align: left; font-size: 14px;">코드</th>
+                                <th style="padding: 8px; text-align: left; font-size: 14px;">대리점명</th>
+                                <th style="padding: 8px; text-align: left; font-size: 14px;">담당자</th>
+                                <th style="padding: 8px; text-align: left; font-size: 14px;">연락처</th>
+                                <th style="padding: 8px; text-align: center; font-size: 14px;">상태</th>
+                                <th style="padding: 8px; text-align: center; font-size: 14px;">액션</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dealerTableBody">
+                            <!-- 동적으로 추가됨 -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 대리점 관리 함수들
+        function closeDealerModal() {
+            document.getElementById('dealerManagementModal').style.display = 'none';
+            resetDealerForm();
+        }
+
+        function resetDealerForm() {
+            document.getElementById('dealerForm').reset();
+            document.getElementById('dealerId').value = '';
+        }
+
+        async function loadDealers() {
+            try {
+                const response = await fetch('/api/dealers', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    }
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    const tbody = document.getElementById('dealerTableBody');
+                    tbody.innerHTML = '';
+
+                    data.data.forEach(dealer => {
+                        const row = tbody.insertRow();
+                        row.innerHTML = `
+                            <td style="padding: 8px; font-size: 14px;">${dealer.dealer_code}</td>
+                            <td style="padding: 8px; font-size: 14px;">${dealer.dealer_name}</td>
+                            <td style="padding: 8px; font-size: 14px;">${dealer.contact_person || '-'}</td>
+                            <td style="padding: 8px; font-size: 14px;">${dealer.phone || '-'}</td>
+                            <td style="padding: 8px; text-align: center;">
+                                <span style="padding: 2px 8px; background: ${dealer.status === 'active' ? '#dcfce7' : '#fee2e2'}; color: ${dealer.status === 'active' ? '#16a34a' : '#dc2626'}; border-radius: 4px; font-size: 12px;">
+                                    ${dealer.status === 'active' ? '활성' : '비활성'}
+                                </span>
+                            </td>
+                            <td style="padding: 8px; text-align: center;">
+                                <button onclick="editDealer(${dealer.id})" style="background: #3b82f6; color: white; padding: 4px 8px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; margin-right: 4px;">수정</button>
+                                @if(auth()->user()->role === 'headquarters')
+                                <button onclick="deleteDealer(${dealer.id})" style="background: #ef4444; color: white; padding: 4px 8px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">삭제</button>
+                                @endif
+                            </td>
+                        `;
+                    });
+                }
+            } catch (error) {
+                console.error('대리점 목록 로딩 실패:', error);
+                alert('대리점 목록을 불러오는데 실패했습니다.');
+            }
+        }
+
+        async function editDealer(id) {
+            try {
+                const response = await fetch('/api/dealers', {
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    }
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    const dealer = data.data.find(d => d.id === id);
+                    if (dealer) {
+                        document.getElementById('dealerId').value = dealer.id;
+                        document.getElementById('dealerCode').value = dealer.dealer_code;
+                        document.getElementById('dealerName').value = dealer.dealer_name;
+                        document.getElementById('contactPerson').value = dealer.contact_person || '';
+                        document.getElementById('phone').value = dealer.phone || '';
+                        document.getElementById('defaultSimFee').value = dealer.default_sim_fee || 0;
+                        document.getElementById('defaultMnpDiscount').value = dealer.default_mnp_discount || 0;
+                        document.getElementById('taxRate').value = dealer.tax_rate || 0.1;
+                        document.getElementById('defaultPaybackRate').value = dealer.default_payback_rate || 0;
+                        document.getElementById('address').value = dealer.address || '';
+                    }
+                }
+            } catch (error) {
+                console.error('대리점 정보 로딩 실패:', error);
+                alert('대리점 정보를 불러오는데 실패했습니다.');
+            }
+        }
+
+        async function deleteDealer(id) {
+            if (!confirm('정말로 이 대리점을 삭제하시겠습니까?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/dealers/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    }
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    alert(data.message);
+                    loadDealers();
+                    // 다른 탭에 대리점 변경 알림
+                    localStorage.setItem('dealers_updated', Date.now());
+                } else {
+                    alert(data.message || '대리점 삭제에 실패했습니다.');
+                }
+            } catch (error) {
+                console.error('대리점 삭제 실패:', error);
+                alert('대리점 삭제 중 오류가 발생했습니다.');
+            }
+        }
+
+        // 대리점 폼 제출 처리
+        document.getElementById('dealerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData(e.target);
+            const dealerId = formData.get('id');
+            const url = dealerId ? `/api/dealers/${dealerId}` : '/api/dealers';
+            const method = dealerId ? 'PUT' : 'POST';
+
+            const body = {
+                dealer_code: formData.get('dealer_code'),
+                dealer_name: formData.get('dealer_name'),
+                contact_person: formData.get('contact_person'),
+                phone: formData.get('phone'),
+                address: formData.get('address'),
+                default_sim_fee: parseFloat(formData.get('default_sim_fee')) || 0,
+                default_mnp_discount: parseFloat(formData.get('default_mnp_discount')) || 0,
+                tax_rate: parseFloat(formData.get('tax_rate')) || 0.1,
+                default_payback_rate: parseFloat(formData.get('default_payback_rate')) || 0
+            };
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify(body)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert(data.message);
+                    resetDealerForm();
+                    loadDealers();
+                    // 다른 탭에 대리점 변경 알림
+                    localStorage.setItem('dealers_updated', Date.now());
+                } else {
+                    alert(data.message || '저장에 실패했습니다.');
+                }
+            } catch (error) {
+                console.error('대리점 저장 실패:', error);
+                alert('대리점 저장 중 오류가 발생했습니다.');
+            }
+        });
+
+        // 모달 외부 클릭시 닫기
+        window.onclick = function(event) {
+            const modal = document.getElementById('dealerManagementModal');
+            if (event.target == modal) {
+                closeDealerModal();
+            }
+        }
+    </script>
+
+    <!-- 통신사 관리 모달 -->
+    @if(auth()->user()->role === 'headquarters')
+    <div id="carrierManagementModal" style="display: none; position: fixed; z-index: 9999; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5);">
+        <div style="background-color: white; margin: 50px auto; padding: 20px; border-radius: 8px; width: 90%; max-width: 800px; max-height: 80vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="font-size: 20px; font-weight: 600;">통신사 관리</h2>
+                <button onclick="closeCarrierModal()" style="font-size: 24px; background: none; border: none; cursor: pointer;">&times;</button>
+            </div>
+
+                <!-- 통신사 추가 폼 -->
+                <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <h3 style="font-size: 16px; margin-bottom: 15px;">새 통신사 추가</h3>
+                    <form id="carrierForm" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <input type="hidden" name="id" id="carrier-id">
+                        <div>
+                            <label style="font-size: 12px; color: #475569;">통신사 코드*</label>
+                            <input type="text" name="code" id="carrier-code" required
+                                   placeholder="예: MVNO" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px;">
+                        </div>
+                        <div>
+                            <label style="font-size: 12px; color: #475569;">통신사명*</label>
+                            <input type="text" name="name" id="carrier-name" required
+                                   placeholder="예: 알뜰폰" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px;">
+                        </div>
+                        <div>
+                            <label style="font-size: 12px; color: #475569;">정렬 순서</label>
+                            <input type="number" name="sort_order" id="carrier-sort-order"
+                                   placeholder="낮을수록 먼저 표시" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px;">
+                        </div>
+                        <div>
+                            <label style="font-size: 12px; color: #475569;">활성 상태</label>
+                            <select name="is_active" id="carrier-is-active" style="width: 100%; padding: 8px; border: 1px solid #cbd5e1; border-radius: 4px;">
+                                <option value="1">활성</option>
+                                <option value="0">비활성</option>
+                            </select>
+                        </div>
+                        <div style="grid-column: span 2; display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px;">
+                            <button type="button" onclick="resetCarrierForm()" style="padding: 8px 20px; background: #e2e8f0; border: none; border-radius: 4px; cursor: pointer;">초기화</button>
+                            <button type="submit" style="padding: 8px 20px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer;">저장</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 통신사 목록 -->
+                <div>
+                    <h3 style="font-size: 16px; margin-bottom: 15px;">통신사 목록</h3>
+                    <div style="overflow-x: auto;">
+                        <table style="width: 100%; border-collapse: collapse;">
+                            <thead>
+                                <tr style="background: #f1f5f9;">
+                                    <th style="padding: 10px; text-align: left; border-bottom: 2px solid #e2e8f0;">코드</th>
+                                    <th style="padding: 10px; text-align: left; border-bottom: 2px solid #e2e8f0;">통신사명</th>
+                                    <th style="padding: 10px; text-align: center; border-bottom: 2px solid #e2e8f0;">순서</th>
+                                    <th style="padding: 10px; text-align: center; border-bottom: 2px solid #e2e8f0;">상태</th>
+                                    <th style="padding: 10px; text-align: center; border-bottom: 2px solid #e2e8f0;">작업</th>
+                                </tr>
+                            </thead>
+                            <tbody id="carrierList">
+                                <!-- 동적으로 로드됨 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 통신사 관리 함수들
+        function openCarrierManagement() {
+            document.getElementById('carrierManagementModal').style.display = 'block';
+            loadCarriers();
+        }
+
+        function closeCarrierModal() {
+            document.getElementById('carrierManagementModal').style.display = 'none';
+            resetCarrierForm();
+        }
+
+        function resetCarrierForm() {
+            document.getElementById('carrierForm').reset();
+            document.getElementById('carrier-id').value = '';
+        }
+
+        async function loadCarriers() {
+            try {
+                const response = await fetch('/api/carriers', {
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    }
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    const tbody = document.getElementById('carrierList');
+                    tbody.innerHTML = '';
+
+                    data.data.forEach(carrier => {
+                        const row = document.createElement('tr');
+                        const isProtected = ['SK', 'KT', 'LG', 'MVNO'].includes(carrier.code);
+
+                        row.innerHTML = `
+                            <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${carrier.code}</td>
+                            <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${carrier.name}</td>
+                            <td style="padding: 10px; text-align: center; border-bottom: 1px solid #e2e8f0;">${carrier.sort_order}</td>
+                            <td style="padding: 10px; text-align: center; border-bottom: 1px solid #e2e8f0;">
+                                <span style="padding: 2px 8px; border-radius: 4px; font-size: 12px; ${carrier.is_active ? 'background: #10b981; color: white;' : 'background: #ef4444; color: white;'}">
+                                    ${carrier.is_active ? '활성' : '비활성'}
+                                </span>
+                            </td>
+                            <td style="padding: 10px; text-align: center; border-bottom: 1px solid #e2e8f0;">
+                                ${!isProtected ? `
+                                    <button onclick="editCarrier(${JSON.stringify(carrier).replace(/"/g, '&quot;')})"
+                                            style="padding: 4px 10px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; margin-right: 5px;">
+                                        수정
+                                    </button>
+                                    <button onclick="deleteCarrier(${carrier.id})"
+                                            style="padding: 4px 10px; background: #ef4444; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                        삭제
+                                    </button>
+                                ` : '<span style="color: #94a3b8; font-size: 12px;">기본 통신사</span>'}
+                            </td>
+                        `;
+                        tbody.appendChild(row);
+                    });
+                }
+            } catch (error) {
+                console.error('통신사 목록 로드 실패:', error);
+                alert('통신사 목록을 불러오는 중 오류가 발생했습니다.');
+            }
+        }
+
+        function editCarrier(carrier) {
+            document.getElementById('carrier-id').value = carrier.id;
+            document.getElementById('carrier-code').value = carrier.code;
+            document.getElementById('carrier-name').value = carrier.name;
+            document.getElementById('carrier-sort-order').value = carrier.sort_order;
+            document.getElementById('carrier-is-active').value = carrier.is_active ? '1' : '0';
+        }
+
+        async function deleteCarrier(id) {
+            if (!confirm('정말 이 통신사를 삭제하시겠습니까?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/carriers/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert(data.message);
+                    loadCarriers();
+                } else {
+                    alert(data.message || '삭제에 실패했습니다.');
+                }
+            } catch (error) {
+                console.error('통신사 삭제 실패:', error);
+                alert('통신사 삭제 중 오류가 발생했습니다.');
+            }
+        }
+
+        // 통신사 폼 제출
+        document.getElementById('carrierForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const formData = new FormData(e.target);
+            const carrierId = formData.get('id');
+            const url = carrierId ? `/api/carriers/${carrierId}` : '/api/carriers';
+            const method = carrierId ? 'PUT' : 'POST';
+
+            const body = {
+                code: formData.get('code'),
+                name: formData.get('name'),
+                sort_order: parseInt(formData.get('sort_order')) || null,
+                is_active: formData.get('is_active') === '1'
+            };
+
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify(body)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert(data.message);
+                    resetCarrierForm();
+                    loadCarriers();
+                } else {
+                    alert(data.message || '저장에 실패했습니다.');
+                }
+            } catch (error) {
+                console.error('통신사 저장 실패:', error);
+                alert('통신사 저장 중 오류가 발생했습니다.');
+            }
+        });
+
+        // 모달 외부 클릭시 닫기
+        window.onclick = function(event) {
+            const dealerModal = document.getElementById('dealerManagementModal');
+            const carrierModal = document.getElementById('carrierManagementModal');
+
+            if (event.target == dealerModal) {
+                closeDealerModal();
+            } else if (event.target == carrierModal) {
+                closeCarrierModal();
+            }
+        }
+    </script>
+    @endif
+    @endif
+
+    @if(auth()->user()->role === 'headquarters')
+    <script>
+        // 통신사 관리 함수들
+        function openCarrierManagement() {
+            console.log('Opening carrier management modal');
+            const modal = document.getElementById('carrierManagementModal');
+            if (modal) {
+                modal.style.display = 'block';
+                if (typeof loadCarriers === 'function') {
+                    loadCarriers();
+                }
+            } else {
+                console.error('Carrier management modal not found');
+            }
+        }
+
+        function closeCarrierModal() {
+            const modal = document.getElementById('carrierManagementModal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        function loadCarriers() {
+            console.log('Loading carriers...');
+            fetch('/api/carriers', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Carriers loaded:', data);
+                if (data.success) {
+                    const tbody = document.getElementById('carrierList');
+                    if (tbody) {
+                        tbody.innerHTML = '';
+                        data.data.forEach(carrier => {
+                            const row = tbody.insertRow();
+                            row.innerHTML = `
+                                <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${carrier.code}</td>
+                                <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${carrier.name}</td>
+                                <td style="padding: 10px; text-align: center; border-bottom: 1px solid #e2e8f0;">${carrier.sort_order || 0}</td>
+                                <td style="padding: 10px; text-align: center; border-bottom: 1px solid #e2e8f0;">
+                                    <span style="padding: 2px 8px; border-radius: 12px; font-size: 12px; ${carrier.is_active ? 'background: #dcfce7; color: #16a34a;' : 'background: #fee2e2; color: #dc2626;'}">${carrier.is_active ? '활성' : '비활성'}</span>
+                                </td>
+                                <td style="padding: 10px; text-align: center; border-bottom: 1px solid #e2e8f0;">
+                                    <button onclick="editCarrier(${carrier.id})" style="padding: 4px 12px; background: #3b82f6; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px; margin-right: 5px;">수정</button>
+                                    ${!['SK', 'KT', 'LG', '알뜰'].includes(carrier.name) ?
+                                        `<button onclick="deleteCarrier(${carrier.id})" style="padding: 4px 12px; background: #ef4444; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 13px;">삭제</button>` :
+                                        '<span style="color: #94a3b8; font-size: 12px;">기본</span>'}
+                                </td>
+                            `;
+                        });
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error loading carriers:', error);
+            });
+        }
+
+        function addCarrier() {
+            const code = document.getElementById('carrier-code').value;
+            const name = document.getElementById('carrier-name').value;
+            const sortOrder = document.getElementById('carrier-sort-order').value || 10;
+
+            if (!code || !name) {
+                alert('코드와 이름은 필수입니다.');
+                return;
+            }
+
+            fetch('/api/carriers', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify({
+                    code: code,
+                    name: name,
+                    sort_order: sortOrder
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('통신사가 추가되었습니다.');
+                    loadCarriers();
+                    // 폼 초기화
+                    document.getElementById('carrier-code').value = '';
+                    document.getElementById('carrier-name').value = '';
+                    document.getElementById('carrier-sort-order').value = '';
+                } else {
+                    alert('오류: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error adding carrier:', error);
+                alert('통신사 추가 중 오류가 발생했습니다.');
+            });
+        }
+
+        function deleteCarrier(id) {
+            if (!confirm('이 통신사를 삭제하시겠습니까?')) {
+                return;
+            }
+
+            fetch(`/api/carriers/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('통신사가 삭제되었습니다.');
+                    loadCarriers();
+                    // 다른 탭에 통신사 변경 알림
+                    localStorage.setItem('carriers_updated', Date.now());
+                } else {
+                    alert('오류: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting carrier:', error);
+                alert('통신사 삭제 중 오류가 발생했습니다.');
+            });
+        }
+
+        function editCarrier(id) {
+            fetch('/api/carriers', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const carrier = data.data.find(c => c.id === id);
+                    if (carrier) {
+                        document.getElementById('carrier-id').value = carrier.id;
+                        document.getElementById('carrier-code').value = carrier.code;
+                        document.getElementById('carrier-name').value = carrier.name;
+                        document.getElementById('carrier-sort-order').value = carrier.sort_order || '';
+                        document.getElementById('carrier-is-active').value = carrier.is_active ? '1' : '0';
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error loading carrier:', error);
+                alert('통신사 정보를 불러오는데 실패했습니다.');
+            });
+        }
+
+        function resetCarrierForm() {
+            document.getElementById('carrier-id').value = '';
+            document.getElementById('carrier-code').value = '';
+            document.getElementById('carrier-name').value = '';
+            document.getElementById('carrier-sort-order').value = '';
+            document.getElementById('carrier-is-active').value = '1';
+        }
+
+        // 페이지 로드 시 함수들을 전역으로 노출
+        window.openCarrierManagement = openCarrierManagement;
+        window.closeCarrierModal = closeCarrierModal;
+        window.addCarrier = addCarrier;
+        window.deleteCarrier = deleteCarrier;
+        window.editCarrier = editCarrier;
+        window.resetCarrierForm = resetCarrierForm;
+
+        // 폼 제출 이벤트 핸들러
+        document.addEventListener('DOMContentLoaded', function() {
+            const carrierForm = document.getElementById('carrierForm');
+            if (carrierForm) {
+                carrierForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+
+                    const formData = new FormData(carrierForm);
+                    const id = formData.get('id');
+                    const code = formData.get('code');
+                    const name = formData.get('name');
+                    const sortOrder = formData.get('sort_order') || 10;
+                    const isActive = formData.get('is_active') || '1';
+
+                    const url = id ? `/api/carriers/${id}` : '/api/carriers';
+                    const method = id ? 'PUT' : 'POST';
+
+                    fetch(url, {
+                        method: method,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({
+                            code: code,
+                            name: name,
+                            sort_order: parseInt(sortOrder),
+                            is_active: isActive === '1'
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert(id ? '통신사가 수정되었습니다.' : '통신사가 추가되었습니다.');
+                            resetCarrierForm();
+                            loadCarriers();
+                            // 다른 탭에 통신사 변경 알림
+                            localStorage.setItem('carriers_updated', Date.now());
+                        } else {
+                            alert('오류: ' + (data.message || '저장에 실패했습니다.'));
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error saving carrier:', error);
+                        alert('통신사 저장 중 오류가 발생했습니다.');
+                    });
+                });
+            }
+        });
+
+        console.log('Carrier management functions loaded');
+    </script>
+    @endif
 </body>
 </html>

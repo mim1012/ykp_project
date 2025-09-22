@@ -98,7 +98,7 @@ return [
             'options' => [
                 // Railway PostgreSQL prepared statement 충돌 해결
                 PDO::ATTR_PERSISTENT => false,
-                PDO::ATTR_EMULATE_PREPARES => true,  // 중요: prepared statement 에뮬레이션 활성화
+                PDO::ATTR_EMULATE_PREPARES => false,  // false로 변경하여 native prepared statements 사용
                 PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                 PDO::ATTR_TIMEOUT => 30,
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,

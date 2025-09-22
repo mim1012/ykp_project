@@ -596,7 +596,11 @@ Route::get('/premium-dash', function () {
 Route::middleware(['auth', 'rbac'])->group(function () {
     // Dashboard home (인증된 사용자용) - 사이드바 포함 버전 사용
     Route::get('/dashboard', function () {
-        return view('premium-dashboard');
+        try {
+            return view('premium-dashboard');
+        } catch (\Exception $e) {
+            return response("Error: " . $e->getMessage() . "<br><pre>" . $e->getTraceAsString() . "</pre>", 500);
+        }
     })->name('dashboard.home');
 
     // 개통표 Excel 스타일 입력 (Feature Flag 적용)

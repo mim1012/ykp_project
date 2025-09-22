@@ -139,12 +139,15 @@
         // 렌더러 먼저 등록
         setupCustomRenderers();
 
+        // 통신사 목록 (초기값, 나중에 API로 업데이트됨)
+        let carrierList = ['SK', 'KT', 'LG', 'MVNO'];
+
         // 컬럼 정의
         const columns = [
             {data: 'sale_date', type: 'date', dateFormat: 'YYYY-MM-DD', title: '판매일'},
             {data: 'store_name', type: 'text', title: '매장명', readOnly: true, renderer: 'calculatedRenderer'},
             {data: 'branch_name', type: 'text', title: '지사명', readOnly: true, renderer: 'calculatedRenderer'},
-            {data: 'carrier', type: 'dropdown', source: ['SK', 'KT', 'LG', 'MVNO'], title: '통신사'},
+            {data: 'carrier', type: 'dropdown', source: function() { return carrierList; }, title: '통신사'},
             {data: 'activation_type', type: 'dropdown', source: ['신규', '기변', 'MNP'], title: '개통유형'},
             {data: 'model_name', type: 'text', title: '모델명'},
             {data: 'base_price', type: 'numeric', numericFormat: {pattern: '0,0'}, title: '기본료'},
@@ -697,8 +700,53 @@
             });
         }
 
+        // 통신사 목록 로드 함수
+        function loadCarriers() {
+            fetch('/api/carriers', {
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success && data.data.length > 0) {
+                    // 활성화된 통신사만 필터링하고 정렬
+                    const activeCarriers = data.data
+                        .filter(carrier => carrier.is_active)
+                        .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+                        .map(carrier => carrier.name);
+
+                    if (activeCarriers.length > 0) {
+                        carrierList = activeCarriers;
+                        // Handsontable 업데이트
+                        hot.updateSettings({
+                            columns: columns
+                        });
+                        console.log('✅ 통신사 목록 업데이트:', carrierList);
+                    }
+                }
+            })
+            .catch(error => {
+                console.warn('⚠️ 통신사 목록 로드 실패:', error);
+            });
+        }
+
+        // localStorage 이벤트 리스너 - 다른 탭에서 통신사가 변경되면 업데이트
+        window.addEventListener('storage', function(e) {
+            if (e.key === 'carriers_updated') {
+                console.log('📡 다른 탭에서 통신사 목록이 변경됨');
+                loadCarriers();
+            }
+        });
+
         // 초기 로드 시 저장된 데이터 불러오기
         loadSavedData();
+
+        // 초기 로드 시 통신사 목록 가져오기
+        loadCarriers();
+
+        // 30초마다 통신사 목록 업데이트
+        setInterval(loadCarriers, 30000);
 
         // Ctrl+S 단축키
         document.addEventListener('keydown', function(e) {
