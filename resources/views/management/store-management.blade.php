@@ -277,12 +277,22 @@
                 credentials: 'same-origin', // 세션 쿠키 포함
                 body: JSON.stringify(formData)
             })
-            .then(response => {
+            .then(async response => {
                 console.log('API 응답 상태:', response.status);
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                const responseText = await response.text();
+                console.log('API 응답 내용:', responseText);
+
+                try {
+                    const result = JSON.parse(responseText);
+                    if (!response.ok) {
+                        throw new Error(result.error || result.message || `HTTP ${response.status}: ${response.statusText}`);
+                    }
+                    return result;
+                } catch (e) {
+                    console.error('JSON 파싱 오류:', e);
+                    console.error('응답 내용:', responseText);
+                    throw new Error(`서버 응답 오류: ${responseText.substring(0, 200)}`);
                 }
-                return response.json();
             })
             .then(result => {
                 if (result.success) {
@@ -304,13 +314,13 @@
                     if (result.account && result.account.user_id) {
                         console.log('✅ account 정상 생성됨, 모달 호출 시작');
                         // 함수는 이미 정의되어 있으므로 직접 호출
-                        window.showStoreAccountModal(result.account, result.data);
+                        window.showPMAccountModal(result.account, result.data);
                     } else if (result.account && result.account.error) {
                         console.log('⚠️ 매장은 생성됨, 계정 생성 실패:', result.account.error);
                         alert(`매장이 생성되었습니다!\n\n⚠️ ${result.account.error}\n\n수동 계정 정보:\n이메일: ${result.account.email}\n비밀번호: ${result.account.password}`);
                     } else if (result.account) {
                         console.log('✅ account 존재 (user_id 없음), 모달 호출');
-                        window.showStoreAccountModal(result.account, result.data);
+                        window.showPMAccountModal(result.account, result.data);
                     } else {
                         console.log('❌ account 정보 없음, alert 표시');
                         alert('매장이 성공적으로 생성되었습니다!');
@@ -325,8 +335,34 @@
                 }
             })
             .catch(error => {
-                console.error('매장 생성 오류:', error);
-                alert('매장 생성 중 오류가 발생했습니다');
+                console.error('매장 생성 오류 상세:', error);
+                console.error('에러 스택:', error.stack);
+
+                // 더 자세한 에러 메시지 표시
+                let errorMessage = '매장 생성 중 오류가 발생했습니다.\n\n';
+
+                if (error.message.includes('401') || error.message.includes('Unauthenticated')) {
+                    errorMessage = '🔐 세션이 만료되었습니다.\n\n다시 로그인해주세요.';
+                    console.error('인증 실패 - 로그인 페이지로 이동');
+
+                    // 3초 후 자동으로 로그인 페이지로 이동
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 3000);
+                } else if (error.message.includes('403')) {
+                    errorMessage += '권한 오류: 매장을 추가할 권한이 없습니다.';
+                } else if (error.message.includes('500')) {
+                    errorMessage += '서버 오류: 잠시 후 다시 시도해주세요.';
+                } else if (error.message.includes('422')) {
+                    errorMessage += '입력값 오류: 필수 항목을 모두 입력했는지 확인해주세요.';
+                } else if (error.message.includes('CSRF')) {
+                    errorMessage += '보안 토큰 오류: 페이지를 새로고침해주세요.';
+                    console.error('CSRF 토큰 오류');
+                } else {
+                    errorMessage += '오류 내용: ' + error.message;
+                }
+
+                alert(errorMessage);
             });
         };
         

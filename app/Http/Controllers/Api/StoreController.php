@@ -90,7 +90,6 @@ class StoreController extends Controller
                 'address' => $request->address,
                 'status' => 'active',
                 'opened_at' => now(),
-                'created_by' => Auth::id(),
             ]);
 
             // 로깅 (Supabase에서 추적 가능)
