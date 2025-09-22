@@ -3003,3 +3003,9 @@ Route::middleware(['web', 'auth'])->group(function () {
         }
     });
 });
+
+
+// Test route for store creation with modal
+Route::middleware(['auth'])->get('/test-store-modal', function () {
+    return view('test-store-modal');
+});

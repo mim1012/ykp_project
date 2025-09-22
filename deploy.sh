@@ -33,14 +33,23 @@ echo "🏗️ Building frontend assets..."
 npm ci --only=production
 npm run build
 
-# Database operations
-echo "🗄️ Running database operations..."
+# Database operations - SAFE MODE
+echo "🗄️ Running database operations (SAFE MODE)..."
+echo "⚠️  WARNING: Running migrations on production database"
+echo "📊 Current sales count: $(php artisan tinker --execute 'echo App\\Models\\Sale::count();')"
+
+# Only run migrations, NO FRESH or SEEDING in production
 php artisan migrate --force
 
-# Seed production data if needed
-if [ "$SEED_PRODUCTION" = "true" ]; then
+echo "✅ Migration completed. Sales count: $(php artisan tinker --execute 'echo App\\Models\\Sale::count();')"
+
+# Never seed in production unless explicitly confirmed
+if [ "$FORCE_SEED_PRODUCTION" = "true" ]; then
+    echo "⚠️ WARNING: Force seeding enabled - this will reset data!"
     echo "🌱 Seeding production data..."
     php artisan db:seed --force
+else
+    echo "🛡️ Production seeding skipped for data safety"
 fi
 
 # Cache configurations for production
