@@ -56,21 +56,7 @@ class SaleService implements SaleServiceInterface
             }
 
             foreach ($request->validated()['sales'] as $index => $saleData) {
-                // JS에서 보낸 필드명을 DB 컬럼명으로 매핑
-                $fieldMapping = [
-                    // 'base_price' => 'price_setting', // DB에서 base_price 사용
-                    'additional_amount' => 'addon_amount',
-                    'cash_activation' => 'paper_cash',
-                    'new_mnp_discount' => 'new_mnp_disc',
-                    'cash_received' => 'cash_in',
-                ];
-
-                foreach ($fieldMapping as $jsField => $dbField) {
-                    if (isset($saleData[$jsField])) {
-                        $saleData[$dbField] = $saleData[$jsField];
-                        unset($saleData[$jsField]);
-                    }
-                }
+                // JS 필드명과 DB 컬럼명이 일치하므로 매핑 불필요
 
                 try {
                     $calculatedData = $this->calculateSaleData($saleData);

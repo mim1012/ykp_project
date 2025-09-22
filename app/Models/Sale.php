@@ -25,16 +25,16 @@ class Sale extends Model
         'verbal1',
         'verbal2',
         'grade_amount',
-        'addon_amount',         // additional_amount → addon_amount
+        'additional_amount',         // DB column is additional_amount
         'rebate_total',
-        'paper_cash',           // cash_activation → paper_cash
+        'cash_activation',           // DB column is cash_activation
         'usim_fee',
-        'new_mnp_disc',         // new_mnp_discount → new_mnp_disc
+        'new_mnp_discount',         // DB column is new_mnp_discount
         'deduction',
         'settlement_amount',
         'tax',
         'margin_before_tax',
-        'cash_in',              // cash_received → cash_in
+        'cash_received',              // DB column is cash_received
         'payback',
         'margin_after_tax',
         'monthly_fee',
@@ -53,16 +53,16 @@ class Sale extends Model
         'verbal1' => 'decimal:2',
         'verbal2' => 'decimal:2',
         'grade_amount' => 'decimal:2',
-        'addon_amount' => 'decimal:2',  // 커럼명 일치
+        'additional_amount' => 'decimal:2',  // DB column is additional_amount
         'rebate_total' => 'decimal:2',
-        'paper_cash' => 'decimal:2',  // 커럼명 일치
+        'cash_activation' => 'decimal:2',  // DB column is cash_activation
         'usim_fee' => 'decimal:2',
-        'new_mnp_disc' => 'decimal:2',  // 커럼명 일치
+        'new_mnp_discount' => 'decimal:2',  // DB column is new_mnp_discount
         'deduction' => 'decimal:2',
         'settlement_amount' => 'decimal:2',
         'tax' => 'decimal:2',
         'margin_before_tax' => 'decimal:2',
-        'cash_in' => 'decimal:2',  // 커럼명 일치
+        'cash_received' => 'decimal:2',  // DB column is cash_received
         'payback' => 'decimal:2',
         'margin_after_tax' => 'decimal:2',
         'monthly_fee' => 'decimal:2',
