@@ -103,7 +103,8 @@
       "Bash(awk:*)",
       "Bash(docker run:*)",
       "Bash(docker build:*)",
-      "Bash(tasklist:*)"
+      "Bash(tasklist:*)",
+      "Bash(copy .env.example .env.production)"
     ],
     "defaultMode": "acceptEdits",
     "additionalDirectories": [

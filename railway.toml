@@ -4,10 +4,23 @@ dockerfilePath = "./Dockerfile.apache"
 
 [deploy]
 healthcheckPath = "/health.txt"
-healthcheckTimeout = 60
+healthcheckTimeout = 100
 restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
 internalPort = 8080
 
 startCommand = "/usr/local/bin/startup.sh"
 ssh = true
-# Start command is handled by Dockerfile ENTRYPOINT
+
+[variables]
+APP_ENV = "production"
+APP_DEBUG = "false"
+LOG_CHANNEL = "stderr"
+LOG_LEVEL = "error"
+SESSION_DRIVER = "database"
+CACHE_STORE = "database"
+QUEUE_CONNECTION = "database"
+FEATURE_EXCEL_INPUT = "true"
+FEATURE_ADVANCED_REPORTS = "true"
+FEATURE_UI_V2 = "false"
+FEATURE_SUPABASE_ENHANCED = "true"
