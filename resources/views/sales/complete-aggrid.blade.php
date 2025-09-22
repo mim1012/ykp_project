@@ -775,6 +775,11 @@
                     // 저장된 데이터 다시 불러오기
                     setTimeout(() => {
                         loadExistingSalesData(selectedDateFilter);
+                        // 로드 후 마진 계산 및 통계 업데이트
+                        setTimeout(() => {
+                            salesData.forEach(row => calculateRow(row.id));
+                            updateStatistics();
+                        }, 1000);
                     }, 500);
                 } else {
                     showStatus('❌ 저장 실패: ' + (data.message || '알 수 없는 오류'), 'error');
@@ -1144,20 +1149,20 @@
                         phone_number: sale.phone_number || '',
                         customer_name: sale.customer_name || '',
                         customer_birth_date: sale.customer_birth_date ? sale.customer_birth_date.split('T')[0] : '',
-                        base_price: parseFloat(sale.price_setting || 0),
+                        base_price: parseFloat(sale.base_price || 0),
                         verbal1: parseFloat(sale.verbal1 || 0),
                         verbal2: parseFloat(sale.verbal2 || 0),
                         grade_amount: parseFloat(sale.grade_amount || 0),
-                        additional_amount: parseFloat(sale.addon_amount || 0),
-                        cash_activation: parseFloat(sale.paper_cash || 0),
+                        additional_amount: parseFloat(sale.additional_amount || 0),
+                        cash_activation: parseFloat(sale.cash_activation || 0),
                         usim_fee: parseFloat(sale.usim_fee || 0),
-                        new_mnp_discount: parseFloat(sale.new_mnp_disc || 0),
+                        new_mnp_discount: parseFloat(sale.new_mnp_discount || 0),
                         deduction: parseFloat(sale.deduction || 0),
                         rebate_total: parseFloat(sale.rebate_total || 0),
                         settlement_amount: parseFloat(sale.settlement_amount || 0),
                         tax: parseFloat(sale.tax || 0),
                         margin_before_tax: parseFloat(sale.margin_before_tax || 0),
-                        cash_received: parseFloat(sale.cash_in || 0),
+                        cash_received: parseFloat(sale.cash_received || 0),
                         payback: parseFloat(sale.payback || 0),
                         margin_after_tax: parseFloat(sale.margin_after_tax || 0),
                         memo: sale.memo || ''
@@ -1165,6 +1170,9 @@
 
                     // 그리드 렌더링
                     renderTableRows();
+                    // 로드된 데이터에 대해 마진 계산 및 통계 업데이트
+                    salesData.forEach(row => calculateRow(row.id));
+                    updateStatistics();
                     // Sales data loaded
                     showStatus(`📊 기존 개통표 ${salesData.length}건을 불러왔습니다.`, 'info');
                 } else {
