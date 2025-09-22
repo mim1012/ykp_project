@@ -309,7 +309,8 @@ class SaleService implements SaleServiceInterface
 
         // 날짜 범위 조회 (start_date & end_date)
         if (isset($filters['start_date']) && isset($filters['end_date'])) {
-            $query->whereBetween('sale_date', [$filters['start_date'], $filters['end_date']]);
+            $query->whereDate('sale_date', '>=', $filters['start_date'])
+                  ->whereDate('sale_date', '<=', $filters['end_date']);
 
             return;
         }
