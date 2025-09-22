@@ -1351,6 +1351,7 @@
             document.getElementById('bulk-delete-btn').addEventListener('click', bulkDelete);
             document.getElementById('calculate-all-btn').addEventListener('click', () => {
                 salesData.forEach(row => calculateRow(row.id));
+                updateStatistics(); // 총 마진 및 평균 마진 업데이트
                 showStatus('전체 재계산 완료', 'success');
             });
             
@@ -1456,6 +1457,9 @@
 
                             // 테이블 다시 그리기
                             renderTableRows();
+
+                            // 총 마진 및 평균 마진 계산 업데이트
+                            updateStatistics();
 
                             showStatus(`${addedCount}개의 데이터를 테이블에 추가했습니다`, 'success');
 
