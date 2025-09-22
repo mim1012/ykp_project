@@ -228,7 +228,7 @@ class StoreController extends Controller
             'owner_name' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:20',
             'address' => 'nullable|string|max:500',
-            'status' => 'nullable|in:active,inactive,maintenance',
+            'status' => 'nullable|in:active,inactive',
         ]);
 
         $store->update($request->only([
@@ -319,9 +319,14 @@ class StoreController extends Controller
             $hasSales = $store->sales()->exists();
 
             if ($hasSales) {
+                // DB 제약조건에 맞게 'inactive' 사용 (deleted 상태는 metadata에 저장)
                 $store->update([
-                    'status' => 'deleted',
-                    'deleted_at' => now(),
+                    'status' => 'inactive',
+                    'metadata' => [
+                        'deleted_at' => now()->toISOString(),
+                        'deleted_by' => Auth::id(),
+                        'reason' => 'soft_delete_with_sales_data'
+                    ]
                 ]);
 
                 // 매장 사용자들도 비활성화 (PostgreSQL 호환)
