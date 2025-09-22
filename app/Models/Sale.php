@@ -21,7 +21,7 @@ class Sale extends Model
         'model_name',
         'serial_number', // PM 요구사항: 일련번호 추가
         // 🔄 실제 Railway DB 컬럼명과 정확히 일치
-        'price_setting',        // base_price → price_setting
+        'base_price',        // DB column is base_price
         'verbal1',
         'verbal2',
         'grade_amount',
@@ -49,7 +49,7 @@ class Sale extends Model
     protected $casts = [
         'sale_date' => 'datetime:Y-m-d',  // 타임존 문제 해결
         'customer_birth_date' => 'datetime:Y-m-d', // 타임존 문제 해결
-        'price_setting' => 'decimal:2',  // 커럼명 일치
+        'base_price' => 'decimal:2',  // DB column is base_price
         'verbal1' => 'decimal:2',
         'verbal2' => 'decimal:2',
         'grade_amount' => 'decimal:2',

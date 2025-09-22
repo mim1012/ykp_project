@@ -23,7 +23,7 @@ class SalesCalculator
     public static function computeRow($row)
     {
         // 입력 필드 (서로 다른 키 지원: 프런트/레거시 모두 호환)
-        $K = (float) ($row['price_setting'] ?? $row['base_price'] ?? 0);       // 액면가/셋팅가
+        $K = (float) ($row['base_price'] ?? $row['price_setting'] ?? 0);       // 액면가/셋팅가
         $L = (float) ($row['verbal1'] ?? 0);                                     // 구두1
         $M = (float) ($row['verbal2'] ?? 0);                                     // 구두2
         $N = (float) ($row['grade_amount'] ?? 0);                                // 그레이드
@@ -164,7 +164,7 @@ class SalesCalculator
         $taxRate = $taxRate ?? self::TAX_RATE;
 
         // 입력 필드 (K~S, W, X)
-        $K = (float) ($row['price_setting'] ?? 0);      // 액면가/셋팅가
+        $K = (float) ($row['base_price'] ?? $row['price_setting'] ?? 0);      // 액면가/셋팅가
         $L = (float) ($row['verbal1'] ?? 0);            // 구두1
         $M = (float) ($row['verbal2'] ?? 0);            // 구두2
         $N = (float) ($row['grade_amount'] ?? 0);       // 그레이드

@@ -16,8 +16,8 @@ class CreateSaleRequest extends FormRequest
         return [
             'sales' => ['required', 'array', 'min:1', 'max:1000'],
             'sales.*.sale_date' => ['required', 'date'],
-            'sales.*.carrier' => ['required', 'in:SK,KT,LG,MVNO'],
-            'sales.*.activation_type' => ['required', 'in:신규,기변,MNP'],
+            'sales.*.carrier' => ['required', 'in:SK,KT,LG,MVNO,알뜰'],
+            'sales.*.activation_type' => ['required', 'in:신규,기변,MNP,번이'],
             'sales.*.model_name' => ['nullable', 'string', 'max:255'],  // nullable로 변경
 
             // DB 컬럼명 (백엔드에서 이미 변환된 경우)
