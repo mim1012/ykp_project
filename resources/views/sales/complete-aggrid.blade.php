@@ -6,6 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>개통표 입력 - YKP ERP</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css" rel="stylesheet">
     <style>
         /* PM 요구사항: 각 필드별 최적 width 설정 */
@@ -1371,12 +1372,40 @@
             document.getElementById('excel-file-input').addEventListener('change', async (e) => {
                 const file = e.target.files[0];
                 if (file) {
-                    // 파일 읽기
+                    console.log('파일 정보:', file.name, file.type, file.size);
+
+                    // XLSX 파일인지 CSV 파일인지 확인
+                    const isExcel = file.name.match(/\.(xlsx?|xls)$/i);
+                    const isCSV = file.name.match(/\.csv$/i);
+
                     const reader = new FileReader();
+
                     reader.onload = async function(event) {
                         try {
-                            const text = event.target.result;
-                            const rows = text.split('\n').filter(row => row.trim());
+                            let rows = [];
+
+                            if (isExcel) {
+                                // XLSX 파일 처리
+                                const data = new Uint8Array(event.target.result);
+                                const workbook = XLSX.read(data, { type: 'array' });
+                                const firstSheetName = workbook.SheetNames[0];
+                                const worksheet = workbook.Sheets[firstSheetName];
+                                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false, defval: '' });
+
+                                rows = jsonData;
+                                console.log('Excel 파일 파싱 완료:', rows.length, '행');
+                                console.log('첫 번째 행:', rows[0]);
+                                if (rows.length > 5) {
+                                    console.log('6번째 행 (데이터):', rows[5]);
+                                    console.log('7번째 행 (데이터):', rows[6]);
+                                }
+                            } else {
+                                // CSV 또는 텍스트 파일 처리
+                                const text = event.target.result;
+                                rows = text.split('\n').map(row => {
+                                    return row.split(/[,\t]/).map(c => c.trim().replace(/^"|"$/g, ''));
+                                });
+                            }
 
                             if (rows.length < 2) {
                                 showStatus('데이터가 없습니다', 'warning');
@@ -1393,36 +1422,57 @@
                                 '세전 / 마진', '세후 / 마진', '메모'
                             ];
 
-                            // 헤더 파싱 - 다양한 형식 지원
-                            const headers = rows[0].split(/[,\t]/).map(h => h.trim().replace(/^"|"$/g, ''));
+                            // 실제 데이터가 시작되는 행 찾기 (용산점 엑셀처럼 헤더가 5번째 행에 있을 수 있음)
+                            let dataStartRow = 0;
+                            let headerRow = null;
 
-                            // 헤더 매핑 함수 - 다양한 표기법 지원
-                            const findHeaderIndex = (headerVariations) => {
-                                for (const variation of headerVariations) {
-                                    const idx = headers.findIndex(h =>
-                                        h.includes(variation) ||
-                                        h.replace(/\s+/g, '').includes(variation.replace(/\s+/g, ''))
-                                    );
-                                    if (idx !== -1) return idx;
+                            // 헤더 행 찾기 (판매자, 대리점 등의 텍스트가 있는 행)
+                            for (let i = 0; i < Math.min(10, rows.length); i++) {
+                                const row = rows[i];
+                                if (row && row.length > 10) {
+                                    // 판매자와 대리점이 포함된 행을 헤더로 간주
+                                    if (row[0] === '판매자' || (row[0] && row[0].includes('판매자'))) {
+                                        headerRow = row;
+                                        dataStartRow = i + 1;
+                                        console.log(`헤더 찾음 - 행 ${i}:`, row);
+                                        break;
+                                    }
                                 }
-                                return -1;
-                            };
+                            }
+
+                            // 헤더를 찾지 못했으면 첫 번째 행을 헤더로 가정
+                            if (!headerRow) {
+                                headerRow = rows[0];
+                                dataStartRow = 1;
+                                console.log('기본 헤더 사용 - 첫 번째 행');
+                            }
 
                             // 데이터 파싱 및 테이블에 추가
                             let addedCount = 0;
-                            for (let i = 1; i < rows.length; i++) {
-                                const cols = rows[i].split(/[,\t]/).map(c => c.trim().replace(/^"|"$/g, ''));
-                                if (cols.length < 10) continue; // 최소 필수 컬럼 수
+                            for (let i = dataStartRow; i < rows.length; i++) {
+                                const cols = rows[i];
+
+                                // 배열이 아니면 스킵
+                                if (!Array.isArray(cols)) continue;
+
+                                console.log(`행 ${i} 데이터:`, cols);
+                                console.log('컬럼 수:', cols.length);
+
+                                if (cols.length < 10) {
+                                    console.log(`행 ${i} 스킵 - 컬럼 수 부족`);
+                                    continue;
+                                }
 
                                 // 컬럼 인덱스 찾기 (순서대로, 다양한 표기법 지원)
                                 const getColValue = (index, defaultValue = '') => {
                                     if (index >= 0 && index < cols.length) {
                                         const val = cols[index];
                                         // 빈 값이거나 공백만 있으면 defaultValue 반환
-                                        if (!val || val.trim() === '') {
+                                        if (val === undefined || val === null || val === '') {
                                             return defaultValue;
                                         }
-                                        return val;
+                                        // 문자열로 변환
+                                        return String(val).trim();
                                     }
                                     return defaultValue;
                                 };
@@ -1487,6 +1537,15 @@
                                 };
 
                                 // 순서대로 매핑 (0부터 시작)
+                                console.log('매핑 시작 - 각 컬럼 값:');
+                                console.log('0: 판매자 =', getColValue(0));
+                                console.log('1: 대리점 =', getColValue(1));
+                                console.log('2: 통신사 =', getColValue(2));
+                                console.log('3: 개통방식 =', getColValue(3));
+                                console.log('4: 모델명 =', getColValue(4));
+                                console.log('5: 개통일 =', getColValue(5));
+                                console.log('9: 액면가 =', getColValue(9));
+
                                 const newRowData = {
                                     id: 'row-' + Date.now() + '-' + i,
                                     salesperson: getColValue(0, '{{ Auth::user()->name ?? '' }}'), // 판매자
@@ -1576,8 +1635,12 @@
                         }
                     };
 
-                    // UTF-8 인코딩으로 읽기
-                    reader.readAsText(file, 'UTF-8');
+                    // 파일 형식에 따라 다르게 읽기
+                    if (isExcel) {
+                        reader.readAsArrayBuffer(file);
+                    } else {
+                        reader.readAsText(file, 'UTF-8');
+                    }
                 }
             });
 
