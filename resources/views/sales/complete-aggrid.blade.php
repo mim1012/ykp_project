@@ -226,10 +226,46 @@
             };
         }
         
-        // 27개 컬럼 순서대로 테이블 행 생성
+        // 27개 컬럼 순서대로 테이블 행 생성 (최적화됨)
         function renderTableRows() {
             const tbody = document.getElementById('data-table-body');
-            tbody.innerHTML = salesData.map(row => `
+
+            // 대용량 데이터 처리 최적화
+            const RENDER_BATCH_SIZE = 50; // 한 번에 렌더링할 행 수
+            const totalRows = salesData.length;
+
+            // 기존 내용 클리어
+            tbody.innerHTML = '';
+
+            // DocumentFragment 사용으로 DOM 조작 최적화
+            const fragment = document.createDocumentFragment();
+
+            // 배치 렌더링
+            let htmlBuffer = [];
+
+            for (let i = 0; i < Math.min(RENDER_BATCH_SIZE * 2, totalRows); i++) {
+                const row = salesData[i];
+                htmlBuffer.push(createRowHTML(row));
+            }
+
+            // 초기 렌더링
+            tbody.innerHTML = htmlBuffer.join('');
+
+            // 나머지 데이터는 비동기로 추가
+            if (totalRows > RENDER_BATCH_SIZE * 2) {
+                setTimeout(() => {
+                    const remainingHTML = [];
+                    for (let i = RENDER_BATCH_SIZE * 2; i < totalRows; i++) {
+                        remainingHTML.push(createRowHTML(salesData[i]));
+                    }
+                    tbody.insertAdjacentHTML('beforeend', remainingHTML.join(''));
+                }, 0);
+            }
+        }
+
+        // 개별 행 HTML 생성 함수 (성능 최적화)
+        function createRowHTML(row) {
+            return `
                 <tr data-id="${row.id}" class="${row.isPersisted ? 'bg-green-50 hover:bg-green-100' : 'hover:bg-gray-50'}"
                     title="${row.isPersisted ? '저장됨' : '미저장'}">
                     <!-- 1. 선택 -->
@@ -391,9 +427,7 @@
                         </button>
                     </td>
                 </tr>
-            `).join('');
-            
-            updateStatistics();
+            `;
         }
         
         // DB 필드명과 1:1 매핑된 행 데이터 업데이트
@@ -1447,21 +1481,36 @@
                                 console.log('기본 헤더 사용 - 첫 번째 행');
                             }
 
-                            // 데이터 파싱 및 테이블에 추가
+                            // 대용량 데이터 처리 최적화
+                            showStatus('데이터 처리 중... 잠시만 기다려주세요.', 'info');
+
+                            // 배치 처리를 위한 설정
+                            const BATCH_SIZE = 100; // 한 번에 처리할 행 수
+                            const totalRows = rows.length - dataStartRow;
+                            let processedRows = 0;
                             let addedCount = 0;
-                            for (let i = dataStartRow; i < rows.length; i++) {
-                                const cols = rows[i];
+                            const newDataBatch = [];
 
-                                // 배열이 아니면 스킵
-                                if (!Array.isArray(cols)) continue;
+                            // 비동기 처리 함수
+                            const processBatch = async (startIdx, endIdx) => {
+                                for (let i = startIdx; i < endIdx && i < rows.length; i++) {
+                                    const cols = rows[i];
 
-                                console.log(`행 ${i} 데이터:`, cols);
-                                console.log('컬럼 수:', cols.length);
+                                    // 배열이 아니면 스킵
+                                    if (!Array.isArray(cols)) continue;
 
-                                if (cols.length < 10) {
-                                    console.log(`행 ${i} 스킵 - 컬럼 수 부족`);
-                                    continue;
-                                }
+                                    // 디버깅 로그는 처음 5개만
+                                    if (addedCount < 5) {
+                                        console.log(`행 ${i} 데이터:`, cols);
+                                        console.log('컬럼 수:', cols.length);
+                                    }
+
+                                    if (cols.length < 10) {
+                                        if (addedCount < 5) {
+                                            console.log(`행 ${i} 스킵 - 컬럼 수 부족`);
+                                        }
+                                        continue;
+                                    }
 
                                 // 컬럼 인덱스 찾기 (순서대로, 다양한 표기법 지원)
                                 const getColValue = (index, defaultValue = '') => {
@@ -1477,34 +1526,52 @@
                                     return defaultValue;
                                 };
 
-                                // 날짜 형식 변환 함수
+                                // 날짜 형식 변환 함수 (캘린더 input을 위한 YYYY-MM-DD 형식)
                                 const formatDate = (dateStr) => {
-                                    if (!dateStr || dateStr.trim() === '') return '';
+                                    if (!dateStr) return '';
 
-                                    // 숫자만 있는 경우 (예: 2, 15, 230615)
-                                    if (/^\d+$/.test(dateStr)) {
+                                    const str = String(dateStr).trim();
+                                    if (str === '') return '';
+
+                                    // 이미 YYYY-MM-DD 형식인 경우
+                                    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+                                        return str;
+                                    }
+
+                                    // 숫자만 있는 경우
+                                    const numbers = str.replace(/[^0-9]/g, '');
+
+                                    if (numbers.length === 1 || numbers.length === 2) {
+                                        // 일자만 있는 경우 (예: 2, 15)
                                         const today = new Date();
                                         const year = today.getFullYear();
                                         const month = String(today.getMonth() + 1).padStart(2, '0');
+                                        return `${year}-${month}-${numbers.padStart(2, '0')}`;
+                                    } else if (numbers.length === 4) {
+                                        // MMDD 형식
+                                        const today = new Date();
+                                        const year = today.getFullYear();
+                                        return `${year}-${numbers.substring(0, 2)}-${numbers.substring(2, 4)}`;
+                                    } else if (numbers.length === 6) {
+                                        // YYMMDD 형식
+                                        const year = parseInt(numbers.substring(0, 2));
+                                        const fullYear = year > 50 ? '19' + numbers.substring(0, 2) : '20' + numbers.substring(0, 2);
+                                        return `${fullYear}-${numbers.substring(2, 4)}-${numbers.substring(4, 6)}`;
+                                    } else if (numbers.length === 8) {
+                                        // YYYYMMDD 형식
+                                        return `${numbers.substring(0, 4)}-${numbers.substring(4, 6)}-${numbers.substring(6, 8)}`;
+                                    }
 
-                                        if (dateStr.length <= 2) {
-                                            // 일자만 있는 경우
-                                            return `${year}-${month}-${dateStr.padStart(2, '0')}`;
-                                        } else if (dateStr.length === 6) {
-                                            // YYMMDD 형식
-                                            const y = '20' + dateStr.substring(0, 2);
-                                            const m = dateStr.substring(2, 4);
-                                            const d = dateStr.substring(4, 6);
-                                            return `${y}-${m}-${d}`;
+                                    // 슬래시나 점으로 구분된 경우
+                                    if (str.includes('/') || str.includes('.')) {
+                                        const parts = str.split(/[\/\.]/).filter(p => p);
+                                        if (parts.length === 3) {
+                                            const year = parts[0].length === 4 ? parts[0] : '20' + parts[0];
+                                            return `${year}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
                                         }
                                     }
 
-                                    // 이미 날짜 형식인 경우
-                                    if (dateStr.includes('-') || dateStr.includes('/')) {
-                                        return dateStr.replace(/\//g, '-');
-                                    }
-
-                                    return dateStr;
+                                    return '';
                                 };
 
                                 // 생년월일 형식 변환 함수
@@ -1614,21 +1681,43 @@
                                     newRowData.margin_after = Z;
                                 }
 
-                                // salesData 배열에 추가
-                                salesData.push(newRowData);
-                                addedCount++;
-                            }
+                                    // 배치에 추가 (렌더링 최적화)
+                                    newDataBatch.push(newRowData);
+                                    addedCount++;
+                                    processedRows++;
+                                }
 
-                            // 테이블 다시 그리기
-                            renderTableRows();
+                                // 진행 상태 업데이트
+                                const progress = Math.round((processedRows / totalRows) * 100);
+                                showStatus(`데이터 처리 중... ${progress}% (${processedRows}/${totalRows})`, 'info');
+                            };
 
-                            // 총 마진 및 평균 마진 계산 업데이트
-                            updateStatistics();
+                            // 배치 단위로 비동기 처리
+                            const processAllBatches = async () => {
+                                for (let i = dataStartRow; i < rows.length; i += BATCH_SIZE) {
+                                    await processBatch(i, Math.min(i + BATCH_SIZE, rows.length));
 
-                            showStatus(`${addedCount}개의 데이터를 테이블에 추가했습니다`, 'success');
+                                    // UI가 멈추지 않도록 짧은 대기
+                                    await new Promise(resolve => setTimeout(resolve, 10));
+                                }
 
-                            // 파일 입력 초기화
-                            e.target.value = '';
+                                // 모든 데이터를 한 번에 salesData에 추가 (렌더링 최적화)
+                                salesData.push(...newDataBatch);
+
+                                // 테이블 한 번만 렌더링
+                                renderTableRows();
+
+                                // 통계 업데이트
+                                updateStatistics();
+
+                                showStatus(`${addedCount}개의 데이터를 성공적으로 추가했습니다`, 'success');
+
+                                // 파일 입력 초기화
+                                e.target.value = '';
+                            };
+
+                            // 비동기 처리 시작
+                            await processAllBatches();
                         } catch (error) {
                             showStatus('Excel 파일 처리 중 오류 발생', 'error');
                             console.error('Excel parsing error:', error);
