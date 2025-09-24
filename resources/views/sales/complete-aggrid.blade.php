@@ -130,6 +130,7 @@
                     <option value="SK">SK</option>
                     <option value="KT">KT</option>
                     <option value="LG">LG U+</option>
+                    <option value="알뜰폰">알뜰폰</option>
                 </select>
                 <!-- 대리점 필터 -->
                 <select id="dealer-filter" class="px-3 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="applyFilters()">
@@ -1669,8 +1670,8 @@
             }
 
             // 대리점 필터 옵션 초기화
-            setTimeout(() => {
-                updateDealerFilterOptions();
+            setTimeout(async () => {
+                await updateDealerFilterOptions();
             }, 500);
 
             // 버튼 이벤트 - Excel 스타일 UX
@@ -2284,22 +2285,51 @@
 
         // 필터링 관련 함수
         let filteredData = [];
+        let allDealersFromDB = []; // DB에서 가져온 모든 대리점 목록
 
         // 대리점 목록 업데이트
-        function updateDealerFilterOptions() {
+        async function updateDealerFilterOptions() {
             const dealerFilter = document.getElementById('dealer-filter');
             const carrierFilter = document.getElementById('carrier-filter').value;
 
-            // 현재 데이터에서 대리점 목록 추출
-            const dealers = [...new Set(salesData.map(row => row.dealer_name).filter(d => d))];
+            // DB에서 대리점 목록 가져오기 (처음만 로드)
+            if (allDealersFromDB.length === 0) {
+                try {
+                    const response = await fetch('/api/dealers', {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': window.csrfToken
+                        }
+                    });
+                    const data = await response.json();
+                    if (data.success && data.data) {
+                        allDealersFromDB = data.data.map(dealer => ({
+                            name: dealer.dealer_name,
+                            carrier: dealer.carrier || ''
+                        }));
+                    }
+                } catch (error) {
+                    console.error('대리점 목록 로드 오류:', error);
+                }
+            }
 
-            // 통신사 필터가 있으면 해당 통신사의 대리점만 표시
-            const filteredDealers = carrierFilter
-                ? dealers.filter(dealer => {
-                    const rows = salesData.filter(row => row.dealer_name === dealer);
-                    return rows.some(row => row.carrier === carrierFilter);
-                  })
-                : dealers;
+            // 현재 데이터에 있는 대리점 + DB에 있는 대리점 병합
+            const dealersFromData = [...new Set(salesData.map(row => row.dealer_name).filter(d => d))];
+            const dealersFromDB = allDealersFromDB.map(d => d.name);
+            const allDealers = [...new Set([...dealersFromData, ...dealersFromDB])];
+
+            // 통신사 필터링
+            let filteredDealers = allDealers;
+            if (carrierFilter) {
+                filteredDealers = allDealers.filter(dealer => {
+                    // 현재 데이터에서 확인
+                    const inData = salesData.some(row => row.dealer_name === dealer && row.carrier === carrierFilter);
+                    // DB 데이터에서 확인
+                    const inDB = allDealersFromDB.some(d => d.name === dealer && d.carrier === carrierFilter);
+                    return inData || inDB;
+                });
+            }
 
             // 옵션 업데이트
             dealerFilter.innerHTML = '<option value="">전체 대리점</option>';
@@ -2395,8 +2425,7 @@
             document.getElementById('customer-filter').value = '';
             document.getElementById('sale-date-filter').value = '';
 
-            updateDealerFilterOptions();
-            applyFilters();
+            updateDealerFilterOptions().then(() => applyFilters());
             showStatus('모든 필터가 초기화되었습니다.', 'info');
         }
     </script>
