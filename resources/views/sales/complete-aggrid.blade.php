@@ -601,7 +601,19 @@
                     if (discountInput) {
                         discountInput.value = row['new_mnp_discount'];
                     }
+                }
+
+                // 계산에 영향을 주는 필드들이 변경되면 자동 재계산
+                const calculationFields = [
+                    'base_price', 'verbal1', 'verbal2', 'grade_amount', 'additional_amount',
+                    'cash_activation', 'usim_fee', 'new_mnp_discount', 'deduction',
+                    'cash_received', 'payback', 'activation_type'
+                ];
+
+                if (calculationFields.includes(field)) {
                     calculateRow(id);
+                    // 통계도 업데이트
+                    updateStatistics();
                 }
             }
         }
@@ -2222,11 +2234,29 @@
         let currentMemoRowId = null;
 
         function openMemoPopup(rowId) {
-            currentMemoRowId = rowId;
-            const row = salesData.find(r => r.id === rowId);
-            if (row) {
-                document.getElementById('memo-popup-content').value = row.memo || '';
-                document.getElementById('memo-popup-modal').style.display = 'flex';
+            try {
+                console.log('Opening memo popup for row ID:', rowId);
+                currentMemoRowId = rowId;
+                const row = salesData.find(r => r.id == rowId); // == 사용으로 타입 변환 허용
+                console.log('Found row:', row);
+
+                if (row) {
+                    const memoContent = document.getElementById('memo-popup-content');
+                    const memoModal = document.getElementById('memo-popup-modal');
+
+                    if (memoContent && memoModal) {
+                        memoContent.value = row.memo || '';
+                        memoModal.style.display = 'flex';
+                        console.log('Memo popup opened successfully');
+                    } else {
+                        console.error('Memo popup elements not found:', { memoContent, memoModal });
+                    }
+                } else {
+                    console.error('Row not found for ID:', rowId);
+                    console.log('Available rows:', salesData.map(r => r.id));
+                }
+            } catch (error) {
+                console.error('Error opening memo popup:', error);
             }
         }
 
