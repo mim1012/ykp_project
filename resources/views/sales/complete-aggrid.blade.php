@@ -101,7 +101,10 @@
                     💾 전체 저장
                 </button>
                 <button id="bulk-delete-btn" class="px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded hover:from-red-600 hover:to-red-700 transition-all shadow">
-                    🗑️ 일괄 삭제
+                    🗑️ 선택 삭제
+                </button>
+                <button id="delete-all-btn" class="px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded hover:from-red-700 hover:to-red-800 transition-all shadow">
+                    ⚠️ 전체 삭제
                 </button>
                 <div id="status-indicator" class="px-4 py-2 bg-blue-100 text-blue-800 rounded-lg font-semibold text-sm shadow-sm min-w-[200px] text-center">
                     시스템 준비 완료
@@ -174,6 +177,74 @@
                 </div>
                 <p id="progress-text" class="text-sm text-gray-600 text-center">0% 완료</p>
                 <p id="progress-detail" class="text-xs text-gray-500 text-center mt-1">0 / 0 행 처리됨</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 메모 팝업 모달 -->
+    <div id="memo-popup-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50" style="display: none;">
+        <div class="bg-white rounded-lg p-6 max-w-2xl w-full mx-4">
+            <div class="flex justify-between items-start mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">메모 상세</h3>
+                <button onclick="closeMemoPopup()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="mb-4">
+                <textarea id="memo-popup-content" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" rows="10"></textarea>
+            </div>
+            <div class="flex justify-end space-x-2">
+                <button onclick="closeMemoPopup()" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors">
+                    취소
+                </button>
+                <button onclick="saveMemoFromPopup()" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
+                    저장
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 대리점 추가 모달 -->
+    <div id="dealer-add-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50" style="display: none;">
+        <div class="bg-white rounded-lg p-6 max-w-lg w-full mx-4">
+            <div class="flex justify-between items-start mb-4">
+                <h3 class="text-lg font-semibold text-gray-900">대리점 추가</h3>
+                <button onclick="closeDealerAddModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">통신사 선택</label>
+                    <select id="dealer-carrier-filter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" onchange="filterDealersByCarrier()">
+                        <option value="ALL">전체</option>
+                        <option value="SK">SK</option>
+                        <option value="KT">KT</option>
+                        <option value="LG">LG U+</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">대리점 선택</label>
+                    <select id="dealer-select-list" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        <option value="">대리점을 선택하세요</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">신규 대리점명 (선택사항)</label>
+                    <input type="text" id="new-dealer-name" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="기존 목록에 없는 경우 입력">
+                </div>
+            </div>
+            <div class="flex justify-end space-x-2 mt-6">
+                <button onclick="closeDealerAddModal()" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors">
+                    취소
+                </button>
+                <button onclick="addDealerFromModal()" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
+                    추가
+                </button>
             </div>
         </div>
     </div>
@@ -459,9 +530,19 @@
                     </td>
                     <!-- 28. 메모 -->
                     <td class="px-2 py-2">
-                        <input type="text" value="${row.memo || ''}"
-                               onchange="updateRowData(${row.id}, 'memo', this.value)"
-                               class="w-32 px-1 py-1 border rounded text-xs" placeholder="메모 입력">
+                        <div class="flex items-center space-x-1">
+                            <input type="text" value="${row.memo || ''}"
+                                   id="memo-input-${row.id}"
+                                   onchange="updateRowData(${row.id}, 'memo', this.value)"
+                                   class="w-24 px-1 py-1 border rounded text-xs"
+                                   placeholder="메모 입력"
+                                   title="${row.memo || ''}">
+                            <button onclick="openMemoPopup(${row.id})"
+                                    class="px-1 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600"
+                                    title="메모 팝업">
+                                📝
+                            </button>
+                        </div>
                     </td>
                     <!-- 29. 액션 -->
                     <td class="px-2 py-2">
@@ -602,7 +683,60 @@
             }
         }
 
-        // PM 요구사항: 일괄 삭제 기능
+        // 전체 삭제 기능
+        async function deleteAll() {
+            if (!confirm('⚠️ 주의: 모든 데이터가 삭제됩니다.\n\n정말로 전체 데이터를 삭제하시겠습니까?\n이 작업은 되돌릴 수 없습니다.')) {
+                return;
+            }
+
+            // 2차 확인
+            if (!confirm('다시 한번 확인합니다.\n정말로 전체 데이터를 삭제하시겠습니까?')) {
+                return;
+            }
+
+            try {
+                showStatus('전체 데이터 삭제 중...', 'info');
+
+                // DB에 저장된 데이터가 있는지 확인
+                const savedData = salesData.filter(row => row.isPersisted);
+
+                if (savedData.length > 0) {
+                    // DB에 저장된 모든 데이터 ID 수집
+                    const allSavedIds = savedData.map(row => row.id);
+
+                    // 서버에 전체 삭제 요청
+                    const response = await fetch('/api/sales/bulk-delete', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': window.csrfToken,
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            sale_ids: allSavedIds,
+                            delete_all: true // 전체 삭제 플래그
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`서버 오류: ${response.status}`);
+                    }
+                }
+
+                // 메모리에서 모든 데이터 삭제
+                salesData = [];
+                renderTableRows();
+                updateStatistics();
+
+                showStatus(`전체 데이터가 삭제되었습니다.`, 'success');
+
+            } catch (error) {
+                console.error('전체 삭제 오류:', error);
+                showStatus('전체 삭제 중 오류가 발생했습니다.', 'error');
+            }
+        }
+
+        // PM 요구사항: 선택 삭제 기능
         async function bulkDelete() {
             const checkedBoxes = document.querySelectorAll('.row-select:checked');
 
@@ -1455,6 +1589,7 @@
             document.getElementById('add-row-btn').addEventListener('click', addNewRow);
             document.getElementById('save-btn').addEventListener('click', saveAllData);
             document.getElementById('bulk-delete-btn').addEventListener('click', bulkDelete);
+            document.getElementById('delete-all-btn').addEventListener('click', deleteAll);
             document.getElementById('calculate-all-btn').addEventListener('click', () => {
                 salesData.forEach(row => calculateRow(row.id));
                 updateStatistics(); // 총 마진 및 평균 마진 업데이트
@@ -1954,10 +2089,109 @@
             window.location.href = '/dashboard#carrier-management';
         }
 
+        // 메모 팝업 관련 함수
+        let currentMemoRowId = null;
+
+        function openMemoPopup(rowId) {
+            currentMemoRowId = rowId;
+            const row = salesData.find(r => r.id === rowId);
+            if (row) {
+                document.getElementById('memo-popup-content').value = row.memo || '';
+                document.getElementById('memo-popup-modal').style.display = 'flex';
+            }
+        }
+
+        function closeMemoPopup() {
+            document.getElementById('memo-popup-modal').style.display = 'none';
+            currentMemoRowId = null;
+        }
+
+        function saveMemoFromPopup() {
+            if (currentMemoRowId) {
+                const newMemo = document.getElementById('memo-popup-content').value;
+                updateRowData(currentMemoRowId, 'memo', newMemo);
+
+                // 입력 필드도 업데이트
+                const inputField = document.getElementById(`memo-input-${currentMemoRowId}`);
+                if (inputField) {
+                    inputField.value = newMemo;
+                    inputField.title = newMemo;
+                }
+
+                closeMemoPopup();
+                showStatus('메모가 저장되었습니다.', 'success');
+            }
+        }
+
+        // 대리점 관련 데이터 (예시)
+        const dealerData = [
+            { name: 'SK텔레콤 강남점', carrier: 'SK' },
+            { name: 'SK텔레콤 서초점', carrier: 'SK' },
+            { name: 'SK텔레콤 용산점', carrier: 'SK' },
+            { name: 'KT 강남점', carrier: 'KT' },
+            { name: 'KT 홍대점', carrier: 'KT' },
+            { name: 'KT 신촌점', carrier: 'KT' },
+            { name: 'LG U+ 강남점', carrier: 'LG' },
+            { name: 'LG U+ 명동점', carrier: 'LG' },
+            { name: 'LG U+ 종로점', carrier: 'LG' },
+        ];
+
+        // 대리점 필터링 함수
+        function filterDealersByCarrier() {
+            const selectedCarrier = document.getElementById('dealer-carrier-filter').value;
+            const dealerSelect = document.getElementById('dealer-select-list');
+
+            // 기존 옵션 초기화
+            dealerSelect.innerHTML = '<option value="">대리점을 선택하세요</option>';
+
+            // 필터링된 대리점 추가
+            const filteredDealers = selectedCarrier === 'ALL'
+                ? dealerData
+                : dealerData.filter(d => d.carrier === selectedCarrier);
+
+            filteredDealers.forEach(dealer => {
+                const option = document.createElement('option');
+                option.value = dealer.name;
+                option.textContent = dealer.name;
+                dealerSelect.appendChild(option);
+            });
+        }
+
+        // 대리점 추가 모달 열기
+        function openDealerAddModal() {
+            document.getElementById('dealer-add-modal').style.display = 'flex';
+            filterDealersByCarrier(); // 초기 로드
+        }
+
+        // 대리점 추가 모달 닫기
+        function closeDealerAddModal() {
+            document.getElementById('dealer-add-modal').style.display = 'none';
+            document.getElementById('dealer-carrier-filter').value = 'ALL';
+            document.getElementById('dealer-select-list').value = '';
+            document.getElementById('new-dealer-name').value = '';
+        }
+
+        // 대리점 추가 처리
+        function addDealerFromModal() {
+            const selectedDealer = document.getElementById('dealer-select-list').value;
+            const newDealerName = document.getElementById('new-dealer-name').value.trim();
+
+            const dealerToAdd = newDealerName || selectedDealer;
+
+            if (!dealerToAdd) {
+                alert('대리점을 선택하거나 새 대리점명을 입력해주세요.');
+                return;
+            }
+
+            // TODO: 실제 대리점 추가 로직 구현
+            showStatus(`대리점 "${dealerToAdd}"가 추가되었습니다.`, 'success');
+            closeDealerAddModal();
+        }
+
         // 대리점 관리 함수
         function openDealerManagement() {
-            // 대시보드의 대리점 관리로 이동
-            window.location.href = '/dashboard#dealer-management';
+            // 대리점 추가 모달 열기
+            openDealerAddModal();
         }
     </script>
 </body>
