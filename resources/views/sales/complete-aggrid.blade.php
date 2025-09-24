@@ -453,38 +453,38 @@
                     </td>
                     <!-- 6. 모델명 -->
                     <td class="px-2 py-2">
-                        <input type="text" value="${row.model_name}" 
+                        <input type="text" value="${safeValue(row.model_name)}"
                                onchange="updateRowData(${row.id}, 'model_name', this.value)"
                                class="field-model" placeholder="iPhone15">
                     </td>
                     <!-- 7. 개통일 -->
                     <td class="px-2 py-2">
-                        <input type="date" value="${row.sale_date}" 
+                        <input type="date" value="${safeValue(row.sale_date)}"
                                onchange="updateRowData(${row.id}, 'sale_date', this.value)"
                                class="field-date">
                     </td>
                     <!-- 8. 휴대폰번호 -->
                     <td class="px-2 py-2">
-                        <input type="tel" value="${row.phone_number}" 
+                        <input type="tel" value="${safeValue(row.phone_number)}"
                                onchange="updateRowData(${row.id}, 'phone_number', this.value)"
                                class="field-phone" placeholder="010-1234-5678">
                     </td>
                     <!-- 10. 고객명 -->
                     <td class="px-2 py-2">
-                        <input type="text" value="${row.customer_name}" 
+                        <input type="text" value="${safeValue(row.customer_name)}"
                                onchange="updateRowData(${row.id}, 'customer_name', this.value)"
                                class="field-name" placeholder="김고객">
                     </td>
                     <!-- 11. 생년월일 -->
                     <td class="px-2 py-2">
-                        <input type="date" value="${row.customer_birth_date}" 
+                        <input type="date" value="${safeValue(row.customer_birth_date)}"
                                onchange="updateRowData(${row.id}, 'customer_birth_date', this.value)"
                                class="field-date">
                     </td>
                     <!-- 12. 액면/셋팅가 -->
                     <td class="px-2 py-2">
-                        <input type="number" value="${row.base_price}"
-                               onchange="updateRowData(${row.id}, 'base_price', isNaN(parseFloat(this.value)) ? 0 : parseFloat(this.value)); calculateRow(${row.id})"
+                        <input type="number" value="${safeNumber(row.base_price)}"
+                               onchange="updateRowData(${row.id}, 'base_price', isNaN(parseFloat(this.value)) ? 0 : parseFloat(this.value))"
                                class="field-money" placeholder="300000">
                     </td>
                     <!-- 13. 구두1 -->
@@ -570,12 +570,12 @@
                     <!-- 28. 메모 -->
                     <td class="px-2 py-2">
                         <div class="flex items-center space-x-1">
-                            <input type="text" value="${row.memo || ''}"
+                            <input type="text" value="${safeValue(row.memo)}"
                                    id="memo-input-${row.id}"
                                    onchange="updateRowData(${row.id}, 'memo', this.value)"
                                    class="w-24 px-1 py-1 border rounded text-xs"
                                    placeholder="메모 입력"
-                                   title="${row.memo || ''}">
+                                   title="${safeValue(row.memo)}">
                             <button onclick="openMemoPopup(${row.id})"
                                     class="px-1 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600"
                                     title="메모 팝업">
@@ -2069,6 +2069,13 @@
 
                                 // 테이블 한 번만 렌더링
                                 renderTableRows();
+
+                                // 모든 행에 대해 재계산 실행
+                                salesData.forEach(row => {
+                                    if (row.id) {
+                                        calculateRow(row.id);
+                                    }
+                                });
 
                                 // 통계 업데이트
                                 updateStatistics();
