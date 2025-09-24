@@ -579,7 +579,7 @@
                                    class="w-24 px-1 py-1 border rounded text-xs"
                                    placeholder="메모 입력"
                                    title="${safeValue(row.memo)}">
-                            <button onclick="openMemoPopup(${row.id})"
+                            <button onclick="console.log('Button clicked, ID:', ${row.id}); openMemoPopup(${row.id})"
                                     class="px-1 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600"
                                     title="메모 팝업">
                                 📝
@@ -787,11 +787,17 @@
 
         // 개별 행 선택/해제 기능 (가상 스크롤링 호환)
         function toggleRowSelection(rowId) {
+            console.log('toggleRowSelection called with ID:', rowId);
+            console.log('Current selectedRowIds:', Array.from(selectedRowIds));
+
             if (selectedRowIds.has(rowId)) {
                 selectedRowIds.delete(rowId);
+                console.log('Removed ID:', rowId);
             } else {
                 selectedRowIds.add(rowId);
+                console.log('Added ID:', rowId);
             }
+            console.log('Updated selectedRowIds:', Array.from(selectedRowIds));
             updateSelectionCount();
         }
 
@@ -913,7 +919,12 @@
 
         // PM 요구사항: 선택 삭제 기능 (가상 스크롤링 호환)
         async function bulkDelete() {
+            console.log('bulkDelete called');
+            console.log('selectedRowIds size:', selectedRowIds.size);
+            console.log('selectedRowIds contents:', Array.from(selectedRowIds));
+
             if (selectedRowIds.size === 0) {
+                console.log('No rows selected, showing warning');
                 showStatus('삭제할 행을 선택해주세요.', 'warning');
                 return;
             }
@@ -1263,6 +1274,9 @@
 
         // 대리점 옵션 HTML 생성 함수
         function generateDealerOptions(selectedValue = '') {
+            console.log('generateDealerOptions called with selectedValue:', selectedValue);
+            console.log('dealersList length:', dealersList.length);
+
             let options = '<option value="">선택</option>';
 
             dealersList.forEach(dealer => {
@@ -1270,6 +1284,7 @@
                 options += `<option value="${dealer.name}" ${selected}>${dealer.name}</option>`;
             });
 
+            console.log('Generated dealer options:', options);
             return options;
         }
 
@@ -1322,6 +1337,7 @@
                 const data = await response.json();
 
                 if (data.success && data.data) {
+                    console.log('Raw dealers data:', data.data);
                     dealersList = data.data
                         .filter(dealer => !dealer.status || dealer.status === 'active' || dealer.status === null)
                         .map(dealer => ({
@@ -1330,6 +1346,7 @@
                         }));
 
                     console.log(`✅ 대리점 ${dealersList.length}개 로드 완료`);
+                    console.log('Loaded dealers:', dealersList);
 
                     // 기존 행들의 대리점 드롭다운 업데이트
                     updateDealerDropdowns();
