@@ -101,7 +101,7 @@
                     💾 전체 저장
                 </button>
                 <button id="bulk-delete-btn" class="px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded hover:from-red-600 hover:to-red-700 transition-all shadow">
-                    🗑️ 선택 삭제
+                    🗑️ 선택 삭제 <span id="delete-count-badge" class="hidden ml-1 px-2 py-0.5 bg-white text-red-600 rounded-full text-xs font-bold"></span>
                 </button>
                 <button id="delete-all-btn" class="px-4 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white rounded hover:from-red-700 hover:to-red-800 transition-all shadow">
                     ⚠️ 전체 삭제
@@ -129,7 +129,12 @@
                 <table class="min-w-full divide-y divide-gray-200" style="min-width: 4000px;">
                     <thead class="bg-gray-50 sticky top-0 z-10">
                         <tr>
-                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">선택</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                                <input type="checkbox" id="select-all-checkbox"
+                                       onchange="toggleSelectAll()"
+                                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                       title="전체 선택">
+                            </th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">판매자</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">대리점</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">통신사</th>
@@ -384,7 +389,8 @@
                     title="${row.isPersisted ? '저장됨' : '미저장'}">
                     <!-- 1. 선택 -->
                     <td class="px-2 py-2">
-                        <input type="checkbox" class="row-select" data-id="${row.id}">
+                        <input type="checkbox" class="row-select" data-id="${row.id}"
+                               onchange="updateSelectAllState()">
                     </td>
                     <!-- 2. 판매자 -->
                     <td class="px-2 py-2">
@@ -679,6 +685,61 @@
                     salesData = salesData.filter(row => row.id !== id);
                     renderTableRows();
                     showStatus('임시 행이 삭제되었습니다.', 'success');
+                }
+            }
+        }
+
+        // 전체 선택/해제 기능
+        function toggleSelectAll() {
+            const selectAllCheckbox = document.getElementById('select-all-checkbox');
+            const allCheckboxes = document.querySelectorAll('.row-select');
+
+            allCheckboxes.forEach(checkbox => {
+                checkbox.checked = selectAllCheckbox.checked;
+            });
+
+            // 선택된 개수 표시
+            updateSelectionCount();
+        }
+
+        // 개별 체크박스 변경 시 전체 선택 체크박스 상태 업데이트
+        function updateSelectAllState() {
+            const selectAllCheckbox = document.getElementById('select-all-checkbox');
+            const allCheckboxes = document.querySelectorAll('.row-select');
+            const checkedBoxes = document.querySelectorAll('.row-select:checked');
+
+            if (allCheckboxes.length === 0) {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+            } else if (checkedBoxes.length === 0) {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = false;
+            } else if (checkedBoxes.length === allCheckboxes.length) {
+                selectAllCheckbox.checked = true;
+                selectAllCheckbox.indeterminate = false;
+            } else {
+                selectAllCheckbox.checked = false;
+                selectAllCheckbox.indeterminate = true;
+            }
+
+            updateSelectionCount();
+        }
+
+        // 선택된 개수 표시
+        function updateSelectionCount() {
+            const checkedBoxes = document.querySelectorAll('.row-select:checked');
+            const count = checkedBoxes.length;
+            const badge = document.getElementById('delete-count-badge');
+
+            if (count > 0) {
+                if (badge) {
+                    badge.textContent = count;
+                    badge.classList.remove('hidden');
+                }
+                showStatus(`${count}개 항목 선택됨`, 'info');
+            } else {
+                if (badge) {
+                    badge.classList.add('hidden');
                 }
             }
         }
