@@ -1383,79 +1383,110 @@
                                 return;
                             }
 
-                            // 헤더 파싱
+                            // 기존 엑셀 템플릿의 정확한 컬럼 순서
+                            const expectedHeaders = [
+                                '판매자', '대리점', '통신사', '개통방식', '모델명',
+                                '개통일', '휴대폰번호', '고객명', '생년월일',
+                                '액면/셋팅가', '구두1', '구두2', '그레이드', '부가추가',
+                                '서류상현금개통', '유심비 (+표기)', '신규,번이    (-800표기)', '차감(-표기)',
+                                '리베총계', '정산금', '부/소 세', '현금받음(+표기)', '페이백(-표기)',
+                                '세전 / 마진', '세후 / 마진', '메모'
+                            ];
+
+                            // 헤더 파싱 - 다양한 형식 지원
                             const headers = rows[0].split(/[,\t]/).map(h => h.trim().replace(/^"|"$/g, ''));
+
+                            // 헤더 매핑 함수 - 다양한 표기법 지원
+                            const findHeaderIndex = (headerVariations) => {
+                                for (const variation of headerVariations) {
+                                    const idx = headers.findIndex(h =>
+                                        h.includes(variation) ||
+                                        h.replace(/\s+/g, '').includes(variation.replace(/\s+/g, ''))
+                                    );
+                                    if (idx !== -1) return idx;
+                                }
+                                return -1;
+                            };
 
                             // 데이터 파싱 및 테이블에 추가
                             let addedCount = 0;
                             for (let i = 1; i < rows.length; i++) {
                                 const cols = rows[i].split(/[,\t]/).map(c => c.trim().replace(/^"|"$/g, ''));
-                                if (cols.length < headers.length) continue;
+                                if (cols.length < 10) continue; // 최소 필수 컬럼 수
 
-                                // 개통일 처리 - undefined 방지
-                                let dateValue = cols[headers.indexOf('개통일')];
-                                if (!dateValue || dateValue === 'undefined' || dateValue === '') {
-                                    dateValue = new Date().toISOString().split('T')[0];
-                                }
-
-                                // 새 행 추가 - 새로운 템플릿 형식에 맞춤
-                                const newRowData = {
-                                    id: 'row-' + Date.now() + '-' + i,
-                                    sale_date: dateValue,
-                                    salesperson: cols[headers.indexOf('판매자')] || '{{ Auth::user()->name ?? '' }}',
-                                    dealer_code: cols[headers.indexOf('대리점')] || '',
-                                    carrier: cols[headers.indexOf('통신사')] || '',
-                                    activation_type: cols[headers.indexOf('개통방식')] || '',
-                                    model_name: cols[headers.indexOf('모델명')] || '',
-                                    phone_number: cols[headers.indexOf('휴대폰번호')] || '',
-                                    customer_name: cols[headers.indexOf('고객명')] || '',
-                                    customer_birth_date: cols[headers.indexOf('생년월일')] || '',
-                                    serial_number: '', // 일련번호는 사용하지 않음
-
-                                    // 금액 필드들
-                                    base_price: parseFloat(cols[headers.indexOf('액면/셋팅가')] || 0),
-                                    verbal1: parseFloat(cols[headers.indexOf('구두1')] || 0),
-                                    verbal2: parseFloat(cols[headers.indexOf('구두2')] || 0),
-                                    grade_amount: parseFloat(cols[headers.indexOf('그레이드')] || 0),
-                                    additional_amount: parseFloat(cols[headers.indexOf('부가추가')] || 0),
-                                    cash_activation: parseFloat(cols[headers.indexOf('서류상현금개통')] || 0),
-                                    usim_fee: parseFloat(cols[headers.indexOf('유심비')] || 0),
-                                    new_mnp_discount: parseFloat(cols[headers.indexOf('신규/번이할인')] || 0),
-                                    deduction: parseFloat(cols[headers.indexOf('차감')] || 0),
-                                    cash_received: parseFloat(cols[headers.indexOf('현금받음')] || 0),
-                                    payback: parseFloat(cols[headers.indexOf('페이백')] || 0),
-
-                                    // 메모 필드
-                                    memo: cols[headers.indexOf('메모')] || '',
-                                    isPersisted: false
+                                // 컬럼 인덱스 찾기 (순서대로, 다양한 표기법 지원)
+                                const getColValue = (index, defaultValue = '') => {
+                                    return index >= 0 && index < cols.length ? cols[index] : defaultValue;
                                 };
 
-                                // 자동 계산을 위한 값들
-                                const K = parseFloat(newRowData.base_price) || 0;
-                                const L = parseFloat(newRowData.verbal1) || 0;
-                                const M = parseFloat(newRowData.verbal2) || 0;
-                                const N = parseFloat(newRowData.grade_amount) || 0;
-                                const O = parseFloat(newRowData.additional_amount) || 0;
-                                const P = parseFloat(newRowData.cash_activation) || 0;
-                                const Q = parseFloat(newRowData.usim_fee) || 0;
-                                const R = parseFloat(newRowData.new_mnp_discount) || 0;
-                                const S = parseFloat(newRowData.deduction) || 0;
-                                const W = parseFloat(newRowData.cash_received) || 0;
-                                const X = parseFloat(newRowData.payback) || 0;
+                                // 순서대로 매핑 (0부터 시작)
+                                const newRowData = {
+                                    id: 'row-' + Date.now() + '-' + i,
+                                    salesperson: getColValue(0, '{{ Auth::user()->name ?? '' }}'), // 판매자
+                                    dealer_code: getColValue(1), // 대리점
+                                    carrier: getColValue(2), // 통신사
+                                    activation_type: getColValue(3), // 개통방식
+                                    model_name: getColValue(4), // 모델명
+                                    sale_date: getColValue(5, new Date().toISOString().split('T')[0]), // 개통일
+                                    phone_number: getColValue(6), // 휴대폰번호
+                                    customer_name: getColValue(7), // 고객명
+                                    customer_birth_date: getColValue(8), // 생년월일
 
-                                // 계산 (SalesCalculator.php와 동일한 공식)
-                                const T = K + L + M + N + O; // 리베총계
-                                const U = T - P + Q + R + S; // 정산금
-                                const V = Math.round(U * 0.1); // 세금 (10%)
-                                const Y = U - V + W + X; // 세전마진
-                                const Z = V + Y; // 세후마진
+                                    // 금액 필드들 (순서대로)
+                                    base_price: parseFloat(getColValue(9, 0)), // 액면/셋팅가
+                                    verbal1: parseFloat(getColValue(10, 0)), // 구두1
+                                    verbal2: parseFloat(getColValue(11, 0)), // 구두2
+                                    grade_amount: parseFloat(getColValue(12, 0)), // 그레이드
+                                    additional_amount: parseFloat(getColValue(13, 0)), // 부가추가
+                                    cash_activation: parseFloat(getColValue(14, 0)), // 서류상현금개통
+                                    usim_fee: parseFloat(getColValue(15, 0)), // 유심비
+                                    new_mnp_discount: parseFloat(getColValue(16, 0)), // 신규/번이할인
+                                    deduction: parseFloat(getColValue(17, 0)), // 차감
 
-                                // 계산된 값 추가
-                                newRowData.total_rebate = T;
-                                newRowData.settlement_amount = U;
-                                newRowData.tax = V;
-                                newRowData.margin_before = Y;
-                                newRowData.margin_after = Z;
+                                    // 계산 필드들은 엑셀에 있으면 사용, 없으면 자동계산
+                                    total_rebate: parseFloat(getColValue(18, 0)), // 리베총계
+                                    settlement_amount: parseFloat(getColValue(19, 0)), // 정산금
+                                    tax: parseFloat(getColValue(20, 0)), // 부/소세
+                                    cash_received: parseFloat(getColValue(21, 0)), // 현금받음
+                                    payback: parseFloat(getColValue(22, 0)), // 페이백
+                                    margin_before: parseFloat(getColValue(23, 0)), // 세전마진
+                                    margin_after: parseFloat(getColValue(24, 0)), // 세후마진
+
+                                    // 메모 필드
+                                    memo: getColValue(25), // 메모
+                                    isPersisted: false,
+                                    serial_number: '' // 일련번호는 사용하지 않음
+                                };
+
+                                // 계산 필드가 비어있거나 0인 경우에만 자동 계산
+                                if (!newRowData.total_rebate || newRowData.total_rebate === 0) {
+                                    // 자동 계산을 위한 값들
+                                    const K = parseFloat(newRowData.base_price) || 0;
+                                    const L = parseFloat(newRowData.verbal1) || 0;
+                                    const M = parseFloat(newRowData.verbal2) || 0;
+                                    const N = parseFloat(newRowData.grade_amount) || 0;
+                                    const O = parseFloat(newRowData.additional_amount) || 0;
+                                    const P = parseFloat(newRowData.cash_activation) || 0;
+                                    const Q = parseFloat(newRowData.usim_fee) || 0;
+                                    const R = parseFloat(newRowData.new_mnp_discount) || 0;
+                                    const S = parseFloat(newRowData.deduction) || 0;
+                                    const W = parseFloat(newRowData.cash_received) || 0;
+                                    const X = parseFloat(newRowData.payback) || 0;
+
+                                    // 계산 (SalesCalculator.php와 동일한 공식)
+                                    const T = K + L + M + N + O; // 리베총계
+                                    const U = T - P + Q + R + S; // 정산금
+                                    const V = Math.round(U * 0.1); // 세금 (10%)
+                                    const Y = U - V + W + X; // 세전마진
+                                    const Z = V + Y; // 세후마진
+
+                                    // 계산된 값 업데이트
+                                    newRowData.total_rebate = T;
+                                    newRowData.settlement_amount = U;
+                                    newRowData.tax = V;
+                                    newRowData.margin_before = Y;
+                                    newRowData.margin_after = Z;
+                                }
 
                                 // salesData 배열에 추가
                                 salesData.push(newRowData);
