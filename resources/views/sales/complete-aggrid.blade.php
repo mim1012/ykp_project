@@ -121,6 +121,28 @@
                 <button onclick="clearDateFilter()" class="px-3 py-1.5 bg-gradient-to-r from-gray-500 to-gray-600 text-white text-sm rounded hover:from-gray-600 hover:to-gray-700 transition-all shadow-sm">전체 보기</button>
                 <span id="dateStatus" class="ml-4 px-3 py-1.5 bg-blue-50 text-blue-700 text-sm rounded font-medium"></span>
             </div>
+            <!-- 통신사/대리점 필터 UI 추가 -->
+            <div class="flex items-center space-x-3 border-t pt-3 mt-3">
+                <span class="text-sm font-medium text-gray-700">필터:</span>
+                <!-- 통신사 필터 -->
+                <select id="carrier-filter" class="px-3 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="applyFilters()">
+                    <option value="">전체 통신사</option>
+                    <option value="SK">SK</option>
+                    <option value="KT">KT</option>
+                    <option value="LG">LG U+</option>
+                </select>
+                <!-- 대리점 필터 -->
+                <select id="dealer-filter" class="px-3 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="applyFilters()">
+                    <option value="">전체 대리점</option>
+                </select>
+                <!-- 판매자 필터 -->
+                <input type="text" id="salesperson-filter" placeholder="판매자 검색" class="px-3 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" onkeyup="applyFilters()">
+                <!-- 고객명 필터 -->
+                <input type="text" id="customer-filter" placeholder="고객명 검색" class="px-3 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" onkeyup="applyFilters()">
+                <!-- 필터 초기화 -->
+                <button onclick="clearAllFilters()" class="px-3 py-1.5 bg-gradient-to-r from-gray-500 to-gray-600 text-white text-sm rounded hover:from-gray-600 hover:to-gray-700 transition-all shadow-sm">필터 초기화</button>
+                <span id="filterStatus" class="ml-4 px-3 py-1.5 bg-green-50 text-green-700 text-sm rounded font-medium"></span>
+            </div>
         </div>
 
         <!-- PM 요구사항: 27개 컬럼 완전한 개통표 테이블 -->
@@ -1646,6 +1668,11 @@
                 addNewRow();
             }
 
+            // 대리점 필터 옵션 초기화
+            setTimeout(() => {
+                updateDealerFilterOptions();
+            }, 500);
+
             // 버튼 이벤트 - Excel 스타일 UX
             document.getElementById('add-row-btn').addEventListener('click', addNewRow);
             document.getElementById('save-btn').addEventListener('click', saveAllData);
@@ -2253,6 +2280,124 @@
         function openDealerManagement() {
             // 대리점 추가 모달 열기
             openDealerAddModal();
+        }
+
+        // 필터링 관련 함수
+        let filteredData = [];
+
+        // 대리점 목록 업데이트
+        function updateDealerFilterOptions() {
+            const dealerFilter = document.getElementById('dealer-filter');
+            const carrierFilter = document.getElementById('carrier-filter').value;
+
+            // 현재 데이터에서 대리점 목록 추출
+            const dealers = [...new Set(salesData.map(row => row.dealer_name).filter(d => d))];
+
+            // 통신사 필터가 있으면 해당 통신사의 대리점만 표시
+            const filteredDealers = carrierFilter
+                ? dealers.filter(dealer => {
+                    const rows = salesData.filter(row => row.dealer_name === dealer);
+                    return rows.some(row => row.carrier === carrierFilter);
+                  })
+                : dealers;
+
+            // 옵션 업데이트
+            dealerFilter.innerHTML = '<option value="">전체 대리점</option>';
+            filteredDealers.sort().forEach(dealer => {
+                const option = document.createElement('option');
+                option.value = dealer;
+                option.textContent = dealer;
+                dealerFilter.appendChild(option);
+            });
+        }
+
+        // 필터 적용
+        function applyFilters() {
+            const carrierFilter = document.getElementById('carrier-filter').value;
+            const dealerFilter = document.getElementById('dealer-filter').value;
+            const salespersonFilter = document.getElementById('salesperson-filter').value.toLowerCase();
+            const customerFilter = document.getElementById('customer-filter').value.toLowerCase();
+            const dateFilter = document.getElementById('sale-date-filter').value;
+
+            // 통신사 변경시 대리점 목록 업데이트
+            if (event && event.target && event.target.id === 'carrier-filter') {
+                updateDealerFilterOptions();
+            }
+
+            // 필터링 수행
+            filteredData = salesData.filter(row => {
+                let match = true;
+
+                if (carrierFilter && row.carrier !== carrierFilter) match = false;
+                if (dealerFilter && row.dealer_name !== dealerFilter) match = false;
+                if (salespersonFilter && !row.salesperson.toLowerCase().includes(salespersonFilter)) match = false;
+                if (customerFilter && !row.customer_name.toLowerCase().includes(customerFilter)) match = false;
+                if (dateFilter && row.sale_date !== dateFilter) match = false;
+
+                return match;
+            });
+
+            // 테이블 재렌더링
+            renderFilteredData();
+            updateFilterStatus();
+        }
+
+        // 필터링된 데이터 렌더링
+        function renderFilteredData() {
+            const tbody = document.getElementById('data-table-body');
+            const dataToRender = filteredData.length > 0 || hasActiveFilters() ? filteredData : salesData;
+
+            if (dataToRender.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="29" class="text-center py-4 text-gray-500">검색 결과가 없습니다.</td></tr>';
+            } else if (dataToRender.length > 100) {
+                // 가상 스크롤링 적용
+                const htmlBuffer = [];
+                for (let i = 0; i < Math.min(100, dataToRender.length); i++) {
+                    htmlBuffer.push(createRowHTML(dataToRender[i]));
+                }
+                tbody.innerHTML = htmlBuffer.join('');
+            } else {
+                tbody.innerHTML = dataToRender.map(row => createRowHTML(row)).join('');
+            }
+
+            updateStatistics();
+            updateSelectAllState();
+        }
+
+        // 필터 상태 확인
+        function hasActiveFilters() {
+            return document.getElementById('carrier-filter').value ||
+                   document.getElementById('dealer-filter').value ||
+                   document.getElementById('salesperson-filter').value ||
+                   document.getElementById('customer-filter').value ||
+                   document.getElementById('sale-date-filter').value;
+        }
+
+        // 필터 상태 표시
+        function updateFilterStatus() {
+            const status = document.getElementById('filterStatus');
+            const count = filteredData.length;
+            const total = salesData.length;
+
+            if (hasActiveFilters()) {
+                status.textContent = `${count}개 검색됨 (전체 ${total}개)`;
+                status.style.display = 'inline-block';
+            } else {
+                status.style.display = 'none';
+            }
+        }
+
+        // 모든 필터 초기화
+        function clearAllFilters() {
+            document.getElementById('carrier-filter').value = '';
+            document.getElementById('dealer-filter').value = '';
+            document.getElementById('salesperson-filter').value = '';
+            document.getElementById('customer-filter').value = '';
+            document.getElementById('sale-date-filter').value = '';
+
+            updateDealerFilterOptions();
+            applyFilters();
+            showStatus('모든 필터가 초기화되었습니다.', 'info');
         }
     </script>
 </body>
