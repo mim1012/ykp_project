@@ -405,19 +405,19 @@
             });
         }
 
-        // 개별 행 HTML 생성 함수 (DOM 생성 방식으로 변경)
+        // 개별 행 HTML 생성 함수 (안전한 처리)
         function createRowHTML(row) {
-            // 안전한 값 처리
-            const memo = row.memo || '';
-            const salesperson = row.salesperson || '';
-            const customerName = row.customer_name || '';
-            const phoneNumber = row.phone_number || '';
-            const modelName = row.model_name || '';
-            const birthDate = row.customer_birth_date || '';
+            // null 체크 및 안전한 기본값 설정
+            if (!row || typeof row !== 'object') {
+                console.error('Invalid row data:', row);
+                return '';
+            }
 
-            // DOM을 사용한 안전한 HTML 생성
-            const div = document.createElement('div');
-            div.innerHTML = `
+            // 모든 값을 안전하게 처리
+            const safeValue = (val) => (val === null || val === undefined) ? '' : String(val).replace(/"/g, '&quot;');
+            const safeNumber = (val) => (val === null || val === undefined || isNaN(val)) ? 0 : Number(val);
+
+            return `
                 <tr data-id="${row.id}" class="${row.isPersisted ? 'bg-green-50 hover:bg-green-100' : 'hover:bg-gray-50'}"
                     title="${row.isPersisted ? '저장됨' : '미저장'}">
                     <!-- 1. 선택 -->
@@ -427,7 +427,7 @@
                     </td>
                     <!-- 2. 판매자 -->
                     <td class="px-2 py-2">
-                        <input type="text" value="${row.salesperson || ''}"
+                        <input type="text" value="${safeValue(row.salesperson)}"
                                onchange="updateRowData(${row.id}, 'salesperson', this.value)"
                                class="field-name" placeholder="판매자명">
                     </td>
@@ -591,38 +591,6 @@
                     </td>
                 </tr>
             `;
-
-            // 텍스트 값들을 안전하게 설정
-            const tr = div.querySelector('tr');
-
-            // 판매자 입력 필드
-            const salespersonInput = tr.querySelector('input[placeholder="판매자명"]');
-            if (salespersonInput) salespersonInput.value = salesperson;
-
-            // 고객명 입력 필드
-            const customerInput = tr.querySelector('input[placeholder="고객명"]');
-            if (customerInput) customerInput.value = customerName;
-
-            // 휴대폰번호 입력 필드
-            const phoneInput = tr.querySelector('input[placeholder="010-0000-0000"]');
-            if (phoneInput) phoneInput.value = phoneNumber;
-
-            // 모델명 입력 필드
-            const modelInput = tr.querySelector('input[placeholder="모델명"]');
-            if (modelInput) modelInput.value = modelName;
-
-            // 생년월일 입력 필드
-            const birthInput = tr.querySelector('input[type="date"]');
-            if (birthInput) birthInput.value = birthDate;
-
-            // 메모 입력 필드
-            const memoInput = tr.querySelector('#memo-input-' + row.id);
-            if (memoInput) {
-                memoInput.value = memo;
-                memoInput.title = memo;
-            }
-
-            return div.innerHTML;
         }
         
         // DB 필드명과 1:1 매핑된 행 데이터 업데이트
