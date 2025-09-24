@@ -187,7 +187,7 @@
     </div>
 
     <!-- 메모 팝업 모달 -->
-    <div id="memo-popup-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50" style="display: none;">
+    <div id="memo-popup-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 items-center justify-center z-50" style="display: none;">
         <div class="bg-white rounded-lg p-6 max-w-2xl w-full mx-4">
             <div class="flex justify-between items-start mb-4">
                 <h3 class="text-lg font-semibold text-gray-900">메모 상세</h3>
@@ -212,7 +212,7 @@
     </div>
 
     <!-- 대리점 추가 모달 -->
-    <div id="dealer-add-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50" style="display: none;">
+    <div id="dealer-add-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 items-center justify-center z-50" style="display: none;">
         <div class="bg-white rounded-lg p-6 max-w-lg w-full mx-4">
             <div class="flex justify-between items-start mb-4">
                 <h3 class="text-lg font-semibold text-gray-900">대리점 추가</h3>
