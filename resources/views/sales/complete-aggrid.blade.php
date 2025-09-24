@@ -298,6 +298,8 @@
         let salesData = [];
         // 임시 ID는 큰 값부터 시작해서 실제 DB ID와 충돌 방지
         let nextId = Date.now();
+        // 선택된 행의 ID를 저장하는 Set (가상 스크롤링 시 상태 보존용)
+        let selectedRowIds = new Set();
         
         // 새로운 행 데이터 구조 (DB 스키마와 1:1 매핑)
         function createNewRow() {
@@ -423,7 +425,8 @@
                     <!-- 1. 선택 -->
                     <td class="px-2 py-2">
                         <input type="checkbox" class="row-select" data-id="${row.id}"
-                               onchange="updateSelectAllState()">
+                               ${selectedRowIds.has(row.id) ? 'checked' : ''}
+                               onchange="toggleRowSelection(${row.id}); updateSelectAllState();">
                     </td>
                     <!-- 2. 판매자 -->
                     <td class="px-2 py-2">
@@ -738,6 +741,9 @@
                                 filteredData = filteredData.filter(row => row.id !== id);
                             }
 
+                            // 삭제된 행을 selectedRowIds에서도 제거
+                            selectedRowIds.delete(id);
+
                             // 필터 상태에 따라 적절히 렌더링
                             if (hasActiveFilters()) {
                                 renderFilteredData();
@@ -763,6 +769,9 @@
                         filteredData = filteredData.filter(row => row.id !== id);
                     }
 
+                    // 삭제된 행을 selectedRowIds에서도 제거
+                    selectedRowIds.delete(id);
+
                     // 필터 상태에 따라 적절히 렌더링
                     if (hasActiveFilters()) {
                         renderFilteredData();
@@ -776,32 +785,50 @@
             }
         }
 
+        // 개별 행 선택/해제 기능 (가상 스크롤링 호환)
+        function toggleRowSelection(rowId) {
+            if (selectedRowIds.has(rowId)) {
+                selectedRowIds.delete(rowId);
+            } else {
+                selectedRowIds.add(rowId);
+            }
+            updateSelectionCount();
+        }
+
         // 전체 선택/해제 기능
         function toggleSelectAll() {
             const selectAllCheckbox = document.getElementById('select-all-checkbox');
             const allCheckboxes = document.querySelectorAll('.row-select');
 
-            allCheckboxes.forEach(checkbox => {
-                checkbox.checked = selectAllCheckbox.checked;
-            });
-
-            // 선택된 개수 표시
+            if (selectAllCheckbox.checked) {
+                // 전체 선택 - 모든 salesData의 ID를 selectedRowIds에 추가
+                salesData.forEach(row => selectedRowIds.add(row.id));
+                allCheckboxes.forEach(checkbox => {
+                    checkbox.checked = true;
+                });
+            } else {
+                // 전체 해제 - selectedRowIds 비우기
+                selectedRowIds.clear();
+                allCheckboxes.forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+            }
             updateSelectionCount();
         }
 
         // 개별 체크박스 변경 시 전체 선택 체크박스 상태 업데이트
         function updateSelectAllState() {
             const selectAllCheckbox = document.getElementById('select-all-checkbox');
-            const allCheckboxes = document.querySelectorAll('.row-select');
-            const checkedBoxes = document.querySelectorAll('.row-select:checked');
+            const totalRows = salesData.length;
+            const selectedCount = selectedRowIds.size;
 
-            if (allCheckboxes.length === 0) {
+            if (totalRows === 0) {
                 selectAllCheckbox.checked = false;
                 selectAllCheckbox.indeterminate = false;
-            } else if (checkedBoxes.length === 0) {
+            } else if (selectedCount === 0) {
                 selectAllCheckbox.checked = false;
                 selectAllCheckbox.indeterminate = false;
-            } else if (checkedBoxes.length === allCheckboxes.length) {
+            } else if (selectedCount === totalRows) {
                 selectAllCheckbox.checked = true;
                 selectAllCheckbox.indeterminate = false;
             } else {
@@ -812,18 +839,17 @@
             updateSelectionCount();
         }
 
-        // 선택된 개수 표시
+        // 선택된 개수 표시 (selectedRowIds 기반)
         function updateSelectionCount() {
-            const checkedBoxes = document.querySelectorAll('.row-select:checked');
-            const count = checkedBoxes.length;
+            const selectedCount = selectedRowIds.size;
             const badge = document.getElementById('delete-count-badge');
 
-            if (count > 0) {
+            if (selectedCount > 0) {
                 if (badge) {
-                    badge.textContent = count;
+                    badge.textContent = selectedCount;
                     badge.classList.remove('hidden');
                 }
-                showStatus(`${count}개 항목 선택됨`, 'info');
+                showStatus(`${selectedCount}개 항목 선택됨`, 'info');
             } else {
                 if (badge) {
                     badge.classList.add('hidden');
@@ -873,6 +899,7 @@
 
                 // 메모리에서 모든 데이터 삭제
                 salesData = [];
+                selectedRowIds.clear(); // 선택된 행 ID도 모두 클리어
                 renderTableRows();
                 updateStatistics();
 
@@ -884,17 +911,15 @@
             }
         }
 
-        // PM 요구사항: 선택 삭제 기능
+        // PM 요구사항: 선택 삭제 기능 (가상 스크롤링 호환)
         async function bulkDelete() {
-            const checkedBoxes = document.querySelectorAll('.row-select:checked');
-
-            if (checkedBoxes.length === 0) {
+            if (selectedRowIds.size === 0) {
                 showStatus('삭제할 행을 선택해주세요.', 'warning');
                 return;
             }
 
-            if (confirm(`선택한 ${checkedBoxes.length}개 행을 삭제하시겠습니까?`)) {
-                const idsToDelete = Array.from(checkedBoxes).map(cb => parseInt(cb.dataset.id));
+            if (confirm(`선택한 ${selectedRowIds.size}개 행을 삭제하시겠습니까?`)) {
+                const idsToDelete = Array.from(selectedRowIds);
 
                 // isPersisted 플래그를 사용해 DB에 저장된 ID와 미저장 ID 분리
                 const savedIds = [];
@@ -940,6 +965,9 @@
                         filteredData = filteredData.filter(row => !idsToDelete.includes(row.id));
                     }
 
+                    // 삭제된 행들을 selectedRowIds에서도 제거
+                    idsToDelete.forEach(id => selectedRowIds.delete(id));
+
                     // 필터 상태에 따라 적절히 렌더링
                     if (hasActiveFilters()) {
                         renderFilteredData();
@@ -949,7 +977,7 @@
 
                     // 전체 선택 체크박스 상태 업데이트
                     updateSelectAllState();
-                    showStatus(`${checkedBoxes.length}개 행이 삭제되었습니다.`, 'success');
+                    showStatus(`${idsToDelete.length}개 행이 삭제되었습니다.`, 'success');
                 } catch (error) {
                     // 일괄 삭제 오류 발생
                     showStatus('삭제 중 오류가 발생했습니다.', 'error');
