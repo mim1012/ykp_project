@@ -1416,44 +1416,111 @@
 
                                 // 컬럼 인덱스 찾기 (순서대로, 다양한 표기법 지원)
                                 const getColValue = (index, defaultValue = '') => {
-                                    return index >= 0 && index < cols.length ? cols[index] : defaultValue;
+                                    if (index >= 0 && index < cols.length) {
+                                        const val = cols[index];
+                                        // 빈 값이거나 공백만 있으면 defaultValue 반환
+                                        if (!val || val.trim() === '') {
+                                            return defaultValue;
+                                        }
+                                        return val;
+                                    }
+                                    return defaultValue;
+                                };
+
+                                // 날짜 형식 변환 함수
+                                const formatDate = (dateStr) => {
+                                    if (!dateStr || dateStr.trim() === '') return '';
+
+                                    // 숫자만 있는 경우 (예: 2, 15, 230615)
+                                    if (/^\d+$/.test(dateStr)) {
+                                        const today = new Date();
+                                        const year = today.getFullYear();
+                                        const month = String(today.getMonth() + 1).padStart(2, '0');
+
+                                        if (dateStr.length <= 2) {
+                                            // 일자만 있는 경우
+                                            return `${year}-${month}-${dateStr.padStart(2, '0')}`;
+                                        } else if (dateStr.length === 6) {
+                                            // YYMMDD 형식
+                                            const y = '20' + dateStr.substring(0, 2);
+                                            const m = dateStr.substring(2, 4);
+                                            const d = dateStr.substring(4, 6);
+                                            return `${y}-${m}-${d}`;
+                                        }
+                                    }
+
+                                    // 이미 날짜 형식인 경우
+                                    if (dateStr.includes('-') || dateStr.includes('/')) {
+                                        return dateStr.replace(/\//g, '-');
+                                    }
+
+                                    return dateStr;
+                                };
+
+                                // 생년월일 형식 변환 함수
+                                const formatBirthDate = (dateStr) => {
+                                    if (!dateStr || dateStr.trim() === '') return '';
+
+                                    // 숫자만 있는 경우 (예: 900101, 19900101)
+                                    const cleanStr = dateStr.replace(/[^0-9]/g, '');
+
+                                    if (cleanStr.length === 6) {
+                                        // YYMMDD 형식
+                                        const year = parseInt(cleanStr.substring(0, 2));
+                                        const fullYear = year > 50 ? '19' + cleanStr.substring(0, 2) : '20' + cleanStr.substring(0, 2);
+                                        return `${fullYear}-${cleanStr.substring(2, 4)}-${cleanStr.substring(4, 6)}`;
+                                    } else if (cleanStr.length === 8) {
+                                        // YYYYMMDD 형식
+                                        return `${cleanStr.substring(0, 4)}-${cleanStr.substring(4, 6)}-${cleanStr.substring(6, 8)}`;
+                                    }
+
+                                    return dateStr;
+                                };
+
+                                // 숫자 파싱 함수 (빈 값 처리)
+                                const parseNumber = (value, defaultValue = 0) => {
+                                    if (!value || value === '' || value === null || value === undefined) {
+                                        return defaultValue;
+                                    }
+                                    const num = parseFloat(String(value).replace(/,/g, ''));
+                                    return isNaN(num) ? defaultValue : num;
                                 };
 
                                 // 순서대로 매핑 (0부터 시작)
                                 const newRowData = {
                                     id: 'row-' + Date.now() + '-' + i,
                                     salesperson: getColValue(0, '{{ Auth::user()->name ?? '' }}'), // 판매자
-                                    dealer_code: getColValue(1), // 대리점
-                                    carrier: getColValue(2), // 통신사
-                                    activation_type: getColValue(3), // 개통방식
-                                    model_name: getColValue(4), // 모델명
-                                    sale_date: getColValue(5, new Date().toISOString().split('T')[0]), // 개통일
-                                    phone_number: getColValue(6), // 휴대폰번호
-                                    customer_name: getColValue(7), // 고객명
-                                    customer_birth_date: getColValue(8), // 생년월일
+                                    dealer_name: getColValue(1, ''), // 대리점 (dealer_code가 아닌 dealer_name으로 변경)
+                                    carrier: getColValue(2, ''), // 통신사
+                                    activation_type: getColValue(3, ''), // 개통방식
+                                    model_name: getColValue(4, ''), // 모델명
+                                    sale_date: formatDate(getColValue(5, '')), // 개통일
+                                    phone_number: getColValue(6, ''), // 휴대폰번호
+                                    customer_name: getColValue(7, ''), // 고객명
+                                    customer_birth_date: formatBirthDate(getColValue(8, '')), // 생년월일
 
                                     // 금액 필드들 (순서대로)
-                                    base_price: parseFloat(getColValue(9, 0)), // 액면/셋팅가
-                                    verbal1: parseFloat(getColValue(10, 0)), // 구두1
-                                    verbal2: parseFloat(getColValue(11, 0)), // 구두2
-                                    grade_amount: parseFloat(getColValue(12, 0)), // 그레이드
-                                    additional_amount: parseFloat(getColValue(13, 0)), // 부가추가
-                                    cash_activation: parseFloat(getColValue(14, 0)), // 서류상현금개통
-                                    usim_fee: parseFloat(getColValue(15, 0)), // 유심비
-                                    new_mnp_discount: parseFloat(getColValue(16, 0)), // 신규/번이할인
-                                    deduction: parseFloat(getColValue(17, 0)), // 차감
+                                    base_price: parseNumber(getColValue(9)), // 액면/셋팅가
+                                    verbal1: parseNumber(getColValue(10)), // 구두1
+                                    verbal2: parseNumber(getColValue(11)), // 구두2
+                                    grade_amount: parseNumber(getColValue(12)), // 그레이드
+                                    additional_amount: parseNumber(getColValue(13)), // 부가추가
+                                    cash_activation: parseNumber(getColValue(14)), // 서류상현금개통
+                                    usim_fee: parseNumber(getColValue(15)), // 유심비
+                                    new_mnp_discount: parseNumber(getColValue(16)), // 신규/번이할인
+                                    deduction: parseNumber(getColValue(17)), // 차감
 
                                     // 계산 필드들은 엑셀에 있으면 사용, 없으면 자동계산
-                                    total_rebate: parseFloat(getColValue(18, 0)), // 리베총계
-                                    settlement_amount: parseFloat(getColValue(19, 0)), // 정산금
-                                    tax: parseFloat(getColValue(20, 0)), // 부/소세
-                                    cash_received: parseFloat(getColValue(21, 0)), // 현금받음
-                                    payback: parseFloat(getColValue(22, 0)), // 페이백
-                                    margin_before: parseFloat(getColValue(23, 0)), // 세전마진
-                                    margin_after: parseFloat(getColValue(24, 0)), // 세후마진
+                                    total_rebate: parseNumber(getColValue(18)), // 리베총계
+                                    settlement_amount: parseNumber(getColValue(19)), // 정산금
+                                    tax: parseNumber(getColValue(20)), // 부/소세
+                                    cash_received: parseNumber(getColValue(21)), // 현금받음
+                                    payback: parseNumber(getColValue(22)), // 페이백
+                                    margin_before: parseNumber(getColValue(23)), // 세전마진
+                                    margin_after: parseNumber(getColValue(24)), // 세후마진
 
                                     // 메모 필드
-                                    memo: getColValue(25), // 메모
+                                    memo: getColValue(25, ''), // 메모
                                     isPersisted: false,
                                     serial_number: '' // 일련번호는 사용하지 않음
                                 };
@@ -1509,8 +1576,8 @@
                         }
                     };
 
-                    // CSV 또는 텍스트로 읽기
-                    reader.readAsText(file);
+                    // UTF-8 인코딩으로 읽기
+                    reader.readAsText(file, 'UTF-8');
                 }
             });
 
