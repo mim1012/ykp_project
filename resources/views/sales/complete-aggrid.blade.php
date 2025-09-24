@@ -694,7 +694,20 @@
                         const result = await response.json();
                         if (result.success) {
                             salesData = salesData.filter(row => row.id !== id);
-                            renderTableRows();
+
+                            // 필터가 적용된 경우 filteredData도 업데이트
+                            if (filteredData.length > 0) {
+                                filteredData = filteredData.filter(row => row.id !== id);
+                            }
+
+                            // 필터 상태에 따라 적절히 렌더링
+                            if (hasActiveFilters()) {
+                                renderFilteredData();
+                            } else {
+                                renderTableRows();
+                            }
+
+                            updateSelectAllState();
                             showStatus('행이 삭제되었습니다.', 'success');
                         } else {
                             throw new Error(result.message || '삭제 실패');
@@ -706,7 +719,20 @@
                 } else {
                     // 아직 저장되지 않은 행은 클라이언트에서만 제거
                     salesData = salesData.filter(row => row.id !== id);
-                    renderTableRows();
+
+                    // 필터가 적용된 경우 filteredData도 업데이트
+                    if (filteredData.length > 0) {
+                        filteredData = filteredData.filter(row => row.id !== id);
+                    }
+
+                    // 필터 상태에 따라 적절히 렌더링
+                    if (hasActiveFilters()) {
+                        renderFilteredData();
+                    } else {
+                        renderTableRows();
+                    }
+
+                    updateSelectAllState();
                     showStatus('임시 행이 삭제되었습니다.', 'success');
                 }
             }
@@ -870,7 +896,21 @@
 
                     // 모든 선택된 행 제거
                     salesData = salesData.filter(row => !idsToDelete.includes(row.id));
-                    renderTableRows();
+
+                    // 필터가 적용된 경우 filteredData도 업데이트
+                    if (filteredData.length > 0) {
+                        filteredData = filteredData.filter(row => !idsToDelete.includes(row.id));
+                    }
+
+                    // 필터 상태에 따라 적절히 렌더링
+                    if (hasActiveFilters()) {
+                        renderFilteredData();
+                    } else {
+                        renderTableRows();
+                    }
+
+                    // 전체 선택 체크박스 상태 업데이트
+                    updateSelectAllState();
                     showStatus(`${checkedBoxes.length}개 행이 삭제되었습니다.`, 'success');
                 } catch (error) {
                     // 일괄 삭제 오류 발생
