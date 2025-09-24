@@ -103,7 +103,7 @@
                 <button id="bulk-delete-btn" class="px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded hover:from-red-600 hover:to-red-700 transition-all shadow">
                     🗑️ 일괄 삭제
                 </button>
-                <div id="status-indicator" class="px-3 py-2 bg-gray-100 text-gray-600 rounded">
+                <div id="status-indicator" class="px-4 py-2 bg-blue-100 text-blue-800 rounded-lg font-semibold text-sm shadow-sm min-w-[200px] text-center">
                     시스템 준비 완료
                 </div>
             </div>
@@ -163,6 +163,20 @@
             </div>
         </div>
     </main>
+
+    <!-- 진행률 표시 모달 -->
+    <div id="progress-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden items-center justify-center z-50" style="display: none;">
+        <div class="bg-white rounded-lg p-6 max-w-sm w-full mx-4">
+            <div class="mb-4">
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">데이터 처리 중...</h3>
+                <div class="w-full bg-gray-200 rounded-full h-3 mb-2">
+                    <div id="progress-bar" class="bg-blue-600 h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+                <p id="progress-text" class="text-sm text-gray-600 text-center">0% 완료</p>
+                <p id="progress-detail" class="text-xs text-gray-500 text-center mt-1">0 / 0 행 처리됨</p>
+            </div>
+        </div>
+    </div>
 
     <script>
         // 전역 사용자 데이터 설정
@@ -844,16 +858,37 @@
         }
         
         // 상태 메시지 표시
+        // 진행률 모달 표시 함수
+        function showProgressModal(show = true) {
+            const modal = document.getElementById('progress-modal');
+            if (show) {
+                modal.style.display = 'flex';
+                modal.classList.remove('hidden');
+            } else {
+                modal.style.display = 'none';
+                modal.classList.add('hidden');
+            }
+        }
+
+        // 진행률 업데이트 함수
+        function updateProgress(current, total) {
+            const percent = Math.round((current / total) * 100);
+            document.getElementById('progress-bar').style.width = `${percent}%`;
+            document.getElementById('progress-text').textContent = `${percent}% 완료`;
+            document.getElementById('progress-detail').textContent = `${current} / ${total} 행 처리됨`;
+        }
+
         function showStatus(message, type = 'info') {
             const indicator = document.getElementById('status-indicator');
             indicator.textContent = message;
-            indicator.className = `px-3 py-2 rounded text-xs ${
+            indicator.className = `px-4 py-2 rounded-lg font-semibold text-sm shadow-sm min-w-[200px] text-center ${
                 type === 'success' ? 'bg-green-100 text-green-800' :
                 type === 'error' ? 'bg-red-100 text-red-800' :
                 type === 'warning' ? 'bg-yellow-100 text-yellow-800' :
+                type === 'info' ? 'bg-blue-100 text-blue-800' :
                 'bg-gray-100 text-gray-600'
             }`;
-            
+
             // 3초 후 기본 상태로 복원
             setTimeout(() => {
                 indicator.textContent = '시스템 준비 완료';
@@ -1482,11 +1517,18 @@
                             }
 
                             // 대용량 데이터 처리 최적화
-                            showStatus('데이터 처리 중... 잠시만 기다려주세요.', 'info');
+                            const totalRows = rows.length - dataStartRow;
+
+                            // 데이터가 많으면 진행률 모달 표시
+                            if (totalRows > 50) {
+                                showProgressModal(true);
+                                updateProgress(0, totalRows);
+                            } else {
+                                showStatus('데이터 처리 중...', 'info');
+                            }
 
                             // 배치 처리를 위한 설정
                             const BATCH_SIZE = 100; // 한 번에 처리할 행 수
-                            const totalRows = rows.length - dataStartRow;
                             let processedRows = 0;
                             let addedCount = 0;
                             const newDataBatch = [];
@@ -1688,8 +1730,9 @@
                                 }
 
                                 // 진행 상태 업데이트
-                                const progress = Math.round((processedRows / totalRows) * 100);
-                                showStatus(`데이터 처리 중... ${progress}% (${processedRows}/${totalRows})`, 'info');
+                                if (totalRows > 50) {
+                                    updateProgress(processedRows, totalRows);
+                                }
                             };
 
                             // 배치 단위로 비동기 처리
@@ -1710,6 +1753,10 @@
                                 // 통계 업데이트
                                 updateStatistics();
 
+                                // 진행률 모달 닫기
+                                showProgressModal(false);
+
+                                // 성공 메시지 표시
                                 showStatus(`${addedCount}개의 데이터를 성공적으로 추가했습니다`, 'success');
 
                                 // 파일 입력 초기화
