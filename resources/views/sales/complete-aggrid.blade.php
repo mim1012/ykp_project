@@ -405,9 +405,19 @@
             });
         }
 
-        // 개별 행 HTML 생성 함수 (성능 최적화)
+        // 개별 행 HTML 생성 함수 (DOM 생성 방식으로 변경)
         function createRowHTML(row) {
-            return `
+            // 안전한 값 처리
+            const memo = row.memo || '';
+            const salesperson = row.salesperson || '';
+            const customerName = row.customer_name || '';
+            const phoneNumber = row.phone_number || '';
+            const modelName = row.model_name || '';
+            const birthDate = row.customer_birth_date || '';
+
+            // DOM을 사용한 안전한 HTML 생성
+            const div = document.createElement('div');
+            div.innerHTML = `
                 <tr data-id="${row.id}" class="${row.isPersisted ? 'bg-green-50 hover:bg-green-100' : 'hover:bg-gray-50'}"
                     title="${row.isPersisted ? '저장됨' : '미저장'}">
                     <!-- 1. 선택 -->
@@ -581,6 +591,38 @@
                     </td>
                 </tr>
             `;
+
+            // 텍스트 값들을 안전하게 설정
+            const tr = div.querySelector('tr');
+
+            // 판매자 입력 필드
+            const salespersonInput = tr.querySelector('input[placeholder="판매자명"]');
+            if (salespersonInput) salespersonInput.value = salesperson;
+
+            // 고객명 입력 필드
+            const customerInput = tr.querySelector('input[placeholder="고객명"]');
+            if (customerInput) customerInput.value = customerName;
+
+            // 휴대폰번호 입력 필드
+            const phoneInput = tr.querySelector('input[placeholder="010-0000-0000"]');
+            if (phoneInput) phoneInput.value = phoneNumber;
+
+            // 모델명 입력 필드
+            const modelInput = tr.querySelector('input[placeholder="모델명"]');
+            if (modelInput) modelInput.value = modelName;
+
+            // 생년월일 입력 필드
+            const birthInput = tr.querySelector('input[type="date"]');
+            if (birthInput) birthInput.value = birthDate;
+
+            // 메모 입력 필드
+            const memoInput = tr.querySelector('#memo-input-' + row.id);
+            if (memoInput) {
+                memoInput.value = memo;
+                memoInput.title = memo;
+            }
+
+            return div.innerHTML;
         }
         
         // DB 필드명과 1:1 매핑된 행 데이터 업데이트
