@@ -654,12 +654,21 @@
             // Z = V + Y (세후마진)
             row.margin_after_tax = row.tax + row.margin_before_tax;
             
-            // UI 업데이트
-            document.getElementById(`rebate-${id}`).textContent = rebateTotal.toLocaleString() + '원';
-            document.getElementById(`settlement-${id}`).textContent = settlementAmount.toLocaleString() + '원';
-            document.getElementById(`tax-${id}`).textContent = row.tax.toLocaleString() + '원';
-            document.getElementById(`margin-before-${id}`).textContent = row.margin_before_tax.toLocaleString() + '원';
-            document.getElementById(`margin-after-${id}`).textContent = row.margin_after_tax.toLocaleString() + '원';
+            // UI 업데이트 (DOM 요소 존재 확인)
+            const rebateEl = document.getElementById(`rebate-${id}`);
+            if (rebateEl) rebateEl.textContent = rebateTotal.toLocaleString() + '원';
+
+            const settlementEl = document.getElementById(`settlement-${id}`);
+            if (settlementEl) settlementEl.textContent = settlementAmount.toLocaleString() + '원';
+
+            const taxEl = document.getElementById(`tax-${id}`);
+            if (taxEl) taxEl.textContent = row.tax.toLocaleString() + '원';
+
+            const marginBeforeEl = document.getElementById(`margin-before-${id}`);
+            if (marginBeforeEl) marginBeforeEl.textContent = row.margin_before_tax.toLocaleString() + '원';
+
+            const marginAfterEl = document.getElementById(`margin-after-${id}`);
+            if (marginAfterEl) marginAfterEl.textContent = row.margin_after_tax.toLocaleString() + '원';
             
             updateStatistics();
         }
@@ -671,10 +680,17 @@
             const totalMargin = salesData.reduce((sum, row) => sum + (row.margin_after_tax || 0), 0);
             const avgMarginRate = totalSettlement > 0 ? ((totalMargin / totalSettlement) * 100).toFixed(1) : 0;
             
-            document.getElementById('total-count').textContent = totalCount;
-            document.getElementById('total-settlement').textContent = '₩' + totalSettlement.toLocaleString();
-            document.getElementById('total-margin').textContent = '₩' + totalMargin.toLocaleString();
-            document.getElementById('average-margin').textContent = avgMarginRate + '%';
+            const totalCountEl = document.getElementById('total-count');
+            if (totalCountEl) totalCountEl.textContent = totalCount;
+
+            const totalSettlementEl = document.getElementById('total-settlement');
+            if (totalSettlementEl) totalSettlementEl.textContent = '₩' + totalSettlement.toLocaleString();
+
+            const totalMarginEl = document.getElementById('total-margin');
+            if (totalMarginEl) totalMarginEl.textContent = '₩' + totalMargin.toLocaleString();
+
+            const avgMarginEl = document.getElementById('average-margin');
+            if (avgMarginEl) avgMarginEl.textContent = avgMarginRate + '%';
         }
         
         // 새 행 추가
@@ -1182,9 +1198,15 @@
         // 진행률 업데이트 함수
         function updateProgress(current, total) {
             const percent = Math.round((current / total) * 100);
-            document.getElementById('progress-bar').style.width = `${percent}%`;
-            document.getElementById('progress-text').textContent = `${percent}% 완료`;
-            document.getElementById('progress-detail').textContent = `${current} / ${total} 행 처리됨`;
+
+            const progressBar = document.getElementById('progress-bar');
+            if (progressBar) progressBar.style.width = `${percent}%`;
+
+            const progressText = document.getElementById('progress-text');
+            if (progressText) progressText.textContent = `${percent}% 완료`;
+
+            const progressDetail = document.getElementById('progress-detail');
+            if (progressDetail) progressDetail.textContent = `${current} / ${total} 행 처리됨`;
         }
 
         function showStatus(message, type = 'info') {
@@ -1549,9 +1571,11 @@
 
                     // 그리드 렌더링
                     renderTableRows();
-                    // 로드된 데이터에 대해 마진 계산 및 통계 업데이트
-                    salesData.forEach(row => calculateRow(row.id));
-                    updateStatistics();
+                    // DOM 렌더링 완료 후 계산 실행 (비동기)
+                    setTimeout(() => {
+                        salesData.forEach(row => calculateRow(row.id));
+                        updateStatistics();
+                    }, 100);
                     // Sales data loaded
                     showStatus(`📊 기존 개통표 ${salesData.length}건을 불러왔습니다.`, 'info');
                 } else {
@@ -2070,15 +2094,16 @@
                                 // 테이블 한 번만 렌더링
                                 renderTableRows();
 
-                                // 모든 행에 대해 재계산 실행
-                                salesData.forEach(row => {
-                                    if (row.id) {
-                                        calculateRow(row.id);
-                                    }
-                                });
-
-                                // 통계 업데이트
-                                updateStatistics();
+                                // DOM 렌더링 완료 후 계산 실행 (비동기)
+                                setTimeout(() => {
+                                    salesData.forEach(row => {
+                                        if (row.id) {
+                                            calculateRow(row.id);
+                                        }
+                                    });
+                                    // 통계 업데이트
+                                    updateStatistics();
+                                }, 100); // 100ms 후 실행
 
                                 // 진행률 모달 닫기
                                 showProgressModal(false);
