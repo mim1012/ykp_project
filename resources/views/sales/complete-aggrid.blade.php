@@ -240,41 +240,70 @@
             };
         }
         
-        // 27개 컬럼 순서대로 테이블 행 생성 (최적화됨)
+        // 27개 컬럼 순서대로 테이블 행 생성 (가상 스크롤링 최적화)
+        let currentVisibleRange = { start: 0, end: 100 };
+
         function renderTableRows() {
             const tbody = document.getElementById('data-table-body');
-
-            // 대용량 데이터 처리 최적화
-            const RENDER_BATCH_SIZE = 50; // 한 번에 렌더링할 행 수
             const totalRows = salesData.length;
 
-            // 기존 내용 클리어
-            tbody.innerHTML = '';
-
-            // DocumentFragment 사용으로 DOM 조작 최적화
-            const fragment = document.createDocumentFragment();
-
-            // 배치 렌더링
-            let htmlBuffer = [];
-
-            for (let i = 0; i < Math.min(RENDER_BATCH_SIZE * 2, totalRows); i++) {
-                const row = salesData[i];
-                htmlBuffer.push(createRowHTML(row));
+            // 대용량 데이터인 경우 초기 100개만 렌더링
+            if (totalRows > 100) {
+                renderVisibleRows(0, 100);
+                setupVirtualScrolling();
+            } else {
+                // 100개 이하는 전체 렌더링
+                tbody.innerHTML = salesData.map(row => createRowHTML(row)).join('');
             }
 
-            // 초기 렌더링
+            updateStatistics();
+        }
+
+        // 보이는 영역만 렌더링
+        function renderVisibleRows(start, end) {
+            const tbody = document.getElementById('data-table-body');
+            const htmlBuffer = [];
+
+            // 앞쪽 플레이스홀더
+            if (start > 0) {
+                htmlBuffer.push(`<tr style="height: ${start * 40}px;"><td colspan="28"></td></tr>`);
+            }
+
+            // 실제 데이터
+            for (let i = start; i < Math.min(end, salesData.length); i++) {
+                htmlBuffer.push(createRowHTML(salesData[i]));
+            }
+
+            // 뒤쪽 플레이스홀더
+            if (end < salesData.length) {
+                htmlBuffer.push(`<tr style="height: ${(salesData.length - end) * 40}px;"><td colspan="28"></td></tr>`);
+            }
+
             tbody.innerHTML = htmlBuffer.join('');
+            currentVisibleRange = { start, end };
+        }
 
-            // 나머지 데이터는 비동기로 추가
-            if (totalRows > RENDER_BATCH_SIZE * 2) {
-                setTimeout(() => {
-                    const remainingHTML = [];
-                    for (let i = RENDER_BATCH_SIZE * 2; i < totalRows; i++) {
-                        remainingHTML.push(createRowHTML(salesData[i]));
+        // 가상 스크롤링 설정
+        function setupVirtualScrolling() {
+            const tableContainer = document.querySelector('.overflow-x-auto');
+            let scrollTimeout;
+
+            tableContainer.addEventListener('scroll', () => {
+                clearTimeout(scrollTimeout);
+                scrollTimeout = setTimeout(() => {
+                    const scrollTop = tableContainer.scrollTop;
+                    const containerHeight = tableContainer.clientHeight;
+                    const rowHeight = 40; // 예상 행 높이
+
+                    const visibleStart = Math.floor(scrollTop / rowHeight);
+                    const visibleEnd = Math.ceil((scrollTop + containerHeight) / rowHeight) + 10; // 버퍼 추가
+
+                    // 범위가 변경된 경우에만 재렌더링
+                    if (visibleStart !== currentVisibleRange.start || visibleEnd !== currentVisibleRange.end) {
+                        renderVisibleRows(Math.max(0, visibleStart - 10), Math.min(salesData.length, visibleEnd + 10));
                     }
-                    tbody.insertAdjacentHTML('beforeend', remainingHTML.join(''));
-                }, 0);
-            }
+                }, 50); // 디바운싱
+            });
         }
 
         // 개별 행 HTML 생성 함수 (성능 최적화)
@@ -1645,7 +1674,8 @@
                                     return isNaN(num) ? defaultValue : num;
                                 };
 
-                                // 순서대로 매핑 (0부터 시작)
+                                // 용산점 엑셀 파일: 일련번호가 개통일 다음에 있음
+                                // 순서: 판매자(0), 대리점(1), 통신사(2), 개통방식(3), 모델명(4), 개통일(5), 일련번호(6), 휴대폰번호(7), 고객명(8), 생년월일(9)
                                 console.log('매핑 시작 - 각 컬럼 값:');
                                 console.log('0: 판매자 =', getColValue(0));
                                 console.log('1: 대리점 =', getColValue(1));
@@ -1653,44 +1683,48 @@
                                 console.log('3: 개통방식 =', getColValue(3));
                                 console.log('4: 모델명 =', getColValue(4));
                                 console.log('5: 개통일 =', getColValue(5));
-                                console.log('9: 액면가 =', getColValue(9));
+                                console.log('6: 일련번호 =', getColValue(6));
+                                console.log('7: 휴대폰번호 =', getColValue(7));
+                                console.log('8: 고객명 =', getColValue(8));
+                                console.log('9: 생년월일 =', getColValue(9));
+                                console.log('10: 액면가 =', getColValue(10));
 
                                 const newRowData = {
                                     id: 'row-' + Date.now() + '-' + i,
                                     salesperson: getColValue(0, '{{ Auth::user()->name ?? '' }}'), // 판매자
-                                    dealer_name: getColValue(1, ''), // 대리점 (dealer_code가 아닌 dealer_name으로 변경)
+                                    dealer_name: getColValue(1, ''), // 대리점
                                     carrier: getColValue(2, ''), // 통신사
                                     activation_type: getColValue(3, ''), // 개통방식
                                     model_name: getColValue(4, ''), // 모델명
                                     sale_date: formatDate(getColValue(5, '')), // 개통일
-                                    phone_number: getColValue(6, ''), // 휴대폰번호
-                                    customer_name: getColValue(7, ''), // 고객명
-                                    customer_birth_date: formatBirthDate(getColValue(8, '')), // 생년월일
+                                    serial_number: getColValue(6, ''), // 일련번호 (6번 인덱스)
+                                    phone_number: getColValue(7, ''), // 휴대폰번호 (7번 인덱스)
+                                    customer_name: getColValue(8, ''), // 고객명 (8번 인덱스)
+                                    customer_birth_date: formatBirthDate(getColValue(9, '')), // 생년월일 (9번 인덱스)
 
-                                    // 금액 필드들 (순서대로)
-                                    base_price: parseNumber(getColValue(9)), // 액면/셋팅가
-                                    verbal1: parseNumber(getColValue(10)), // 구두1
-                                    verbal2: parseNumber(getColValue(11)), // 구두2
-                                    grade_amount: parseNumber(getColValue(12)), // 그레이드
-                                    additional_amount: parseNumber(getColValue(13)), // 부가추가
-                                    cash_activation: parseNumber(getColValue(14)), // 서류상현금개통
-                                    usim_fee: parseNumber(getColValue(15)), // 유심비
-                                    new_mnp_discount: parseNumber(getColValue(16)), // 신규/번이할인
-                                    deduction: parseNumber(getColValue(17)), // 차감
+                                    // 금액 필드들 (인덱스가 하나씩 밀림)
+                                    base_price: parseNumber(getColValue(10)), // 액면/셋팅가 (10번)
+                                    verbal1: parseNumber(getColValue(11)), // 구두1
+                                    verbal2: parseNumber(getColValue(12)), // 구두2
+                                    grade_amount: parseNumber(getColValue(13)), // 그레이드
+                                    additional_amount: parseNumber(getColValue(14)), // 부가추가
+                                    cash_activation: parseNumber(getColValue(15)), // 서류상현금개통
+                                    usim_fee: parseNumber(getColValue(16)), // 유심비
+                                    new_mnp_discount: parseNumber(getColValue(17)), // 신규/번이할인
+                                    deduction: parseNumber(getColValue(18)), // 차감
 
-                                    // 계산 필드들은 엑셀에 있으면 사용, 없으면 자동계산
-                                    total_rebate: parseNumber(getColValue(18)), // 리베총계
-                                    settlement_amount: parseNumber(getColValue(19)), // 정산금
-                                    tax: parseNumber(getColValue(20)), // 부/소세
-                                    cash_received: parseNumber(getColValue(21)), // 현금받음
-                                    payback: parseNumber(getColValue(22)), // 페이백
-                                    margin_before: parseNumber(getColValue(23)), // 세전마진
-                                    margin_after: parseNumber(getColValue(24)), // 세후마진
+                                    // 계산 필드들
+                                    total_rebate: parseNumber(getColValue(19)), // 리베총계
+                                    settlement_amount: parseNumber(getColValue(20)), // 정산금
+                                    tax: parseNumber(getColValue(21)), // 부/소세
+                                    cash_received: parseNumber(getColValue(22)), // 현금받음
+                                    payback: parseNumber(getColValue(23)), // 페이백
+                                    margin_before: parseNumber(getColValue(24)), // 세전마진
+                                    margin_after: parseNumber(getColValue(25)), // 세후마진
 
                                     // 메모 필드
-                                    memo: getColValue(25, ''), // 메모
-                                    isPersisted: false,
-                                    serial_number: '' // 일련번호는 사용하지 않음
+                                    memo: getColValue(26, ''), // 메모 (26번)
+                                    isPersisted: false
                                 };
 
                                 // 계산 필드가 비어있거나 0인 경우에만 자동 계산
