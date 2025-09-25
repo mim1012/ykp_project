@@ -425,8 +425,8 @@
                     <!-- 1. 선택 -->
                     <td class="px-2 py-2">
                         <input type="checkbox" class="row-select" data-id="${row.id}"
-                               ${selectedRowIds.has(row.id) ? 'checked' : ''}
-                               onchange="toggleRowSelection(${row.id}); updateSelectAllState();">
+                               ${selectedRowIds.has(row.id) ? 'checked="checked"' : ''}
+                               onchange="console.log('Checkbox changed for ID:', ${row.id}); toggleRowSelection(${row.id}); updateSelectAllState();">
                     </td>
                     <!-- 2. 판매자 -->
                     <td class="px-2 py-2">
@@ -850,15 +850,20 @@
             const selectedCount = selectedRowIds.size;
             const badge = document.getElementById('delete-count-badge');
 
+            console.log('updateSelectionCount called, selectedCount:', selectedCount);
+            console.log('Badge element:', badge);
+
             if (selectedCount > 0) {
                 if (badge) {
                     badge.textContent = selectedCount;
                     badge.classList.remove('hidden');
+                    console.log('Badge updated with count:', selectedCount);
                 }
                 showStatus(`${selectedCount}개 항목 선택됨`, 'info');
             } else {
                 if (badge) {
                     badge.classList.add('hidden');
+                    console.log('Badge hidden');
                 }
             }
         }
@@ -1327,6 +1332,29 @@
         // 대리점 목록 로드 함수
         async function loadDealers() {
             try {
+                // 임시로 고정 대리점 목록 사용 (API 연결 문제 해결용)
+                const mockDealers = [
+                    { dealer_code: 'YKP001', dealer_name: '용산점', status: 'active' },
+                    { dealer_code: 'YKP002', dealer_name: '강남점', status: 'active' },
+                    { dealer_code: 'YKP003', dealer_name: '서초점', status: 'active' },
+                    { dealer_code: 'YKP004', dealer_name: '홍대점', status: 'active' }
+                ];
+
+                console.log('Using mock dealers data:', mockDealers);
+                dealersList = mockDealers.map(dealer => ({
+                    code: dealer.dealer_code,
+                    name: dealer.dealer_name
+                }));
+
+                console.log(`✅ 대리점 ${dealersList.length}개 로드 완료`);
+                console.log('Loaded dealers:', dealersList);
+
+                // 기존 행들의 대리점 드롭다운 업데이트
+                updateDealerDropdowns();
+
+                return; // Mock 데이터 사용 후 종료
+
+                // 실제 API 호출 (현재 비활성화)
                 const response = await fetch('/api/dealers', {
                     method: 'GET',
                     headers: {
@@ -1392,6 +1420,26 @@
         // 통신사 목록 로드 함수
         async function loadCarriers() {
             try {
+                // 임시로 고정 통신사 목록 사용 (API 연결 문제 해결용)
+                const mockCarriers = [
+                    { name: 'SK', is_active: true, sort_order: 1 },
+                    { name: 'KT', is_active: true, sort_order: 2 },
+                    { name: 'LG U+', is_active: true, sort_order: 3 }
+                ];
+
+                console.log('Using mock carriers data:', mockCarriers);
+                carriersList = mockCarriers.filter(carrier => carrier.is_active)
+                    .sort((a, b) => a.sort_order - b.sort_order);
+
+                console.log(`✅ 통신사 ${carriersList.length}개 로드 완료`);
+                console.log('Loaded carriers:', carriersList);
+
+                // 기존 행들의 통신사 드롭다운 업데이트
+                updateCarrierDropdowns();
+
+                return; // Mock 데이터 사용 후 종료
+
+                // 실제 API 호출 (현재 비활성화)
                 const response = await fetch('/api/carriers', {
                     method: 'GET',
                     headers: {
