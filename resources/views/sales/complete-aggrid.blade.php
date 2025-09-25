@@ -425,8 +425,8 @@
                     <!-- 1. 선택 -->
                     <td class="px-2 py-2">
                         <input type="checkbox" class="row-select" data-id="${row.id}"
-                               ${selectedRowIds.has(row.id) ? 'checked="checked"' : ''}
-                               onchange="console.log('Checkbox changed for ID:', ${row.id}); toggleRowSelection(${row.id}); updateSelectAllState();">
+                               ${selectedRowIds.has(String(row.id)) ? 'checked="checked"' : ''}
+                               onchange="console.log('Checkbox changed for ID:', '${row.id}'); toggleRowSelection('${row.id}'); updateSelectAllState();">
                     </td>
                     <!-- 2. 판매자 -->
                     <td class="px-2 py-2">
@@ -742,7 +742,7 @@
                             }
 
                             // 삭제된 행을 selectedRowIds에서도 제거
-                            selectedRowIds.delete(id);
+                            selectedRowIds.delete(String(id));
 
                             // 필터 상태에 따라 적절히 렌더링
                             if (hasActiveFilters()) {
@@ -787,15 +787,17 @@
 
         // 개별 행 선택/해제 기능 (가상 스크롤링 호환)
         function toggleRowSelection(rowId) {
-            console.log('toggleRowSelection called with ID:', rowId);
+            // rowId를 문자열로 받으므로 일관되게 처리
+            const idStr = String(rowId);
+            console.log('toggleRowSelection called with ID:', idStr);
             console.log('Current selectedRowIds:', Array.from(selectedRowIds));
 
-            if (selectedRowIds.has(rowId)) {
-                selectedRowIds.delete(rowId);
-                console.log('Removed ID:', rowId);
+            if (selectedRowIds.has(idStr)) {
+                selectedRowIds.delete(idStr);
+                console.log('Removed ID:', idStr);
             } else {
-                selectedRowIds.add(rowId);
-                console.log('Added ID:', rowId);
+                selectedRowIds.add(idStr);
+                console.log('Added ID:', idStr);
             }
             console.log('Updated selectedRowIds:', Array.from(selectedRowIds));
             updateSelectionCount();
@@ -807,8 +809,8 @@
             const allCheckboxes = document.querySelectorAll('.row-select');
 
             if (selectAllCheckbox.checked) {
-                // 전체 선택 - 모든 salesData의 ID를 selectedRowIds에 추가
-                salesData.forEach(row => selectedRowIds.add(row.id));
+                // 전체 선택 - 모든 salesData의 ID를 문자열로 selectedRowIds에 추가
+                salesData.forEach(row => selectedRowIds.add(String(row.id)));
                 allCheckboxes.forEach(checkbox => {
                     checkbox.checked = true;
                 });
@@ -982,7 +984,7 @@
                     }
 
                     // 삭제된 행들을 selectedRowIds에서도 제거
-                    idsToDelete.forEach(id => selectedRowIds.delete(id));
+                    idsToDelete.forEach(id => selectedRowIds.delete(String(id)));
 
                     // 필터 상태에 따라 적절히 렌더링
                     if (hasActiveFilters()) {
