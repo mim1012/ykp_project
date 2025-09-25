@@ -1012,17 +1012,23 @@
                 errors.push("판매일자 필수");
             }
 
-            // 통신사 검증 - 동적 목록 사용
+            // 통신사 검증 - 동적 목록 사용, LG와 LG U+ 모두 허용
             const validCarriers = carriersList.length > 0
                 ? carriersList.map(c => c.name)
-                : ['SK', 'KT', 'LG', '알뜰']; // 폴백
+                : ['SK', 'KT', 'LG', 'LG U+', '알뜰']; // 폴백 - LG U+ 추가
 
-            if (!row.carrier || !validCarriers.includes(row.carrier)) {
+            // carrier가 'LG U+'인 경우 'LG'로도 매칭되도록 처리
+            const normalizedCarrier = row.carrier === 'LG U+' ? 'LG' : row.carrier;
+            const isValidCarrier = validCarriers.includes(row.carrier) ||
+                                  (row.carrier === 'LG' && validCarriers.includes('LG U+'));
+
+            if (!row.carrier || !isValidCarrier) {
                 errors.push(`유효한 통신사 필수 (${validCarriers.join('/')})`);
             }
 
-            if (!row.activation_type || !['신규', '번이', '기변'].includes(row.activation_type)) {
-                errors.push("유효한 개통유형 필수 (신규/번이/기변)");
+            // 개통유형은 선택사항으로 변경 (비어있어도 허용)
+            if (row.activation_type && !['신규', '번이', '기변'].includes(row.activation_type)) {
+                errors.push("유효한 개통유형: 신규/번이/기변 중 선택");
             }
 
             if (!row.model_name || !row.model_name.trim()) {
@@ -1334,74 +1340,60 @@
         // 대리점 목록 로드 함수
         async function loadDealers() {
             try {
-                // 임시로 고정 대리점 목록 사용 (API 연결 문제 해결용)
-                const mockDealers = [
-                    { dealer_code: 'YKP001', dealer_name: '용산점', status: 'active' },
-                    { dealer_code: 'YKP002', dealer_name: '강남점', status: 'active' },
-                    { dealer_code: 'YKP003', dealer_name: '서초점', status: 'active' },
-                    { dealer_code: 'YKP004', dealer_name: '홍대점', status: 'active' }
-                ];
-
-                console.log('Using mock dealers data:', mockDealers);
-                dealersList = mockDealers.map(dealer => ({
-                    code: dealer.dealer_code,
-                    name: dealer.dealer_name
-                }));
-
-                console.log(`✅ 대리점 ${dealersList.length}개 로드 완료`);
-                console.log('Loaded dealers:', dealersList);
-
-                // 기존 행들의 대리점 드롭다운 업데이트
-                updateDealerDropdowns();
-
-                return; // Mock 데이터 사용 후 종료
-
-                // 실제 API 호출 (현재 비활성화)
+                // API를 통해 DB에서 대리점 목록 가져오기
                 const response = await fetch('/api/dealers', {
                     method: 'GET',
                     headers: {
                         'Accept': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    }
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                    },
+                    credentials: 'same-origin'
                 });
-                const data = await response.json();
 
-                if (data.success && data.data) {
-                    console.log('Raw dealers data:', data.data);
-                    dealersList = data.data
-                        .filter(dealer => !dealer.status || dealer.status === 'active' || dealer.status === null)
-                        .map(dealer => ({
-                            code: dealer.dealer_code,
-                            name: dealer.dealer_name
-                        }));
+                if (response.ok) {
+                    const data = await response.json();
 
-                    console.log(`✅ 대리점 ${dealersList.length}개 로드 완료`);
-                    console.log('Loaded dealers:', dealersList);
+                    if (data.success && data.data) {
+                        console.log('DB에서 대리점 데이터 로드:', data.data);
+                        dealersList = data.data
+                            .filter(dealer => !dealer.status || dealer.status === 'active')
+                            .map(dealer => ({
+                                code: dealer.dealer_code,
+                                name: dealer.dealer_name
+                            }));
 
-                    // 기존 행들의 대리점 드롭다운 업데이트
-                    updateDealerDropdowns();
+                        console.log(`✅ DB에서 대리점 ${dealersList.length}개 로드 완료`);
+                        console.log('Loaded dealers:', dealersList);
 
-                    // Dealers loaded successfully
-                    return dealersList;
-                } else {
-                    // 대리점 목록 로드 실패
-                    // 폴백: 하드코딩된 목록 사용
-                    dealersList = [
-                        {code: 'SM', name: 'SM'},
-                        {code: 'W', name: 'W'},
-                        {code: 'KING', name: '더킹'},
-                        {code: 'ENTER', name: '엔터'},
-                        {code: 'UP', name: '유피'},
-                        {code: 'CHOSI', name: '초시대'},
-                        {code: 'TAESUNG', name: '태성'},
-                        {code: 'PDM', name: '피디엠'},
-                        {code: 'HANJU', name: '한주'},
-                        {code: 'HAPPY', name: '해피'}
-                    ];
-                    return dealersList;
+                        // 기존 행들의 대리점 드롭다운 업데이트
+                        updateDealerDropdowns();
+
+                        return dealersList;
+                    }
                 }
+
+                // API 응답이 성공이 아닌 경우 폴백으로 하드코딩된 목록 사용
+                console.log('API 응답 실패, 폴백 대리점 목록 사용');
+                dealersList = [
+                    {code: 'SM', name: 'SM'},
+                    {code: 'W', name: 'W'},
+                    {code: 'KING', name: '더킹'},
+                    {code: 'ENTER', name: '엔터'},
+                    {code: 'UP', name: '유피'},
+                    {code: 'CHOSI', name: '초시대'},
+                    {code: 'TAESUNG', name: '태성'},
+                    {code: 'PDM', name: '피디엠'},
+                    {code: 'HANJU', name: '한주'},
+                    {code: 'HAPPY', name: '해피'}
+                ];
+                updateDealerDropdowns();
+                return dealersList;
             } catch (error) {
                 // 대리점 로드 오류 발생
+                console.error('❌ 대리점 목록 로드 실패:', error);
+                console.log('에러 발생, 폴백 대리점 목록 사용');
+
                 // 에러 발생 시에도 기본 목록 반환
                 dealersList = [
                     {code: 'SM', name: 'SM'},
@@ -1415,6 +1407,8 @@
                     {code: 'HANJU', name: '한주'},
                     {code: 'HAPPY', name: '해피'}
                 ];
+
+                updateDealerDropdowns();
                 return dealersList;
             }
         }
@@ -1422,36 +1416,20 @@
         // 통신사 목록 로드 함수
         async function loadCarriers() {
             try {
-                // 임시로 고정 통신사 목록 사용 (API 연결 문제 해결용)
-                const mockCarriers = [
-                    { name: 'SK', is_active: true, sort_order: 1 },
-                    { name: 'KT', is_active: true, sort_order: 2 },
-                    { name: 'LG U+', is_active: true, sort_order: 3 }
-                ];
-
-                console.log('Using mock carriers data:', mockCarriers);
-                carriersList = mockCarriers.filter(carrier => carrier.is_active)
-                    .sort((a, b) => a.sort_order - b.sort_order);
-
-                console.log(`✅ 통신사 ${carriersList.length}개 로드 완료`);
-                console.log('Loaded carriers:', carriersList);
-
-                // 기존 행들의 통신사 드롭다운 업데이트
-                updateCarrierDropdowns();
-
-                return; // Mock 데이터 사용 후 종료
-
-                // 실제 API 호출 (현재 비활성화)
+                // API를 통해 DB에서 통신사 목록 가져오기
                 const response = await fetch('/api/carriers', {
                     method: 'GET',
                     headers: {
-                        'Accept': 'application/json'
-                    }
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                    },
+                    credentials: 'same-origin'
                 });
 
                 if (response.ok) {
                     const data = await response.json();
-                    if (data.success) {
+                    if (data.success && data.data) {
                         // 활성 통신사만 필터링하고 정렬 순서대로 정렬
                         carriersList = data.data
                             .filter(carrier => carrier.is_active)
@@ -1460,15 +1438,38 @@
                                 code: carrier.code,
                                 name: carrier.name
                             }));
-                        console.log('✅ 통신사 목록 로드 완료:', carriersList.length, '개');
+                        console.log(`✅ DB에서 통신사 ${carriersList.length}개 로드 완료`);
+                        console.log('Loaded carriers:', carriersList);
 
                         // 기존 행들의 통신사 드롭다운 업데이트
                         updateCarrierDropdowns();
+                        return carriersList;
                     }
                 }
+
+                // API 응답이 성공이 아닌 경우 폴백으로 하드코딩된 목록 사용
+                console.log('API 응답 실패, 폴백 통신사 목록 사용');
+                carriersList = [
+                    { name: 'SK', is_active: true, sort_order: 1 },
+                    { name: 'KT', is_active: true, sort_order: 2 },
+                    { name: 'LG', is_active: true, sort_order: 3 },
+                    { name: '알뜰', is_active: true, sort_order: 4 }
+                ];
+                updateCarrierDropdowns();
+                return carriersList;
             } catch (error) {
                 console.error('❌ 통신사 목록 로드 실패:', error);
-                // 오류 시 기본값은 generateCarrierOptions에서 처리됨
+                console.log('에러 발생, 폴백 통신사 목록 사용');
+
+                // 에러 발생 시에도 기본 목록 반환
+                carriersList = [
+                    { name: 'SK', is_active: true, sort_order: 1 },
+                    { name: 'KT', is_active: true, sort_order: 2 },
+                    { name: 'LG', is_active: true, sort_order: 3 },
+                    { name: '알뜰', is_active: true, sort_order: 4 }
+                ];
+                updateCarrierDropdowns();
+                return carriersList;
             }
         }
 
