@@ -308,8 +308,8 @@
                 isPersisted: false, // 아직 DB에 저장되지 않은 임시 행
                 salesperson: '',
                 dealer_name: '',
-                carrier: 'SK',
-                activation_type: '신규',
+                carrier: '', // 기본값 제거 - 사용자가 선택하도록
+                activation_type: '', // 기본값 제거 - 사용자가 선택하도록
                 model_name: '',
                 sale_date: (() => {
                     const today = new Date();
@@ -449,8 +449,10 @@
                     <!-- 5. 개통방식 -->
                     <td class="px-2 py-2">
                         <select onchange="updateRowData(${row.id}, 'activation_type', this.value)" class="field-activation">
+                            <option value="" ${!row.activation_type ? 'selected' : ''}>선택</option>
                             <option value="신규" ${row.activation_type === '신규' ? 'selected' : ''}>신규</option>
                             <option value="번이" ${row.activation_type === '번이' ? 'selected' : ''}>번이</option>
+                            <option value="MNP" ${row.activation_type === 'MNP' ? 'selected' : ''}>MNP</option>
                             <option value="기변" ${row.activation_type === '기변' ? 'selected' : ''}>기변</option>
                         </select>
                     </td>
@@ -1030,8 +1032,8 @@
             }
 
             // 개통유형은 선택사항으로 변경 (비어있어도 허용)
-            if (row.activation_type && !['신규', '번이', '기변'].includes(row.activation_type)) {
-                errors.push("유효한 개통유형: 신규/번이/기변 중 선택");
+            if (row.activation_type && !['신규', '번이', 'MNP', '기변'].includes(row.activation_type)) {
+                errors.push("유효한 개통유형: 신규/번이/MNP/기변 중 선택");
             }
 
             // 모델명도 선택사항으로 변경 (비어있어도 허용)
@@ -2100,9 +2102,64 @@
                                 console.log('9: 생년월일 =', getColValue(9));
                                 console.log('10: 액면가 =', getColValue(10));
 
-                                // 필수 필드 추출
-                                const dealer = getColValue(1, '');
-                                const carrier = getColValue(2, '');
+                                // 대소문자 구분 없이 대리점 매칭 함수
+                                const matchDealer = (inputDealer) => {
+                                    if (!inputDealer) return '';
+                                    const upperInput = inputDealer.toUpperCase();
+                                    const matched = dealersList.find(d =>
+                                        d.name.toUpperCase() === upperInput ||
+                                        d.code.toUpperCase() === upperInput
+                                    );
+                                    return matched ? matched.name : inputDealer;
+                                };
+
+                                // 대소문자 구분 없이 통신사 매칭 함수
+                                const matchCarrier = (inputCarrier) => {
+                                    if (!inputCarrier) return '';
+                                    const upperInput = inputCarrier.toUpperCase();
+                                    const carrierMap = {
+                                        'SK': 'SK',
+                                        'KT': 'KT',
+                                        'LG': 'LG',
+                                        'LG U+': 'LG',
+                                        'LGU+': 'LG',
+                                        '알뜰': '알뜰',
+                                        'MVNO': '알뜰'
+                                    };
+
+                                    for (const [key, value] of Object.entries(carrierMap)) {
+                                        if (key.toUpperCase() === upperInput) {
+                                            return value;
+                                        }
+                                    }
+                                    return inputCarrier;
+                                };
+
+                                // 대소문자 구분 없이 개통방식 매칭 함수
+                                const matchActivationType = (inputType) => {
+                                    if (!inputType) return '';
+                                    const upperInput = inputType.toUpperCase();
+                                    const typeMap = {
+                                        '신규': '신규',
+                                        '번이': '번이',
+                                        '기변': '기변',
+                                        'MNP': '번이',
+                                        '번호이동': '번이',
+                                        '기기변경': '기변'
+                                    };
+
+                                    for (const [key, value] of Object.entries(typeMap)) {
+                                        if (key.toUpperCase() === upperInput) {
+                                            return value;
+                                        }
+                                    }
+                                    return inputType;
+                                };
+
+                                // 필수 필드 추출 (대소문자 매칭 적용)
+                                const dealer = matchDealer(getColValue(1, ''));
+                                const carrier = matchCarrier(getColValue(2, ''));
+                                const activationType = matchActivationType(getColValue(3, ''));
                                 const modelName = getColValue(4, '');
                                 let saleDate = formatDate(getColValue(5, ''));
                                 const phoneNumber = getColValue(7, '');
@@ -2135,7 +2192,7 @@
                                     salesperson: getColValue(0, '{{ Auth::user()->name ?? '' }}'), // 판매자
                                     dealer_name: dealer, // 대리점
                                     carrier: carrier, // 통신사
-                                    activation_type: getColValue(3, ''), // 개통방식
+                                    activation_type: activationType, // 개통방식 (대소문자 매칭 적용)
                                     model_name: modelName, // 모델명
                                     sale_date: saleDate, // 개통일
                                     serial_number: getColValue(6, ''), // 일련번호 (6번 인덱스)
