@@ -40,7 +40,7 @@ class SalesCalculator
         $U = $T - $P + $Q + $R + $S;                   // 정산금
         $V = round($U * self::TAX_RATE);               // 세금 (10%)
         $Y = $U - $V + $W + $X;                        // 세전마진
-        $Z = $V + $Y;                                  // 세후마진
+        $Z = $Y - $V;                                  // 세후마진 (세전마진 - 세금)
 
         return [
             'total_rebate' => $T,       // 리베총계
@@ -181,7 +181,7 @@ class SalesCalculator
         $U = $T - $P + $Q + $R + $S;                   // 정산금
         $V = round($U * $taxRate);                     // 세금 (커스텀 세율)
         $Y = $U - $V + $W + $X;                        // 세전마진
-        $Z = $V + $Y;                                  // 세후마진
+        $Z = $Y - $V;                                  // 세후마진 (세전마진 - 세금)
 
         return [
             'total_rebate' => $T,       // 리베총계
