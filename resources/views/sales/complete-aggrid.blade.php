@@ -1007,23 +1007,26 @@
         function validateSaleData(row) {
             const errors = [];
 
-            // 필수 필드 검증
+            // 판매일자가 없으면 오늘 날짜 자동 설정
             if (!row.sale_date) {
-                errors.push("판매일자 필수");
+                const today = new Date();
+                row.sale_date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+                console.log(`판매일자 자동 설정: ${row.sale_date}`);
             }
 
-            // 통신사 검증 - 동적 목록 사용, LG와 LG U+ 모두 허용
-            const validCarriers = carriersList.length > 0
-                ? carriersList.map(c => c.name)
-                : ['SK', 'KT', 'LG', 'LG U+', '알뜰']; // 폴백 - LG U+ 추가
+            // 통신사 검증 - 비어있어도 허용 (선택사항)
+            if (row.carrier) {
+                const validCarriers = carriersList.length > 0
+                    ? carriersList.map(c => c.name)
+                    : ['SK', 'KT', 'LG', 'LG U+', '알뜰'];
 
-            // carrier가 'LG U+'인 경우 'LG'로도 매칭되도록 처리
-            const normalizedCarrier = row.carrier === 'LG U+' ? 'LG' : row.carrier;
-            const isValidCarrier = validCarriers.includes(row.carrier) ||
-                                  (row.carrier === 'LG' && validCarriers.includes('LG U+'));
+                // carrier가 'LG U+'인 경우 'LG'로도 매칭되도록 처리
+                const isValidCarrier = validCarriers.includes(row.carrier) ||
+                                      (row.carrier === 'LG' && validCarriers.includes('LG U+'));
 
-            if (!row.carrier || !isValidCarrier) {
-                errors.push(`유효한 통신사 필수 (${validCarriers.join('/')})`);
+                if (!isValidCarrier) {
+                    errors.push(`유효한 통신사를 선택하세요 (${validCarriers.join('/')})`);
+                }
             }
 
             // 개통유형은 선택사항으로 변경 (비어있어도 허용)
@@ -1031,8 +1034,10 @@
                 errors.push("유효한 개통유형: 신규/번이/기변 중 선택");
             }
 
-            if (!row.model_name || !row.model_name.trim()) {
-                errors.push("모델명 필수");
+            // 모델명도 선택사항으로 변경 (비어있어도 허용)
+            // 최소한 하나의 핵심 필드는 있어야 함
+            if (!row.model_name && !row.phone_number && !row.customer_name && !row.carrier) {
+                errors.push("최소한 모델명, 휴대폰번호, 고객명, 통신사 중 하나는 입력해야 합니다");
             }
 
             // 숫자 필드 유효성 검증
@@ -2095,17 +2100,47 @@
                                 console.log('9: 생년월일 =', getColValue(9));
                                 console.log('10: 액면가 =', getColValue(10));
 
+                                // 필수 필드 추출
+                                const dealer = getColValue(1, '');
+                                const carrier = getColValue(2, '');
+                                const modelName = getColValue(4, '');
+                                let saleDate = formatDate(getColValue(5, ''));
+                                const phoneNumber = getColValue(7, '');
+                                const customerName = getColValue(8, '');
+
+                                // 판매일자가 없으면 오늘 날짜 자동 설정
+                                if (!saleDate) {
+                                    const today = new Date();
+                                    saleDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+                                    console.log(`행 ${i}: 판매일자 자동 설정 - ${saleDate}`);
+                                }
+
+                                // 빈 행 체크 - 중요 필드가 모두 비어있으면 스킵
+                                // 판매자 이름만 있고 다른 필드가 비어있는 경우를 필터링
+                                if (!dealer && !carrier && !modelName && !phoneNumber && !customerName) {
+                                    console.log(`행 ${i} 스킵 - 실질적인 데이터 없음 (판매자 이름만 있음)`);
+                                    processedRows++;
+                                    continue;
+                                }
+
+                                // 최소한 하나의 핵심 필드는 있어야 함 (대리점, 통신사, 모델명, 휴대폰번호 중)
+                                if (!dealer && !carrier && !modelName && !phoneNumber) {
+                                    console.log(`행 ${i} 스킵 - 핵심 데이터 없음`);
+                                    processedRows++;
+                                    continue;
+                                }
+
                                 const newRowData = {
                                     id: 'row-' + Date.now() + '-' + i,
                                     salesperson: getColValue(0, '{{ Auth::user()->name ?? '' }}'), // 판매자
-                                    dealer_name: getColValue(1, ''), // 대리점
-                                    carrier: getColValue(2, ''), // 통신사
+                                    dealer_name: dealer, // 대리점
+                                    carrier: carrier, // 통신사
                                     activation_type: getColValue(3, ''), // 개통방식
-                                    model_name: getColValue(4, ''), // 모델명
-                                    sale_date: formatDate(getColValue(5, '')), // 개통일
+                                    model_name: modelName, // 모델명
+                                    sale_date: saleDate, // 개통일
                                     serial_number: getColValue(6, ''), // 일련번호 (6번 인덱스)
-                                    phone_number: getColValue(7, ''), // 휴대폰번호 (7번 인덱스)
-                                    customer_name: getColValue(8, ''), // 고객명 (8번 인덱스)
+                                    phone_number: phoneNumber, // 휴대폰번호 (7번 인덱스)
+                                    customer_name: customerName, // 고객명 (8번 인덱스)
                                     customer_birth_date: formatBirthDate(getColValue(9, '')), // 생년월일 (9번 인덱스)
 
                                     // 금액 필드들 (인덱스가 하나씩 밀림)
