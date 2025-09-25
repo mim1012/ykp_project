@@ -656,8 +656,8 @@
             // Y = U - V + W + X (세전마진)
             row.margin_before_tax = settlementAmount - row.tax + (row.cash_received || 0) + (row.payback || 0);
 
-            // Z = V + Y (세후마진)
-            row.margin_after_tax = row.tax + row.margin_before_tax;
+            // Z = Y - V (세후마진 = 세전마진 - 세금)
+            row.margin_after_tax = row.margin_before_tax - row.tax;
             
             // UI 업데이트 (DOM 요소 존재 확인)
             const rebateEl = document.getElementById(`rebate-${id}`);
@@ -2245,7 +2245,7 @@
                                     const U = T - P + Q + R + S; // 정산금
                                     const V = Math.round(U * 0.1); // 세금 (10%)
                                     const Y = U - V + W + X; // 세전마진
-                                    const Z = V + Y; // 세후마진
+                                    const Z = Y - V; // 세후마진 (세전마진 - 세금)
 
                                     // 계산된 값 업데이트
                                     newRowData.total_rebate = T;
