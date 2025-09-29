@@ -128,16 +128,26 @@ class SaleService implements SaleServiceInterface
                 $mergedData['created_at'] = now();
                 $mergedData['updated_at'] = now();
 
-                // PostgreSQL 호환 방식으로 생성
+                // PostgreSQL 호환 방식으로 생성 또는 업데이트
                 try {
-                    Log::info('Creating sale record', [
+                    Log::info('Creating or updating sale record', [
+                        'id' => $saleData['id'] ?? 'new',
                         'store_id' => $mergedData['store_id'],
                         'branch_id' => $mergedData['branch_id'],
                         'user_role' => $user->role,
                         'sale_date' => $mergedData['sale_date'] ?? 'not_set',
                     ]);
 
-                    Sale::create($mergedData);
+                    // ID가 있으면 업데이트, 없으면 생성
+                    if (isset($saleData['id']) && $saleData['id']) {
+                        Sale::where('id', $saleData['id'])
+                            ->where('store_id', $mergedData['store_id']) // 권한 체크
+                            ->update($mergedData);
+                        Log::info("Updated sale record ID: {$saleData['id']}");
+                    } else {
+                        Sale::create($mergedData);
+                        Log::info("Created new sale record");
+                    }
                     $savedCount++;
                 } catch (\Exception $e) {
                     Log::error('Failed to create sale record', [

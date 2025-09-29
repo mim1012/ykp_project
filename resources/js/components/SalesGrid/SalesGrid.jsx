@@ -163,6 +163,8 @@ const SalesGrid = ({
         onSuccess: () => {
             setUnsavedChanges(false);
             setSuccessMessage('자동 저장되었습니다.');
+            // 캐시 무효화하여 최신 데이터 반영
+            queryClient.invalidateQueries(['sales', dealerCode]);
             setTimeout(() => setSuccessMessage(''), 2000);
         },
         onError: (error) => {
@@ -614,9 +616,18 @@ const calculateRow = async (rowData, dealerCode) => {
 };
 
 const saveAllRows = async (allRowsData, dealerCode) => {
+    // ID 있는 데이터와 없는 데이터 구분하여 전송
+    const dataWithIds = allRowsData.map((row, index) => ({
+        ...row,
+        // 기존 ID가 있으면 유지 (업데이트), 없으면 null (신규)
+        id: row.id || null,
+        // 임시 인덱스 추가 (디버깅용)
+        _index: index
+    }));
+
     // 서버 스키마에 맞게 페이로드 수정 (data → sales)
     const response = await axios.post('/api/sales/bulk-save', {
-        sales: allRowsData, // 서버가 기대하는 키 이름
+        sales: dataWithIds, // 서버가 기대하는 키 이름
         dealer_code: dealerCode
     });
     return response.data;
