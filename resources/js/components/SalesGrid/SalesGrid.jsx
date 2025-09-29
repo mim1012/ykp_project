@@ -422,10 +422,34 @@ const SalesGrid = ({
     }, [gridApi]);
 
     // 선택된 행 삭제
-    const deleteSelectedRows = useCallback(() => {
+    const deleteSelectedRows = useCallback(async () => {
         if (!gridApi) return;
 
         const selectedRows = gridApi.getSelectedRows();
+
+        // 삭제할 ID 목록 추출 (DB에 저장된 행만)
+        const idsToDelete = selectedRows
+            .filter(row => row.id) // ID가 있는 행만 (DB에 저장된 행)
+            .map(row => row.id);
+
+        // DB에서 삭제
+        if (idsToDelete.length > 0) {
+            try {
+                const response = await axios.post('/api/sales/bulk-delete', {
+                    ids: idsToDelete
+                });
+
+                if (response.data.success) {
+                    console.log(`${idsToDelete.length}개 행이 DB에서 삭제됨`);
+                }
+            } catch (error) {
+                console.error('삭제 실패:', error);
+                alert('삭제 중 오류가 발생했습니다.');
+                return; // 오류 시 화면에서도 삭제하지 않음
+            }
+        }
+
+        // 화면에서 행 제거
         gridApi.applyTransaction({ remove: selectedRows });
     }, [gridApi]);
 

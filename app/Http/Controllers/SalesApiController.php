@@ -169,4 +169,50 @@ class SalesApiController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * 판매 데이터 일괄 삭제
+     */
+    public function bulkDelete(Request $request)
+    {
+        try {
+            $user = Auth::user();
+
+            // 삭제할 ID 목록 검증
+            $validated = $request->validate([
+                'ids' => 'required|array',
+                'ids.*' => 'required|integer|exists:sales,id'
+            ]);
+
+            // 권한별 접근 제어
+            $query = Sale::whereIn('id', $validated['ids']);
+
+            if ($user->role === 'store') {
+                $query->where('store_id', $user->store_id);
+            } elseif ($user->role === 'branch') {
+                $storeIds = Store::where('branch_id', $user->branch_id)->pluck('id');
+                $query->whereIn('store_id', $storeIds);
+            }
+
+            // 삭제 실행
+            $deletedCount = $query->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => "{$deletedCount}개의 데이터가 삭제되었습니다.",
+                'deleted_count' => $deletedCount
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('판매 데이터 일괄 삭제 실패', [
+                'error' => $e->getMessage(),
+                'ids' => $request->ids ?? []
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => '삭제 중 오류가 발생했습니다.',
+            ], 500);
+        }
+    }
 }
