@@ -3,7 +3,7 @@
 return [
 
     // Sentry DSN (Data Source Name)
-    'dsn' => env('SENTRY_LARAVEL_DSN', env('SENTRY_DSN')),
+    'dsn' => null, // 임시로 Sentry 비활성화
 
     // Capture release version
     'release' => env('SENTRY_RELEASE', '2.0.0'),
@@ -63,21 +63,29 @@ return [
         if ($event->getRequest()) {
             $request = $event->getRequest();
 
-            // Remove sensitive headers
-            $headers = $request->getHeaders();
-            unset($headers['authorization']);
-            unset($headers['cookie']);
-            $request->setHeaders($headers);
+            // Remove sensitive headers - check if request is an object first
+            if (is_object($request) && method_exists($request, 'getHeaders')) {
+                $headers = $request->getHeaders();
+                if (is_array($headers)) {
+                    unset($headers['authorization']);
+                    unset($headers['cookie']);
+                    $request->setHeaders($headers);
+                }
+            }
 
-            // Remove sensitive data from request body
-            $data = $request->getData();
-            if (isset($data['password'])) {
-                $data['password'] = '[FILTERED]';
+            // Remove sensitive data from request body - check if method exists first
+            if (is_object($request) && method_exists($request, 'getData')) {
+                $data = $request->getData();
+                if (is_array($data)) {
+                    if (isset($data['password'])) {
+                        $data['password'] = '[FILTERED]';
+                    }
+                    if (isset($data['credit_card'])) {
+                        $data['credit_card'] = '[FILTERED]';
+                    }
+                    $request->setData($data);
+                }
             }
-            if (isset($data['credit_card'])) {
-                $data['credit_card'] = '[FILTERED]';
-            }
-            $request->setData($data);
         }
 
         return $event;
