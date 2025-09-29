@@ -107,7 +107,18 @@
       "Bash(copy .env.example .env.production)",
       "Read(//c/Users/PC_1M/Downloads/**)",
       "Bash(gunzip:*)",
-      "Bash(git restore:*)"
+      "Bash(git restore:*)",
+      "Bash(echo $DB_CONNECTION)",
+      "Bash(echo $APP_ENV)",
+      "Bash(scoop bucket add:*)",
+      "Bash(scoop install:*)",
+      "WebFetch(domain:supabase.com)",
+      "Bash(npx:*)",
+      "Bash(\"C:\\Users\\PC_1M\\scoop\\apps\\postgresql\\current\\bin\\psql.exe\" -h aws-1-ap-southeast-1.pooler.supabase.com -p 5432 -U postgres.qwafwqxdcfpqqwpmphkm -d postgres -f \"C:\\Users\\PC_1M\\Downloads\\db_cluster-28-09-2025@17-09-30.backup\")",
+      "Bash(set PGPASSWORD=rlawlgns2233@)",
+      "Bash(docker:*)",
+      "Bash(pg_ctl:*)",
+      "Bash(C:/Users/PC_1M/scoop/apps/postgresql/current/bin/initdb -D C:/Users/PC_1M/scoop/apps/postgresql/current/data -U postgres)"
     ],
     "defaultMode": "acceptEdits",
     "additionalDirectories": [

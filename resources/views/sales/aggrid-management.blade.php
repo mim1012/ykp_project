@@ -66,20 +66,24 @@
     <!-- 메인 컨텐츠 -->
     <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <!-- 통계 카드 -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-            <div class="bg-white p-6 rounded-lg shadow">
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+            <div class="bg-white p-4 rounded-lg shadow">
                 <div class="text-sm font-medium text-gray-500">총 개통건수</div>
                 <div class="text-2xl font-bold text-gray-900" id="total-count">-</div>
             </div>
-            <div class="bg-white p-6 rounded-lg shadow">
+            <div class="bg-white p-4 rounded-lg shadow">
+                <div class="text-sm font-medium text-gray-500">총 리베총계</div>
+                <div class="text-2xl font-bold text-indigo-600" id="total-rebate">-</div>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow">
                 <div class="text-sm font-medium text-gray-500">총 정산금</div>
                 <div class="text-2xl font-bold text-blue-600" id="total-settlement">-</div>
             </div>
-            <div class="bg-white p-6 rounded-lg shadow">
+            <div class="bg-white p-4 rounded-lg shadow">
                 <div class="text-sm font-medium text-gray-500">총 마진</div>
                 <div class="text-2xl font-bold text-green-600" id="total-margin">-</div>
             </div>
-            <div class="bg-white p-6 rounded-lg shadow">
+            <div class="bg-white p-4 rounded-lg shadow">
                 <div class="text-sm font-medium text-gray-500">평균 마진율</div>
                 <div class="text-2xl font-bold text-purple-600" id="avg-margin">-</div>
             </div>
@@ -313,13 +317,15 @@
         // 통계 업데이트
         function updateStats() {
             const totalCount = rowData.length;
+            const totalRebate = rowData.reduce((sum, row) => sum + (row.rebate_total || 0), 0);
             const totalSettlement = rowData.reduce((sum, row) => sum + (row.settlement_amount || 0), 0);
             const totalMargin = rowData.reduce((sum, row) => sum + (row.margin_after_tax || 0), 0);
-            const avgMargin = totalCount > 0 ? (totalMargin / totalSettlement * 100) : 0;
-            
+            const avgMargin = totalSettlement > 0 ? (totalMargin / totalSettlement * 100) : 0;
+
             document.getElementById('total-count').textContent = totalCount.toLocaleString();
-            document.getElementById('total-settlement').textContent = totalSettlement.toLocaleString() + '원';
-            document.getElementById('total-margin').textContent = totalMargin.toLocaleString() + '원';
+            document.getElementById('total-rebate').textContent = '₩' + totalRebate.toLocaleString();
+            document.getElementById('total-settlement').textContent = '₩' + totalSettlement.toLocaleString();
+            document.getElementById('total-margin').textContent = '₩' + totalMargin.toLocaleString();
             document.getElementById('avg-margin').textContent = avgMargin.toFixed(1) + '%';
         }
         

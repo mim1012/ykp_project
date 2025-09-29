@@ -256,6 +256,23 @@ if (config('features.excel_input')) {
 
 ## Important Development Guidelines
 
+### 🚨 CRITICAL: Supabase Backup Before Migrations - 필수!
+**모든 마이그레이션 작업 전에 반드시 Supabase 백업을 수행하세요:**
+
+#### 백업 절차 (마이그레이션 전 필수)
+1. **Supabase 대시보드 접속**: https://supabase.com/dashboard
+2. **프로젝트 선택**: YKP Dashboard 프로젝트
+3. **Database → Backups 메뉴 선택**
+4. **"Create backup" 또는 "Download backup" 클릭**
+5. **백업 파일 다운로드 및 안전한 위치에 저장**
+6. **백업 완료 후에만 마이그레이션 실행**
+
+#### 백업 파일 명명 규칙
+```
+db_cluster-YYYY-MM-DD@HH-MM-SS.backup
+예: db_cluster-2025-09-29@17-09-30.backup
+```
+
 ### ⚠️ Database Migration Rules - 중요!
 **절대 기존 데이터를 삭제하지 마세요:**
 - ❌ `php artisan migrate:fresh` **사용 금지** - 모든 데이터가 삭제됩니다
@@ -263,7 +280,7 @@ if (config('features.excel_input')) {
 - ✅ `php artisan migrate` - 새로운 마이그레이션만 실행
 - ✅ `php artisan migrate:rollback` - 마지막 마이그레이션만 롤백
 - 스키마 변경 시 ALTER TABLE 사용 (DROP TABLE 금지)
-- 프로덕션 데이터가 있는 경우 반드시 백업 먼저 실행
+- 🚨 **Supabase 프로덕션 환경에서는 위 백업 절차 완료 후에만 마이그레이션 실행**
 
 ### 📍 Local Testing Information
 **로컬 테스트 환경 접속 정보:**
