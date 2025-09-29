@@ -603,14 +603,10 @@ Route::middleware(['auth', 'rbac'])->group(function () {
         }
     })->name('dashboard.home');
 
-    // 개통표 Excel 스타일 입력 (Feature Flag 적용)
-    Route::get('/sales/excel-input', function () {
-        if (! app('App\Services\FeatureService')->isEnabled('excel_input_form')) {
-            abort(404, '이 기능은 아직 사용할 수 없습니다.');
-        }
-
-        return view('sales.excel-input');
-    })->name('sales.excel-input');
+    // 개통표 Excel 스타일 입력 (삭제됨 - complete-aggrid로 통합)
+    // Route::get('/sales/excel-input', function () {
+    //     return view('sales.excel-input');
+    // })->name('sales.excel-input');
 
     // 본사/지사용 매장 관리 (권한 체크 + 서버사이드 데이터 주입)
     Route::get('/management/stores', function (Illuminate\Http\Request $request) {
@@ -682,15 +678,15 @@ Route::middleware(['auth', 'rbac'])->group(function () {
         return view('sales.improved-input');
     })->name('sales.improved-input');
 
-    // 매장용 개통표 입력 (Production에서 사용)
-    Route::get('/sales/store-input', function () {
-        return view('sales.simple-aggrid');
-    })->name('sales.store-input');
+    // 매장용 개통표 입력 (삭제됨 - complete-aggrid로 통합)
+    // Route::get('/sales/store-input', function () {
+    //     return view('sales.simple-aggrid');
+    // })->name('sales.store-input');
 
-    // Additional sales input views
-    Route::get('/sales/advanced-input-enhanced', function () {
-        return view('sales.advanced-input-enhanced');
-    })->name('sales.advanced-input-enhanced');
+    // Additional sales input views (삭제됨)
+    // Route::get('/sales/advanced-input-enhanced', function () {
+    //     return view('sales.advanced-input-enhanced');
+    // })->name('sales.advanced-input-enhanced');
 
     // 완전한 판매관리 (인증 필요)
     Route::get('/sales/complete-aggrid', function () {
@@ -702,41 +698,41 @@ Route::middleware(['auth', 'rbac'])->group(function () {
         return redirect('/sales/complete-aggrid');
     })->name('sales.advanced-input.redirect');
 
-    Route::get('/sales/advanced-input-pro', function () {
-        return view('sales.advanced-input-pro');
-    })->name('sales.advanced-input-pro');
+    // Route::get('/sales/advanced-input-pro', function () {
+    //     return view('sales.advanced-input-pro');
+    // })->name('sales.advanced-input-pro');
 
-    Route::get('/sales/advanced-input-simple', function () {
-        return view('sales.advanced-input-simple');
-    })->name('sales.advanced-input-simple');
+    // Route::get('/sales/advanced-input-simple', function () {
+    //     return view('sales.advanced-input-simple');
+    // })->name('sales.advanced-input-simple');
 
-    // AgGrid 기반 판매 관리 시스템
-    Route::get('/sales/aggrid', function () {
-        return view('sales.aggrid-management');
-    })->name('sales.aggrid');
+    // AgGrid 기반 판매 관리 시스템 (삭제됨 - complete-aggrid로 통합)
+    // Route::get('/sales/aggrid', function () {
+    //     return view('sales.aggrid-management');
+    // })->name('sales.aggrid');
 });
 
 // 개발/테스트용 라우트는 운영에서 비활성화
 if (config('app.env') !== 'production') {
     // 임시 테스트용 라우트 (인증 없이 접근 가능)
-    Route::get('/test/aggrid', function () {
-        return view('sales.aggrid-management');
-    })->name('test.aggrid');
+    // Route::get('/test/aggrid', function () {
+    //     return view('sales.aggrid-management');
+    // })->name('test.aggrid');
 
     // 간단한 AgGrid (순수 JavaScript + 실시간 API)
-    Route::get('/test/simple-aggrid', function () {
-        return view('sales.simple-aggrid');
-    })->name('test.simple-aggrid');
+    // Route::get('/test/simple-aggrid', function () {
+    //     return view('sales.simple-aggrid');
+    // })->name('test.simple-aggrid');
 
     // 완전한 AgGrid (모든 필드 포함)
     Route::get('/test/complete-aggrid', function () {
         return view('sales.complete-aggrid');
     })->name('test.complete-aggrid');
 
-    // 개통표 테스트 (인증 우회)
-    Route::get('/test/excel-input', function () {
-        return view('sales.excel-input');
-    })->name('test.excel-input');
+    // 개통표 테스트 (인증 우회) - 삭제됨
+    // Route::get('/test/excel-input', function () {
+    //     return view('sales.excel-input');
+    // })->name('test.excel-input');
 
     // 빠른 로그인 테스트 (CSRF 우회) - 없으면 생성 후 로그인
     Route::get('/quick-login/{role}', function ($role) {
@@ -824,9 +820,9 @@ Route::get('/dev/sales', function () {
     return view('sales-navigation');
 })->name('sales.navigation');
 
-// 사용자 친화적 판매관리 (간단한 AgGrid만)
+// 사용자 친화적 판매관리 (complete-aggrid로 통합)
 Route::get('/sales', function () {
-    return redirect('/test/simple-aggrid');
+    return redirect('/sales/complete-aggrid');
 })->name('sales.simple');
 
 // 메인 대시보드는 인증 후 접근
