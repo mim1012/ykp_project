@@ -254,6 +254,29 @@ if (config('features.excel_input')) {
 }
 ```
 
+## Important Development Guidelines
+
+### ⚠️ Database Migration Rules - 중요!
+**절대 기존 데이터를 삭제하지 마세요:**
+- ❌ `php artisan migrate:fresh` **사용 금지** - 모든 데이터가 삭제됩니다
+- ❌ `php artisan migrate:fresh --seed` **사용 금지** - 데이터베이스가 초기화됩니다
+- ✅ `php artisan migrate` - 새로운 마이그레이션만 실행
+- ✅ `php artisan migrate:rollback` - 마지막 마이그레이션만 롤백
+- 스키마 변경 시 ALTER TABLE 사용 (DROP TABLE 금지)
+- 프로덕션 데이터가 있는 경우 반드시 백업 먼저 실행
+
+### 📍 Local Testing Information
+**로컬 테스트 환경 접속 정보:**
+- **Laravel 서버**: http://127.0.0.1:8000 또는 http://localhost:8000
+- **서버 시작**: `php artisan serve` (기본 포트 8000)
+- **Vite 개발 서버**: `npm run dev` (포트 5173, HMR 지원)
+- **동시 실행**: `composer dev` (Laravel + Vite 함께 실행)
+
+**테스트 계정 정보:**
+- **매장 계정**: `store@ykp.com` / 비밀번호: `password`
+- **지사 계정**: `branch@ykp.com` / 비밀번호: `password`
+- **본사 계정**: `admin@ykp.com` / 비밀번호: `password`
+
 ## Common Development Tasks
 
 ### Adding a New Sales Field
