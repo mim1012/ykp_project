@@ -44,22 +44,26 @@
 
     <main class="max-w-full mx-auto py-6 px-4">
         <!-- 통계 카드 -->
-        <div class="grid grid-cols-4 gap-4 mb-6">
-            <div class="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-4 rounded-lg shadow-lg">
+        <div class="grid grid-cols-5 gap-3 mb-6">
+            <div class="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-3 rounded-lg shadow-lg">
                 <div class="text-sm opacity-90">총 개통건수</div>
-                <div class="text-2xl font-bold" id="total-count">0</div>
+                <div class="text-xl font-bold" id="total-count">0</div>
             </div>
-            <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white p-4 rounded-lg shadow-lg">
+            <div class="bg-gradient-to-br from-indigo-500 to-indigo-600 text-white p-3 rounded-lg shadow-lg">
+                <div class="text-sm opacity-90">총 리베총계</div>
+                <div class="text-xl font-bold" id="total-rebate">₩0</div>
+            </div>
+            <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white p-3 rounded-lg shadow-lg">
                 <div class="text-sm opacity-90">총 정산금</div>
-                <div class="text-2xl font-bold" id="total-settlement">₩0</div>
+                <div class="text-xl font-bold" id="total-settlement">₩0</div>
             </div>
-            <div class="bg-gradient-to-br from-violet-500 to-violet-600 text-white p-4 rounded-lg shadow-lg">
+            <div class="bg-gradient-to-br from-violet-500 to-violet-600 text-white p-3 rounded-lg shadow-lg">
                 <div class="text-sm opacity-90">총 마진</div>
-                <div class="text-2xl font-bold" id="total-margin">₩0</div>
+                <div class="text-xl font-bold" id="total-margin">₩0</div>
             </div>
-            <div class="bg-gradient-to-br from-amber-500 to-amber-600 text-white p-4 rounded-lg shadow-lg">
+            <div class="bg-gradient-to-br from-amber-500 to-amber-600 text-white p-3 rounded-lg shadow-lg">
                 <div class="text-sm opacity-90">평균 마진율</div>
-                <div class="text-2xl font-bold" id="average-margin">0%</div>
+                <div class="text-xl font-bold" id="average-margin">0%</div>
             </div>
         </div>
 
@@ -681,12 +685,16 @@
         // 통계 업데이트
         function updateStatistics() {
             const totalCount = salesData.length;
+            const totalRebate = salesData.reduce((sum, row) => sum + (row.rebate_total || 0), 0);
             const totalSettlement = salesData.reduce((sum, row) => sum + (row.settlement_amount || 0), 0);
             const totalMargin = salesData.reduce((sum, row) => sum + (row.margin_after_tax || 0), 0);
             const avgMarginRate = totalSettlement > 0 ? ((totalMargin / totalSettlement) * 100).toFixed(1) : 0;
-            
+
             const totalCountEl = document.getElementById('total-count');
             if (totalCountEl) totalCountEl.textContent = totalCount;
+
+            const totalRebateEl = document.getElementById('total-rebate');
+            if (totalRebateEl) totalRebateEl.textContent = '₩' + totalRebate.toLocaleString();
 
             const totalSettlementEl = document.getElementById('total-settlement');
             if (totalSettlementEl) totalSettlementEl.textContent = '₩' + totalSettlement.toLocaleString();
