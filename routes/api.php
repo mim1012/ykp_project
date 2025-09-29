@@ -648,7 +648,7 @@ if (config('app.env') !== 'production') {
 | 본사만 지사/매장 사용자 계정을 생성, 수정, 삭제할 수 있습니다.
 */
 
-Route::middleware(['web', 'auth', 'rbac'])->prefix('api/users')->group(function () {
+Route::middleware(['web', 'auth', 'rbac'])->prefix('users')->group(function () {
     // 사용자 목록 조회
     Route::get('/', [UserManagementController::class, 'index'])->name('api.users.index');
 
