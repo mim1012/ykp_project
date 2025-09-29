@@ -124,6 +124,17 @@ class SaleService implements SaleServiceInterface
                     }
                 }
 
+                // carrier와 activation_type 빈 문자열을 NULL로 변환
+                if (isset($mergedData['carrier']) && $mergedData['carrier'] === '') {
+                    $mergedData['carrier'] = null;
+                }
+                if (isset($mergedData['activation_type']) && $mergedData['activation_type'] === '') {
+                    $mergedData['activation_type'] = null;
+                }
+                if (isset($mergedData['model_name']) && $mergedData['model_name'] === '') {
+                    $mergedData['model_name'] = null;
+                }
+
                 // 필수 필드 기본값 설정
                 $mergedData['created_at'] = now();
                 $mergedData['updated_at'] = now();
