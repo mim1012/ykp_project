@@ -891,17 +891,17 @@ Route::middleware(['web', 'auth'])->get('/api/stores', function (Illuminate\Http
 
     if (! $user) {
         // 비로그인 상태면 모든 매장 반환 (테스트용)
-        $stores = App\Models\Store::with('branch')->get();
+        $stores = \App\Models\Store::with('branch')->get();
     } else {
         // 로그인 상태면 권한별 필터링
         if ($user->role === 'headquarters') {
-            $stores = App\Models\Store::with('branch')->get(); // 본사: 모든 매장
+            $stores = \App\Models\Store::with('branch')->get(); // 본사: 모든 매장
         } elseif ($user->role === 'branch') {
-            $stores = App\Models\Store::with('branch')
+            $stores = \App\Models\Store::with('branch')
                 ->where('branch_id', $user->branch_id)
                 ->get(); // 지사: 소속 매장만
         } elseif ($user->role === 'store') {
-            $stores = App\Models\Store::with('branch')
+            $stores = \App\Models\Store::with('branch')
                 ->where('id', $user->store_id)
                 ->get(); // 매장: 자기 매장만
         } else {
@@ -922,7 +922,7 @@ Route::middleware(['web', 'auth'])->get('/api/stores', function (Illuminate\Http
 
 Route::get('/api/sales/count', function () {
     // This route is still allowed as it only returns a count, not actual data
-    return response()->json(['count' => App\Models\Sale::count()]);
+    return response()->json(['count' => \App\Models\Sale::count()]);
 });
 
 // 디버깅: DB 상태 확인
@@ -952,7 +952,7 @@ Route::middleware(['auth'])->get('/debug-db-state', function () {
 // 누락된 API 엔드포인트들 추가 (404, 405 오류 해결)
 Route::get('/api/stores/count', function () {
     try {
-        return response()->json(['success' => true, 'count' => App\Models\Store::count()]);
+        return response()->json(['success' => true, 'count' => \App\Models\Store::count()]);
     } catch (\Exception $e) {
         return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
     }
