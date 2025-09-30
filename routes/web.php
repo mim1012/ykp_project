@@ -2388,11 +2388,14 @@ Route::middleware(['web', 'api.auth'])->group(function () {
             // Redis 캐싱 (5분 TTL) - PostgreSQL 완전 호환
             $kpiData = \Cache::remember($cacheKey, 300, function () use ($days, $storeId) {
                 // Carbon으로 날짜 처리 (DB 함수 최소화)
-                $startDate = now()->subDays($days)->startOfDay()->format('Y-m-d H:i:s');
-                $endDate = now()->endOfDay()->format('Y-m-d H:i:s');
+                $startDate = now()->subDays($days)->startOfDay();
+                $endDate = now()->endOfDay();
 
                 // PostgreSQL 완전 호환 집계 쿼리
-                $query = \App\Models\Sale::whereBetween('sale_date', [$startDate, $endDate]);
+                $query = \App\Models\Sale::whereBetween('sale_date', [
+                    $startDate->toDateTimeString(),
+                    $endDate->toDateTimeString(),
+                ]);
 
                 if ($storeId) {
                     if (is_array($storeId)) {
@@ -2415,7 +2418,10 @@ Route::middleware(['web', 'api.auth'])->group(function () {
                 // 성장률 계산 (이전 동일 기간 대비) - 안전한 계산식
                 $prevStartDate = now()->subDays($days * 2)->startOfDay();
                 $prevEndDate = now()->subDays($days)->endOfDay();
-                $prevQuery = \App\Models\Sale::whereBetween('sale_date', [$prevStartDate, $prevEndDate]);
+                $prevQuery = \App\Models\Sale::whereBetween('sale_date', [
+                    $prevStartDate->toDateTimeString(),
+                    $prevEndDate->toDateTimeString(),
+                ]);
                 if ($storeId) {
                     if (is_array($storeId)) {
                         $prevQuery->whereIn('store_id', $storeId);
@@ -2429,7 +2435,7 @@ Route::middleware(['web', 'api.auth'])->group(function () {
                     : ($totalRevenue > 0 ? 100 : 0);
 
                 // 매장 성장 (신규 매장 수 - 전체 조회시만)
-                $storeGrowth = $storeId ? 0 : \App\Models\Store::where('created_at', '>=', $startDate)->count();
+                $storeGrowth = $storeId ? 0 : \App\Models\Store::where('created_at', '>=', $startDate->toDateTimeString())->count();
 
                 return [
                     'total_revenue' => $totalRevenue,
@@ -2441,8 +2447,8 @@ Route::middleware(['web', 'api.auth'])->group(function () {
                     'store_growth' => $storeGrowth,
                     'revenue_growth' => $revenueGrowth,
                     'period' => [
-                        'start' => $startDate->format('Y-m-d'),
-                        'end' => $endDate->format('Y-m-d'),
+                        'start' => $startDate->toDateString(),
+                        'end' => $endDate->toDateString(),
                         'days' => $days,
                     ],
                     'store_filter' => $storeId ? ['id' => $storeId] : null,
