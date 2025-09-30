@@ -50,6 +50,7 @@ class CreateSaleRequest extends FormRequest
             'sales.*.dealer_name' => ['nullable', 'string', 'max:100'],
             'sales.*.serial_number' => ['nullable', 'string', 'max:100'],
             'sales.*.customer_name' => ['nullable', 'string', 'max:100'],
+            'sales.*.destination_region' => ['nullable', 'string', 'max:100'],
             'sales.*.customer_birth_date' => ['nullable', 'date'],
 
             // 요청 레벨 dealer_code (전체 적용)

@@ -146,6 +146,7 @@ class SalesExportController extends Controller
             $headers = [
                 '개통일자',
                 '고객명',
+                '도착지',
                 '연락처',
                 '개통방식',
                 '통신사',
@@ -169,6 +170,7 @@ class SalesExportController extends Controller
             $sampleData = [
                 '2025-09-22',
                 '홍길동',
+                '서울/경기',
                 '010-1234-5678',
                 '신규',
                 'SK',
