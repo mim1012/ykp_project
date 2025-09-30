@@ -2507,7 +2507,10 @@ Route::middleware(['web', 'api.auth'])->group(function () {
             $startDate = now()->subDays($days)->startOfDay();
             $endDate = now()->endOfDay();
 
-            $query = \App\Models\Sale::whereBetween('sale_date', [$startDate, $endDate]);
+            $query = \App\Models\Sale::whereBetween('sale_date', [
+                $startDate->toDateTimeString(),
+                $endDate->toDateTimeString(),
+            ]);
             if ($storeId) {
                 $query->where('store_id', $storeId);
             }
@@ -2518,10 +2521,13 @@ Route::middleware(['web', 'api.auth'])->group(function () {
                 // 일별 매출 추이
                 for ($i = $days - 1; $i >= 0; $i--) {
                     $targetDate = now()->subDays($i);
-                    $dayStart = $targetDate->startOfDay()->format('Y-m-d H:i:s');
-                    $dayEnd = $targetDate->endOfDay()->format('Y-m-d H:i:s');
+                    $dayStart = $targetDate->startOfDay();
+                    $dayEnd = $targetDate->endOfDay();
 
-                    $dailyRevenue = \App\Models\Sale::whereBetween('sale_date', [$dayStart, $dayEnd]);
+                    $dailyRevenue = \App\Models\Sale::whereBetween('sale_date', [
+                        $dayStart->toDateTimeString(),
+                        $dayEnd->toDateTimeString(),
+                    ]);
                     if ($storeId) {
                         $dailyRevenue->where('store_id', $storeId);
                     }
@@ -2572,7 +2578,10 @@ Route::middleware(['web', 'api.auth'])->group(function () {
             $startDate = now()->subDays($days)->startOfDay();
             $endDate = now()->endOfDay();
 
-            $query = \App\Models\Sale::whereBetween('sale_date', [$startDate, $endDate]);
+            $query = \App\Models\Sale::whereBetween('sale_date', [
+                $startDate->toDateTimeString(),
+                $endDate->toDateTimeString(),
+            ]);
             if ($storeId) {
                 $query->where('store_id', $storeId);
             }
@@ -2796,7 +2805,10 @@ Route::middleware(['web', 'api.auth'])->group(function () {
             $thisMonthStart = now()->startOfMonth();
             $thisMonthEnd = now()->endOfMonth();
 
-            $thisMonthQuery = \App\Models\Sale::whereBetween('sale_date', [$thisMonthStart, $thisMonthEnd]);
+            $thisMonthQuery = \App\Models\Sale::whereBetween('sale_date', [
+                $thisMonthStart->toDateTimeString(),
+                $thisMonthEnd->toDateTimeString(),
+            ]);
             if ($storeId) {
                 $thisMonthQuery->where('store_id', $storeId);
             }
