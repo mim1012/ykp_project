@@ -249,27 +249,28 @@ class SalesExportController extends Controller
                         continue;
                     }
 
-                    // 데이터 매핑
+                    // 데이터 매핑 (도착지 컬럼 추가로 인덱스 +1 조정)
                     $saleData = [
                         'sale_date' => $row[0] ?? Carbon::now()->format('Y-m-d'),
                         'customer_name' => $row[1] ?? '',
-                        'phone_number' => $row[2] ?? '',
-                        'activation_type' => $row[3] ?? '신규',
-                        'agency' => $row[4] ?? 'SK',
-                        'rate_plan' => $row[5] ?? '',
-                        'dealer_name' => $row[6] ?? '',
-                        'price_setting' => floatval($row[7] ?? 0),
-                        'verbal1' => floatval($row[8] ?? 0),
-                        'verbal2' => floatval($row[9] ?? 0),
-                        'grade_amount' => floatval($row[10] ?? 0),
-                        'addon_amount' => floatval($row[11] ?? 0),
-                        'paper_cash' => floatval($row[12] ?? 0),
-                        'usim_fee' => floatval($row[13] ?? 0),
-                        'new_mnp_discount' => floatval($row[14] ?? 0),
-                        'deduction' => floatval($row[15] ?? 0),
-                        'cash_in' => floatval($row[16] ?? 0),
-                        'payback' => floatval($row[17] ?? 0),
-                        'memo' => $row[18] ?? '',
+                        'destination_region' => $row[2] ?? '',
+                        'phone_number' => $row[3] ?? '',
+                        'activation_type' => $row[4] ?? '신규',
+                        'agency' => $row[5] ?? 'SK',
+                        'rate_plan' => $row[6] ?? '',
+                        'dealer_name' => $row[7] ?? '',
+                        'price_setting' => floatval($row[8] ?? 0),
+                        'verbal1' => floatval($row[9] ?? 0),
+                        'verbal2' => floatval($row[10] ?? 0),
+                        'grade_amount' => floatval($row[11] ?? 0),
+                        'addon_amount' => floatval($row[12] ?? 0),
+                        'paper_cash' => floatval($row[13] ?? 0),
+                        'usim_fee' => floatval($row[14] ?? 0),
+                        'new_mnp_discount' => floatval($row[15] ?? 0),
+                        'deduction' => floatval($row[16] ?? 0),
+                        'cash_in' => floatval($row[17] ?? 0),
+                        'payback' => floatval($row[18] ?? 0),
+                        'memo' => $row[19] ?? '',
                         'store_id' => $user->store_id,
                         'branch_id' => $user->branch_id ?? $user->store->branch_id
                     ];

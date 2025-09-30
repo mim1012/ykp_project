@@ -150,7 +150,7 @@
             </div>
         </div>
 
-        <!-- PM 요구사항: 27개 컬럼 완전한 개통표 테이블 -->
+        <!-- PM 요구사항: 28개 컬럼 완전한 개통표 테이블 -->
         <div class="bg-white rounded-lg shadow overflow-hidden">
             <div class="overflow-x-auto" style="max-height: 600px; overflow-y: auto;">
                 <table class="min-w-full divide-y divide-gray-200" style="min-width: 4000px;">
@@ -193,7 +193,7 @@
                         </tr>
                     </thead>
                     <tbody id="data-table-body" class="bg-white divide-y divide-gray-200">
-                        <!-- 27컬럼 데이터가 여기에 동적으로 추가됩니다 -->
+                        <!-- 28컬럼 데이터가 여기에 동적으로 추가됩니다 -->
                     </tbody>
                 </table>
             </div>
@@ -299,7 +299,7 @@
         // CSRF 토큰 설정
         window.csrfToken = '{{ csrf_token() }}';
 
-        // PM 요구사항: 27개 필드 완전 매핑된 데이터 구조
+        // PM 요구사항: 28개 필드 완전 매핑된 데이터 구조
         let salesData = [];
         // 임시 ID는 큰 값부터 시작해서 실제 DB ID와 충돌 방지
         let nextId = Date.now();
@@ -347,7 +347,7 @@
             };
         }
         
-        // 27개 컬럼 순서대로 테이블 행 생성 (가상 스크롤링 최적화)
+        // 28개 컬럼 순서대로 테이블 행 생성 (가상 스크롤링 최적화)
         let currentVisibleRange = { start: 0, end: 100 };
 
         function renderTableRows() {
@@ -1106,7 +1106,7 @@
             return errors.length > 0 ? errors : null;
         }
 
-        // PM 요구사항: 완전한 27개 필드 DB 저장
+        // PM 요구사항: 완전한 28개 필드 DB 저장
         function saveAllData() {
             if (salesData.length === 0) {
                 showStatus('저장할 데이터가 없습니다.', 'warning');
@@ -1161,7 +1161,7 @@
             
             showStatus('저장 중...', 'info');
             
-            // PM 요구사항: 27개 필드 완전 매핑으로 DB 저장
+            // PM 요구사항: 28개 필드 완전 매핑으로 DB 저장
             // 요청 데이터 준비 - 계산된 필드는 제외 (백엔드에서 재계산)
             const requestBody = {
                 sales: validData.map(row => ({
@@ -2426,7 +2426,7 @@
                 showStatus('Excel 템플릿을 다운로드했습니다', 'success');
             });
 
-            // PM 요구사항 27컬럼 완전한 개통표 시스템 초기화 완료
+            // PM 요구사항 28컬럼 완전한 개통표 시스템 초기화 완료
         });
 
         // CSV 변환 함수
