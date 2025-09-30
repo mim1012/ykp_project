@@ -150,7 +150,7 @@
             </div>
         </div>
 
-        <!-- PM 요구사항: 27개 컬럼 완전한 개통표 테이블 -->
+        <!-- PM 요구사항: 28개 컬럼 완전한 개통표 테이블 -->
         <div class="bg-white rounded-lg shadow overflow-hidden">
             <div class="overflow-x-auto" style="max-height: 600px; overflow-y: auto;">
                 <table class="min-w-full divide-y divide-gray-200" style="min-width: 4000px;">
@@ -170,6 +170,7 @@
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">개통일</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">휴대폰번호</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">고객명</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">도착지</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">생년월일</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">액면/셋팅가</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">구두1</th>
@@ -192,7 +193,7 @@
                         </tr>
                     </thead>
                     <tbody id="data-table-body" class="bg-white divide-y divide-gray-200">
-                        <!-- 27컬럼 데이터가 여기에 동적으로 추가됩니다 -->
+                        <!-- 28컬럼 데이터가 여기에 동적으로 추가됩니다 -->
                     </tbody>
                 </table>
             </div>
@@ -298,7 +299,7 @@
         // CSRF 토큰 설정
         window.csrfToken = '{{ csrf_token() }}';
 
-        // PM 요구사항: 27개 필드 완전 매핑된 데이터 구조
+        // PM 요구사항: 28개 필드 완전 매핑된 데이터 구조
         let salesData = [];
         // 임시 ID는 큰 값부터 시작해서 실제 DB ID와 충돌 방지
         let nextId = Date.now();
@@ -324,6 +325,7 @@
                 })(),
                 phone_number: '',
                 customer_name: '',
+                destination_region: '',
                 customer_birth_date: '',
                 base_price: 0,
                 verbal1: 0,
@@ -345,7 +347,7 @@
             };
         }
         
-        // 27개 컬럼 순서대로 테이블 행 생성 (가상 스크롤링 최적화)
+        // 28개 컬럼 순서대로 테이블 행 생성 (가상 스크롤링 최적화)
         let currentVisibleRange = { start: 0, end: 100 };
 
         function renderTableRows() {
@@ -371,7 +373,7 @@
 
             // 앞쪽 플레이스홀더
             if (start > 0) {
-                htmlBuffer.push(`<tr style="height: ${start * 40}px;"><td colspan="28"></td></tr>`);
+                htmlBuffer.push(`<tr style="height: ${start * 40}px;"><td colspan="29"></td></tr>`);
             }
 
             // 실제 데이터
@@ -381,7 +383,7 @@
 
             // 뒤쪽 플레이스홀더
             if (end < salesData.length) {
-                htmlBuffer.push(`<tr style="height: ${(salesData.length - end) * 40}px;"><td colspan="28"></td></tr>`);
+                htmlBuffer.push(`<tr style="height: ${(salesData.length - end) * 40}px;"><td colspan="29"></td></tr>`);
             }
 
             tbody.innerHTML = htmlBuffer.join('');
@@ -477,11 +479,17 @@
                                onchange="updateRowData(${row.id}, 'phone_number', this.value)"
                                class="field-phone" placeholder="010-1234-5678">
                     </td>
-                    <!-- 10. 고객명 -->
+                    <!-- 9. 고객명 -->
                     <td class="px-2 py-2">
                         <input type="text" value="${safeValue(row.customer_name)}"
                                onchange="updateRowData(${row.id}, 'customer_name', this.value)"
                                class="field-name" placeholder="김고객">
+                    </td>
+                    <!-- 10. 도착지 -->
+                    <td class="px-2 py-2">
+                        <input type="text" value="${safeValue(row.destination_region)}"
+                               onchange="updateRowData(${row.id}, 'destination_region', this.value)"
+                               class="field-name" placeholder="서울/경기">
                     </td>
                     <!-- 11. 생년월일 -->
                     <td class="px-2 py-2">
@@ -497,49 +505,49 @@
                     </td>
                     <!-- 13. 구두1 -->
                     <td class="px-2 py-2">
-                        <input type="number" value="${row.verbal1}" 
+                        <input type="number" value="${row.verbal1}"
                                onchange="updateRowData(${row.id}, 'verbal1', parseInt(this.value) || 0); calculateRow(${row.id})"
                                class="field-money" placeholder="50000">
                     </td>
                     <!-- 14. 구두2 -->
                     <td class="px-2 py-2">
-                        <input type="number" value="${row.verbal2}" 
+                        <input type="number" value="${row.verbal2}"
                                onchange="updateRowData(${row.id}, 'verbal2', parseInt(this.value) || 0); calculateRow(${row.id})"
                                class="field-money" placeholder="30000">
                     </td>
                     <!-- 15. 그레이드 -->
                     <td class="px-2 py-2">
-                        <input type="number" value="${row.grade_amount}" 
+                        <input type="number" value="${row.grade_amount}"
                                onchange="updateRowData(${row.id}, 'grade_amount', parseInt(this.value) || 0); calculateRow(${row.id})"
                                class="field-amount" placeholder="10000">
                     </td>
                     <!-- 16. 부가추가 -->
                     <td class="px-2 py-2">
-                        <input type="number" value="${row.additional_amount}" 
+                        <input type="number" value="${row.additional_amount}"
                                onchange="updateRowData(${row.id}, 'additional_amount', parseInt(this.value) || 0); calculateRow(${row.id})"
                                class="field-amount" placeholder="5000">
                     </td>
                     <!-- 17. 서류상현금개통 -->
                     <td class="px-2 py-2">
-                        <input type="number" value="${row.cash_activation}" 
+                        <input type="number" value="${row.cash_activation}"
                                onchange="updateRowData(${row.id}, 'cash_activation', parseInt(this.value) || 0); calculateRow(${row.id})"
                                class="field-amount" placeholder="0">
                     </td>
                     <!-- 18. 유심비 -->
                     <td class="px-2 py-2">
-                        <input type="number" value="${row.usim_fee}" 
+                        <input type="number" value="${row.usim_fee}"
                                onchange="updateRowData(${row.id}, 'usim_fee', parseInt(this.value) || 0); calculateRow(${row.id})"
                                class="field-policy plus-field" placeholder="0">
                     </td>
                     <!-- 19. 신규,번이(-800) -->
                     <td class="px-2 py-2">
-                        <input type="number" value="${row.new_mnp_discount}" 
+                        <input type="number" value="${row.new_mnp_discount}"
                                onchange="updateRowData(${row.id}, 'new_mnp_discount', parseInt(this.value) || 0); calculateRow(${row.id})"
                                class="field-policy minus-field" placeholder="-800">
                     </td>
                     <!-- 20. 차감 -->
                     <td class="px-2 py-2">
-                        <input type="number" value="${row.deduction}" 
+                        <input type="number" value="${row.deduction}"
                                onchange="updateRowData(${row.id}, 'deduction', parseInt(this.value) || 0); calculateRow(${row.id})"
                                class="field-policy minus-field" placeholder="0">
                     </td>
@@ -557,13 +565,13 @@
                     </td>
                     <!-- 24. 현금받음 -->
                     <td class="px-2 py-2">
-                        <input type="number" value="${row.cash_received}" 
+                        <input type="number" value="${row.cash_received}"
                                onchange="updateRowData(${row.id}, 'cash_received', parseInt(this.value) || 0); calculateRow(${row.id})"
                                class="field-money plus-field" placeholder="0">
                     </td>
                     <!-- 25. 페이백 -->
                     <td class="px-2 py-2">
-                        <input type="number" value="${row.payback}" 
+                        <input type="number" value="${row.payback}"
                                onchange="updateRowData(${row.id}, 'payback', parseInt(this.value) || 0); calculateRow(${row.id})"
                                class="field-money minus-field" placeholder="0">
                     </td>
@@ -1098,7 +1106,7 @@
             return errors.length > 0 ? errors : null;
         }
 
-        // PM 요구사항: 완전한 27개 필드 DB 저장
+        // PM 요구사항: 완전한 28개 필드 DB 저장
         function saveAllData() {
             if (salesData.length === 0) {
                 showStatus('저장할 데이터가 없습니다.', 'warning');
@@ -1153,7 +1161,7 @@
             
             showStatus('저장 중...', 'info');
             
-            // PM 요구사항: 27개 필드 완전 매핑으로 DB 저장
+            // PM 요구사항: 28개 필드 완전 매핑으로 DB 저장
             // 요청 데이터 준비 - 계산된 필드는 제외 (백엔드에서 재계산)
             const requestBody = {
                 sales: validData.map(row => ({
@@ -1167,6 +1175,7 @@
                     phone_number: row.phone_number,
                     customer_name: row.customer_name,
                     customer_birth_date: row.customer_birth_date,
+                    destination_region: row.destination_region,
                     base_price: row.base_price,
                     verbal1: row.verbal1,
                     verbal2: row.verbal2,
@@ -1659,6 +1668,7 @@
                         })(),
                         phone_number: sale.phone_number || '',
                         customer_name: sale.customer_name || '',
+                        destination_region: sale.destination_region || '',
                         customer_birth_date: sale.customer_birth_date ? sale.customer_birth_date.split('T')[0] : '',
                         base_price: parseFloat(sale.base_price || 0),
                         verbal1: parseFloat(sale.verbal1 || 0),
@@ -1933,7 +1943,7 @@
                             // 기존 엑셀 템플릿의 정확한 컬럼 순서
                             const expectedHeaders = [
                                 '판매자', '대리점', '통신사', '개통방식', '모델명',
-                                '개통일', '휴대폰번호', '고객명', '생년월일',
+                                '개통일', '휴대폰번호', '고객명', '도착지', '생년월일',
                                 '액면/셋팅가', '구두1', '구두2', '그레이드', '부가추가',
                                 '서류상현금개통', '유심비 (+표기)', '신규,번이    (-800표기)', '차감(-표기)',
                                 '리베총계', '정산금', '부/소 세', '현금받음(+표기)', '페이백(-표기)',
@@ -1964,6 +1974,15 @@
                                 dataStartRow = 1;
                                 console.log('기본 헤더 사용 - 첫 번째 행');
                             }
+
+                            const normalizedHeader = Array.isArray(headerRow)
+                                ? headerRow.map(cell => String(cell ?? '').replace(/\s+/g, '').toLowerCase())
+                                : [];
+                            const destinationHeaderIndex = normalizedHeader.findIndex(value => value.includes('도착'));
+                            const hasDestinationColumn = destinationHeaderIndex !== -1;
+                            const getOffsetIndex = (index) => (hasDestinationColumn && index >= 9 ? index + 1 : index);
+                            let missingDestinationCount = 0;
+                            let populatedDestinationCount = 0;
 
                             // 대용량 데이터 처리 최적화
                             const totalRows = rows.length - dataStartRow;
@@ -2016,6 +2035,8 @@
                                     }
                                     return defaultValue;
                                 };
+
+                                const col = (index, defaultValue = '') => getColValue(getOffsetIndex(index), defaultValue);
 
                                 // 날짜 형식 변환 함수 (캘린더 input을 위한 YYYY-MM-DD 형식)
                                 const formatDate = (dateStr) => {
@@ -2171,6 +2192,7 @@
                                 let saleDate = formatDate(getColValue(5, ''));
                                 const phoneNumber = getColValue(7, '');
                                 const customerName = getColValue(8, '');
+                                const destinationRegion = hasDestinationColumn ? getColValue(destinationHeaderIndex, '') : '';
 
                                 // 판매일자가 없으면 오늘 날짜 자동 설정
                                 if (!saleDate) {
@@ -2205,32 +2227,41 @@
                                     serial_number: getColValue(6, ''), // 일련번호 (6번 인덱스)
                                     phone_number: phoneNumber, // 휴대폰번호 (7번 인덱스)
                                     customer_name: customerName, // 고객명 (8번 인덱스)
-                                    customer_birth_date: formatBirthDate(getColValue(9, '')), // 생년월일 (9번 인덱스)
+                                    destination_region: destinationRegion,
+                                    customer_birth_date: formatBirthDate(col(9, '')), // 생년월일 (9번 인덱스, 도착지 존재 시 +1)
 
                                     // 금액 필드들 (인덱스가 하나씩 밀림)
-                                    base_price: parseNumber(getColValue(10)), // 액면/셋팅가 (10번)
-                                    verbal1: parseNumber(getColValue(11)), // 구두1
-                                    verbal2: parseNumber(getColValue(12)), // 구두2
-                                    grade_amount: parseNumber(getColValue(13)), // 그레이드
-                                    additional_amount: parseNumber(getColValue(14)), // 부가추가
-                                    cash_activation: parseNumber(getColValue(15)), // 서류상현금개통
-                                    usim_fee: parseNumber(getColValue(16)), // 유심비
-                                    new_mnp_discount: parseNumber(getColValue(17)), // 신규/번이할인
-                                    deduction: parseNumber(getColValue(18)), // 차감
+                                    base_price: parseNumber(col(10)), // 액면/셋팅가 (10번)
+                                    verbal1: parseNumber(col(11)), // 구두1
+                                    verbal2: parseNumber(col(12)), // 구두2
+                                    grade_amount: parseNumber(col(13)), // 그레이드
+                                    additional_amount: parseNumber(col(14)), // 부가추가
+                                    cash_activation: parseNumber(col(15)), // 서류상현금개통
+                                    usim_fee: parseNumber(col(16)), // 유심비
+                                    new_mnp_discount: parseNumber(col(17)), // 신규/번이할인
+                                    deduction: parseNumber(col(18)), // 차감
 
                                     // 계산 필드들
-                                    total_rebate: parseNumber(getColValue(19)), // 리베총계
-                                    settlement_amount: parseNumber(getColValue(20)), // 정산금
-                                    tax: parseNumber(getColValue(21)), // 부/소세
-                                    cash_received: parseNumber(getColValue(22)), // 현금받음
-                                    payback: parseNumber(getColValue(23)), // 페이백
-                                    margin_before: parseNumber(getColValue(24)), // 세전마진
-                                    margin_after: parseNumber(getColValue(25)), // 세후마진
+                                    total_rebate: parseNumber(col(19)), // 리베총계
+                                    settlement_amount: parseNumber(col(20)), // 정산금
+                                    tax: parseNumber(col(21)), // 부/소세
+                                    cash_received: parseNumber(col(22)), // 현금받음
+                                    payback: parseNumber(col(23)), // 페이백
+                                    margin_before: parseNumber(col(24)), // 세전마진
+                                    margin_after: parseNumber(col(25)), // 세후마진
 
                                     // 메모 필드
-                                    memo: getColValue(26, ''), // 메모 (26번)
+                                    memo: col(26, ''), // 메모 (26번, 도착지 존재 시 +1)
                                     isPersisted: false
                                 };
+
+                                if (hasDestinationColumn) {
+                                    if (!destinationRegion) {
+                                        missingDestinationCount++;
+                                    } else {
+                                        populatedDestinationCount++;
+                                    }
+                                }
 
                                 // 계산 필드가 비어있거나 0인 경우에만 자동 계산
                                 if (!newRowData.total_rebate || newRowData.total_rebate === 0) {
@@ -2303,8 +2334,21 @@
                                 // 진행률 모달 닫기
                                 showProgressModal(false);
 
-                                // 성공 메시지 표시
-                                showStatus(`${addedCount}개의 데이터를 성공적으로 추가했습니다`, 'success');
+                                // 성공/경고 메시지 표시 (도착지 필드 상태 포함)
+                                let statusType = 'success';
+                                let statusMessage = `${addedCount}개의 데이터를 성공적으로 추가했습니다`;
+
+                                if (hasDestinationColumn) {
+                                    if (missingDestinationCount > 0) {
+                                        statusType = 'warning';
+                                        statusMessage += ` — 도착지 정보가 비어 있는 행 ${missingDestinationCount}개`;
+                                        alert(`도착지 정보가 비어 있는 행이 ${missingDestinationCount}개 있습니다. 저장 전에 확인해주세요.`);
+                                    } else if (populatedDestinationCount > 0) {
+                                        statusMessage += ' — 도착지 정보가 즉시 반영되었습니다.';
+                                    }
+                                }
+
+                                showStatus(statusMessage, statusType);
 
                                 // 파일 입력 초기화
                                 e.target.value = '';
@@ -2342,7 +2386,7 @@
             document.getElementById('download-template-btn').addEventListener('click', () => {
                 // Excel 템플릿 생성
                 const templateData = [
-                    ['판매자', '대리점', '통신사', '개통방식', '모델명', '개통일', '휴대폰번호', '고객명', '생년월일',
+                    ['판매자', '대리점', '통신사', '개통방식', '모델명', '개통일', '휴대폰번호', '고객명', '도착지', '생년월일',
                      '액면/셋팅가', '구두1', '구두2', '그레이드', '부가추가', '서류상현금개통', '유심비',
                      '신규/번이할인', '차감', '리베총계', '정산금', '부/소세', '현금받음', '페이백',
                      '세전마진', '세후마진', '메모'],
@@ -2352,7 +2396,7 @@
                         const month = String(today.getMonth() + 1).padStart(2, '0');
                         const day = String(today.getDate()).padStart(2, '0');
                         return `${year}-${month}-${day}`;
-                    })(), '010-1234-5678', '김고객', '1990-01-01',
+                    })(), '010-1234-5678', '김고객', '서울/경기', '1990-01-01',
                      '100000', '50000', '30000', '20000', '10000', '30000', '8800',
                      '10000', '5000', '', '', '', '20000', '15000',
                      '', '', '']
@@ -2382,7 +2426,7 @@
                 showStatus('Excel 템플릿을 다운로드했습니다', 'success');
             });
 
-            // PM 요구사항 27컬럼 완전한 개통표 시스템 초기화 완료
+            // PM 요구사항 28컬럼 완전한 개통표 시스템 초기화 완료
         });
 
         // CSV 변환 함수
@@ -2394,7 +2438,7 @@
             // CSV 헤더
             const headers = [
                 '날짜', '행번호', '대리점', '통신사', '개통방식', '시리얼넘버',
-                '모델명', '용량', '전화번호', '고객명', '생년월일',
+                '모델명', '용량', '전화번호', '고객명', '도착지', '생년월일',
                 '액면가', '구두1', '구두2', '그레이드', '부가추가',
                 '서류상현금개통', '유심비', '신규번이할인', '차감',
                 '리베총계', '정산금', '세금', '현금받음', '페이백',
@@ -2413,6 +2457,7 @@
                 row.storage_capacity || '',
                 row.phone_number || '',
                 row.customer_name || '',
+                row.destination_region || '',
                 row.customer_birth_date || '',
                 row.base_price || 0,
                 row.verbal1 || 0,
@@ -2685,7 +2730,7 @@
             const dataToRender = filteredData.length > 0 || hasActiveFilters() ? filteredData : salesData;
 
             if (dataToRender.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="29" class="text-center py-4 text-gray-500">검색 결과가 없습니다.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="30" class="text-center py-4 text-gray-500">검색 결과가 없습니다.</td></tr>';
             } else if (dataToRender.length > 100) {
                 // 가상 스크롤링 적용
                 const htmlBuffer = [];
