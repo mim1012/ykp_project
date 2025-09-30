@@ -43,14 +43,12 @@ class Sale extends Model
         'memo',               // 기본 필드
         'model_name',         // 기본 필드 (필수)
         'customer_name',      // PM 요구사항: 고객명 추가
-        'destination_region',
         'customer_birth_date', // PM 요구사항: 생년월일 추가
     ];
 
     protected $casts = [
         'sale_date' => 'datetime:Y-m-d',  // 타임존 문제 해결
         'customer_birth_date' => 'datetime:Y-m-d', // 타임존 문제 해결
-        'destination_region' => 'string',
         'base_price' => 'decimal:2',  // DB column is base_price
         'verbal1' => 'decimal:2',
         'verbal2' => 'decimal:2',
