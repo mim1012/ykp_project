@@ -244,6 +244,7 @@
         let charts = {};
         let updateInterval;
         let storeFilter = null; // 매장 필터
+        let userRole = null; // 사용자 권한 (전역)
 
         // 페이지 로드시 초기화
         document.addEventListener('DOMContentLoaded', function() {
@@ -251,7 +252,7 @@
             const urlParams = new URLSearchParams(window.location.search);
             const storeId = urlParams.get('store');
             const storeName = urlParams.get('name');
-            const userRole = urlParams.get('role');
+            userRole = urlParams.get('role'); // 전역 변수에 할당
 
             // 매장 직원 권한 처리
             if (userRole === 'store' || window.userData?.role === 'store') {
@@ -325,24 +326,20 @@
         // 모든 데이터 로드
         async function loadAllData() {
             try {
-                const promises = [
+                // 모든 계정에서 모든 데이터 로드 (권한별 필터링은 백엔드에서 처리)
+                await Promise.all([
                     loadKPIData(),
                     loadChartData(),
+                    loadBranchPerformance(),
                     loadTopStores(),
                     loadGoalProgress()
-                ];
-
-                // 매장 계정이 아닐 때만 지사 성과 로드
-                if (userRole !== 'store') {
-                    promises.push(loadBranchPerformance());
-                }
-
-                await Promise.all(promises);
+                ]);
                 hideLoading();
             } catch (error) {
                 console.error('데이터 로드 실패:', error);
                 hideLoading();
-                generateDemoData();
+                // 에러 발생 시 데모 데이터 생성하지 않음 (무한 루프 방지)
+                showToast('데이터를 불러오는 중 오류가 발생했습니다. 페이지를 새로고침해주세요.', 'error');
             }
         }
 

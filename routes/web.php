@@ -2588,11 +2588,8 @@ Route::middleware(['web', 'api.auth'])->group(function () {
                 // 지사 계정은 자신의 지사 데이터만 조회 가능
                 $allowedBranchId = $user->branch_id;
             } elseif ($user && $user->role === 'store') {
-                // 매장 계정은 지사별 성과 조회 불가
-                return response()->json([
-                    'success' => false,
-                    'error' => '매장 계정은 지사별 성과를 조회할 수 없습니다.',
-                ], 403);
+                // 매장 계정은 자신이 속한 지사의 성과만 조회 가능
+                $allowedBranchId = $user->branch_id;
             }
 
             if ($days <= 0 || $days > 365) {
