@@ -456,7 +456,6 @@
                             <option value="" ${!row.activation_type ? 'selected' : ''}>선택</option>
                             <option value="신규" ${row.activation_type === '신규' ? 'selected' : ''}>신규</option>
                             <option value="번이" ${row.activation_type === '번이' ? 'selected' : ''}>번이</option>
-                            <option value="MNP" ${row.activation_type === 'MNP' ? 'selected' : ''}>MNP</option>
                             <option value="기변" ${row.activation_type === '기변' ? 'selected' : ''}>기변</option>
                         </select>
                     </td>
@@ -1040,8 +1039,8 @@
             }
 
             // 개통유형은 선택사항으로 변경 (비어있어도 허용)
-            if (row.activation_type && !['신규', '번이', 'MNP', '기변'].includes(row.activation_type)) {
-                errors.push("유효한 개통유형: 신규/번이/MNP/기변 중 선택");
+            if (row.activation_type && !['신규', '번이', '기변'].includes(row.activation_type)) {
+                errors.push("유효한 개통유형: 신규/번이/기변 중 선택");
             }
 
             // 모델명도 선택사항으로 변경 (비어있어도 허용)

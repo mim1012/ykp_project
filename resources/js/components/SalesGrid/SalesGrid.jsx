@@ -210,7 +210,7 @@ const SalesGrid = ({
             width: 100,
             cellEditor: 'agSelectCellEditor',
             cellEditorParams: {
-                values: ['신규', 'MNP', '기변']
+                values: ['신규', '번이', '기변']
             }
         },
         {

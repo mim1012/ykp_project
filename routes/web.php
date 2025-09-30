@@ -2349,10 +2349,10 @@ Route::middleware(['web', 'api.auth'])->group(function () {
 
             // 매장 존재 여부 검증 (DB 오류 방지) - 강화된 검증
             if ($storeId) {
-                $store = App\Models\Store::find($storeId);
+                $store = \App\Models\Store::find($storeId);
                 if (! $store) {
                     // 존재하는 매장 목록 제공
-                    $existingStores = App\Models\Store::select('id', 'name', 'code')->get();
+                    $existingStores = \App\Models\Store::select('id', 'name', 'code')->get();
 
                     return response()->json([
                         'success' => false,
@@ -2364,7 +2364,7 @@ Route::middleware(['web', 'api.auth'])->group(function () {
                 }
 
                 // 매장에 Sales 데이터가 있는지 확인
-                $hasSalesData = App\Models\Sale::where('store_id', $storeId)->exists();
+                $hasSalesData = \App\Models\Sale::where('store_id', $storeId)->exists();
                 if (! $hasSalesData) {
                     return response()->json([
                         'success' => true,

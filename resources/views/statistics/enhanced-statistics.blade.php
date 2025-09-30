@@ -325,13 +325,19 @@
         // 모든 데이터 로드
         async function loadAllData() {
             try {
-                await Promise.all([
+                const promises = [
                     loadKPIData(),
                     loadChartData(),
-                    loadBranchPerformance(),
                     loadTopStores(),
                     loadGoalProgress()
-                ]);
+                ];
+
+                // 매장 계정이 아닐 때만 지사 성과 로드
+                if (userRole !== 'store') {
+                    promises.push(loadBranchPerformance());
+                }
+
+                await Promise.all(promises);
                 hideLoading();
             } catch (error) {
                 console.error('데이터 로드 실패:', error);
