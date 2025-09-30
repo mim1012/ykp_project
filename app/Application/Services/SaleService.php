@@ -117,7 +117,7 @@ class SaleService implements SaleServiceInterface
                 }
 
                 // 신규 필드들 처리 (존재하면 저장)
-                $newFields = ['dealer_name', 'serial_number', 'customer_name', 'customer_birth_date', 'model_name', 'phone_number', 'salesperson', 'memo'];
+                $newFields = ['dealer_name', 'serial_number', 'customer_name', 'destination_region', 'customer_birth_date', 'model_name', 'phone_number', 'salesperson', 'memo'];
                 foreach ($newFields as $field) {
                     if (isset($saleData[$field]) && $saleData[$field] !== null && $saleData[$field] !== '') {
                         $mergedData[$field] = $saleData[$field];
