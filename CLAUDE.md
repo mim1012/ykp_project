@@ -341,3 +341,18 @@ tests/
 - `playwright.config.js` - E2E test configuration
 - `phpstan.neon` - Static analysis rules
 - `pint.json` - Code formatting rules
+
+## Important Coding Guidelines
+
+### File Creation Policy
+- ❌ **NEVER create files unless absolutely necessary** for achieving your goal
+- ✅ **ALWAYS prefer editing existing files** to creating new ones
+- ❌ **NEVER proactively create documentation files** (*.md) or README files
+- ✅ **Only create documentation files if explicitly requested** by the user
+
+### Code Modification Approach
+When modifying code:
+1. Read the existing file first to understand the current implementation
+2. Make targeted edits to existing files rather than creating new ones
+3. Maintain consistency with existing code style and patterns
+4. Follow the project's established architectural patterns
