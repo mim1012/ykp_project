@@ -2563,7 +2563,19 @@ Route::middleware(['web', 'api.auth'])->group(function () {
                 }
             }
 
-            return response()->json(['success' => true, 'data' => $trendData]);
+            // 프론트엔드 Chart.js 형식에 맞게 변환
+            $labels = array_map(fn($item) => $item['label'], $trendData);
+            $revenueData = array_map(fn($item) => $item['value'], $trendData);
+            $profitData = array_map(fn($item) => $item['value'] * 0.1, $trendData); // 임시: 매출의 10%를 순이익으로
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'labels' => $labels,
+                    'revenue_data' => $revenueData,
+                    'profit_data' => $profitData,
+                ]
+            ]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
