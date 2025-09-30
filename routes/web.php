@@ -994,7 +994,10 @@ Route::middleware(['web'])->get('/api/dashboard/sales-trend', function (Illumina
             // PostgreSQL 호환 날짜 범위 쿼리
             $dateStart = $date->startOfDay();
             $dateEnd = $date->copy()->endOfDay();
-            $dailyQuery = (clone $query)->whereBetween('sale_date', [$dateStart, $dateEnd]);
+            $dailyQuery = (clone $query)->whereBetween('sale_date', [
+                $dateStart->toDateTimeString(),
+                $dateEnd->toDateTimeString(),
+            ]);
             $dailySales = $dailyQuery->sum('settlement_amount') ?? 0;
 
             $trendData[] = [
@@ -1043,11 +1046,17 @@ Route::middleware(['web'])->get('/api/dashboard/dealer-performance', function ()
         $startOfMonth = now()->startOfMonth();
         $endOfMonth = now()->endOfMonth();
         $totalCurrentMonth = DatabaseHelper::executeWithRetry(function () use ($startOfMonth, $endOfMonth) {
-            return \App\Models\Sale::whereBetween('sale_date', [$startOfMonth, $endOfMonth])->count();
+            return \App\Models\Sale::whereBetween('sale_date', [
+                $startOfMonth->toDateTimeString(),
+                $endOfMonth->toDateTimeString(),
+            ])->count();
         });
 
         $carrierStats = DatabaseHelper::executeWithRetry(function () use ($query, $startOfMonth, $endOfMonth) {
-            return (clone $query)->whereBetween('sale_date', [$startOfMonth, $endOfMonth])
+            return (clone $query)->whereBetween('sale_date', [
+                $startOfMonth->toDateTimeString(),
+                $endOfMonth->toDateTimeString(),
+            ])
                 ->select([
                     'carrier',
                     DB::raw('COUNT(*) as count'),
@@ -1129,14 +1138,18 @@ Route::get('/api/dashboard-debug', function () {
         // PostgreSQL 호환 날짜 쿼리
         $todayStart = now()->startOfDay();
         $todayEnd = now()->endOfDay();
-        $todaySales = App\Models\Sale::whereBetween('sale_date', [$todayStart, $todayEnd])
-            ->sum('settlement_amount');
+        $todaySales = App\Models\Sale::whereBetween('sale_date', [
+            $todayStart->toDateTimeString(),
+            $todayEnd->toDateTimeString(),
+        ])->sum('settlement_amount');
         $monthSales = DatabaseHelper::executeWithRetry(function () {
             $startOfMonth = now()->startOfMonth();
             $endOfMonth = now()->endOfMonth();
 
-            return App\Models\Sale::whereBetween('sale_date', [$startOfMonth, $endOfMonth])
-                ->sum('settlement_amount');
+            return App\Models\Sale::whereBetween('sale_date', [
+                $startOfMonth->toDateTimeString(),
+                $endOfMonth->toDateTimeString(),
+            ])->sum('settlement_amount');
         });
         $totalSales = App\Models\Sale::sum('settlement_amount');
         $totalCount = App\Models\Sale::count();
@@ -1391,7 +1404,10 @@ Route::get('/api/stores/{id}/stats', function ($id) {
         $currentMonth = now()->month;
 
         $todaySales = App\Models\Sale::where('store_id', $id)
-            ->whereBetween('sale_date', [$todayStart, $todayEnd])
+            ->whereBetween('sale_date', [
+                $todayStart->toDateTimeString(),
+                $todayEnd->toDateTimeString(),
+            ])
             ->sum('settlement_amount');
 
         $monthSales = DatabaseHelper::executeWithRetry(function () use ($id) {
@@ -1399,12 +1415,18 @@ Route::get('/api/stores/{id}/stats', function ($id) {
             $endOfMonth = now()->endOfMonth();
 
             return App\Models\Sale::where('store_id', $id)
-                ->whereBetween('sale_date', [$startOfMonth, $endOfMonth])
+                ->whereBetween('sale_date', [
+                    $startOfMonth->toDateTimeString(),
+                    $endOfMonth->toDateTimeString(),
+                ])
                 ->sum('settlement_amount');
         });
 
         $todayCount = App\Models\Sale::where('store_id', $id)
-            ->whereBetween('sale_date', [$todayStart, $todayEnd])
+            ->whereBetween('sale_date', [
+                $todayStart->toDateTimeString(),
+                $todayEnd->toDateTimeString(),
+            ])
             ->count();
 
         // 총 개통건수 계산
@@ -1412,7 +1434,10 @@ Route::get('/api/stores/{id}/stats', function ($id) {
 
         // 이번달 개통건수
         $monthActivations = App\Models\Sale::where('store_id', $id)
-            ->whereBetween('sale_date', [now()->startOfMonth(), now()->endOfMonth()])
+            ->whereBetween('sale_date', [
+                now()->startOfMonth()->toDateTimeString(),
+                now()->endOfMonth()->toDateTimeString(),
+            ])
             ->count();
 
         // 매장 순위 계산 (이번달 매출 기준)
@@ -1420,7 +1445,10 @@ Route::get('/api/stores/{id}/stats', function ($id) {
         try {
             $allStoreStats = App\Models\Sale::select('store_id')
                 ->selectRaw('SUM(settlement_amount) as total_sales')
-                ->whereBetween('sale_date', [now()->startOfMonth(), now()->endOfMonth()])
+                ->whereBetween('sale_date', [
+                    now()->startOfMonth()->toDateTimeString(),
+                    now()->endOfMonth()->toDateTimeString(),
+                ])
                 ->groupBy('store_id')
                 ->orderByDesc('total_sales')
                 ->get();
