@@ -8,7 +8,10 @@
       "Bash(git revert:*)",
       "Bash(curl:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(php artisan tinker:*)",
+      "Bash(php artisan migrate:*)",
+      "Bash(python:*)"
     ],
     "deny": [],
     "ask": [],

@@ -332,7 +332,8 @@
                     loadChartData(),
                     loadBranchPerformance(),
                     loadTopStores(),
-                    loadGoalProgress()
+                    loadGoalProgress(),
+                    updateRealTimeActivity() // 실시간 활동 데이터도 함께 로드
                 ]);
                 hideLoading();
             } catch (error) {
@@ -717,35 +718,66 @@
             }, 30000); // 30초마다 업데이트
         }
 
-        // 실시간 활동 업데이트
-        function updateRealTimeActivity() {
-            const activities = [
-                { time: '방금 전', text: '강남점에서 갤럭시S24 개통 완료', type: 'success' },
-                { time: '2분 전', text: '홍대점에서 아이폰15 개통 완료', type: 'success' },
-                { time: '5분 전', text: '잠실점에서 월 정산 완료', type: 'info' },
-                { time: '8분 전', text: '부산서면점에서 아이패드 개통 완료', type: 'success' },
-                { time: '12분 전', text: '대구점에서 신규 직원 등록', type: 'info' },
-                { time: '15분 전', text: '인천점에서 갤럭시탭 개통 완료', type: 'success' }
-            ];
+        // 실시간 활동 업데이트 - 실제 API 데이터 사용
+        async function updateRealTimeActivity() {
+            try {
+                console.log('📡 실시간 활동 API 호출: /api/activities/recent');
+                const response = await fetch('/api/activities/recent?limit=10');
 
-            const container = document.getElementById('real-time-activity');
-            container.innerHTML = activities.map(activity => {
-                const iconColors = {
-                    success: 'text-green-600',
-                    info: 'text-blue-600',
-                    warning: 'text-yellow-600'
-                };
-                
-                return `
-                    <div class="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded">
-                        <div class="w-2 h-2 rounded-full ${activity.type === 'success' ? 'bg-green-500' : 'bg-blue-500'}"></div>
-                        <div class="flex-1">
-                            <p class="text-sm text-gray-900">${activity.text}</p>
-                            <p class="text-xs text-gray-500">${activity.time}</p>
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const result = await response.json();
+                const container = document.getElementById('real-time-activity');
+
+                if (result.success && result.data && result.data.length > 0) {
+                    // 실제 활동 데이터 표시
+                    container.innerHTML = result.data.map(activity => {
+                        // 활동 타입에 따른 색상 설정
+                        let dotColor = 'bg-gray-500';
+                        if (activity.type === 'sale_create' || activity.type === 'goal_achieve') {
+                            dotColor = 'bg-green-500';
+                        } else if (activity.type === 'user_login' || activity.type === 'goal_create') {
+                            dotColor = 'bg-blue-500';
+                        } else if (activity.type === 'sale_update' || activity.type === 'report_generate') {
+                            dotColor = 'bg-yellow-500';
+                        }
+
+                        return `
+                            <div class="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded">
+                                <div class="w-2 h-2 rounded-full ${dotColor}"></div>
+                                <div class="flex-1">
+                                    <p class="text-sm text-gray-900">${activity.description || activity.title}</p>
+                                    <p class="text-xs text-gray-500">${activity.time_ago}</p>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+
+                    console.log(`✅ 실시간 활동 ${result.data.length}개 로드 완료`);
+                } else {
+                    // 활동이 없을 때 메시지
+                    container.innerHTML = `
+                        <div class="text-center py-4 text-gray-500">
+                            <p class="text-sm">아직 기록된 활동이 없습니다.</p>
+                            <p class="text-xs mt-1">판매 데이터를 입력하면 여기에 표시됩니다.</p>
                         </div>
+                    `;
+                    console.log('ℹ️ 실시간 활동 데이터 없음');
+                }
+            } catch (error) {
+                console.error('❌ 실시간 활동 로드 실패:', error);
+                const container = document.getElementById('real-time-activity');
+
+                // 에러 시 기본 메시지 표시 (데모 데이터 제거)
+                container.innerHTML = `
+                    <div class="text-center py-4 text-gray-400">
+                        <p class="text-sm">활동 데이터를 불러올 수 없습니다.</p>
+                        <p class="text-xs mt-1">잠시 후 다시 시도해주세요.</p>
                     </div>
                 `;
-            }).join('');
+            }
         }
 
         // 통신사 데이터 새로고침
