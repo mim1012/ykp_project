@@ -1105,25 +1105,14 @@
                 return;
             }
 
-            // 이미 저장된 데이터는 제외하고, 유효한 신규 데이터만 필터링
-            const unsavedData = salesData.filter(row => !row.isPersisted);
-
-            if (unsavedData.length === 0) {
-                // 이미 모든 데이터가 저장되었는지 확인
-                const persistedCount = salesData.filter(row => row.isPersisted).length;
-                if (persistedCount > 0) {
-                    showStatus(`이미 ${persistedCount}개의 데이터가 저장되어 있습니다. 새로운 데이터를 추가해주세요.`, 'info');
-                } else {
-                    showStatus('저장할 데이터가 없습니다.', 'warning');
-                }
-                return;
-            }
+            // 전체 저장: 신규 데이터와 수정된 데이터 모두 저장
+            // 백엔드에서 id가 있으면 업데이트, 없으면 생성
 
             // 데이터 유효성 검증
             const validData = [];
             const invalidRows = [];
 
-            unsavedData.forEach((row, index) => {
+            salesData.forEach((row, index) => {
                 const validationErrors = validateSaleData(row);
                 if (validationErrors) {
                     invalidRows.push({
@@ -1157,6 +1146,9 @@
             // 요청 데이터 준비 - 계산된 필드는 제외 (백엔드에서 재계산)
             const requestBody = {
                 sales: validData.map(row => ({
+                    // id가 있으면 백엔드에서 업데이트, 없으면 생성
+                    ...(row.isPersisted && row.id ? { id: row.id } : {}),
+
                     // PM 요구사항: DB 스키마와 1:1 매핑 (계산 필드 제외)
                     sale_date: row.sale_date,
                     salesperson: row.salesperson,
@@ -1609,12 +1601,9 @@
                         params.append('days', dateFilter.days);
                     }
                 } else {
-                    // 기본값: 오늘 날짜
-                    const today = new Date();
-                    const year = today.getFullYear();
-                    const month = String(today.getMonth() + 1).padStart(2, '0');
-                    const day = String(today.getDate()).padStart(2, '0');
-                    params.append('sale_date', `${year}-${month}-${day}`);
+                    // 전체보기: 날짜 파라미터 없이 전체 데이터 조회
+                    // 백엔드에서 all_data=true 파라미터가 있으면 날짜 필터를 적용하지 않음
+                    params.append('all_data', 'true');
                 }
 
                 const apiUrl = `/api/sales?${params.toString()}`;
@@ -1793,22 +1782,12 @@
         }
 
         function clearDateFilter() {
-            // 전체보기 기본값을 이번달로 변경
-            const today = new Date();
-            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-            const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            // 전체보기: 날짜 필터 완전 제거하여 모든 데이터 가져오기
+            selectedDateFilter = null; // 날짜 필터 없음
 
-            const startDateStr = `${firstDay.getFullYear()}-${String(firstDay.getMonth() + 1).padStart(2, '0')}-${String(firstDay.getDate()).padStart(2, '0')}`;
-            const endDateStr = `${lastDay.getFullYear()}-${String(lastDay.getMonth() + 1).padStart(2, '0')}-${String(lastDay.getDate()).padStart(2, '0')}`;
-
-            selectedDateFilter = {
-                type: 'range',
-                startDate: startDateStr,
-                endDate: endDateStr
-            };
             document.getElementById('sale-date-filter').value = '';
-            updateDateStatus('이번 달 데이터 표시중');
-            loadExistingSalesData(selectedDateFilter);
+            updateDateStatus('전체 데이터 표시중');
+            loadExistingSalesData(null); // null을 전달하여 날짜 필터 없이 조회
         }
 
         function updateDateStatus(message) {

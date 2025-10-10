@@ -96,7 +96,7 @@ class SalesApiController extends Controller
     {
         $filters = $request->only([
             'start_date', 'end_date', 'sale_date', 'store_id',
-            'branch_id', 'per_page', 'dealer_code', 'dealer_name', 'days',
+            'branch_id', 'per_page', 'dealer_code', 'dealer_name', 'days', 'all_data',
         ]);
 
         // days 파라미터 처리 (최대 30일로 제한)

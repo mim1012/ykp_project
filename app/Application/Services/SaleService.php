@@ -321,6 +321,12 @@ class SaleService implements SaleServiceInterface
 
     private function applyDateFilters($query, array $filters): void
     {
+        // 전체보기: all_data 파라미터가 있으면 날짜 필터 적용 안 함
+        if (isset($filters['all_data']) && $filters['all_data'] === 'true') {
+            // 날짜 필터 없이 전체 데이터 반환
+            return;
+        }
+
         // 특정 날짜 조회 (최우선순위)
         if (isset($filters['sale_date'])) {
             $query->whereDate('sale_date', $filters['sale_date']);
