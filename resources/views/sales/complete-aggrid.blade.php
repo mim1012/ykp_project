@@ -1732,39 +1732,40 @@
                         return {
                             id: sale.id, // 실제 DB ID 사용 (fallback 제거)
                             isPersisted: true, // DB에서 불러온 데이터
-                        salesperson: sale.salesperson || '',
-                        dealer_name: sale.dealer_name || '',
-                        carrier: sale.carrier || 'SK',
-                        activation_type: sale.activation_type || '신규',
-                        model_name: sale.model_name || '',
-                        sale_date: sale.sale_date ? sale.sale_date.split('T')[0] : (() => {
-                            const today = new Date();
-                            const year = today.getFullYear();
-                            const month = String(today.getMonth() + 1).padStart(2, '0');
-                            const day = String(today.getDate()).padStart(2, '0');
-                            return `${year}-${month}-${day}`;
-                        })(),
-                        phone_number: sale.phone_number || '',
-                        customer_name: sale.customer_name || '',
-                        customer_birth_date: sale.customer_birth_date ? sale.customer_birth_date.split('T')[0] : '',
-                        base_price: parseFloat(sale.base_price || 0),
-                        verbal1: parseFloat(sale.verbal1 || 0),
-                        verbal2: parseFloat(sale.verbal2 || 0),
-                        grade_amount: parseFloat(sale.grade_amount || 0),
-                        additional_amount: parseFloat(sale.additional_amount || 0),
-                        cash_activation: parseFloat(sale.cash_activation || 0),
-                        usim_fee: parseFloat(sale.usim_fee || 0),
-                        new_mnp_discount: parseFloat(sale.new_mnp_discount || 0),
-                        deduction: parseFloat(sale.deduction || 0),
-                        rebate_total: parseFloat(sale.rebate_total || 0),
-                        settlement_amount: parseFloat(sale.settlement_amount || 0),
-                        tax: parseFloat(sale.tax || 0),
-                        margin_before_tax: parseFloat(sale.margin_before_tax || 0),
-                        cash_received: parseFloat(sale.cash_received || 0),
-                        payback: parseFloat(sale.payback || 0),
-                        margin_after_tax: parseFloat(sale.margin_after_tax || 0),
-                        memo: sale.memo || ''
-                    }));
+                            salesperson: sale.salesperson || '',
+                            dealer_name: sale.dealer_name || '',
+                            carrier: sale.carrier || 'SK',
+                            activation_type: sale.activation_type || '신규',
+                            model_name: sale.model_name || '',
+                            sale_date: sale.sale_date ? sale.sale_date.split('T')[0] : (() => {
+                                const today = new Date();
+                                const year = today.getFullYear();
+                                const month = String(today.getMonth() + 1).padStart(2, '0');
+                                const day = String(today.getDate()).padStart(2, '0');
+                                return `${year}-${month}-${day}`;
+                            })(),
+                            phone_number: sale.phone_number || '',
+                            customer_name: sale.customer_name || '',
+                            customer_birth_date: sale.customer_birth_date ? sale.customer_birth_date.split('T')[0] : '',
+                            base_price: parseFloat(sale.base_price || 0),
+                            verbal1: parseFloat(sale.verbal1 || 0),
+                            verbal2: parseFloat(sale.verbal2 || 0),
+                            grade_amount: parseFloat(sale.grade_amount || 0),
+                            additional_amount: parseFloat(sale.additional_amount || 0),
+                            cash_activation: parseFloat(sale.cash_activation || 0),
+                            usim_fee: parseFloat(sale.usim_fee || 0),
+                            new_mnp_discount: parseFloat(sale.new_mnp_discount || 0),
+                            deduction: parseFloat(sale.deduction || 0),
+                            rebate_total: parseFloat(sale.rebate_total || 0),
+                            settlement_amount: parseFloat(sale.settlement_amount || 0),
+                            tax: parseFloat(sale.tax || 0),
+                            margin_before_tax: parseFloat(sale.margin_before_tax || 0),
+                            cash_received: parseFloat(sale.cash_received || 0),
+                            payback: parseFloat(sale.payback || 0),
+                            margin_after_tax: parseFloat(sale.margin_after_tax || 0),
+                            memo: sale.memo || ''
+                        };
+                    });
 
                     // 그리드 렌더링
                     renderTableRows();
