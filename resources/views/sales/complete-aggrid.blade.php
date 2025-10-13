@@ -2257,8 +2257,8 @@
                                     return isNaN(num) ? defaultValue : num;
                                 };
 
-                                // 용산점 엑셀 파일: 일련번호가 개통일 다음에 있음
-                                // 순서: 판매자(0), 대리점(1), 통신사(2), 개통방식(3), 모델명(4), 개통일(5), 일련번호(6), 휴대폰번호(7), 고객명(8), 생년월일(9)
+                                // 엑셀 파일 매핑
+                                // 순서: 판매자(0), 대리점(1), 통신사(2), 개통방식(3), 모델명(4), 개통일(5), 휴대폰번호(6), 고객명(7), 생년월일(8)
                                 // 디버깅 로그는 처음 3개만
                                 if (addedCount < 3) {
                                     console.log(`\n=== 행 ${i} 매핑 시작 ===`);
@@ -2268,11 +2268,10 @@
                                     console.log('3: 개통방식 =', getColValue(3));
                                     console.log('4: 모델명 =', getColValue(4));
                                     console.log('5: 개통일 =', getColValue(5));
-                                    console.log('6: 일련번호 =', getColValue(6));
-                                    console.log('7: 휴대폰번호 =', getColValue(7));
-                                    console.log('8: 고객명 =', getColValue(8));
-                                    console.log('9: 생년월일 =', getColValue(9));
-                                    console.log('10: 액면가 =', getColValue(10));
+                                    console.log('6: 휴대폰번호 =', getColValue(6));
+                                    console.log('7: 고객명 =', getColValue(7));
+                                    console.log('8: 생년월일 =', getColValue(8));
+                                    console.log('9: 액면가 =', getColValue(9));
                                 }
 
                                 // 대소문자 구분 없이 대리점 매칭 함수
@@ -2334,8 +2333,8 @@
                                 const activationType = matchActivationType(getColValue(3, ''));
                                 const modelName = getColValue(4, '');
                                 let saleDate = formatDate(getColValue(5, ''));
-                                const phoneNumber = getColValue(7, '');
-                                const customerName = getColValue(8, '');
+                                const phoneNumber = getColValue(6, ''); // 휴대폰번호 (6번 인덱스)
+                                const customerName = getColValue(7, ''); // 고객명 (7번 인덱스)
 
                                 // 판매일자가 없으면 오늘 날짜 자동 설정
                                 if (!saleDate) {
@@ -2367,33 +2366,32 @@
                                     activation_type: activationType, // 개통방식 (대소문자 매칭 적용)
                                     model_name: modelName, // 모델명
                                     sale_date: saleDate, // 개통일
-                                    serial_number: getColValue(6, ''), // 일련번호 (6번 인덱스)
-                                    phone_number: phoneNumber, // 휴대폰번호 (7번 인덱스)
-                                    customer_name: customerName, // 고객명 (8번 인덱스)
-                                    customer_birth_date: formatBirthDate(getColValue(9, '')), // 생년월일 (9번 인덱스)
+                                    phone_number: phoneNumber, // 휴대폰번호 (6번 인덱스)
+                                    customer_name: customerName, // 고객명 (7번 인덱스)
+                                    customer_birth_date: formatBirthDate(getColValue(8, '')), // 생년월일 (8번 인덱스)
 
-                                    // 금액 필드들 (인덱스가 하나씩 밀림)
-                                    base_price: parseNumber(getColValue(10)), // 액면/셋팅가 (10번)
-                                    verbal1: parseNumber(getColValue(11)), // 구두1
-                                    verbal2: parseNumber(getColValue(12)), // 구두2
-                                    grade_amount: parseNumber(getColValue(13)), // 그레이드
-                                    additional_amount: parseNumber(getColValue(14)), // 부가추가
-                                    cash_activation: parseNumber(getColValue(15)), // 서류상현금개통
-                                    usim_fee: parseNumber(getColValue(16)), // 유심비
-                                    new_mnp_discount: parseNumber(getColValue(17)), // 신규/번이할인
-                                    deduction: parseNumber(getColValue(18)), // 차감
+                                    // 금액 필드들
+                                    base_price: parseNumber(getColValue(9)), // 액면/셋팅가 (9번)
+                                    verbal1: parseNumber(getColValue(10)), // 구두1
+                                    verbal2: parseNumber(getColValue(11)), // 구두2
+                                    grade_amount: parseNumber(getColValue(12)), // 그레이드
+                                    additional_amount: parseNumber(getColValue(13)), // 부가추가
+                                    cash_activation: parseNumber(getColValue(14)), // 서류상현금개통
+                                    usim_fee: parseNumber(getColValue(15)), // 유심비
+                                    new_mnp_discount: parseNumber(getColValue(16)), // 신규/번이할인
+                                    deduction: parseNumber(getColValue(17)), // 차감
 
                                     // 계산 필드들
-                                    total_rebate: parseNumber(getColValue(19)), // 리베총계
-                                    settlement_amount: parseNumber(getColValue(20)), // 정산금
-                                    tax: parseNumber(getColValue(21)), // 부/소세
-                                    cash_received: parseNumber(getColValue(22)), // 현금받음
-                                    payback: parseNumber(getColValue(23)), // 페이백
-                                    margin_before: parseNumber(getColValue(24)), // 세전마진
-                                    margin_after: parseNumber(getColValue(25)), // 세후마진
+                                    total_rebate: parseNumber(getColValue(18)), // 리베총계
+                                    settlement_amount: parseNumber(getColValue(19)), // 정산금
+                                    tax: parseNumber(getColValue(20)), // 부/소세
+                                    cash_received: parseNumber(getColValue(21)), // 현금받음
+                                    payback: parseNumber(getColValue(22)), // 페이백
+                                    margin_before: parseNumber(getColValue(23)), // 세전마진
+                                    margin_after: parseNumber(getColValue(24)), // 세후마진
 
                                     // 메모 필드
-                                    memo: getColValue(26, ''), // 메모 (26번)
+                                    memo: getColValue(25, ''), // 메모 (25번)
                                     isPersisted: false
                                 };
 
