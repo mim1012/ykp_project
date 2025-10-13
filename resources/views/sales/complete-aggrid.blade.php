@@ -1307,19 +1307,16 @@
                     showStatus('✅ ' + data.message, 'success');
                     // Data saved successfully
 
-                    // 저장 후 화면 초기화하고 저장된 데이터만 다시 로드
-                    salesData = []; // 기존 데이터 모두 제거
-                    renderTableRows(); // 빈 테이블 렌더링
+                    // 저장 후 모든 행을 isPersisted = true로 표시 (reload 없이)
+                    salesData.forEach(row => {
+                        row.isPersisted = true;
+                    });
 
-                    // 저장된 데이터 다시 불러오기
-                    setTimeout(() => {
-                        loadExistingSalesData(selectedDateFilter);
-                        // 로드 후 마진 계산 및 통계 업데이트
-                        setTimeout(() => {
-                            salesData.forEach(row => calculateRow(row.id));
-                            updateStatistics();
-                        }, 1000);
-                    }, 500);
+                    // 테이블 다시 렌더링하여 배경색 업데이트 (녹색으로 표시)
+                    renderTableRows();
+
+                    // 통계 업데이트
+                    updateStatistics();
                 } else {
                     showStatus('❌ 저장 실패: ' + (data.message || '알 수 없는 오류'), 'error');
                 }
@@ -2283,6 +2280,18 @@
 
                                     // 숫자만 있는 경우
                                     const numbers = str.replace(/[^0-9]/g, '');
+
+                                    // Excel 시리얼 번호로 보이는 경우 (5자리 숫자 문자열)
+                                    // 예: "45943" (2025-10-13), "32874" (1990-01-01)
+                                    if (numbers.length === 5 && parseInt(numbers) > 10000 && parseInt(numbers) < 100000) {
+                                        const serialNum = parseInt(numbers);
+                                        const excelEpoch = new Date(1900, 0, 1);
+                                        const date = new Date(excelEpoch.getTime() + (serialNum - 2) * 86400000);
+                                        const year = date.getFullYear();
+                                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                                        const day = String(date.getDate()).padStart(2, '0');
+                                        return `${year}-${month}-${day}`;
+                                    }
 
                                     if (numbers.length === 1 || numbers.length === 2) {
                                         // 일자만 있는 경우 (예: 2, 15)
