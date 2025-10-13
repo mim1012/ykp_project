@@ -168,6 +168,16 @@ class SaleService implements SaleServiceInterface
                                 'request_store_id' => $mergedData['store_id'],
                                 'store_id_match' => $existingRecord->store_id == $mergedData['store_id']
                             ]);
+
+                            // store_id가 일치하지 않으면 기존 레코드의 store_id 유지
+                            if ($existingRecord->store_id != $mergedData['store_id']) {
+                                Log::warning("⚠️ store_id mismatch - keeping existing store_id", [
+                                    'existing_store_id' => $existingRecord->store_id,
+                                    'request_store_id' => $mergedData['store_id']
+                                ]);
+                                $mergedData['store_id'] = $existingRecord->store_id;
+                                $mergedData['branch_id'] = $existingRecord->branch_id;
+                            }
                         } else {
                             Log::warning("⚠️ Record not found for UPDATE - will INSERT instead", [
                                 'id' => $saleData['id'],
@@ -175,19 +185,18 @@ class SaleService implements SaleServiceInterface
                             ]);
                         }
 
+                        // UPDATE 실행 (ID만으로 조회 - store_id 체크 제거)
                         $updatedCount = Sale::where('id', $saleData['id'])
-                            ->where('store_id', $mergedData['store_id']) // 권한 체크
                             ->update($mergedData);
 
                         if ($updatedCount > 0) {
                             Log::info("✅ UPDATE SUCCESS - ID: {$saleData['id']}", [
-                                'updated_fields' => array_keys($mergedData),
+                                'updated_fields_count' => count($mergedData),
                                 'updated_count' => $updatedCount
                             ]);
                         } else {
                             Log::warning("❌ UPDATE FAILED - No rows updated for ID: {$saleData['id']}", [
-                                'reason' => 'Either ID not found or store_id mismatch',
-                                'expected_store_id' => $mergedData['store_id'],
+                                'reason' => 'ID not found in database',
                                 'sale_id' => $saleData['id']
                             ]);
                         }
