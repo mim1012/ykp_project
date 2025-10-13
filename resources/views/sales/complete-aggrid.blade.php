@@ -2270,18 +2270,21 @@
 
                                 // 용산점 엑셀 파일: 일련번호가 개통일 다음에 있음
                                 // 순서: 판매자(0), 대리점(1), 통신사(2), 개통방식(3), 모델명(4), 개통일(5), 일련번호(6), 휴대폰번호(7), 고객명(8), 생년월일(9)
-                                console.log('매핑 시작 - 각 컬럼 값:');
-                                console.log('0: 판매자 =', getColValue(0));
-                                console.log('1: 대리점 =', getColValue(1));
-                                console.log('2: 통신사 =', getColValue(2));
-                                console.log('3: 개통방식 =', getColValue(3));
-                                console.log('4: 모델명 =', getColValue(4));
-                                console.log('5: 개통일 =', getColValue(5));
-                                console.log('6: 일련번호 =', getColValue(6));
-                                console.log('7: 휴대폰번호 =', getColValue(7));
-                                console.log('8: 고객명 =', getColValue(8));
-                                console.log('9: 생년월일 =', getColValue(9));
-                                console.log('10: 액면가 =', getColValue(10));
+                                // 디버깅 로그는 처음 3개만
+                                if (addedCount < 3) {
+                                    console.log(`\n=== 행 ${i} 매핑 시작 ===`);
+                                    console.log('0: 판매자 =', getColValue(0));
+                                    console.log('1: 대리점 =', getColValue(1));
+                                    console.log('2: 통신사 =', getColValue(2));
+                                    console.log('3: 개통방식 =', getColValue(3));
+                                    console.log('4: 모델명 =', getColValue(4));
+                                    console.log('5: 개통일 =', getColValue(5));
+                                    console.log('6: 일련번호 =', getColValue(6));
+                                    console.log('7: 휴대폰번호 =', getColValue(7));
+                                    console.log('8: 고객명 =', getColValue(8));
+                                    console.log('9: 생년월일 =', getColValue(9));
+                                    console.log('10: 액면가 =', getColValue(10));
+                                }
 
                                 // 대소문자 구분 없이 대리점 매칭 함수
                                 const matchDealer = (inputDealer) => {
