@@ -1307,10 +1307,25 @@
                     showStatus('✅ ' + data.message, 'success');
                     // Data saved successfully
 
-                    // 저장 후 모든 행을 isPersisted = true로 표시 (reload 없이)
-                    salesData.forEach(row => {
-                        row.isPersisted = true;
-                    });
+                    // 임시 ID를 실제 DB ID로 교체
+                    if (data.id_mappings && Object.keys(data.id_mappings).length > 0) {
+                        console.log('🔄 ID 매핑 적용 중...', data.id_mappings);
+                        salesData.forEach(row => {
+                            // 임시 ID가 매핑에 있으면 실제 DB ID로 교체
+                            if (data.id_mappings[row.id]) {
+                                const oldId = row.id;
+                                const newId = data.id_mappings[row.id];
+                                row.id = newId;
+                                console.log(`✅ ID 교체: ${oldId} → ${newId}`);
+                            }
+                            row.isPersisted = true;
+                        });
+                    } else {
+                        // ID 매핑이 없으면 (모두 UPDATE인 경우) 단순히 isPersisted만 설정
+                        salesData.forEach(row => {
+                            row.isPersisted = true;
+                        });
+                    }
 
                     // 테이블 다시 렌더링하여 배경색 업데이트 (녹색으로 표시)
                     renderTableRows();
