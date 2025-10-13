@@ -2071,7 +2071,7 @@
                                 const workbook = XLSX.read(data, { type: 'array' });
                                 const firstSheetName = workbook.SheetNames[0];
                                 const worksheet = workbook.Sheets[firstSheetName];
-                                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: false, defval: '' });
+                                const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: true, defval: '' });
 
                                 rows = jsonData;
                                 console.log('Excel 파일 파싱 완료:', rows.length, '행');
@@ -2184,6 +2184,18 @@
                                 const formatDate = (dateStr) => {
                                     if (!dateStr) return '';
 
+                                    // 엑셀 날짜 시리얼 번호 처리 (숫자로 들어오는 경우)
+                                    if (typeof dateStr === 'number') {
+                                        // 엑셀 날짜 시리얼 번호를 Date로 변환
+                                        // 1900년 1월 1일을 기준으로 하는 일수
+                                        const excelEpoch = new Date(1900, 0, 1);
+                                        const date = new Date(excelEpoch.getTime() + (dateStr - 2) * 86400000);
+                                        const year = date.getFullYear();
+                                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                                        const day = String(date.getDate()).padStart(2, '0');
+                                        return `${year}-${month}-${day}`;
+                                    }
+
                                     const str = String(dateStr).trim();
                                     if (str === '') return '';
 
@@ -2236,9 +2248,20 @@
 
                                 // 생년월일 형식 변환 함수
                                 const formatBirthDate = (dateStr) => {
-                                    if (!dateStr || dateStr.trim() === '') return '';
+                                    if (!dateStr) return '';
+
+                                    // 엑셀 날짜 시리얼 번호 처리 (숫자로 들어오는 경우)
+                                    if (typeof dateStr === 'number') {
+                                        const excelEpoch = new Date(1900, 0, 1);
+                                        const date = new Date(excelEpoch.getTime() + (dateStr - 2) * 86400000);
+                                        const year = date.getFullYear();
+                                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                                        const day = String(date.getDate()).padStart(2, '0');
+                                        return `${year}-${month}-${day}`;
+                                    }
 
                                     const str = String(dateStr).trim();
+                                    if (str === '') return '';
 
                                     // 이미 YYYY-MM-DD 형식인 경우
                                     if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
@@ -2355,7 +2378,14 @@
                                 const carrier = matchCarrier(getColValue(2, ''));
                                 const activationType = matchActivationType(getColValue(3, ''));
                                 const modelName = getColValue(4, '');
-                                let saleDate = formatDate(getColValue(5, ''));
+
+                                // 개통일 변환 (디버깅 로그 포함)
+                                const rawSaleDate = getColValue(5, '');
+                                let saleDate = formatDate(rawSaleDate);
+                                if (addedCount < 3) {
+                                    console.log(`개통일 변환 - 원본: ${rawSaleDate} (타입: ${typeof rawSaleDate}) → 변환: ${saleDate}`);
+                                }
+
                                 const phoneNumber = getColValue(6, ''); // 휴대폰번호 (6번 인덱스)
                                 const customerName = getColValue(7, ''); // 고객명 (7번 인덱스)
 
