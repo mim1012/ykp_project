@@ -139,23 +139,27 @@ class SaleService implements SaleServiceInterface
                 // PostgreSQL 호환 방식으로 생성 또는 업데이트
                 try {
                     // ID 존재 여부로 UPDATE/INSERT 판단
-                    $hasId = isset($saleData['id']) && $saleData['id'];
+                    // 임시 ID(문자열 포함)는 실제 DB ID가 아니므로 INSERT 처리
+                    $hasRealId = isset($saleData['id'])
+                        && $saleData['id']
+                        && is_numeric($saleData['id']);
 
                     Log::info('💾 Processing sale record', [
                         'row_index' => $index,
-                        'has_id' => $hasId,
+                        'has_real_id' => $hasRealId,
                         'id' => $saleData['id'] ?? 'null',
                         'id_type' => isset($saleData['id']) ? gettype($saleData['id']) : 'not_set',
+                        'is_numeric' => isset($saleData['id']) ? is_numeric($saleData['id']) : false,
                         'store_id' => $mergedData['store_id'],
                         'branch_id' => $mergedData['branch_id'],
                         'user_role' => $user->role,
                         'sale_date' => $mergedData['sale_date'] ?? 'not_set',
                         'customer_name' => $mergedData['customer_name'] ?? 'not_set',
-                        'action' => $hasId ? 'UPDATE' : 'INSERT'
+                        'action' => $hasRealId ? 'UPDATE' : 'INSERT'
                     ]);
 
-                    // ID가 있으면 업데이트, 없으면 생성
-                    if ($hasId) {
+                    // 실제 DB ID가 있으면 업데이트, 없으면 생성
+                    if ($hasRealId) {
                         // UPDATE 시도
                         unset($mergedData['created_at']);
                         $mergedData['updated_at'] = now();
