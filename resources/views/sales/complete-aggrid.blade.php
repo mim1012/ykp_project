@@ -1204,30 +1204,31 @@
                         // id가 있으면 백엔드에서 업데이트, 없으면 생성
                         ...(row.isPersisted && row.id ? { id: row.id } : {}),
 
-                    // PM 요구사항: DB 스키마와 1:1 매핑 (계산 필드 제외)
-                    sale_date: row.sale_date,
-                    salesperson: row.salesperson,
-                    dealer_name: row.dealer_name || null,
-                    carrier: row.carrier,
-                    activation_type: row.activation_type,
-                    model_name: row.model_name,
-                    phone_number: row.phone_number,
-                    customer_name: row.customer_name,
-                    customer_birth_date: row.customer_birth_date,
-                    base_price: row.base_price,
-                    verbal1: row.verbal1,
-                    verbal2: row.verbal2,
-                    grade_amount: row.grade_amount,
-                    additional_amount: row.additional_amount,
-                    cash_activation: row.cash_activation,
-                    usim_fee: row.usim_fee,
-                    new_mnp_discount: row.new_mnp_discount,
-                    deduction: row.deduction,
-                    cash_received: row.cash_received,
-                    payback: row.payback,
-                    memo: row.memo || ''
-                    // 계산된 필드 제거: rebate_total, settlement_amount, tax, margin_before_tax, margin_after_tax
-                }))
+                        // PM 요구사항: DB 스키마와 1:1 매핑 (계산 필드 제외)
+                        sale_date: row.sale_date,
+                        salesperson: row.salesperson,
+                        dealer_name: row.dealer_name || null,
+                        carrier: row.carrier,
+                        activation_type: row.activation_type,
+                        model_name: row.model_name,
+                        phone_number: row.phone_number,
+                        customer_name: row.customer_name,
+                        customer_birth_date: row.customer_birth_date,
+                        base_price: row.base_price,
+                        verbal1: row.verbal1,
+                        verbal2: row.verbal2,
+                        grade_amount: row.grade_amount,
+                        additional_amount: row.additional_amount,
+                        cash_activation: row.cash_activation,
+                        usim_fee: row.usim_fee,
+                        new_mnp_discount: row.new_mnp_discount,
+                        deduction: row.deduction,
+                        cash_received: row.cash_received,
+                        payback: row.payback,
+                        memo: row.memo || ''
+                        // 계산된 필드 제거: rebate_total, settlement_amount, tax, margin_before_tax, margin_after_tax
+                    };
+                })
             };
 
             // 디버깅: 요청 데이터 확인
