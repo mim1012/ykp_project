@@ -1226,17 +1226,22 @@
                 store_id: window.userData?.store_id || null,
                 branch_id: window.userData?.branch_id || null,
                 sales: validData.map((row, idx) => {
-                    // 디버깅: 각 행의 ID 포함 여부 로깅 (처음 5개만)
-                    if (idx < 5) {
-                        console.log(`Row ${idx + 1}:`, {
-                            has_id: !!row.id,
-                            id_value: row.id,
-                            isPersisted: row.isPersisted,
-                            will_include_id: row.isPersisted && row.id
-                        });
-                    }
+                    // 디버깅: 각 행의 ID 포함 여부 로깅 (모든 행 체크)
+                    const hasId = !!row.id;
+                    const willIncludeId = row.isPersisted && row.id;
 
-                    return {
+                    console.log(`💾 [저장] Row ${idx + 1}:`, {
+                        has_id: hasId,
+                        id_value: row.id,
+                        id_type: typeof row.id,
+                        isPersisted: row.isPersisted,
+                        will_include_id: willIncludeId,
+                        action: willIncludeId ? 'UPDATE' : 'INSERT',
+                        sale_date: row.sale_date,
+                        customer_name: row.customer_name
+                    });
+
+                    const rowData = {
                         // id가 있으면 백엔드에서 업데이트, 없으면 생성
                         ...(row.isPersisted && row.id ? { id: row.id } : {}),
 
@@ -1264,6 +1269,8 @@
                         memo: row.memo || ''
                         // 계산된 필드 제거: rebate_total, settlement_amount, tax, margin_before_tax, margin_after_tax
                     };
+
+                    return rowData;
                 })
             };
 

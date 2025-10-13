@@ -137,31 +137,55 @@ class SaleService implements SaleServiceInterface
 
                 // PostgreSQL 호환 방식으로 생성 또는 업데이트
                 try {
-                    Log::info('Creating or updating sale record', [
-                        'id' => $saleData['id'] ?? 'new',
+                    // ID 존재 여부로 UPDATE/INSERT 판단
+                    $hasId = isset($saleData['id']) && $saleData['id'];
+
+                    Log::info('💾 Processing sale record', [
+                        'row_index' => $index,
+                        'has_id' => $hasId,
+                        'id' => $saleData['id'] ?? 'null',
+                        'id_type' => isset($saleData['id']) ? gettype($saleData['id']) : 'not_set',
                         'store_id' => $mergedData['store_id'],
                         'branch_id' => $mergedData['branch_id'],
                         'user_role' => $user->role,
                         'sale_date' => $mergedData['sale_date'] ?? 'not_set',
+                        'customer_name' => $mergedData['customer_name'] ?? 'not_set',
+                        'action' => $hasId ? 'UPDATE' : 'INSERT'
                     ]);
 
                     // ID가 있으면 업데이트, 없으면 생성
-                    if (isset($saleData['id']) && $saleData['id']) {
-                        // UPDATE 시에는 created_at을 제거하고 updated_at만 설정
+                    if ($hasId) {
+                        // UPDATE 시도
                         unset($mergedData['created_at']);
                         $mergedData['updated_at'] = now();
+
+                        // 기존 레코드 확인
+                        $existingRecord = Sale::where('id', $saleData['id'])->first();
+                        if ($existingRecord) {
+                            Log::info("🔍 Found existing record for UPDATE", [
+                                'id' => $saleData['id'],
+                                'existing_store_id' => $existingRecord->store_id,
+                                'request_store_id' => $mergedData['store_id'],
+                                'store_id_match' => $existingRecord->store_id == $mergedData['store_id']
+                            ]);
+                        } else {
+                            Log::warning("⚠️ Record not found for UPDATE - will INSERT instead", [
+                                'id' => $saleData['id'],
+                                'store_id' => $mergedData['store_id']
+                            ]);
+                        }
 
                         $updatedCount = Sale::where('id', $saleData['id'])
                             ->where('store_id', $mergedData['store_id']) // 권한 체크
                             ->update($mergedData);
 
                         if ($updatedCount > 0) {
-                            Log::info("✅ Updated sale record ID: {$saleData['id']}", [
+                            Log::info("✅ UPDATE SUCCESS - ID: {$saleData['id']}", [
                                 'updated_fields' => array_keys($mergedData),
                                 'updated_count' => $updatedCount
                             ]);
                         } else {
-                            Log::warning("⚠️ No rows updated for ID: {$saleData['id']}", [
+                            Log::warning("❌ UPDATE FAILED - No rows updated for ID: {$saleData['id']}", [
                                 'reason' => 'Either ID not found or store_id mismatch',
                                 'expected_store_id' => $mergedData['store_id'],
                                 'sale_id' => $saleData['id']
@@ -171,8 +195,13 @@ class SaleService implements SaleServiceInterface
                         // CREATE 시에는 created_at과 updated_at 모두 설정
                         $mergedData['created_at'] = now();
                         $mergedData['updated_at'] = now();
-                        Sale::create($mergedData);
-                        Log::info("✅ Created new sale record");
+                        $newRecord = Sale::create($mergedData);
+                        Log::info("✅ INSERT SUCCESS - New record created", [
+                            'new_id' => $newRecord->id,
+                            'store_id' => $newRecord->store_id,
+                            'sale_date' => $newRecord->sale_date,
+                            'customer_name' => $newRecord->customer_name ?? 'not_set'
+                        ]);
                     }
                     $savedCount++;
                 } catch (\Exception $e) {
