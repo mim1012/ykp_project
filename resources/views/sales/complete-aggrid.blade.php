@@ -2505,46 +2505,77 @@
             });
 
             document.getElementById('download-template-btn').addEventListener('click', () => {
-                // Excel 템플릿 생성
+                // Excel 템플릿 생성 (XLSX 형식)
+                const today = new Date();
+                const year = today.getFullYear();
+                const month = String(today.getMonth() + 1).padStart(2, '0');
+                const day = String(today.getDate()).padStart(2, '0');
+                const todayStr = `${year}-${month}-${day}`;
+
                 const templateData = [
                     ['판매자', '대리점', '통신사', '개통방식', '모델명', '개통일', '휴대폰번호', '고객명', '생년월일',
                      '액면/셋팅가', '구두1', '구두2', '그레이드', '부가추가', '서류상현금개통', '유심비',
                      '신규/번이할인', '차감', '리베총계', '정산금', '부/소세', '현금받음', '페이백',
                      '세전마진', '세후마진', '메모'],
-                    ['홍길동', 'SM', 'SK', '신규', 'iPhone 15', (() => {
-                        const today = new Date();
-                        const year = today.getFullYear();
-                        const month = String(today.getMonth() + 1).padStart(2, '0');
-                        const day = String(today.getDate()).padStart(2, '0');
-                        return `${year}-${month}-${day}`;
-                    })(), '010-1234-5678', '김고객', '1990-01-01',
-                     '100000', '50000', '30000', '20000', '10000', '30000', '8800',
-                     '10000', '5000', '', '', '', '20000', '15000',
-                     '', '', '']
+                    ['홍길동', 'SM', 'SK', '신규', 'iPhone 15', todayStr, '010-1234-5678', '김고객', '1990-01-01',
+                     100000, 50000, 30000, 20000, 10000, 30000, 8800,
+                     10000, 5000, '', '', '', 20000, 15000,
+                     '', '', '예시 메모']
                 ];
 
-                // CSV 문자열 생성
-                let csvContent = '\uFEFF'; // UTF-8 BOM
-                templateData.forEach(row => {
-                    csvContent += row.map(cell => {
-                        if (String(cell).includes(',')) {
-                            return `"${cell}"`;
+                // XLSX 워크북 생성
+                const wb = XLSX.utils.book_new();
+                const ws = XLSX.utils.aoa_to_sheet(templateData);
+
+                // 컬럼 너비 설정
+                ws['!cols'] = [
+                    { wch: 10 }, // 판매자
+                    { wch: 12 }, // 대리점
+                    { wch: 8 },  // 통신사
+                    { wch: 10 }, // 개통방식
+                    { wch: 15 }, // 모델명
+                    { wch: 12 }, // 개통일
+                    { wch: 15 }, // 휴대폰번호
+                    { wch: 10 }, // 고객명
+                    { wch: 12 }, // 생년월일
+                    { wch: 12 }, // 액면/셋팅가
+                    { wch: 12 }, // 구두1
+                    { wch: 12 }, // 구두2
+                    { wch: 12 }, // 그레이드
+                    { wch: 12 }, // 부가추가
+                    { wch: 15 }, // 서류상현금개통
+                    { wch: 10 }, // 유심비
+                    { wch: 15 }, // 신규/번이할인
+                    { wch: 10 }, // 차감
+                    { wch: 12 }, // 리베총계
+                    { wch: 12 }, // 정산금
+                    { wch: 10 }, // 부/소세
+                    { wch: 12 }, // 현금받음
+                    { wch: 10 }, // 페이백
+                    { wch: 12 }, // 세전마진
+                    { wch: 12 }, // 세후마진
+                    { wch: 20 }  // 메모
+                ];
+
+                // 숫자 컬럼 서식 설정 (콤마 없는 숫자)
+                const range = XLSX.utils.decode_range(ws['!ref']);
+                for (let R = 1; R <= range.e.r; R++) { // 헤더 제외 (R=1부터)
+                    for (let C = 9; C <= 24; C++) { // 액면가(9)부터 세후마진(24)까지
+                        const cellAddr = XLSX.utils.encode_cell({ r: R, c: C });
+                        if (ws[cellAddr] && ws[cellAddr].v !== '') {
+                            ws[cellAddr].t = 'n'; // 숫자 타입
+                            ws[cellAddr].z = '0';  // 콤마 없는 숫자 서식
                         }
-                        return cell;
-                    }).join(',') + '\n';
-                });
+                    }
+                }
 
-                // 파일 다운로드
-                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = `sales_template_${new Date().toISOString().split('T')[0]}.csv`;
-                link.style.display = 'none';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+                // 워크북에 시트 추가
+                XLSX.utils.book_append_sheet(wb, ws, "개통표");
 
-                showStatus('Excel 템플릿을 다운로드했습니다', 'success');
+                // XLSX 파일 다운로드
+                XLSX.writeFile(wb, `sales_template_${todayStr}.xlsx`);
+
+                showStatus('Excel 템플릿(XLSX)을 다운로드했습니다', 'success');
             });
 
             // PM 요구사항 27컬럼 완전한 개통표 시스템 초기화 완료
