@@ -2219,7 +2219,13 @@
                                     // 슬래시나 점으로 구분된 경우
                                     if (str.includes('/') || str.includes('.')) {
                                         const parts = str.split(/[\/\.]/).filter(p => p);
-                                        if (parts.length === 3) {
+                                        if (parts.length === 2) {
+                                            // MM/DD 또는 M/D 형식 (연도 없음)
+                                            const today = new Date();
+                                            const year = today.getFullYear();
+                                            return `${year}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
+                                        } else if (parts.length === 3) {
+                                            // YYYY/MM/DD 또는 YY/MM/DD 형식
                                             const year = parts[0].length === 4 ? parts[0] : '20' + parts[0];
                                             return `${year}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
                                         }
@@ -2232,8 +2238,15 @@
                                 const formatBirthDate = (dateStr) => {
                                     if (!dateStr || dateStr.trim() === '') return '';
 
+                                    const str = String(dateStr).trim();
+
+                                    // 이미 YYYY-MM-DD 형식인 경우
+                                    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+                                        return str;
+                                    }
+
                                     // 숫자만 있는 경우 (예: 900101, 19900101)
-                                    const cleanStr = dateStr.replace(/[^0-9]/g, '');
+                                    const cleanStr = str.replace(/[^0-9]/g, '');
 
                                     if (cleanStr.length === 6) {
                                         // YYMMDD 형식
@@ -2245,7 +2258,17 @@
                                         return `${cleanStr.substring(0, 4)}-${cleanStr.substring(4, 6)}-${cleanStr.substring(6, 8)}`;
                                     }
 
-                                    return dateStr;
+                                    // 슬래시나 점으로 구분된 경우
+                                    if (str.includes('/') || str.includes('.')) {
+                                        const parts = str.split(/[\/\.]/).filter(p => p);
+                                        if (parts.length === 3) {
+                                            // YYYY/MM/DD 또는 YY/MM/DD 형식
+                                            const year = parts[0].length === 4 ? parts[0] : (parseInt(parts[0]) > 50 ? '19' + parts[0] : '20' + parts[0]);
+                                            return `${year}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+                                        }
+                                    }
+
+                                    return str;
                                 };
 
                                 // 숫자 파싱 함수 (빈 값 처리)
