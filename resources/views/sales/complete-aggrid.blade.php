@@ -1357,9 +1357,6 @@
 
         // 대리점 옵션 HTML 생성 함수
         function generateDealerOptions(selectedValue = '') {
-            console.log('generateDealerOptions called with selectedValue:', selectedValue);
-            console.log('dealersList length:', dealersList.length);
-
             let options = '<option value="">선택</option>';
 
             dealersList.forEach(dealer => {
@@ -1367,7 +1364,6 @@
                 options += `<option value="${dealer.name}" ${selected}>${dealer.name}</option>`;
             });
 
-            console.log('Generated dealer options:', options);
             return options;
         }
 
@@ -1425,16 +1421,12 @@
                     const data = await response.json();
 
                     if (data.success && data.data) {
-                        console.log('DB에서 대리점 데이터 로드:', data.data);
                         dealersList = data.data
                             .filter(dealer => !dealer.status || dealer.status === 'active')
                             .map(dealer => ({
                                 code: dealer.dealer_code,
                                 name: dealer.dealer_name
                             }));
-
-                        console.log(`✅ DB에서 대리점 ${dealersList.length}개 로드 완료`);
-                        console.log('Loaded dealers:', dealersList);
 
                         // 기존 행들의 대리점 드롭다운 업데이트
                         updateDealerDropdowns();
@@ -1508,8 +1500,6 @@
                                 code: carrier.code,
                                 name: carrier.name
                             }));
-                        console.log(`✅ DB에서 통신사 ${carriersList.length}개 로드 완료`);
-                        console.log('Loaded carriers:', carriersList);
 
                         // 기존 행들의 통신사 드롭다운 업데이트
                         updateCarrierDropdowns();
@@ -1518,7 +1508,6 @@
                 }
 
                 // API 응답이 성공이 아닌 경우 폴백으로 하드코딩된 목록 사용
-                console.log('API 응답 실패, 폴백 통신사 목록 사용');
                 carriersList = [
                     { name: 'SK', is_active: true, sort_order: 1 },
                     { name: 'KT', is_active: true, sort_order: 2 },
@@ -2011,8 +2000,8 @@
 
             // 대리점 및 통신사 목록 로드 확인
 
-            // 날짜 필터 초기화 (이번 달로 변경)
-            selectThisMonth();
+            // 페이지 로드 시 전체 데이터 자동 표시
+            clearDateFilter();
 
             // 30초마다 통신사 및 대리점 목록 업데이트
             setInterval(() => {

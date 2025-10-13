@@ -209,7 +209,8 @@ class SaleService implements SaleServiceInterface
         $this->applyStoreFilters($query, $filters, $user);
         $this->applyDealerFilters($query, $filters);
 
-        return $query->orderBy('sale_date', 'desc')
+        return $query->orderBy('sale_date', 'asc')
+            ->orderBy('id', 'asc')
             ->paginate($filters['per_page'] ?? 50);
     }
 
