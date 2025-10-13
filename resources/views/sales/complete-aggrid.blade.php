@@ -2411,6 +2411,13 @@
                                 const phoneNumber = getColValue(6, ''); // 휴대폰번호 (6번 인덱스)
                                 const customerName = getColValue(7, ''); // 고객명 (7번 인덱스)
 
+                                // 생년월일 변환 (디버깅 로그 포함)
+                                const rawBirthDate = getColValue(8, '');
+                                const birthDate = formatBirthDate(rawBirthDate);
+                                if (addedCount < 3) {
+                                    console.log(`생년월일 변환 - 원본: ${rawBirthDate} (타입: ${typeof rawBirthDate}) → 변환: ${birthDate}`);
+                                }
+
                                 // 판매일자가 없으면 오늘 날짜 자동 설정
                                 if (!saleDate) {
                                     const today = new Date();
@@ -2443,7 +2450,7 @@
                                     sale_date: saleDate, // 개통일
                                     phone_number: phoneNumber, // 휴대폰번호 (6번 인덱스)
                                     customer_name: customerName, // 고객명 (7번 인덱스)
-                                    customer_birth_date: formatBirthDate(getColValue(8, '')), // 생년월일 (8번 인덱스)
+                                    customer_birth_date: birthDate, // 생년월일 (변환된 값 사용)
 
                                     // 금액 필드들
                                     base_price: parseNumber(getColValue(9)), // 액면/셋팅가 (9번)
