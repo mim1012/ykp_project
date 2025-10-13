@@ -1757,7 +1757,20 @@
                             })(),
                             phone_number: sale.phone_number || '',
                             customer_name: sale.customer_name || '',
-                            customer_birth_date: sale.customer_birth_date ? sale.customer_birth_date.split('T')[0] : '',
+                            customer_birth_date: (() => {
+                                if (!sale.customer_birth_date) return '';
+                                // 숫자인 경우 시리얼 번호 변환
+                                if (typeof sale.customer_birth_date === 'number') {
+                                    const excelEpoch = new Date(1900, 0, 1);
+                                    const date = new Date(excelEpoch.getTime() + (sale.customer_birth_date - 2) * 86400000);
+                                    const year = date.getFullYear();
+                                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                                    const day = String(date.getDate()).padStart(2, '0');
+                                    return `${year}-${month}-${day}`;
+                                }
+                                // 문자열인 경우 T 제거
+                                return String(sale.customer_birth_date).split('T')[0];
+                            })(),
                             base_price: parseFloat(sale.base_price || 0),
                             verbal1: parseFloat(sale.verbal1 || 0),
                             verbal2: parseFloat(sale.verbal2 || 0),
