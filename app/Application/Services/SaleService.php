@@ -135,10 +135,6 @@ class SaleService implements SaleServiceInterface
                     $mergedData['model_name'] = null;
                 }
 
-                // 필수 필드 기본값 설정
-                $mergedData['created_at'] = now();
-                $mergedData['updated_at'] = now();
-
                 // PostgreSQL 호환 방식으로 생성 또는 업데이트
                 try {
                     Log::info('Creating or updating sale record', [
@@ -151,13 +147,32 @@ class SaleService implements SaleServiceInterface
 
                     // ID가 있으면 업데이트, 없으면 생성
                     if (isset($saleData['id']) && $saleData['id']) {
-                        Sale::where('id', $saleData['id'])
+                        // UPDATE 시에는 created_at을 제거하고 updated_at만 설정
+                        unset($mergedData['created_at']);
+                        $mergedData['updated_at'] = now();
+
+                        $updatedCount = Sale::where('id', $saleData['id'])
                             ->where('store_id', $mergedData['store_id']) // 권한 체크
                             ->update($mergedData);
-                        Log::info("Updated sale record ID: {$saleData['id']}");
+
+                        if ($updatedCount > 0) {
+                            Log::info("✅ Updated sale record ID: {$saleData['id']}", [
+                                'updated_fields' => array_keys($mergedData),
+                                'updated_count' => $updatedCount
+                            ]);
+                        } else {
+                            Log::warning("⚠️ No rows updated for ID: {$saleData['id']}", [
+                                'reason' => 'Either ID not found or store_id mismatch',
+                                'expected_store_id' => $mergedData['store_id'],
+                                'sale_id' => $saleData['id']
+                            ]);
+                        }
                     } else {
+                        // CREATE 시에는 created_at과 updated_at 모두 설정
+                        $mergedData['created_at'] = now();
+                        $mergedData['updated_at'] = now();
                         Sale::create($mergedData);
-                        Log::info("Created new sale record");
+                        Log::info("✅ Created new sale record");
                     }
                     $savedCount++;
                 } catch (\Exception $e) {
@@ -322,7 +337,7 @@ class SaleService implements SaleServiceInterface
     private function applyDateFilters($query, array $filters): void
     {
         // 전체보기: all_data 파라미터가 있으면 날짜 필터 적용 안 함
-        if (isset($filters['all_data']) && $filters['all_data'] === 'true') {
+        if (isset($filters['all_data']) && ($filters['all_data'] === 'true' || $filters['all_data'] === true || $filters['all_data'] === 1 || $filters['all_data'] === '1')) {
             // 날짜 필터 없이 전체 데이터 반환
             return;
         }

@@ -114,16 +114,36 @@
                     시스템 준비 완료
                 </div>
             </div>
-            <!-- 날짜 필터 UI 추가 -->
+            <!-- 월단위 필터 UI (기본) -->
             <div class="flex items-center space-x-3 border-t pt-3">
-                <span class="text-sm font-medium text-gray-700">날짜 필터:</span>
-                <input type="date" id="sale-date-filter" class="px-3 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <button onclick="selectToday()" class="px-3 py-1.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm rounded hover:from-blue-600 hover:to-blue-700 transition-all shadow-sm">오늘</button>
-                <button onclick="selectYesterday()" class="px-3 py-1.5 bg-gradient-to-r from-violet-500 to-violet-600 text-white text-sm rounded hover:from-violet-600 hover:to-violet-700 transition-all shadow-sm">어제</button>
-                <button onclick="selectWeek()" class="px-3 py-1.5 bg-gradient-to-r from-cyan-500 to-cyan-600 text-white text-sm rounded hover:from-cyan-600 hover:to-cyan-700 transition-all shadow-sm">이번 주</button>
-                <button onclick="selectMonth()" class="px-3 py-1.5 bg-gradient-to-r from-orange-500 to-orange-600 text-white text-sm rounded hover:from-orange-600 hover:to-orange-700 transition-all shadow-sm">이번 달</button>
+                <span class="text-sm font-medium text-gray-700">📅 조회 기간:</span>
+                <input type="month" id="month-filter" class="px-3 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="YYYY-MM">
+                <button onclick="searchByMonth()" class="px-4 py-1.5 bg-gradient-to-r from-green-500 to-green-600 text-white text-sm rounded hover:from-green-600 hover:to-green-700 transition-all shadow-sm font-semibold">
+                    🔍 조회
+                </button>
+                <button onclick="selectThisMonth()" class="px-3 py-1.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm rounded hover:from-blue-600 hover:to-blue-700 transition-all shadow-sm">이번 달</button>
+                <button onclick="selectLastMonth()" class="px-3 py-1.5 bg-gradient-to-r from-violet-500 to-violet-600 text-white text-sm rounded hover:from-violet-600 hover:to-violet-700 transition-all shadow-sm">지난 달</button>
                 <button onclick="clearDateFilter()" class="px-3 py-1.5 bg-gradient-to-r from-gray-500 to-gray-600 text-white text-sm rounded hover:from-gray-600 hover:to-gray-700 transition-all shadow-sm">전체 보기</button>
-                <span id="dateStatus" class="ml-4 px-3 py-1.5 bg-blue-50 text-blue-700 text-sm rounded font-medium"></span>
+                <span id="monthStatus" class="ml-4 px-3 py-1.5 bg-purple-50 text-purple-700 text-sm rounded font-medium"></span>
+            </div>
+            <!-- 페이지네이션 UI -->
+            <div class="flex items-center justify-between border-t pt-3 mt-3">
+                <div class="flex items-center space-x-3">
+                    <span class="text-sm font-medium text-gray-700">📄 페이지:</span>
+                    <button onclick="goToPreviousPage()" id="prev-page-btn" class="px-3 py-1.5 bg-gradient-to-r from-slate-500 to-slate-600 text-white text-sm rounded hover:from-slate-600 hover:to-slate-700 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        ◀ 이전
+                    </button>
+                    <span id="page-info" class="px-3 py-1.5 bg-blue-50 text-blue-700 text-sm rounded font-medium">페이지 1 / 1</span>
+                    <button onclick="goToNextPage()" id="next-page-btn" class="px-3 py-1.5 bg-gradient-to-r from-slate-500 to-slate-600 text-white text-sm rounded hover:from-slate-600 hover:to-slate-700 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                        다음 ▶
+                    </button>
+                    <select id="per-page-select" onchange="changePerPage()" class="px-3 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                        <option value="50" selected>50개씩 보기</option>
+                        <option value="100">100개씩 보기</option>
+                        <option value="200">200개씩 보기</option>
+                    </select>
+                </div>
+                <span id="total-info" class="text-sm text-gray-600 font-medium">전체 0건</span>
             </div>
             <!-- 통신사/대리점 필터 UI 추가 -->
             <div class="flex items-center space-x-3 border-t pt-3 mt-3">
@@ -1113,14 +1133,25 @@
             const invalidRows = [];
 
             salesData.forEach((row, index) => {
+                // 디버깅: 각 행의 상태 로깅
+                console.log(`Row ${index + 1}:`, {
+                    isPersisted: row.isPersisted,
+                    id: row.id,
+                    sale_date: row.sale_date,
+                    carrier: row.carrier,
+                    model_name: row.model_name
+                });
+
                 const validationErrors = validateSaleData(row);
                 if (validationErrors) {
+                    console.error(`Row ${index + 1} validation failed:`, validationErrors);
                     invalidRows.push({
                         rowIndex: index + 1,
                         errors: validationErrors
                     });
                 } else {
                     validData.push(row);
+                    console.log(`Row ${index + 1} added to validData`);
                 }
             });
 
@@ -1144,10 +1175,34 @@
             
             // PM 요구사항: 27개 필드 완전 매핑으로 DB 저장
             // 요청 데이터 준비 - 계산된 필드는 제외 (백엔드에서 재계산)
+
+            // 디버깅: UPDATE vs CREATE 카운트
+            const rowsWithId = validData.filter(row => row.isPersisted && row.id).length;
+            const rowsWithoutId = validData.length - rowsWithId;
+            console.log(`📊 Save operation breakdown:`, {
+                total: validData.length,
+                updates: rowsWithId,
+                creates: rowsWithoutId
+            });
+
             const requestBody = {
-                sales: validData.map(row => ({
-                    // id가 있으면 백엔드에서 업데이트, 없으면 생성
-                    ...(row.isPersisted && row.id ? { id: row.id } : {}),
+                // HQ/Branch 계정 지원: 저장 시 서버에 컨텍스트 전달
+                store_id: window.userData?.store_id || null,
+                branch_id: window.userData?.branch_id || null,
+                sales: validData.map((row, idx) => {
+                    // 디버깅: 각 행의 ID 포함 여부 로깅 (처음 5개만)
+                    if (idx < 5) {
+                        console.log(`Row ${idx + 1}:`, {
+                            has_id: !!row.id,
+                            id_value: row.id,
+                            isPersisted: row.isPersisted,
+                            will_include_id: row.isPersisted && row.id
+                        });
+                    }
+
+                    return {
+                        // id가 있으면 백엔드에서 업데이트, 없으면 생성
+                        ...(row.isPersisted && row.id ? { id: row.id } : {}),
 
                     // PM 요구사항: DB 스키마와 1:1 매핑 (계산 필드 제외)
                     sale_date: row.sale_date,
@@ -1176,13 +1231,21 @@
             };
 
             // 디버깅: 요청 데이터 확인
-            // Sending bulk save request
+            console.log('=== BULK SAVE REQUEST ===');
+            console.log('Total valid rows:', validData.length);
+            console.log('First 3 rows to save:', requestBody.sales.slice(0, 3).map(row => ({
+                id: row.id,
+                isPersisted: validData.find(v => v.id === row.id)?.isPersisted,
+                sale_date: row.sale_date,
+                carrier: row.carrier,
+                model_name: row.model_name
+            })));
 
             fetch('/api/sales/bulk-save', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': window.csrfToken,
+                    'X-CSRF-TOKEN': window.csrfToken || document.querySelector('meta[name="csrf-token"]')?.content || '',
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest'
                 },
@@ -1590,6 +1653,8 @@
                 // URL 파라미터 구성
                 const params = new URLSearchParams();
                 params.append('store_id', storeId);
+                params.append('page', currentPage); // 페이지 번호 추가
+                params.append('per_page', perPage); // 페이지당 항목 수 추가
 
                 if (dateFilter) {
                     if (dateFilter.type === 'single') {
@@ -1599,6 +1664,9 @@
                         params.append('end_date', dateFilter.endDate);
                     } else if (dateFilter.type === 'days') {
                         params.append('days', dateFilter.days);
+                    } else if (dateFilter.type === 'month') {
+                        params.append('start_date', dateFilter.startDate);
+                        params.append('end_date', dateFilter.endDate);
                     }
                 } else {
                     // 전체보기: 날짜 파라미터 없이 전체 데이터 조회
@@ -1627,13 +1695,42 @@
                 // Laravel 페이지네이션 응답 처리
                 const salesList = data.data || data;
 
+                // 페이지네이션 정보 업데이트
+                if (data.current_page) {
+                    updatePaginationUI(data);
+                } else {
+                    // 페이지네이션 정보가 없으면 기본값 설정
+                    updatePaginationUI({
+                        current_page: 1,
+                        last_page: 1,
+                        total: Array.isArray(salesList) ? salesList.length : 0
+                    });
+                }
+
                 if (salesList && Array.isArray(salesList) && salesList.length > 0) {
                     // Existing sales found
 
                     // 기존 데이터를 그리드에 로드
-                    salesData = salesList.map((sale, index) => ({
-                        id: sale.id || (Date.now() + index),
-                        isPersisted: true, // DB에서 불러온 데이터
+                    salesData = salesList.map((sale, index) => {
+                        // 디버깅: API에서 받은 sale 객체 확인
+                        if (index === 0) {
+                            console.log('First sale object from API:', {
+                                id: sale.id,
+                                id_type: typeof sale.id,
+                                has_id: 'id' in sale,
+                                sale_date: sale.sale_date,
+                                keys: Object.keys(sale)
+                            });
+                        }
+
+                        // ID가 없으면 에러 발생 (DB에서 온 데이터는 반드시 ID가 있어야 함)
+                        if (!sale.id && sale.id !== 0) {
+                            console.error('Sale record without ID from API:', sale);
+                        }
+
+                        return {
+                            id: sale.id, // 실제 DB ID 사용 (fallback 제거)
+                            isPersisted: true, // DB에서 불러온 데이터
                         salesperson: sale.salesperson || '',
                         dealer_name: sale.dealer_name || '',
                         carrier: sale.carrier || 'SK',
@@ -1699,33 +1796,32 @@
         // 날짜 필터 변수
         let selectedDateFilter = null;
 
-        // 날짜 선택 함수들
-        function selectToday() {
-            // 로컬 시간대 기준으로 오늘 날짜 가져오기 (UTC 변환 방지)
+        // 페이지네이션 변수
+        let currentPage = 1;
+        let lastPage = 1;
+        let perPage = 50;
+        let totalRecords = 0;
+
+        // 월단위 선택 함수들
+        function selectThisMonth() {
             const today = new Date();
             const year = today.getFullYear();
             const month = String(today.getMonth() + 1).padStart(2, '0');
-            const day = String(today.getDate()).padStart(2, '0');
-            const todayStr = `${year}-${month}-${day}`;
+            const monthStr = `${year}-${month}`;
 
-            document.getElementById('sale-date-filter').value = todayStr;
-            selectedDateFilter = { type: 'single', date: todayStr };
-            updateDateStatus(`${todayStr} 데이터 표시중`);
-            loadExistingSalesData(selectedDateFilter);
+            document.getElementById('month-filter').value = monthStr;
+            searchByMonth();
         }
 
-        function selectYesterday() {
-            const yesterday = new Date();
-            yesterday.setDate(yesterday.getDate() - 1);
-            const year = yesterday.getFullYear();
-            const month = String(yesterday.getMonth() + 1).padStart(2, '0');
-            const day = String(yesterday.getDate()).padStart(2, '0');
-            const dateStr = `${year}-${month}-${day}`;
+        function selectLastMonth() {
+            const today = new Date();
+            const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+            const year = lastMonth.getFullYear();
+            const month = String(lastMonth.getMonth() + 1).padStart(2, '0');
+            const monthStr = `${year}-${month}`;
 
-            document.getElementById('sale-date-filter').value = dateStr;
-            selectedDateFilter = { type: 'single', date: dateStr };
-            updateDateStatus('어제 데이터 표시중');
-            loadExistingSalesData(selectedDateFilter);
+            document.getElementById('month-filter').value = monthStr;
+            searchByMonth();
         }
 
         function selectWeek() {
@@ -1784,17 +1880,114 @@
         function clearDateFilter() {
             // 전체보기: 날짜 필터 완전 제거하여 모든 데이터 가져오기
             selectedDateFilter = null; // 날짜 필터 없음
+            currentPage = 1; // 페이지 리셋
 
-            document.getElementById('sale-date-filter').value = '';
-            updateDateStatus('전체 데이터 표시중');
+            document.getElementById('month-filter').value = '';
+            updateMonthStatus('전체 데이터 표시중');
             loadExistingSalesData(null); // null을 전달하여 날짜 필터 없이 조회
         }
 
-        function updateDateStatus(message) {
-            const statusEl = document.getElementById('dateStatus');
+        function updateMonthStatus(message) {
+            const statusEl = document.getElementById('monthStatus');
             if (statusEl) {
                 statusEl.textContent = message;
             }
+        }
+
+        // 페이지네이션 함수들
+        function goToPreviousPage() {
+            if (currentPage > 1) {
+                currentPage--;
+                loadExistingSalesData(selectedDateFilter);
+            }
+        }
+
+        function goToNextPage() {
+            if (currentPage < lastPage) {
+                currentPage++;
+                loadExistingSalesData(selectedDateFilter);
+            }
+        }
+
+        function changePerPage() {
+            const newPerPage = parseInt(document.getElementById('per-page-select').value);
+            if (newPerPage !== perPage) {
+                perPage = newPerPage;
+                currentPage = 1; // 페이지 리셋
+                loadExistingSalesData(selectedDateFilter);
+            }
+        }
+
+        function updatePaginationUI(paginationData) {
+            // 페이지네이션 변수 업데이트
+            currentPage = paginationData.current_page || 1;
+            lastPage = paginationData.last_page || 1;
+            totalRecords = paginationData.total || 0;
+
+            // UI 업데이트
+            document.getElementById('page-info').textContent = `페이지 ${currentPage} / ${lastPage}`;
+            document.getElementById('total-info').textContent = `전체 ${totalRecords}건`;
+
+            // 버튼 활성화/비활성화
+            const prevBtn = document.getElementById('prev-page-btn');
+            const nextBtn = document.getElementById('next-page-btn');
+
+            if (currentPage <= 1) {
+                prevBtn.disabled = true;
+            } else {
+                prevBtn.disabled = false;
+            }
+
+            if (currentPage >= lastPage) {
+                nextBtn.disabled = true;
+            } else {
+                nextBtn.disabled = false;
+            }
+        }
+
+        // 월단위 조회 함수
+        function searchByMonth() {
+            const monthInput = document.getElementById('month-filter').value;
+
+            if (!monthInput) {
+                showStatus('조회할 년도와 월을 선택해주세요.', 'warning');
+                return;
+            }
+
+            // YYYY-MM 형식을 파싱
+            const [year, month] = monthInput.split('-');
+
+            // 해당 월의 1일
+            const startDate = new Date(year, month - 1, 1);
+            const startYear = startDate.getFullYear();
+            const startMonth = String(startDate.getMonth() + 1).padStart(2, '0');
+            const startDay = '01';
+            const startDateStr = `${startYear}-${startMonth}-${startDay}`;
+
+            // 해당 월의 마지막 날
+            const endDate = new Date(year, month, 0);
+            const endYear = endDate.getFullYear();
+            const endMonth = String(endDate.getMonth() + 1).padStart(2, '0');
+            const endDay = String(endDate.getDate()).padStart(2, '0');
+            const endDateStr = `${endYear}-${endMonth}-${endDay}`;
+
+            selectedDateFilter = {
+                type: 'month',
+                startDate: startDateStr,
+                endDate: endDateStr
+            };
+
+            // 페이지 리셋
+            currentPage = 1;
+
+            // 상태 표시
+            const monthName = `${year}년 ${month}월`;
+            updateMonthStatus(`${monthName} 데이터 조회중`);
+
+            // 데이터 로드
+            loadExistingSalesData(selectedDateFilter);
+
+            showStatus(`${monthName} 데이터를 조회합니다.`, 'info');
         }
 
         // localStorage 이벤트 리스너 - 다른 탭에서 통신사가 변경되면 업데이트
@@ -1817,7 +2010,7 @@
             // 대리점 및 통신사 목록 로드 확인
 
             // 날짜 필터 초기화 (이번 달로 변경)
-            selectMonth();
+            selectThisMonth();
 
             // 30초마다 통신사 및 대리점 목록 업데이트
             setInterval(() => {
