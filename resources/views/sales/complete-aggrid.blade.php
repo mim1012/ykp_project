@@ -443,6 +443,28 @@
             const safeValue = (val) => (val === null || val === undefined) ? '' : String(val).replace(/"/g, '&quot;');
             const safeNumber = (val) => (val === null || val === undefined || isNaN(val)) ? 0 : Number(val);
 
+            // 날짜 값 안전 처리 (엑셀 시리얼 번호 변환 포함)
+            const safeDate = (val) => {
+                if (!val) return '';
+
+                // 이미 YYYY-MM-DD 형식인 경우
+                if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(val)) {
+                    return val;
+                }
+
+                // 엑셀 시리얼 번호인 경우 변환
+                if (typeof val === 'number') {
+                    const excelEpoch = new Date(1900, 0, 1);
+                    const date = new Date(excelEpoch.getTime() + (val - 2) * 86400000);
+                    const year = date.getFullYear();
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    return `${year}-${month}-${day}`;
+                }
+
+                return String(val);
+            };
+
             return `
                 <tr data-id="${row.id}" class="${row.isPersisted ? 'bg-green-50 hover:bg-green-100' : 'hover:bg-gray-50'}"
                     title="${row.isPersisted ? '저장됨' : '미저장'}">
@@ -487,7 +509,7 @@
                     </td>
                     <!-- 7. 개통일 -->
                     <td class="px-2 py-2">
-                        <input type="date" value="${safeValue(row.sale_date)}"
+                        <input type="date" value="${safeDate(row.sale_date)}"
                                onchange="updateRowData(${row.id}, 'sale_date', this.value)"
                                class="field-date">
                     </td>
@@ -505,7 +527,7 @@
                     </td>
                     <!-- 11. 생년월일 -->
                     <td class="px-2 py-2">
-                        <input type="date" value="${safeValue(row.customer_birth_date)}"
+                        <input type="date" value="${safeDate(row.customer_birth_date)}"
                                onchange="updateRowData(${row.id}, 'customer_birth_date', this.value)"
                                class="field-date">
                     </td>
