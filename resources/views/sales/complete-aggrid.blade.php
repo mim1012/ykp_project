@@ -447,12 +447,7 @@
             const safeDate = (val) => {
                 if (!val) return '';
 
-                // 이미 YYYY-MM-DD 형식인 경우
-                if (typeof val === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(val)) {
-                    return val;
-                }
-
-                // 엑셀 시리얼 번호인 경우 변환
+                // 숫자인 경우 (Excel 시리얼 번호)
                 if (typeof val === 'number') {
                     const excelEpoch = new Date(1900, 0, 1);
                     const date = new Date(excelEpoch.getTime() + (val - 2) * 86400000);
@@ -462,7 +457,26 @@
                     return `${year}-${month}-${day}`;
                 }
 
-                return String(val);
+                const str = String(val).trim();
+
+                // 이미 YYYY-MM-DD 형식인 경우
+                if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+                    return str;
+                }
+
+                // 문자열이지만 숫자만 있고 하이픈이 없는 경우 (문자열로 저장된 시리얼 번호)
+                // 예: "32874" (1990-01-01의 시리얼 번호)
+                if (/^\d+$/.test(str) && !str.includes('-') && parseInt(str) > 1000 && parseInt(str) < 100000) {
+                    const excelEpoch = new Date(1900, 0, 1);
+                    const date = new Date(excelEpoch.getTime() + (parseInt(str) - 2) * 86400000);
+                    const year = date.getFullYear();
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const day = String(date.getDate()).padStart(2, '0');
+                    return `${year}-${month}-${day}`;
+                }
+
+                // ISO 형식에서 시간 부분 제거
+                return str.split('T')[0];
             };
 
             return `
@@ -1759,17 +1773,38 @@
                             customer_name: sale.customer_name || '',
                             customer_birth_date: (() => {
                                 if (!sale.customer_birth_date) return '';
+
+                                const value = sale.customer_birth_date;
+
                                 // 숫자인 경우 시리얼 번호 변환
-                                if (typeof sale.customer_birth_date === 'number') {
+                                if (typeof value === 'number') {
                                     const excelEpoch = new Date(1900, 0, 1);
-                                    const date = new Date(excelEpoch.getTime() + (sale.customer_birth_date - 2) * 86400000);
+                                    const date = new Date(excelEpoch.getTime() + (value - 2) * 86400000);
                                     const year = date.getFullYear();
                                     const month = String(date.getMonth() + 1).padStart(2, '0');
                                     const day = String(date.getDate()).padStart(2, '0');
                                     return `${year}-${month}-${day}`;
                                 }
-                                // 문자열인 경우 T 제거
-                                return String(sale.customer_birth_date).split('T')[0];
+
+                                const str = String(value).trim();
+
+                                // 문자열이지만 숫자만 있고 YYYY-MM-DD 형식이 아닌 경우 (시리얼 번호일 가능성)
+                                if (/^\d+$/.test(str) && !str.includes('-') && parseInt(str) > 1000 && parseInt(str) < 100000) {
+                                    const excelEpoch = new Date(1900, 0, 1);
+                                    const date = new Date(excelEpoch.getTime() + (parseInt(str) - 2) * 86400000);
+                                    const year = date.getFullYear();
+                                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                                    const day = String(date.getDate()).padStart(2, '0');
+                                    return `${year}-${month}-${day}`;
+                                }
+
+                                // 이미 YYYY-MM-DD 형식인 경우
+                                if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+                                    return str;
+                                }
+
+                                // ISO 형식에서 T 제거
+                                return str.split('T')[0];
                             })(),
                             base_price: parseFloat(sale.base_price || 0),
                             verbal1: parseFloat(sale.verbal1 || 0),
@@ -2303,8 +2338,22 @@
                                         return str;
                                     }
 
-                                    // 숫자만 있는 경우 (예: 900101, 19900101)
+                                    // 숫자만 있는 경우
                                     const cleanStr = str.replace(/[^0-9]/g, '');
+
+                                    // Excel 시리얼 번호로 보이는 경우 (예: "32874")
+                                    if (cleanStr.length === 4 || cleanStr.length === 5) {
+                                        const serialNum = parseInt(cleanStr);
+                                        // Excel 시리얼 범위: 1000-100000 (1902년~2173년 정도)
+                                        if (serialNum > 1000 && serialNum < 100000) {
+                                            const excelEpoch = new Date(1900, 0, 1);
+                                            const date = new Date(excelEpoch.getTime() + (serialNum - 2) * 86400000);
+                                            const year = date.getFullYear();
+                                            const month = String(date.getMonth() + 1).padStart(2, '0');
+                                            const day = String(date.getDate()).padStart(2, '0');
+                                            return `${year}-${month}-${day}`;
+                                        }
+                                    }
 
                                     if (cleanStr.length === 6) {
                                         // YYMMDD 형식
