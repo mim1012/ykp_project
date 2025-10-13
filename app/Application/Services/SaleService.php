@@ -16,6 +16,7 @@ class SaleService implements SaleServiceInterface
     {
         return DB::transaction(function () use ($request, $user) {
             $savedCount = 0;
+            $idMappings = []; // 임시 ID → 실제 DB ID 매핑
 
             // 디버깅: 요청 데이터 로깅
             Log::info('Bulk create request received', [
@@ -205,8 +206,20 @@ class SaleService implements SaleServiceInterface
                         $mergedData['created_at'] = now();
                         $mergedData['updated_at'] = now();
                         $newRecord = Sale::create($mergedData);
+
+                        // 임시 ID가 있으면 실제 DB ID와 매핑
+                        $originalId = $saleData['id'] ?? null;
+                        if ($originalId) {
+                            $idMappings[$originalId] = $newRecord->id;
+                            Log::info("🔄 ID Mapping created", [
+                                'temp_id' => $originalId,
+                                'real_id' => $newRecord->id
+                            ]);
+                        }
+
                         Log::info("✅ INSERT SUCCESS - New record created", [
                             'new_id' => $newRecord->id,
+                            'original_id' => $originalId ?? 'none',
                             'store_id' => $newRecord->store_id,
                             'sale_date' => $newRecord->sale_date,
                             'customer_name' => $newRecord->customer_name ?? 'not_set'
@@ -228,12 +241,14 @@ class SaleService implements SaleServiceInterface
                 'user_id' => $user->id,
                 'count' => $savedCount,
                 'store_id' => $storeInfo['store_id'],
+                'id_mappings_count' => count($idMappings),
             ]);
 
             return [
                 'success' => true,
                 'message' => "{$savedCount}개의 판매 데이터가 저장되었습니다.",
                 'saved_count' => $savedCount,
+                'id_mappings' => $idMappings, // 임시 ID → 실제 DB ID 매핑 반환
             ];
         });
     }

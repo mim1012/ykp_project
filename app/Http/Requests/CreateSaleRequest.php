@@ -15,6 +15,7 @@ class CreateSaleRequest extends FormRequest
     {
         return [
             'sales' => ['required', 'array', 'min:1', 'max:1000'],
+            'sales.*.id' => ['sometimes', 'integer', 'exists:sales,id'],
             'sales.*.sale_date' => ['required', 'date'],
             'sales.*.carrier' => ['nullable', 'in:SK,KT,LG,LG U+,MVNO,알뜰'], // DB 체크 제약조건과 일치
             'sales.*.activation_type' => ['nullable', 'in:신규,기변,번이'], // DB 체크 제약조건과 일치
@@ -67,3 +68,5 @@ class CreateSaleRequest extends FormRequest
         ];
     }
 }
+
+
