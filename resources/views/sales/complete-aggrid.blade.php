@@ -1228,7 +1228,7 @@
                 sales: validData.map((row, idx) => {
                     // 디버깅: 각 행의 ID 포함 여부 로깅 (모든 행 체크)
                     const hasId = !!row.id;
-                    const willIncludeId = row.isPersisted && row.id;
+                    const willIncludeId = !!(row.isPersisted && row.id);
 
                     console.log(`💾 [저장] Row ${idx + 1}:`, {
                         has_id: hasId,
