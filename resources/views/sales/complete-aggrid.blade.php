@@ -659,8 +659,10 @@
         
         // DB 필드명과 1:1 매핑된 행 데이터 업데이트
         function updateRowData(id, field, value) {
+            console.log(`🔧 updateRowData called: id=${id}, field=${field}, value=${value}`);
             const row = salesData.find(r => r.id === id);
             if (row) {
+                console.log(`✅ Row found, updating ${field}: ${row[field]} → ${value}`);
                 row[field] = value;
 
                 // 개통방식 변경 시 차감액 자동 설정
@@ -1277,11 +1279,15 @@
             // 디버깅: 요청 데이터 확인
             console.log('=== BULK SAVE REQUEST ===');
             console.log('Total valid rows:', validData.length);
-            console.log('First 3 rows to save:', requestBody.sales.slice(0, 3).map(row => ({
+            console.log('📊 salesData 상태:', salesData.slice(0, 3).map(r => ({
+                id: r.id,
+                carrier: r.carrier,
+                isPersisted: r.isPersisted
+            })));
+            console.log('📦 요청 데이터:', requestBody.sales.slice(0, 3).map(row => ({
                 id: row.id,
-                isPersisted: validData.find(v => v.id === row.id)?.isPersisted,
-                sale_date: row.sale_date,
                 carrier: row.carrier,
+                sale_date: row.sale_date,
                 model_name: row.model_name
             })));
 
