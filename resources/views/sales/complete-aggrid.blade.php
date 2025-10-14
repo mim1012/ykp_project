@@ -659,11 +659,21 @@
         
         // DB 필드명과 1:1 매핑된 행 데이터 업데이트
         function updateRowData(id, field, value) {
-            console.log(`🔧 updateRowData called: id=${id}, field=${field}, value=${value}`);
-            const row = salesData.find(r => r.id === id);
+            console.log(`🔧 updateRowData called: id=${id} (type: ${typeof id}), field=${field}, value=${value}`);
+
+            // ID 타입 변환: 문자열이면 숫자로 변환
+            const numericId = typeof id === 'string' ? parseInt(id) : id;
+            console.log(`🔍 Searching for row with id=${numericId} (type: ${typeof numericId})`);
+
+            const row = salesData.find(r => {
+                console.log(`  Comparing: r.id=${r.id} (${typeof r.id}) === numericId=${numericId} (${typeof numericId}) = ${r.id === numericId}`);
+                return r.id === numericId;
+            });
+
             if (row) {
                 console.log(`✅ Row found, updating ${field}: ${row[field]} → ${value}`);
                 row[field] = value;
+                console.log(`✅ Updated successfully: ${field} = ${row[field]}`);
 
                 // 개통방식 변경 시 차감액 자동 설정
                 if (field === 'activation_type') {
@@ -687,10 +697,13 @@
                 ];
 
                 if (calculationFields.includes(field)) {
-                    calculateRow(id);
+                    calculateRow(numericId);
                     // 통계도 업데이트
                     updateStatistics();
                 }
+            } else {
+                console.error(`❌ Row NOT found! salesData length: ${salesData.length}, searching for id: ${numericId}`);
+                console.log('All IDs in salesData:', salesData.map(r => r.id));
             }
         }
         
