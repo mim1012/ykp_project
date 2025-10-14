@@ -71,6 +71,10 @@
                 <button id="hq-preset-last-month" class="px-2 py-1 border rounded">지난달</button>
             </div>
             <button id="hq-apply-filters" data-testid="apply-filters" class="px-3 py-1 bg-indigo-600 text-white rounded">적용</button>
+            <button id="export-store-stats-btn" class="px-4 py-1 bg-green-600 text-white rounded hover:bg-green-700 transition-colors flex items-center gap-2">
+                <span>📥</span>
+                <span>매장별 통계 엑셀 다운로드</span>
+            </button>
         </div>
         <!-- 전체 현황 KPI -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -170,6 +174,12 @@
             await loadHeadquartersStatistics();
             document.getElementById('hq-apply-filters').addEventListener('click', async () => {
                 await loadHeadquartersStatistics();
+            });
+
+            // 매장별 통계 엑셀 다운로드 버튼 이벤트
+            document.getElementById('export-store-stats-btn').addEventListener('click', function() {
+                console.log('📥 매장별 통계 엑셀 다운로드 시작...');
+                window.location.href = '/api/reports/store-statistics';
             });
             const preset = (type) => {
                 const now = new Date();

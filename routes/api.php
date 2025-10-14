@@ -805,3 +805,8 @@ Route::prefix('monthly-settlements')->name('api.monthly-settlements.')->group(fu
     Route::post('/{id}/confirm', [App\Http\Controllers\Api\MonthlySettlementController::class, 'confirm']);
     Route::post('/{id}/close', [App\Http\Controllers\Api\MonthlySettlementController::class, 'close']);
 });
+
+// 매장별 통계 엑셀 다운로드 (본사 전용)
+Route::middleware(['web', 'auth'])->get('/reports/store-statistics', [App\Http\Controllers\Api\ReportController::class, 'exportStoreStatistics'])
+    ->name('api.reports.store-statistics');
+

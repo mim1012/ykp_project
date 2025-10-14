@@ -39,7 +39,7 @@ class CreateSaleRequest extends FormRequest
             'sales.*.id' => ['sometimes', 'integer', 'exists:sales,id'],
             'sales.*.sale_date' => ['required', 'date'],
             'sales.*.carrier' => ['nullable', 'in:SK,KT,LG,LG U+,MVNO,알뜰'], // DB 체크 제약조건과 일치
-            'sales.*.activation_type' => ['nullable', 'in:신규,기변,번이'], // DB 체크 제약조건과 일치
+            'sales.*.activation_type' => ['nullable', 'in:신규,기변,번이,유선,2nd'], // DB 체크 제약조건과 일치
             'sales.*.model_name' => ['nullable', 'string', 'max:255'],  // nullable로 변경
 
             // DB 컬럼명 (백엔드에서 이미 변환된 경우)
