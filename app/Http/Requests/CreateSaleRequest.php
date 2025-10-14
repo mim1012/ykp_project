@@ -11,6 +11,27 @@ class CreateSaleRequest extends FormRequest
         return true;
     }
 
+    /**
+     * Validation 전에 데이터 전처리
+     */
+    protected function prepareForValidation()
+    {
+        $sales = $this->input('sales', []);
+
+        foreach ($sales as $index => &$sale) {
+            // 임시 ID (문자열)는 제거 - 백엔드에서 INSERT로 처리됨
+            if (isset($sale['id']) && is_string($sale['id']) && !is_numeric($sale['id'])) {
+                unset($sale['id']);
+            }
+            // 숫자 문자열 ID는 정수로 변환
+            elseif (isset($sale['id']) && is_string($sale['id']) && is_numeric($sale['id'])) {
+                $sale['id'] = (int) $sale['id'];
+            }
+        }
+
+        $this->merge(['sales' => $sales]);
+    }
+
     public function rules(): array
     {
         return [
