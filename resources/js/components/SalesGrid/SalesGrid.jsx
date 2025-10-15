@@ -190,7 +190,7 @@ const SalesGrid = ({
             width: 100,
             cellEditor: 'agSelectCellEditor',
             cellEditorParams: {
-                values: ['이앤티', '앤투윈', '초시대', '아엠티', '에프지']
+                values: ['이앤티', '앤투윈', '초시대', '아엠티', '에프지', '대찬', '수석', '팩토리', 'PS', '티바이브', 'HCK', '안성']
             }
         },
         {

@@ -1523,7 +1523,14 @@
                     {code: 'TAESUNG', name: '태성'},
                     {code: 'PDM', name: '피디엠'},
                     {code: 'HANJU', name: '한주'},
-                    {code: 'HAPPY', name: '해피'}
+                    {code: 'HAPPY', name: '해피'},
+                    {code: 'DAECHAN', name: '대찬'},
+                    {code: 'SUSEOK', name: '수석'},
+                    {code: 'FACTORY', name: '팩토리'},
+                    {code: 'PS', name: 'PS'},
+                    {code: 'TVIBE', name: '티바이브'},
+                    {code: 'HCK', name: 'HCK'},
+                    {code: 'ANSUNG', name: '안성'}
                 ];
                 updateDealerDropdowns();
                 return dealersList;
@@ -1543,7 +1550,14 @@
                     {code: 'TAESUNG', name: '태성'},
                     {code: 'PDM', name: '피디엠'},
                     {code: 'HANJU', name: '한주'},
-                    {code: 'HAPPY', name: '해피'}
+                    {code: 'HAPPY', name: '해피'},
+                    {code: 'DAECHAN', name: '대찬'},
+                    {code: 'SUSEOK', name: '수석'},
+                    {code: 'FACTORY', name: '팩토리'},
+                    {code: 'PS', name: 'PS'},
+                    {code: 'TVIBE', name: '티바이브'},
+                    {code: 'HCK', name: 'HCK'},
+                    {code: 'ANSUNG', name: '안성'}
                 ];
 
                 updateDealerDropdowns();
