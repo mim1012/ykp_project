@@ -5,30 +5,81 @@ import 'ag-grid-community/styles/ag-theme-alpine.css';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
 
-const SalesGrid = ({ 
-    dealerCode, 
-    readonly = false, 
-    onRowsChanged 
+const SalesGrid = ({
+    dealerCode,
+    readonly = false,
+    onRowsChanged
 }) => {
     const gridRef = useRef(null);
     const [gridApi, setGridApi] = useState(null);
     const queryClient = useQueryClient();
-    
+
     // UX 상태 관리
     const [isCalculating, setIsCalculating] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
     const [unsavedChanges, setUnsavedChanges] = useState(false);
-    
+
+    // 동적 옵션 상태 관리
+    const [dealerOptions, setDealerOptions] = useState([]);
+    const [carrierOptions, setCarrierOptions] = useState(['SK', 'KT', 'LG']); // 기본값
+
     // 디바운싱용 타이머
     const calculationTimerRef = useRef(null);
     const autoSaveTimerRef = useRef(null);
     
+    // 대리점 목록 로드
+    useEffect(() => {
+        const loadDealers = async () => {
+            try {
+                const response = await axios.get('/api/dealers');
+                if (response.data.success && response.data.data) {
+                    const dealers = response.data.data
+                        .filter(dealer => !dealer.status || dealer.status === 'active')
+                        .map(dealer => dealer.dealer_name);
+                    setDealerOptions(dealers);
+                    console.log('✅ Dealers loaded:', dealers);
+                }
+            } catch (error) {
+                console.error('❌ Failed to load dealers:', error);
+                // 폴백 목록 사용
+                setDealerOptions(['이앤티', '앤투윈', '초시대', '아엠티', '에프지', '대찬', '수석', '팩토리', 'PS', '티바이브', 'HCK', '안성']);
+            }
+        };
+
+        const loadCarriers = async () => {
+            try {
+                const response = await axios.get('/api/carriers');
+                if (response.data.success && response.data.data) {
+                    const carriers = response.data.data
+                        .filter(carrier => carrier.status === 'active')
+                        .map(carrier => carrier.carrier_code);
+                    setCarrierOptions(carriers);
+                    console.log('✅ Carriers loaded:', carriers);
+                }
+            } catch (error) {
+                console.error('❌ Failed to load carriers:', error);
+                // 기본값 유지 (SK, KT, LG)
+            }
+        };
+
+        loadDealers();
+        loadCarriers();
+
+        // 30초마다 갱신
+        const interval = setInterval(() => {
+            loadDealers();
+            loadCarriers();
+        }, 30000);
+
+        return () => clearInterval(interval);
+    }, []);
+
     // 엑셀 스타일 키보드 단축키 처리
     useEffect(() => {
         const handleKeyDown = (event) => {
             if (!gridApi) return;
-            
+
             // Ctrl+Z: 되돌리기
             if (event.ctrlKey && event.key === 'z') {
                 event.preventDefault();
@@ -190,7 +241,7 @@ const SalesGrid = ({
             width: 100,
             cellEditor: 'agSelectCellEditor',
             cellEditorParams: {
-                values: ['이앤티', '앤투윈', '초시대', '아엠티', '에프지', '대찬', '수석', '팩토리', 'PS', '티바이브', 'HCK', '안성']
+                values: dealerOptions.length > 0 ? dealerOptions : ['이앤티', '앤투윈', '초시대', '아엠티', '에프지', '대찬', '수석', '팩토리', 'PS', '티바이브', 'HCK', '안성']
             }
         },
         {
@@ -200,7 +251,7 @@ const SalesGrid = ({
             width: 80,
             cellEditor: 'agSelectCellEditor',
             cellEditorParams: {
-                values: ['SK', 'KT', 'LG']
+                values: carrierOptions
             }
         },
         {
@@ -319,7 +370,7 @@ const SalesGrid = ({
             cellStyle: { backgroundColor: '#e6ffe6', fontWeight: 'bold' },
             pinned: 'right'
         }
-    ], [readonly]);
+    ], [readonly, dealerOptions, carrierOptions]);
 
     // 그리드 이벤트 핸들러
     const onGridReady = useCallback((params) => {
