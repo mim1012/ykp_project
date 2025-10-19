@@ -25,6 +25,115 @@
         .minus-field { @apply text-red-600; }
         .total-field { @apply bg-yellow-50; }
         .margin-field { @apply bg-green-50; }
+
+        /* 모바일 반응형 디자인 */
+        @media (max-width: 768px) {
+            /* 헤더 반응형 */
+            header .flex {
+                flex-direction: column;
+                height: auto;
+                padding: 1rem 0;
+            }
+            header h1 {
+                font-size: 1.125rem;
+                margin-bottom: 0.5rem;
+            }
+
+            /* 통계 카드 반응형 - 2열로 배치 */
+            .grid.grid-cols-5 {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.75rem;
+            }
+            .grid.grid-cols-5 > div:last-child {
+                grid-column: span 2;
+            }
+
+            /* 버튼 그룹 반응형 */
+            .flex.justify-between {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+            .flex.space-x-4, .flex.space-x-2, .flex.space-x-3 {
+                flex-wrap: wrap;
+                gap: 0.5rem;
+            }
+
+            /* 버튼 크기 조정 */
+            button {
+                font-size: 0.875rem;
+                padding: 0.5rem 0.75rem;
+            }
+
+            /* 입력 필드 크기 조정 */
+            input[type="month"], select {
+                font-size: 0.875rem;
+            }
+
+            /* 상태 표시기 반응형 */
+            #status-indicator {
+                min-width: 100%;
+                text-align: center;
+            }
+
+            /* 페이지 여백 조정 */
+            main {
+                padding-left: 0.75rem;
+                padding-right: 0.75rem;
+            }
+
+            /* 컨트롤 패널 반응형 */
+            .bg-white.rounded-lg.shadow {
+                padding: 0.75rem;
+            }
+
+            /* 필터 UI 반응형 */
+            .flex.items-center.space-x-3 {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+
+            /* 테이블 컨테이너 스크롤 */
+            .table-container {
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            /* 텍스트 크기 조정 */
+            .text-xl {
+                font-size: 1.125rem;
+            }
+            .text-sm {
+                font-size: 0.75rem;
+            }
+        }
+
+        /* 작은 모바일 화면 (320px ~ 480px) */
+        @media (max-width: 480px) {
+            /* 통계 카드 1열로 배치 */
+            .grid.grid-cols-5 {
+                grid-template-columns: 1fr;
+            }
+            .grid.grid-cols-5 > div:last-child {
+                grid-column: span 1;
+            }
+
+            /* 헤더 텍스트 크기 */
+            header h1 {
+                font-size: 1rem;
+            }
+
+            /* 버튼 전체 너비 */
+            button {
+                width: 100%;
+                justify-content: center;
+            }
+
+            /* 입력 필드 전체 너비 */
+            input[type="month"], select {
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body class="bg-gray-50">

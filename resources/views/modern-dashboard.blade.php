@@ -17,6 +17,122 @@
         .scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
         .scrollbar-thin::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
         .scrollbar-thin::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* 모바일 반응형 디자인 */
+        @media (max-width: 768px) {
+            /* 사이드바 숨김 및 하단 네비게이션으로 대체 */
+            .sidebar-container {
+                display: none;
+            }
+
+            /* 메인 컨텐츠 왼쪽 여백 제거 */
+            main.ml-16 {
+                margin-left: 0;
+            }
+
+            /* 패딩 조정 */
+            main {
+                padding: 1rem;
+                padding-bottom: 5rem; /* 하단 네비게이션 공간 확보 */
+            }
+
+            /* KPI 카드 반응형 */
+            .grid.md\\:grid-cols-2.lg\\:grid-cols-4 {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.75rem;
+            }
+
+            /* 차트 컨테이너 반응형 */
+            .grid.lg\\:grid-cols-3 {
+                grid-template-columns: 1fr;
+            }
+
+            /* 버튼 그룹 반응형 */
+            .flex.gap-3, .flex.gap-2 {
+                flex-wrap: wrap;
+            }
+
+            /* 테이블 스크롤 */
+            .overflow-x-auto {
+                -webkit-overflow-scrolling: touch;
+            }
+
+            /* 텍스트 크기 조정 */
+            h1.text-2xl {
+                font-size: 1.25rem;
+            }
+
+            /* 카드 패딩 조정 */
+            .p-6 {
+                padding: 1rem;
+            }
+        }
+
+        /* 작은 모바일 화면 (320px ~ 480px) */
+        @media (max-width: 480px) {
+            /* KPI 카드 1열로 배치 */
+            .grid.md\\:grid-cols-2.lg\\:grid-cols-4 {
+                grid-template-columns: 1fr;
+            }
+
+            /* 버튼 전체 너비 */
+            button:not(.w-12) {
+                width: 100%;
+                justify-content: center;
+            }
+
+            /* 입력 필드 전체 너비 */
+            input, select {
+                width: 100%;
+            }
+
+            /* 헤더 텍스트 크기 */
+            h1 {
+                font-size: 1.125rem;
+            }
+        }
+
+        /* 하단 모바일 네비게이션 */
+        @media (max-width: 768px) {
+            .mobile-nav {
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                background: white;
+                border-top: 1px solid #e5e7eb;
+                padding: 0.5rem;
+                display: flex;
+                justify-content: space-around;
+                z-index: 50;
+                box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            }
+
+            .mobile-nav-item {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                padding: 0.5rem;
+                color: #6b7280;
+                font-size: 0.75rem;
+                text-decoration: none;
+                flex: 1;
+            }
+
+            .mobile-nav-item.active {
+                color: #0ea5e9;
+            }
+
+            .mobile-nav-item i {
+                margin-bottom: 0.25rem;
+            }
+        }
+
+        @media (min-width: 769px) {
+            .mobile-nav {
+                display: none;
+            }
+        }
     </style>
     <script>
         tailwind.config = {

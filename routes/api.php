@@ -588,10 +588,11 @@ Route::prefix('dashboard-old')->group(function () {
             $performances = DatabaseHelper::executeWithRetry(function () use ($year, $month) {
                 return \App\Models\Sale::whereYear('sale_date', $year)
                     ->whereMonth('sale_date', $month)
-                    ->select('agency')
+                    ->whereNotNull('carrier')  // null 값 필터링
+                    ->select('carrier')
                     ->selectRaw('COUNT(*) as count')
                     ->selectRaw('SUM(settlement_amount) as total_amount')
-                    ->groupBy('agency')
+                    ->groupBy('carrier')
                     ->get();
             });
 
@@ -602,7 +603,7 @@ Route::prefix('dashboard-old')->group(function () {
             foreach ($performances as $performance) {
                 $percentage = $totalCount > 0 ? round(($performance->count / $totalCount) * 100) : 0;
                 $carrierBreakdown[] = [
-                    'carrier' => $performance->agency ?? 'Unknown',
+                    'carrier' => $performance->carrier ?? 'Unknown',
                     'count' => (int) $performance->count,
                     'total_sales' => number_format($performance->total_amount, 2),
                     'percentage' => $percentage,
