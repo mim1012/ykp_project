@@ -1057,6 +1057,7 @@ Route::middleware(['web'])->get('/api/dashboard/dealer-performance', function ()
                 $startOfMonth->toDateTimeString(),
                 $endOfMonth->toDateTimeString(),
             ])
+                ->whereNotNull('carrier')  // NULL 값 제외
                 ->select([
                     'carrier',
                     DB::raw('COUNT(*) as count'),
@@ -2598,8 +2599,9 @@ Route::middleware(['web', 'api.auth'])->group(function () {
                 $query->where('store_id', $storeId);
             }
 
-            // PostgreSQL 완전 호환 집계 (COALESCE 적용)
-            $carriers = $query->select('carrier')
+            // PostgreSQL 완전 호환 집계 (COALESCE 적용) + NULL 필터링
+            $carriers = $query->whereNotNull('carrier')  // NULL 값 제외
+                ->select('carrier')
                 ->selectRaw('COUNT(*) as count, COALESCE(SUM(settlement_amount), 0) as revenue')
                 ->groupBy('carrier')
                 ->orderBy('count', 'desc')
