@@ -441,7 +441,7 @@
                 isPersisted: false, // 아직 DB에 저장되지 않은 임시 행
                 salesperson: '',
                 dealer_name: '',
-                carrier: '', // 기본값 제거 - 사용자가 선택하도록
+                carrier: 'SK', // 기본값: SK
                 activation_type: '', // 기본값 제거 - 사용자가 선택하도록
                 model_name: '',
                 sale_date: (() => {
@@ -1205,18 +1205,20 @@
                 console.log(`판매일자 자동 설정: ${row.sale_date}`);
             }
 
-            // 통신사 검증 - 비어있어도 허용 (선택사항)
-            if (row.carrier) {
+            // 통신사 검증 - 필수 입력
+            if (!row.carrier) {
+                errors.push("통신사를 선택하세요");
+            } else {
                 const validCarriers = carriersList.length > 0
                     ? carriersList.map(c => c.name)
-                    : ['SK', 'KT', 'LG', 'LG U+', '알뜰'];
+                    : ['SK', 'KT', 'LG', 'MVNO'];
 
                 // carrier가 'LG U+'인 경우 'LG'로도 매칭되도록 처리
                 const isValidCarrier = validCarriers.includes(row.carrier) ||
                                       (row.carrier === 'LG' && validCarriers.includes('LG U+'));
 
                 if (!isValidCarrier) {
-                    errors.push(`유효한 통신사를 선택하세요 (${validCarriers.join('/')})`);
+                    errors.push(`유효한 통신사를 선택하세요 (SK/KT/LG/알뜰)`);
                 }
             }
 
