@@ -534,7 +534,7 @@
                 if (!ctx) return;
 
                 // 기존 차트 인스턴스 제거 (중복 방지)
-                if (window.monthlyTrendChart) {
+                if (window.monthlyTrendChart && typeof window.monthlyTrendChart.destroy === 'function') {
                     window.monthlyTrendChart.destroy();
                 }
 
