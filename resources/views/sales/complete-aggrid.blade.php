@@ -262,8 +262,8 @@
                     <option value="">전체 통신사</option>
                     <option value="SK">SK</option>
                     <option value="KT">KT</option>
-                    <option value="LG">LG U+</option>
-                    <option value="알뜰폰">알뜰폰</option>
+                    <option value="LG">LG</option>
+                    <option value="MVNO">알뜰</option>
                 </select>
                 <!-- 대리점 필터 -->
                 <select id="dealer-filter" class="px-3 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" onchange="applyFilters()">
@@ -1565,13 +1565,15 @@
                     { code: 'MVNO', name: '알뜰' }
                 ];
                 defaultCarriers.forEach(carrier => {
-                    const selected = selectedValue === carrier.name ? 'selected' : '';
-                    options += `<option value="${carrier.name}" ${selected}>${carrier.name}</option>`;
+                    const selected = selectedValue === carrier.code ? 'selected' : '';
+                    options += `<option value="${carrier.code}" ${selected}>${carrier.name}</option>`;
                 });
             } else {
                 carriersList.forEach(carrier => {
+                    // MVNO는 "알뜰"로 표시
+                    const displayName = carrier.name === 'MVNO' ? '알뜰' : carrier.name;
                     const selected = selectedValue === carrier.name ? 'selected' : '';
-                    options += `<option value="${carrier.name}" ${selected}>${carrier.name}</option>`;
+                    options += `<option value="${carrier.name}" ${selected}>${displayName}</option>`;
                 });
             }
 
