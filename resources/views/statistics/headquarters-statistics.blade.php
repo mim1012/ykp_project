@@ -341,8 +341,15 @@
                             console.log(`📊 통신사 점유율 업데이트 완료: ${result.data.carrier_breakdown.length}개 통신사`);
                         }
                         break;
+
+                    case 'monthlyTrend':
+                        if (result.success && result.data) {
+                            updateMonthlyTrendChart(result.data);
+                            console.log(`📈 월별 성장 추이 업데이트 완료: ${result.data.labels?.length || 0}개월 데이터`);
+                        }
+                        break;
                 }
-                
+
             } catch (error) {
                 console.error(`❌ ${apiName} UI 업데이트 오류:`, error);
             }
@@ -520,6 +527,117 @@
             }
         }
 
+        // 📈 월별 성장 추이 꺾은선 그래프 업데이트 함수
+        function updateMonthlyTrendChart(trendData) {
+            try {
+                const ctx = document.getElementById('monthlyTrendChart');
+                if (!ctx) return;
+
+                // 기존 차트 인스턴스 제거 (중복 방지)
+                if (window.monthlyTrendChart) {
+                    window.monthlyTrendChart.destroy();
+                }
+
+                // 데이터 검증
+                if (!trendData.labels || !trendData.sales || trendData.labels.length === 0) {
+                    console.warn('⚠️ 월별 추이 데이터가 비어있습니다.');
+                    return;
+                }
+
+                // 월 라벨 포맷팅 (2024-10 -> 10월)
+                const formattedLabels = trendData.labels.map(label => {
+                    const [year, month] = label.split('-');
+                    return `${month}월`;
+                });
+
+                // 꺾은선 그래프 생성
+                window.monthlyTrendChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: formattedLabels,
+                        datasets: [{
+                            label: '총 매출액 (₩)',
+                            data: trendData.sales,
+                            borderColor: 'rgba(99, 102, 241, 1)', // 인디고 색상
+                            backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4, // 부드러운 곡선
+                            pointRadius: 5,
+                            pointHoverRadius: 7,
+                            pointBackgroundColor: 'rgba(99, 102, 241, 1)',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: 'rgba(99, 102, 241, 1)',
+                            pointHoverBorderWidth: 3
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: '📈 월별 총 매출액 추이 (최근 12개월)',
+                                font: { size: 14, weight: 'bold' }
+                            },
+                            legend: {
+                                display: true,
+                                position: 'top',
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const value = context.parsed.y;
+                                        const activations = trendData.activations?.[context.dataIndex] || 0;
+                                        return [
+                                            `매출액: ₩${Number(value).toLocaleString()}`,
+                                            `개통 건수: ${activations}건`
+                                        ];
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        // 백만원 단위로 표시
+                                        if (value >= 1000000) {
+                                            return '₩' + (value / 1000000).toFixed(0) + 'M';
+                                        }
+                                        return '₩' + Number(value).toLocaleString();
+                                    }
+                                },
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.05)'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                },
+                                ticks: {
+                                    maxRotation: 0,
+                                    minRotation: 0
+                                }
+                            }
+                        }
+                    }
+                });
+
+                console.log(`📈 월별 추이 그래프 생성 완료: ${trendData.labels.length}개월 데이터`);
+            } catch (error) {
+                console.error('월별 추이 그래프 업데이트 오류:', error);
+            }
+        }
+
         async function loadHeadquartersStatistics() {
             try {
                 console.log('🚀 Railway PostgreSQL 최적화 순차 로딩 시작...');
@@ -544,7 +662,8 @@
                     { name: 'branches', url: '/api/users/branches' },
                     { name: 'branchPerformance', url: `/api/statistics/branch-performance?days=${period === 'daily' ? 1 : period === 'weekly' ? 7 : 30}` },
                     { name: 'financial', url: `/api/dashboard/financial-summary?start_date=${startDate}&end_date=${endDate}` },
-                    { name: 'carrier', url: `/api/dashboard/dealer-performance?year_month=${ym}` }
+                    { name: 'carrier', url: `/api/dashboard/dealer-performance?year_month=${ym}` },
+                    { name: 'monthlyTrend', url: '/api/statistics/monthly-trend' }
                 ];
 
                 // 🔄 순차 호출 및 즉시 UI 업데이트
