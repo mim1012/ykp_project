@@ -1221,9 +1221,9 @@
 
                 const result = await response.json();
 
-                if (result.success) {
-                    // result.data로 올바르게 접근
-                    const { branch, store } = result.data;
+                if (result.success && result.data) {
+                    // result.data로 올바르게 접근 (안전장치 추가)
+                    const { branch, store } = result.data || {};
 
                     // 지사 순위 업데이트 (올바른 ID 사용)
                     if (branch && window.userData.role !== 'headquarters') {
