@@ -748,7 +748,7 @@
                     { name: 'branchPerformance', url: `/api/statistics/branch-performance?days=${period === 'daily' ? 1 : period === 'weekly' ? 7 : 30}` },
                     { name: 'financial', url: `/api/dashboard/financial-summary?start_date=${startDate}&end_date=${endDate}` },
                     { name: 'carrier', url: `/api/dashboard/dealer-performance?year_month=${ym}` },
-                    { name: 'monthlyTrend', url: '/api/statistics/monthly-trend' }
+                    { name: 'monthlyTrend', url: `/api/statistics/monthly-trend?start_date=${startDate}&end_date=${endDate}` }
                 ];
 
                 // 🔄 순차 호출 및 즉시 UI 업데이트
