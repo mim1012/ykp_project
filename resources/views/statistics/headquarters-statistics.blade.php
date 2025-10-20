@@ -113,8 +113,8 @@
                 <div class="px-6 py-4 border-b border-gray-200">
                     <h3 class="text-lg font-medium text-gray-900">🏢 지사별 성과 비교</h3>
                 </div>
-                <div class="p-6">
-                    <canvas id="branchComparisonChart" width="400" height="200"></canvas>
+                <div class="p-6" style="height: 400px;">
+                    <canvas id="branchComparisonChart"></canvas>
                 </div>
             </div>
 
@@ -140,8 +140,8 @@
                 <div class="px-6 py-4 border-b border-gray-200">
                     <h3 class="text-lg font-medium text-gray-900">📈 월별 성장 추이</h3>
                 </div>
-                <div class="p-6">
-                    <canvas id="monthlyTrendChart" width="400" height="200"></canvas>
+                <div class="p-6" style="height: 400px;">
+                    <canvas id="monthlyTrendChart"></canvas>
                 </div>
             </div>
 
@@ -149,8 +149,8 @@
                 <div class="px-6 py-4 border-b border-gray-200">
                     <h3 class="text-lg font-medium text-gray-900">📊 통신사별 점유율</h3>
                 </div>
-                <div class="p-6">
-                    <canvas id="carrierShareChart" width="400" height="200"></canvas>
+                <div class="p-6" style="height: 400px;">
+                    <canvas id="carrierShareChart"></canvas>
                     <div class="mt-4 overflow-x-auto">
                         <table class="min-w-full text-sm">
                             <thead class="bg-gray-50">
@@ -432,25 +432,110 @@
             }
         }
 
-        // 📊 통신사 테이블 업데이트 함수
+        // 📊 통신사 테이블 및 차트 업데이트 함수
         function updateCarrierTable(carrierBreakdown) {
             try {
+                // 테이블 업데이트
                 const tbody = document.getElementById('hq-carrier-table-body');
-                if (!tbody) return;
-                
-                tbody.innerHTML = '';
-                carrierBreakdown.forEach((carrier, index) => {
-                    const tr = document.createElement('tr');
-                    tr.className = index % 2 === 0 ? 'bg-white' : 'bg-gray-50';
-                    tr.innerHTML = `
-                        <td class="px-4 py-2 font-medium">${carrier.carrier}</td>
-                        <td class="px-4 py-2">${carrier.count}건</td>
-                        <td class="px-4 py-2 font-semibold text-indigo-600">${carrier.percentage}%</td>
-                    `;
-                    tbody.appendChild(tr);
-                });
+                if (tbody) {
+                    tbody.innerHTML = '';
+                    carrierBreakdown.forEach((carrier, index) => {
+                        const tr = document.createElement('tr');
+                        tr.className = index % 2 === 0 ? 'bg-white' : 'bg-gray-50';
+                        tr.innerHTML = `
+                            <td class="px-4 py-2 font-medium">${carrier.carrier}</td>
+                            <td class="px-4 py-2">${carrier.count}건</td>
+                            <td class="px-4 py-2 font-semibold text-indigo-600">${carrier.percentage}%</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+
+                // 차트 업데이트
+                updateCarrierChart(carrierBreakdown);
             } catch (error) {
                 console.error('통신사 테이블 업데이트 오류:', error);
+            }
+        }
+
+        // 📊 통신사별 점유율 도넛 차트 업데이트 함수
+        function updateCarrierChart(carrierBreakdown) {
+            try {
+                const ctx = document.getElementById('carrierShareChart');
+                if (!ctx) return;
+
+                // 기존 차트 인스턴스 제거 (중복 방지)
+                if (window.carrierChart && typeof window.carrierChart.destroy === 'function') {
+                    window.carrierChart.destroy();
+                }
+
+                // 데이터 검증
+                if (!carrierBreakdown || carrierBreakdown.length === 0) {
+                    console.warn('⚠️ 통신사 데이터가 비어있습니다.');
+                    return;
+                }
+
+                // 차트 색상 정의
+                const colors = {
+                    'SK': 'rgba(255, 99, 132, 0.8)',
+                    'KT': 'rgba(54, 162, 235, 0.8)',
+                    'LG': 'rgba(255, 206, 86, 0.8)',
+                    'MVNO': 'rgba(75, 192, 192, 0.8)',
+                    '미지정': 'rgba(201, 203, 207, 0.8)'
+                };
+
+                const labels = carrierBreakdown.map(c => c.carrier);
+                const data = carrierBreakdown.map(c => c.count);
+                const backgroundColors = labels.map(label => colors[label] || 'rgba(153, 102, 255, 0.8)');
+
+                // 도넛 차트 생성
+                window.carrierChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: '개통 건수',
+                            data: data,
+                            backgroundColor: backgroundColors,
+                            borderColor: backgroundColors.map(color => color.replace('0.8', '1')),
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            title: {
+                                display: false
+                            },
+                            legend: {
+                                display: true,
+                                position: 'bottom',
+                                labels: {
+                                    padding: 15,
+                                    font: {
+                                        size: 12
+                                    }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.parsed || 0;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = ((value / total) * 100).toFixed(1);
+                                        return `${label}: ${value}건 (${percentage}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+
+                console.log(`📊 통신사 차트 생성 완료: ${carrierBreakdown.length}개 통신사`);
+            } catch (error) {
+                console.error('통신사 차트 업데이트 오류:', error);
             }
         }
 
