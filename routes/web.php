@@ -2639,10 +2639,21 @@ Route::middleware(['web', 'api.auth'])->group(function () {
                 return response()->json(['success' => false, 'error' => '권한이 없습니다.'], 403);
             }
 
-            // 최근 12개월 데이터 조회
-            $monthsAgo = 12;
-            $startDate = now()->subMonths($monthsAgo)->startOfMonth();
-            $endDate = now()->endOfMonth();
+            // 날짜 필터 파라미터 받기 (선택적)
+            $startDateParam = $request->get('start_date');
+            $endDateParam = $request->get('end_date');
+
+            // 날짜 범위 설정
+            if ($startDateParam && $endDateParam) {
+                // 사용자 지정 날짜 범위
+                $startDate = \Carbon\Carbon::parse($startDateParam)->startOfDay();
+                $endDate = \Carbon\Carbon::parse($endDateParam)->endOfDay();
+            } else {
+                // 기본값: 최근 12개월
+                $monthsAgo = 12;
+                $startDate = now()->subMonths($monthsAgo)->startOfMonth();
+                $endDate = now()->endOfMonth();
+            }
 
             // 월별 매출 집계 쿼리
             $query = \App\Models\Sale::whereBetween('sale_date', [
