@@ -2629,6 +2629,69 @@ Route::middleware(['web', 'api.auth'])->group(function () {
         }
     });
 
+    // 월별 매출 추이 API
+    Route::get('/api/statistics/monthly-trend', function (Illuminate\Http\Request $request) {
+        try {
+            $user = auth()->user();
+
+            // 권한별 접근 제한
+            if (!$user || !in_array($user->role, ['headquarters', 'branch', 'store'])) {
+                return response()->json(['success' => false, 'error' => '권한이 없습니다.'], 403);
+            }
+
+            // 최근 12개월 데이터 조회
+            $monthsAgo = 12;
+            $startDate = now()->subMonths($monthsAgo)->startOfMonth();
+            $endDate = now()->endOfMonth();
+
+            // 월별 매출 집계 쿼리
+            $query = \App\Models\Sale::whereBetween('sale_date', [
+                $startDate->toDateTimeString(),
+                $endDate->toDateTimeString(),
+            ]);
+
+            // 권한별 필터링
+            if ($user->role === 'branch' && $user->branch_id) {
+                $storeIds = \App\Models\Store::where('branch_id', $user->branch_id)->pluck('id');
+                $query->whereIn('store_id', $storeIds);
+            } elseif ($user->role === 'store' && $user->store_id) {
+                $query->where('store_id', $user->store_id);
+            }
+
+            // 월별 그룹화 및 집계 (PostgreSQL 호환)
+            $monthlyData = $query
+                ->selectRaw("TO_CHAR(sale_date, 'YYYY-MM') as month")
+                ->selectRaw('COALESCE(SUM(settlement_amount), 0) as total_sales')
+                ->selectRaw('COUNT(*) as activation_count')
+                ->groupByRaw("TO_CHAR(sale_date, 'YYYY-MM')")
+                ->orderByRaw("TO_CHAR(sale_date, 'YYYY-MM') ASC")
+                ->get();
+
+            // 응답 데이터 구조화
+            $labels = [];
+            $salesData = [];
+            $activationData = [];
+
+            foreach ($monthlyData as $data) {
+                $labels[] = $data->month; // 예: "2024-10"
+                $salesData[] = (float)$data->total_sales;
+                $activationData[] = (int)$data->activation_count;
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'labels' => $labels,
+                    'sales' => $salesData,
+                    'activations' => $activationData,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('월별 추이 API 오류: ' . $e->getMessage());
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    });
+
     // 지사별 성과 - N+1 쿼리 제거된 최적화 버전
     Route::get('/api/statistics/branch-performance', function (Illuminate\Http\Request $request) {
         try {
