@@ -1057,13 +1057,10 @@ Route::middleware(['web'])->get('/api/dashboard/dealer-performance', function ()
                 $startOfMonth->toDateTimeString(),
                 $endOfMonth->toDateTimeString(),
             ])
-                ->whereNotNull('carrier')  // NULL 값 제외
-                ->select([
-                    'carrier',
-                    DB::raw('COUNT(*) as count'),
-                    DB::raw('SUM(settlement_amount) as total_sales'),
-                ])
-                ->groupBy('carrier')
+                ->selectRaw("COALESCE(carrier, '미지정') as carrier")
+                ->selectRaw('COUNT(*) as count')
+                ->selectRaw('SUM(settlement_amount) as total_sales')
+                ->groupByRaw("COALESCE(carrier, '미지정')")
                 ->get();
         })
             ->map(function ($stat) use ($totalCurrentMonth) {
@@ -2599,11 +2596,10 @@ Route::middleware(['web', 'api.auth'])->group(function () {
                 $query->where('store_id', $storeId);
             }
 
-            // PostgreSQL 완전 호환 집계 (COALESCE 적용) + NULL 필터링
-            $carriers = $query->whereNotNull('carrier')  // NULL 값 제외
-                ->select('carrier')
+            // PostgreSQL 완전 호환 집계 (COALESCE 적용) + NULL을 "미지정"으로 표시
+            $carriers = $query->selectRaw("COALESCE(carrier, '미지정') as carrier")
                 ->selectRaw('COUNT(*) as count, COALESCE(SUM(settlement_amount), 0) as revenue')
-                ->groupBy('carrier')
+                ->groupByRaw("COALESCE(carrier, '미지정')")
                 ->orderBy('count', 'desc')
                 ->get();
 
