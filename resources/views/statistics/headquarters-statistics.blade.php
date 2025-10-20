@@ -84,6 +84,29 @@
             @include('components.kpi-card', ['label' => '목표 달성률', 'valueId' => 'system-goal', 'value' => '-'])
         </div>
 
+        <!-- 재무 요약 -->
+        <div class="bg-white rounded-lg shadow p-6 mb-8">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">💵 재무 요약 (선택 기간)</h3>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="p-4 bg-gray-50 rounded">
+                    <div class="text-sm text-gray-500">총 매출</div>
+                    <div class="text-lg font-semibold loading-pulse" id="hq-fin-total-revenue">로딩 중...</div>
+                </div>
+                <div class="p-4 bg-gray-50 rounded">
+                    <div class="text-sm text-gray-500">총 마진</div>
+                    <div class="text-lg font-semibold loading-pulse" id="hq-fin-total-margin">로딩 중...</div>
+                </div>
+                <div class="p-4 bg-gray-50 rounded">
+                    <div class="text-sm text-gray-500">총 지출</div>
+                    <div class="text-lg font-semibold loading-pulse" id="hq-fin-total-expenses">로딩 중...</div>
+                </div>
+                <div class="p-4 bg-gray-50 rounded">
+                    <div class="text-sm text-gray-500">순이익</div>
+                    <div class="text-lg font-semibold loading-pulse" id="hq-fin-net-profit">로딩 중...</div>
+                </div>
+            </div>
+        </div>
+
         <!-- 지사별 성과 비교 -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             <div class="bg-white rounded-lg shadow">
@@ -140,29 +163,6 @@
                             <tbody id="hq-carrier-table-body"></tbody>
                         </table>
                     </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 재무 요약 -->
-        <div class="mt-6 bg-white rounded-lg shadow p-6">
-            <h3 class="text-lg font-medium text-gray-900 mb-4">💵 재무 요약 (선택 기간)</h3>
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div class="p-4 bg-gray-50 rounded">
-                    <div class="text-sm text-gray-500">총 매출</div>
-                    <div class="text-lg font-semibold loading-pulse" id="hq-fin-total-revenue">로딩 중...</div>
-                </div>
-                <div class="p-4 bg-gray-50 rounded">
-                    <div class="text-sm text-gray-500">총 마진</div>
-                    <div class="text-lg font-semibold loading-pulse" id="hq-fin-total-margin">로딩 중...</div>
-                </div>
-                <div class="p-4 bg-gray-50 rounded">
-                    <div class="text-sm text-gray-500">총 지출</div>
-                    <div class="text-lg font-semibold loading-pulse" id="hq-fin-total-expenses">로딩 중...</div>
-                </div>
-                <div class="p-4 bg-gray-50 rounded">
-                    <div class="text-sm text-gray-500">순이익</div>
-                    <div class="text-lg font-semibold loading-pulse" id="hq-fin-net-profit">로딩 중...</div>
                 </div>
             </div>
         </div>
