@@ -311,11 +311,9 @@
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase minus-field">차감</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase total-field">리베총계</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase total-field">정산금</th>
-                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase bg-red-50">부/소세</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase plus-field">현금받음</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase minus-field">페이백</th>
-                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase margin-field">세전마진</th>
-                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase margin-field">세후마진</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase margin-field">마진</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">메모</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">액션</th>
                         </tr>
@@ -718,29 +716,21 @@
                     <td class="px-2 py-2 total-field">
                         <span class="field-calculated text-yellow-800" id="settlement-${row.id}">${(row.settlement_amount || 0).toLocaleString()}원</span>
                     </td>
-                    <!-- 23. 부/소세 (계산) -->
-                    <td class="px-2 py-2 bg-red-50">
-                        <span class="field-calculated text-red-800" id="tax-${row.id}">${(row.tax || 0).toLocaleString()}원</span>
-                    </td>
-                    <!-- 24. 현금받음 -->
+                    <!-- 23. 현금받음 -->
                     <td class="px-2 py-2">
-                        <input type="number" value="${row.cash_received}" 
+                        <input type="number" value="${row.cash_received}"
                                onchange="updateRowData('${row.id}', 'cash_received', parseInt(this.value) || 0); calculateRow('${row.id}')"
                                class="field-money plus-field" placeholder="0">
                     </td>
-                    <!-- 25. 페이백 -->
+                    <!-- 24. 페이백 -->
                     <td class="px-2 py-2">
-                        <input type="number" value="${row.payback}" 
+                        <input type="number" value="${row.payback}"
                                onchange="updateRowData('${row.id}', 'payback', parseInt(this.value) || 0); calculateRow('${row.id}')"
                                class="field-money minus-field" placeholder="0">
                     </td>
-                    <!-- 26. 세전마진 (계산) -->
+                    <!-- 25. 마진 (계산) -->
                     <td class="px-2 py-2 margin-field">
-                        <span class="field-calculated text-green-800" id="margin-before-${row.id}">${(row.margin_before_tax || 0).toLocaleString()}원</span>
-                    </td>
-                    <!-- 27. 세후마진 (계산) -->
-                    <td class="px-2 py-2 margin-field">
-                        <span class="field-calculated text-green-800" id="margin-after-${row.id}">${(row.margin_after_tax || 0).toLocaleString()}원</span>
+                        <span class="field-calculated text-green-800" id="margin-${row.id}">${(row.margin_after_tax || 0).toLocaleString()}원</span>
                     </td>
                     <!-- 28. 메모 -->
                     <td class="px-2 py-2">
@@ -828,22 +818,21 @@
             const rebateTotal = (row.base_price || 0) + (row.verbal1 || 0) + (row.verbal2 || 0) +
                                (row.grade_amount || 0) + (row.additional_amount || 0);
 
-            // U = T - P + Q + R + S (정산금)
+            // U = T - P + Q + R + S + W - X (정산금)
             const settlementAmount = rebateTotal - (row.cash_activation || 0) + (row.usim_fee || 0) +
-                                   (row.new_mnp_discount || 0) + (row.deduction || 0);
+                                   (row.new_mnp_discount || 0) + (row.deduction || 0) +
+                                   (row.cash_received || 0) - (row.payback || 0);
 
             row.rebate_total = rebateTotal;
             row.settlement_amount = settlementAmount;
-            
-            // V = U × 0.10 (세금)
-            row.tax = Math.round(settlementAmount * 0.1);
 
-            // Y = U - V + W + X (세전마진)
-            row.margin_before_tax = settlementAmount - row.tax + (row.cash_received || 0) + (row.payback || 0);
+            // 세금 계산 중단
+            row.tax = 0;
 
-            // Z = Y - V (세후마진 = 세전마진 - 세금)
-            row.margin_after_tax = row.margin_before_tax - row.tax;
-            
+            // 마진 = 정산금 (세금 없음)
+            row.margin_before_tax = settlementAmount;
+            row.margin_after_tax = settlementAmount;
+
             // UI 업데이트 (DOM 요소 존재 확인)
             const rebateEl = document.getElementById(`rebate-${id}`);
             if (rebateEl) rebateEl.textContent = rebateTotal.toLocaleString() + '원';
@@ -851,14 +840,8 @@
             const settlementEl = document.getElementById(`settlement-${id}`);
             if (settlementEl) settlementEl.textContent = settlementAmount.toLocaleString() + '원';
 
-            const taxEl = document.getElementById(`tax-${id}`);
-            if (taxEl) taxEl.textContent = row.tax.toLocaleString() + '원';
-
-            const marginBeforeEl = document.getElementById(`margin-before-${id}`);
-            if (marginBeforeEl) marginBeforeEl.textContent = row.margin_before_tax.toLocaleString() + '원';
-
-            const marginAfterEl = document.getElementById(`margin-after-${id}`);
-            if (marginAfterEl) marginAfterEl.textContent = row.margin_after_tax.toLocaleString() + '원';
+            const marginEl = document.getElementById(`margin-${id}`);
+            if (marginEl) marginEl.textContent = settlementAmount.toLocaleString() + '원';
             
             updateStatistics();
         }
@@ -2914,8 +2897,7 @@
                 '모델명', '용량', '전화번호', '고객명', '생년월일',
                 '액면가', '구두1', '구두2', '그레이드', '부가추가',
                 '서류상현금개통', '유심비', '신규번이할인', '차감',
-                '리베총계', '정산금', '세금', '현금받음', '페이백',
-                '세전마진', '세후마진'
+                '리베총계', '정산금', '현금받음', '페이백', '마진'
             ];
 
             // CSV 데이터 행
@@ -2942,10 +2924,8 @@
                 row.deduction || 0,
                 row.rebate_total || 0,
                 row.settlement_amount || 0,
-                row.tax || 0,
                 row.cash_received || 0,
                 row.payback || 0,
-                row.margin_before_tax || 0,
                 row.margin_after_tax || 0
             ]);
 

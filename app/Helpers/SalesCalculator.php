@@ -38,16 +38,16 @@ class SalesCalculator
         // 계산 필드 (T~Z)
         $T = $K + $L + $M + $N + $O;                   // 리베총계
         $U = $T - $P + $Q + $R + $S + $W - $X;         // 정산금 (T - P + Q + R + S + 현금받음 - 페이백)
-        $V = round($U * self::TAX_RATE);               // 세금 (10%)
-        $Y = $U - $V;                                  // 세전마진 (정산금 - 세금)
-        $Z = $Y;                                       // 세후마진 (세전마진과 동일, 세금 이미 차감됨)
+        $V = 0;                                        // 세금 (계산 중단)
+        $Y = $U;                                       // 마진 = 정산금 (세금 없음)
+        $Z = $U;                                       // 마진 = 정산금 (세금 없음)
 
         return [
             'total_rebate' => $T,       // 리베총계
             'settlement' => $U,         // 정산금
-            'tax' => $V,               // 세금
-            'margin_before' => $Y,      // 세전마진
-            'margin_after' => $Z,        // 세후마진
+            'tax' => $V,               // 세금 (0)
+            'margin_before' => $Y,      // 마진 (정산금과 동일)
+            'margin_after' => $Z,        // 마진 (정산금과 동일)
         ];
     }
 
@@ -179,17 +179,17 @@ class SalesCalculator
         // 계산 필드 (T~Z)
         $T = $K + $L + $M + $N + $O;                   // 리베총계
         $U = $T - $P + $Q + $R + $S + $W - $X;         // 정산금 (T - P + Q + R + S + 현금받음 - 페이백)
-        $V = round($U * $taxRate);                     // 세금 (커스텀 세율)
-        $Y = $U - $V;                                  // 세전마진 (정산금 - 세금)
-        $Z = $Y;                                       // 세후마진 (세전마진과 동일, 세금 이미 차감됨)
+        $V = 0;                                        // 세금 (계산 중단)
+        $Y = $U;                                       // 마진 = 정산금 (세금 없음)
+        $Z = $U;                                       // 마진 = 정산금 (세금 없음)
 
         return [
             'total_rebate' => $T,       // 리베총계
             'settlement' => $U,         // 정산금
-            'tax' => $V,               // 세금
-            'margin_before' => $Y,      // 세전마진
-            'margin_after' => $Z,       // 세후마진
-            'tax_rate_used' => $taxRate, // 적용된 세율
+            'tax' => $V,               // 세금 (0)
+            'margin_before' => $Y,      // 마진 (정산금과 동일)
+            'margin_after' => $Z,       // 마진 (정산금과 동일)
+            'tax_rate_used' => 0,       // 세율 사용 안 함
         ];
     }
 
