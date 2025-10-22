@@ -8,6 +8,22 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out;
+        }
+        .loading-pulse {
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+    </style>
 </head>
 <body class="bg-gray-50">
     <!-- 헤더 -->
@@ -35,7 +51,7 @@
             @include('components.kpi-card', ['label' => '목표 달성률', 'valueId' => 'branch-goal', 'value' => '-'])
         </div>
 
-        <!-- 필터 및 소속 매장별 성과 비교 -->
+        <!-- Filters -->
         <div class="bg-white rounded-lg shadow p-4 mb-6 flex items-center gap-4">
             <div>
                 <label class="text-sm text-gray-600 mr-2">랭킹 기간</label>
@@ -48,14 +64,6 @@
             <div>
                 <label class="text-sm text-gray-600 mr-2">표시 개수</label>
                 <input id="branch-ranking-limit" type="number" min="3" max="50" value="10" class="border rounded px-2 py-1 w-24" />
-            </div>
-            <div>
-                <label class="text-sm text-gray-600 mr-2">추이 일수</label>
-                <select id="branch-trend-days" class="border rounded px-2 py-1">
-                    <option value="7">7</option>
-                    <option value="30" selected>30</option>
-                    <option value="60">60</option>
-                </select>
             </div>
             <div>
                 <label class="text-sm text-gray-600 mr-2">시작일</label>
@@ -72,22 +80,47 @@
             </div>
             <button id="branch-apply-filters" data-testid="apply-filters" class="px-3 py-1 bg-emerald-600 text-white rounded">적용</button>
         </div>
+
+        <!-- 재무 요약 -->
+        <div class="bg-white rounded-lg shadow p-6 mb-8">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">💵 재무 요약 (선택 기간)</h3>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="p-4 bg-gray-50 rounded">
+                    <div class="text-sm text-gray-500">총 매출</div>
+                    <div class="text-lg font-semibold loading-pulse" id="branch-fin-total-revenue">로딩 중...</div>
+                </div>
+                <div class="p-4 bg-gray-50 rounded">
+                    <div class="text-sm text-gray-500">총 마진</div>
+                    <div class="text-lg font-semibold loading-pulse" id="branch-fin-total-margin">로딩 중...</div>
+                </div>
+                <div class="p-4 bg-gray-50 rounded">
+                    <div class="text-sm text-gray-500">총 지출</div>
+                    <div class="text-lg font-semibold loading-pulse" id="branch-fin-total-expenses">로딩 중...</div>
+                </div>
+                <div class="p-4 bg-gray-50 rounded">
+                    <div class="text-sm text-gray-500">순이익</div>
+                    <div class="text-lg font-semibold loading-pulse" id="branch-fin-net-profit">로딩 중...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 소속 매장별 성과 비교 -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             <div class="bg-white rounded-lg shadow">
                 <div class="px-6 py-4 border-b border-gray-200">
                     <h3 class="text-lg font-medium text-gray-900">🏪 소속 매장별 성과 비교</h3>
                 </div>
-                <div class="p-6">
-                    <canvas id="storeComparisonChart" width="400" height="200"></canvas>
+                <div class="p-6" style="height: 400px;">
+                    <canvas id="storeComparisonChart"></canvas>
                 </div>
             </div>
 
             <div class="bg-white rounded-lg shadow">
                 <div class="px-6 py-4 border-b border-gray-200">
-                    <h3 class="text-lg font-medium text-gray-900">📈 지사 월별 추이</h3>
+                    <h3 class="text-lg font-medium text-gray-900">📈 월별 성장 추이</h3>
                 </div>
-                <div class="p-6">
-                    <canvas id="branchTrendChart" width="400" height="200"></canvas>
+                <div class="p-6" style="height: 400px;">
+                    <canvas id="branchTrendChart"></canvas>
                 </div>
             </div>
         </div>
@@ -128,29 +161,6 @@
                 </table>
             </div>
         </div>
-
-        <!-- 재무 요약 -->
-        <div class="mt-6 bg-white rounded-lg shadow p-6">
-            <h3 class="text-lg font-medium text-gray-900 mb-4">💵 재무 요약 (선택 기간)</h3>
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-                <div class="p-4 bg-gray-50 rounded">
-                    <div class="text-sm text-gray-500">총 매출</div>
-                    <div class="text-lg font-semibold" id="branch-fin-total-revenue">₩0</div>
-                </div>
-                <div class="p-4 bg-gray-50 rounded">
-                    <div class="text-sm text-gray-500">총 마진</div>
-                    <div class="text-lg font-semibold" id="branch-fin-total-margin">₩0</div>
-                </div>
-                <div class="p-4 bg-gray-50 rounded">
-                    <div class="text-sm text-gray-500">총 지출</div>
-                    <div class="text-lg font-semibold" id="branch-fin-total-expenses">₩0</div>
-                </div>
-                <div class="p-4 bg-gray-50 rounded">
-                    <div class="text-sm text-gray-500">순이익</div>
-                    <div class="text-lg font-semibold" id="branch-fin-net-profit">₩0</div>
-                </div>
-            </div>
-        </div>
     </main>
 
     <script>
@@ -160,7 +170,7 @@
 
                 const period = document.getElementById('branch-ranking-period')?.value || 'monthly';
                 const limit = parseInt(document.getElementById('branch-ranking-limit')?.value || '10', 10);
-                const days = parseInt(document.getElementById('branch-trend-days')?.value || '30', 10);
+                const days = 30; // 기본값: 30일
 
                 const [profileRes, kpiRes, overviewRes, rankingRes, trendRes, finRes] = await Promise.all([
                     fetch('/api/profile', { credentials: 'same-origin' }),
@@ -219,17 +229,43 @@
                     data: {
                         labels,
                         datasets: [{
-                            label: `매출 (${period})`,
+                            label: `매출 (${period === 'monthly' ? '월간' : period === 'weekly' ? '주간' : '일간'})`,
                             data: values,
-                            backgroundColor: 'rgba(34, 197, 94, 0.5)',
+                            backgroundColor: 'rgba(34, 197, 94, 0.6)',
                             borderColor: 'rgba(34, 197, 94, 1)',
-                            borderWidth: 1
+                            borderWidth: 2,
+                            borderRadius: 4,
+                            borderSkipped: false,
                         }]
                     },
                     options: {
                         responsive: true,
+                        maintainAspectRatio: false,
                         plugins: {
-                            title: { display: true, text: `소속 매장별 매출 (${period})` }
+                            title: {
+                                display: true,
+                                text: `🏪 소속 매장별 매출 성과 (${period === 'monthly' ? '월간' : period === 'weekly' ? '주간' : '일간'})`,
+                                font: { size: 14, weight: 'bold' }
+                            },
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return '₩' + Number(value).toLocaleString();
+                                    }
+                                }
+                            },
+                            x: {
+                                ticks: {
+                                    maxRotation: 45,
+                                    minRotation: 0
+                                }
+                            }
                         }
                     }
                 });
@@ -243,13 +279,66 @@
                     data: {
                         labels: trendLabels,
                         datasets: [{
-                            label: `일별 매출 (${days}일)`,
+                            label: '총 매출액 (₩)',
                             data: trendData,
+                            borderColor: 'rgba(99, 102, 241, 1)',
+                            backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                            borderWidth: 3,
                             fill: true,
-                            borderColor: 'rgba(59, 130, 246, 1)',
-                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                            tension: 0.4
+                            tension: 0.4,
+                            pointRadius: 5,
+                            pointHoverRadius: 7,
+                            pointBackgroundColor: 'rgba(99, 102, 241, 1)',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: 'rgba(99, 102, 241, 1)',
+                            pointHoverBorderWidth: 3
                         }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        interaction: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: `📈 일별 매출액 추이 (최근 ${days || 30}일)`,
+                                font: { size: 14, weight: 'bold' }
+                            },
+                            legend: {
+                                display: true,
+                                position: 'top',
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        if (value >= 1000000) {
+                                            return '₩' + (value / 1000000).toFixed(0) + 'M';
+                                        }
+                                        return '₩' + Number(value).toLocaleString();
+                                    }
+                                },
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.05)'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                },
+                                ticks: {
+                                    maxRotation: 0,
+                                    minRotation: 0
+                                }
+                            }
+                        }
                     }
                 });
 
@@ -271,15 +360,7 @@
                 console.log('✅ 지사 통계 로딩 완료');
 
                 // 재무 요약 업데이트
-                try {
-                    const rev = fin?.data?.revenue || { total_revenue: 0, total_margin: 0 };
-                    const exp = fin?.data?.expenses || { total_expenses: 0 };
-                    const prof = fin?.data?.profit || { net_profit: 0 };
-                    document.getElementById('branch-fin-total-revenue').textContent = `₩${Number(rev.total_revenue||0).toLocaleString()}`;
-                    document.getElementById('branch-fin-total-margin').textContent = `₩${Number(rev.total_margin||0).toLocaleString()}`;
-                    document.getElementById('branch-fin-total-expenses').textContent = `₩${Number(exp.total_expenses||0).toLocaleString()}`;
-                    document.getElementById('branch-fin-net-profit').textContent = `₩${Number(prof.net_profit||0).toLocaleString()}`;
-                } catch {}
+                updateFinancialSummary(fin);
 
             } catch (error) {
                 console.error('❌ 지사 통계 로딩 실패:', error);
@@ -367,6 +448,48 @@
             } catch (error) {
                 console.error('지사 순위 로딩 실패:', error);
                 document.getElementById('branch-rank').textContent = '-위 / -개';
+            }
+        }
+
+        // 💵 재무 요약 업데이트 함수
+        function updateFinancialSummary(finData) {
+            try {
+                // API 응답에서 실제 데이터 사용
+                const revenue = finData?.data?.total_sales || 0;
+                const margin = finData?.data?.total_margin || 0;
+                const activations = finData?.data?.total_activations || 0;
+                const marginRate = finData?.data?.average_margin_rate || 0;
+
+                // 지출과 순이익 계산
+                const expenses = revenue - margin; // 매출 - 마진 = 지출
+                const netProfit = margin; // 순이익 = 마진
+
+                // 재무 요약 업데이트
+                const revenueEl = document.getElementById('branch-fin-total-revenue');
+                const marginEl = document.getElementById('branch-fin-total-margin');
+                const expensesEl = document.getElementById('branch-fin-total-expenses');
+                const profitEl = document.getElementById('branch-fin-net-profit');
+
+                if (revenueEl) {
+                    revenueEl.textContent = `₩${Number(revenue).toLocaleString()}`;
+                    revenueEl.className = 'text-lg font-semibold text-gray-900';
+                }
+                if (marginEl) {
+                    marginEl.textContent = `₩${Number(margin).toLocaleString()}`;
+                    marginEl.className = 'text-lg font-semibold text-gray-900';
+                }
+                if (expensesEl) {
+                    expensesEl.textContent = `₩${Number(expenses).toLocaleString()}`;
+                    expensesEl.className = 'text-lg font-semibold text-gray-900';
+                }
+                if (profitEl) {
+                    profitEl.textContent = `₩${Number(margin).toLocaleString()}`;
+                    profitEl.className = margin >= 0 ? 'text-lg font-semibold text-green-600' : 'text-lg font-semibold text-red-600';
+                }
+
+                console.log('재무 요약 업데이트:', { revenue, margin, activations, marginRate });
+            } catch (error) {
+                console.error('재무 요약 업데이트 오류:', error);
             }
         }
     </script>
