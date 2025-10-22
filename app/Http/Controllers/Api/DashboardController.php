@@ -217,11 +217,20 @@ class DashboardController extends Controller
     public function storeRanking(Request $request)
     {
         try {
+            $user = auth()->user();
             $period = $request->get('period', 'monthly');
             $limit = min($request->get('limit', 10), 50);
 
             // 기간별 필터링
             $query = Sale::with(['store', 'store.branch']);
+
+            // RBAC 필터링: 지사는 소속 매장만, 매장은 자기 매장만
+            if ($user->role === 'branch' && $user->branch_id) {
+                $query->where('branch_id', $user->branch_id);
+            } elseif ($user->role === 'store' && $user->store_id) {
+                $query->where('store_id', $user->store_id);
+            }
+            // headquarters는 모든 매장 조회 가능
 
             switch ($period) {
                 case 'daily':
