@@ -724,12 +724,10 @@
         const salesChart = new Chart(salesCtx, {
             type: 'line',
             data: {
-                labels: Array.from({length: 30}, (_, i) => `${i + 1}일`),
+                labels: [],
                 datasets: [{
                     label: '매출',
-                    data: [0, 100000, 150000, 80000, 200000, 170000, 220000, 180000, 250000, 190000, 
-                           210000, 240000, 200000, 280000, 250000, 300000, 270000, 320000, 290000, 350000,
-                           310000, 380000, 340000, 400000, 360000, 420000, 380000, 450000, 410000, 480000],
+                    data: [],
                     borderColor: '#3b82f6',
                     backgroundColor: 'rgba(59, 130, 246, 0.1)',
                     borderWidth: 2,
