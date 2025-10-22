@@ -3,11 +3,18 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Exports\BranchTemplateExport;
+use App\Exports\StoreAccountsExport;
+use App\Exports\StoreTemplateExport;
+use App\Helpers\RandomDataGenerator;
+use App\Jobs\ProcessBulkBranchCreationJob;
+use App\Jobs\ProcessBulkStoreCreationJob;
 use App\Models\Branch;
 use App\Models\Store;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Maatwebsite\Excel\Facades\Excel;
 
 class StoreManagementController extends Controller
 {
@@ -324,5 +331,481 @@ class StoreManagementController extends Controller
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Download Excel template for bulk branch creation
+     * 본사 전용 기능 - 지사 대량 생성
+     */
+    public function downloadBranchTemplate()
+    {
+        $currentUser = auth()->user();
+
+        if ($currentUser->role !== 'headquarters') {
+            return response()->json([
+                'success' => false,
+                'error' => '권한 없음',
+                'message' => '대량 생성은 본사 관리자만 사용할 수 있습니다.',
+            ], 403);
+        }
+
+        return Excel::download(
+            new BranchTemplateExport(),
+            'branch-bulk-create-template-'.date('Y-m-d').'.xlsx'
+        );
+    }
+
+    /**
+     * Download Excel template for bulk store creation
+     * 본사 전용 기능 - 매장 대량 생성
+     */
+    public function downloadStoreTemplate()
+    {
+        $currentUser = auth()->user();
+
+        if ($currentUser->role !== 'headquarters') {
+            return response()->json([
+                'success' => false,
+                'error' => '권한 없음',
+                'message' => '대량 생성은 본사 관리자만 사용할 수 있습니다.',
+            ], 403);
+        }
+
+        return Excel::download(
+            new StoreTemplateExport(),
+            'store-bulk-create-template-'.date('Y-m-d').'.xlsx'
+        );
+    }
+
+    /**
+     * Upload and validate Excel file for bulk branch creation
+     * 본사 전용 기능 - 지사
+     */
+    public function uploadBulkBranchFile(Request $request)
+    {
+        $currentUser = auth()->user();
+
+        if ($currentUser->role !== 'headquarters') {
+            return response()->json([
+                'success' => false,
+                'error' => '권한 없음',
+                'message' => '대량 생성은 본사 관리자만 사용할 수 있습니다.',
+            ], 403);
+        }
+
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls|max:10240',
+        ]);
+
+        try {
+            $file = $request->file('file');
+            $data = Excel::toArray([], $file)[0];
+            array_shift($data); // 헤더 제거
+
+            $branchesData = array_map(function ($row) {
+                return [
+                    'branch_name' => $row[0] ?? null,
+                    'manager_name' => $row[1] ?? null,
+                ];
+            }, $data);
+
+            // 빈 행 제거
+            $branchesData = array_filter($branchesData, function ($row) {
+                return ! empty($row['branch_name']);
+            });
+
+            if (empty($branchesData)) {
+                return response()->json([
+                    'success' => false,
+                    'error' => '유효한 데이터가 없습니다.',
+                ], 400);
+            }
+
+            // 기본 검증
+            $validationErrors = $this->validateBulkBranchData($branchesData);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'total_rows' => count($branchesData),
+                    'validation_errors' => $validationErrors,
+                    'can_proceed' => empty($validationErrors),
+                ],
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Bulk create branches from uploaded Excel
+     * 본사 전용 기능 - 지사
+     */
+    public function bulkCreateBranches(Request $request)
+    {
+        $currentUser = auth()->user();
+
+        if ($currentUser->role !== 'headquarters') {
+            return response()->json([
+                'success' => false,
+                'error' => '권한 없음',
+                'message' => '대량 생성은 본사 관리자만 사용할 수 있습니다.',
+            ], 403);
+        }
+
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls|max:10240',
+        ]);
+
+        try {
+            $file = $request->file('file');
+            $data = Excel::toArray([], $file)[0];
+            array_shift($data);
+
+            $branchesData = array_map(function ($row) {
+                return [
+                    'branch_name' => $row[0] ?? null,
+                    'manager_name' => $row[1] ?? null,
+                ];
+            }, $data);
+
+            $branchesData = array_filter($branchesData, function ($row) {
+                return ! empty($row['branch_name']);
+            });
+
+            if (empty($branchesData)) {
+                return response()->json([
+                    'success' => false,
+                    'error' => '유효한 데이터가 없습니다.',
+                ], 400);
+            }
+
+            // 50개 이상이면 큐로 처리
+            if (count($branchesData) >= 50) {
+                ProcessBulkBranchCreationJob::dispatch($branchesData, $currentUser->id);
+
+                return response()->json([
+                    'success' => true,
+                    'status' => 'queued',
+                    'message' => '대량 생성 작업이 백그라운드에서 처리됩니다.',
+                    'total_branches' => count($branchesData),
+                ]);
+            }
+
+            // 50개 미만이면 즉시 처리
+            $job = new ProcessBulkBranchCreationJob($branchesData, $currentUser->id);
+            $results = $job->handle();
+
+            return response()->json([
+                'success' => true,
+                'status' => 'completed',
+                'data' => $results,
+                'summary' => [
+                    'total' => count($branchesData),
+                    'success' => count($results['success']),
+                    'errors' => count($results['errors']),
+                ],
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Upload and validate Excel file for bulk store creation
+     * 본사 전용 기능 - 매장
+     */
+    public function uploadBulkFile(Request $request)
+    {
+        $currentUser = auth()->user();
+
+        // ✅ 본사 권한 체크
+        if ($currentUser->role !== 'headquarters') {
+            return response()->json([
+                'success' => false,
+                'error' => '권한 없음',
+                'message' => '대량 생성은 본사 관리자만 사용할 수 있습니다.',
+                'hint' => '개별 매장 추가 기능을 이용해주세요.',
+            ], 403);
+        }
+
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls|max:10240', // 10MB
+            'validation_mode' => 'nullable|in:reject,skip,auto_create',
+        ]);
+
+        try {
+            $file = $request->file('file');
+            $validationMode = $request->input('validation_mode', 'reject');
+
+            // Excel 파일 읽기
+            $data = Excel::toArray([], $file)[0];
+
+            // 헤더 제거
+            $headers = array_shift($data);
+
+            // 데이터 변환 (새 형식: 매장명, 소속 지사)
+            $storesData = array_map(function ($row) {
+                return [
+                    'store_name' => $row[0] ?? null,
+                    'branch_name' => $row[1] ?? null,
+                ];
+            }, $data);
+
+            // 빈 행 제거
+            $storesData = array_filter($storesData, function ($row) {
+                return ! empty($row['store_name']);
+            });
+
+            if (empty($storesData)) {
+                return response()->json([
+                    'success' => false,
+                    'error' => '유효한 데이터가 없습니다.',
+                ], 400);
+            }
+
+            // 기본 검증
+            $validationErrors = $this->validateBulkData($storesData, $validationMode);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'total_rows' => count($storesData),
+                    'validation_errors' => $validationErrors,
+                    'can_proceed' => empty($validationErrors) || $validationMode !== 'reject',
+                    'validation_mode' => $validationMode,
+                ],
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Bulk create stores from uploaded Excel
+     * 본사 전용 기능
+     */
+    public function bulkCreate(Request $request)
+    {
+        $currentUser = auth()->user();
+
+        // ✅ 본사 권한 체크
+        if ($currentUser->role !== 'headquarters') {
+            return response()->json([
+                'success' => false,
+                'error' => '권한 없음',
+                'message' => '대량 생성은 본사 관리자만 사용할 수 있습니다.',
+                'hint' => '개별 매장 추가 기능을 이용해주세요.',
+            ], 403);
+        }
+
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls|max:10240',
+            'validation_mode' => 'nullable|in:reject,skip,auto_create',
+        ]);
+
+        try {
+            $file = $request->file('file');
+            $validationMode = $request->input('validation_mode', 'reject');
+
+            // Excel 파일 읽기
+            $data = Excel::toArray([], $file)[0];
+            array_shift($data); // 헤더 제거
+
+            $storesData = array_map(function ($row) {
+                return [
+                    'store_name' => $row[0] ?? null,
+                    'branch_name' => $row[1] ?? null,
+                ];
+            }, $data);
+
+            // 빈 행 제거
+            $storesData = array_filter($storesData, function ($row) {
+                return ! empty($row['store_name']);
+            });
+
+            if (empty($storesData)) {
+                return response()->json([
+                    'success' => false,
+                    'error' => '유효한 데이터가 없습니다.',
+                ], 400);
+            }
+
+            // 100개 이상이면 큐로 처리
+            if (count($storesData) >= 100) {
+                ProcessBulkStoreCreationJob::dispatch($storesData, $currentUser->id, $validationMode);
+
+                return response()->json([
+                    'success' => true,
+                    'status' => 'queued',
+                    'message' => '대량 생성 작업이 백그라운드에서 처리됩니다.',
+                    'total_stores' => count($storesData),
+                ]);
+            }
+
+            // 100개 미만이면 즉시 처리
+            $job = new ProcessBulkStoreCreationJob($storesData, $currentUser->id, $validationMode);
+            $results = $job->handle();
+
+            return response()->json([
+                'success' => true,
+                'status' => 'completed',
+                'data' => $results,
+                'summary' => [
+                    'total' => count($storesData),
+                    'success' => count($results['success']),
+                    'errors' => count($results['errors']),
+                    'skipped' => count($results['skipped']),
+                    'auto_created_branches' => count($results['auto_created_branches']),
+                ],
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Download created accounts as Excel
+     * 본사 전용 기능
+     */
+    public function downloadAccounts(Request $request)
+    {
+        $currentUser = auth()->user();
+
+        // ✅ 본사 권한 체크
+        if ($currentUser->role !== 'headquarters') {
+            return response()->json([
+                'success' => false,
+                'error' => '권한 없음',
+            ], 403);
+        }
+
+        $accounts = $request->input('accounts', []);
+
+        if (empty($accounts)) {
+            return response()->json([
+                'success' => false,
+                'error' => '다운로드할 계정 정보가 없습니다.',
+            ], 400);
+        }
+
+        return Excel::download(
+            new StoreAccountsExport($accounts),
+            'store-accounts-'.date('Y-m-d-His').'.xlsx'
+        );
+    }
+
+    /**
+     * Validate bulk branch data before creation
+     */
+    protected function validateBulkBranchData(array $branchesData): array
+    {
+        $errors = [];
+
+        foreach ($branchesData as $index => $data) {
+            $rowNumber = $index + 2;
+            $rowErrors = [];
+
+            // 필수 필드 체크
+            if (empty($data['branch_name'])) {
+                $rowErrors[] = '지사명이 누락되었습니다';
+            }
+            if (empty($data['manager_name'])) {
+                $rowErrors[] = '지역장 이름이 누락되었습니다';
+            }
+
+            // 지사명 중복 체크
+            if (! empty($data['branch_name'])) {
+                $branchExists = Branch::where('name', $data['branch_name'])->exists();
+                if ($branchExists) {
+                    $rowErrors[] = "이미 존재하는 지사명: {$data['branch_name']}";
+                }
+            }
+
+            if (! empty($rowErrors)) {
+                $errors[] = [
+                    'row' => $rowNumber,
+                    'errors' => $rowErrors,
+                    'data' => $data,
+                ];
+            }
+        }
+
+        return $errors;
+    }
+
+    /**
+     * Validate bulk store data before creation
+     */
+    protected function validateBulkData(array $storesData, string $validationMode): array
+    {
+        $errors = [];
+
+        foreach ($storesData as $index => $data) {
+            $rowNumber = $index + 2;
+            $rowErrors = [];
+
+            // 필수 필드 체크
+            if (empty($data['store_name'])) {
+                $rowErrors[] = '매장명이 누락되었습니다';
+            }
+            if (empty($data['branch_name'])) {
+                $rowErrors[] = '소속 지사가 누락되었습니다';
+            }
+
+            // 지사 존재 여부 체크
+            if (! empty($data['branch_name'])) {
+                $branchExists = Branch::where('name', $data['branch_name'])->exists();
+
+                if (! $branchExists) {
+                    if ($validationMode === 'reject') {
+                        $rowErrors[] = "존재하지 않는 지사: {$data['branch_name']}";
+                    } elseif ($validationMode === 'skip') {
+                        $rowErrors[] = "존재하지 않는 지사 (스킵됨): {$data['branch_name']}";
+                    } elseif ($validationMode === 'auto_create') {
+                        $rowErrors[] = "지사가 자동 생성됩니다: {$data['branch_name']}";
+                    }
+                }
+            }
+
+            // 매장명 중복 체크 (같은 지사 내에서)
+            if (! empty($data['store_name']) && ! empty($data['branch_name'])) {
+                $branch = Branch::where('name', $data['branch_name'])->first();
+                if ($branch) {
+                    $storeExists = Store::where('name', $data['store_name'])
+                        ->where('branch_id', $branch->id)
+                        ->exists();
+                    if ($storeExists) {
+                        $rowErrors[] = "이미 존재하는 매장명: {$data['store_name']} ({$data['branch_name']})";
+                    }
+                }
+            }
+
+            if (! empty($rowErrors)) {
+                $errors[] = [
+                    'row' => $rowNumber,
+                    'errors' => $rowErrors,
+                    'data' => $data,
+                ];
+            }
+        }
+
+        return $errors;
     }
 }

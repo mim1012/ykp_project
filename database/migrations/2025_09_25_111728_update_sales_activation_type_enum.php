@@ -28,7 +28,24 @@ return new class extends Migration
             DB::statement('ALTER TABLE sales ALTER COLUMN activation_type DROP NOT NULL');
             DB::statement('ALTER TABLE sales ALTER COLUMN carrier DROP NOT NULL');
         } else {
-            // MySQL/MariaDB - 데이터 보존하면서 컬럼 타입 변경
+            // SQLite/MySQL/MariaDB - 데이터 보존하면서 컬럼 타입 변경
+
+            // ✅ SQLite: 인덱스가 있는 컬럼은 먼저 인덱스를 삭제해야 함
+            try {
+                Schema::table('sales', function (Blueprint $table) {
+                    // activation_type 관련 인덱스 삭제
+                    $table->dropIndex('idx_sales_date_activation');
+                    $table->dropIndex(['activation_type']);
+
+                    // carrier 관련 인덱스 삭제
+                    $table->dropIndex('idx_sales_date_carrier');
+                    $table->dropIndex('idx_sales_carrier_analysis');
+                    $table->dropIndex(['carrier']);
+                });
+            } catch (\Exception $e) {
+                // 인덱스가 없거나 이미 삭제되었으면 무시
+            }
+
             // 임시 컬럼 생성
             DB::statement("ALTER TABLE sales ADD COLUMN activation_type_temp VARCHAR(10)");
             DB::statement("ALTER TABLE sales ADD COLUMN carrier_temp VARCHAR(10)");
@@ -41,8 +58,14 @@ return new class extends Migration
             DB::statement("ALTER TABLE sales DROP COLUMN activation_type");
             DB::statement("ALTER TABLE sales DROP COLUMN carrier");
 
-            DB::statement("ALTER TABLE sales ADD COLUMN activation_type ENUM('신규', '기변', 'MNP', '번이') NULL");
-            DB::statement("ALTER TABLE sales ADD COLUMN carrier ENUM('SK', 'KT', 'LG', 'LG U+', 'MVNO', '알뜰') NULL");
+            // ✅ SQLite는 ENUM을 지원하지 않으므로 VARCHAR 사용
+            if (DB::connection()->getDriverName() === 'sqlite') {
+                DB::statement("ALTER TABLE sales ADD COLUMN activation_type VARCHAR(10) NULL");
+                DB::statement("ALTER TABLE sales ADD COLUMN carrier VARCHAR(10) NULL");
+            } else {
+                DB::statement("ALTER TABLE sales ADD COLUMN activation_type ENUM('신규', '기변', 'MNP', '번이') NULL");
+                DB::statement("ALTER TABLE sales ADD COLUMN carrier ENUM('SK', 'KT', 'LG', 'LG U+', 'MVNO', '알뜰') NULL");
+            }
 
             // 데이터 복원
             DB::statement("UPDATE sales SET activation_type = activation_type_temp");
