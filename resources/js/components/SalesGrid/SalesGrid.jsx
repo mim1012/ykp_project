@@ -334,7 +334,7 @@ const SalesGrid = ({
             cellStyle: { backgroundColor: '#fff2cc', fontWeight: 'bold' }
         },
         {
-            headerName: '정산금',
+            headerName: '매출',
             field: 'settlement_amount',
             editable: false,
             width: 120,
@@ -349,7 +349,8 @@ const SalesGrid = ({
             width: 100,
             type: 'numericColumn',
             valueFormatter: (params) => formatCurrency(params.value),
-            cellStyle: { backgroundColor: '#ffe6e6' }
+            cellStyle: { backgroundColor: '#ffe6e6' },
+            hide: true // 세금 계산 제거로 숨김
         },
         {
             headerName: '세전마진',
@@ -358,7 +359,8 @@ const SalesGrid = ({
             width: 120,
             type: 'numericColumn',
             valueFormatter: (params) => formatCurrency(params.value),
-            cellStyle: { backgroundColor: '#e6ffe6', fontWeight: 'bold' }
+            cellStyle: { backgroundColor: '#e6ffe6', fontWeight: 'bold' },
+            hide: true // 세금 계산 제거로 숨김
         },
         {
             headerName: '세후마진',
@@ -368,7 +370,7 @@ const SalesGrid = ({
             type: 'numericColumn',
             valueFormatter: (params) => formatCurrency(params.value),
             cellStyle: { backgroundColor: '#e6ffe6', fontWeight: 'bold' },
-            pinned: 'right'
+            hide: true // 세금 계산 제거로 숨김
         }
     ], [readonly, dealerOptions, carrierOptions]);
 
