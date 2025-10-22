@@ -310,8 +310,8 @@ class DashboardController extends Controller
             // 실제 DB 컬럼명 사용
             $totalSales = (clone $salesQuery)->sum('settlement_amount');
             $totalActivations = (clone $salesQuery)->count();
-            $totalMargin = (clone $salesQuery)->sum('margin_before_tax'); // 수정: pre_tax_margin → margin_before_tax
-            $totalTax = (clone $salesQuery)->sum('tax'); // 수정: tax_amount → tax
+            // 세금 제거 (커밋 427845b6): 마진 = 정산금
+            $totalMargin = (clone $salesQuery)->sum('settlement_amount');
 
             // 마진율 계산
             $averageMarginRate = $totalSales > 0 ? round(($totalMargin / $totalSales) * 100, 1) : 0;
@@ -721,11 +721,11 @@ class DashboardController extends Controller
                 'store_id' => $storeId,
             ]);
 
-            // margin_after_tax 컬럼이 없을 수 있으므로 안전한 쿼리 사용
+            // 세금 제거 (커밋 427845b6): 마진 = 정산금
             $salesData = $query->whereBetween('sale_date', [$startDate, $endDate])
                 ->selectRaw('COUNT(*) as total_activations')
                 ->selectRaw('SUM(settlement_amount) as total_sales')
-                ->selectRaw('SUM(COALESCE(margin_after_tax, settlement_amount * 0.1)) as total_margin')
+                ->selectRaw('SUM(settlement_amount) as total_margin')
                 ->selectRaw('AVG(settlement_amount) as avg_sale_amount')
                 ->first();
 

@@ -21,7 +21,9 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'username',
         'password',
+        'must_change_password',
         'role',
         'branch_id',
         'store_id',
@@ -51,6 +53,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_active' => 'boolean',  // PostgreSQL boolean 타입 호환
+            'must_change_password' => 'boolean',
         ];
     }
 

@@ -60,11 +60,9 @@ class SalesExportController extends Controller
                 '차감',
                 '리베총계',
                 '정산금',
-                '세금',
                 '현금받음',
                 '페이백',
-                '세전마진',
-                '세후마진',
+                '마진',
                 '메모',
                 '지사명',
                 '매장명',
@@ -96,11 +94,9 @@ class SalesExportController extends Controller
                     $sale->deduction ?? 0,
                     $sale->total_rebate ?? 0,
                     $sale->settlement_amount ?? 0,
-                    $sale->tax ?? 0,
                     $sale->cash_in ?? 0,
                     $sale->payback ?? 0,
-                    $sale->margin_before ?? 0,
-                    $sale->margin_after ?? 0,
+                    $sale->settlement_amount ?? 0, // 마진 = 정산금
                     $sale->memo ?? '',
                     $sale->branch->name ?? '',
                     $sale->store->name ?? '',
@@ -281,10 +277,10 @@ class SalesExportController extends Controller
                                                     + $saleData['usim_fee'] + $saleData['new_mnp_discount']
                                                     + $saleData['deduction'];
 
-                    $saleData['tax'] = $saleData['settlement_amount'] * 0.1;
-                    $saleData['margin_before'] = $saleData['settlement_amount'] - $saleData['tax']
-                                                + $saleData['cash_in'] + $saleData['payback'];
-                    $saleData['margin_after'] = $saleData['tax'] + $saleData['margin_before'];
+                    // 세금 제거 (커밋 427845b6): 마진 = 정산금
+                    $saleData['tax'] = 0;
+                    $saleData['margin_before'] = $saleData['settlement_amount'];
+                    $saleData['margin_after'] = $saleData['settlement_amount'];
 
                     // 데이터 저장
                     Sale::create($saleData);

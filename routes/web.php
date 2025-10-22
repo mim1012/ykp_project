@@ -1552,6 +1552,17 @@ if (config('app.env') !== 'production') {
         Route::get('stores/{id}/account', [App\Http\Controllers\Api\StoreManagementController::class, 'getAccount']);
         Route::post('stores/{id}/account', [App\Http\Controllers\Api\StoreManagementController::class, 'createAccount']);
 
+        // 지사 대량 생성 (본사 전용)
+        Route::get('branches/bulk/template', [App\Http\Controllers\Api\StoreManagementController::class, 'downloadBranchTemplate'])->name('api.branches.bulk.template');
+        Route::post('branches/bulk/upload', [App\Http\Controllers\Api\StoreManagementController::class, 'uploadBulkBranchFile'])->name('api.branches.bulk.upload');
+        Route::post('branches/bulk/create', [App\Http\Controllers\Api\StoreManagementController::class, 'bulkCreateBranches'])->name('api.branches.bulk.create');
+
+        // 매장 대량 생성 (본사 전용)
+        Route::get('stores/bulk/template', [App\Http\Controllers\Api\StoreManagementController::class, 'downloadStoreTemplate'])->name('api.stores.bulk.template');
+        Route::post('stores/bulk/upload', [App\Http\Controllers\Api\StoreManagementController::class, 'uploadBulkFile'])->name('api.stores.bulk.upload');
+        Route::post('stores/bulk/create', [App\Http\Controllers\Api\StoreManagementController::class, 'bulkCreate'])->name('api.stores.bulk.create');
+        Route::post('stores/bulk/download-accounts', [App\Http\Controllers\Api\StoreManagementController::class, 'downloadAccounts'])->name('api.stores.bulk.download-accounts');
+
         // 사용자 관리
         Route::get('users', [App\Http\Controllers\Api\UserManagementController::class, 'index']);
         Route::put('users/{id}', [App\Http\Controllers\Api\UserManagementController::class, 'update']);

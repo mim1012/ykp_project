@@ -399,7 +399,7 @@
                 const activations = finData.total_activations || 0;
                 const marginRate = finData.average_margin_rate || 0;
 
-                // 지출과 순이익 계산 (세금을 지출로 간주)
+                // 지출과 순이익 계산
                 const expenses = revenue - margin; // 매출 - 마진 = 지출
                 const netProfit = margin; // 순이익 = 마진
 
