@@ -824,15 +824,20 @@ class StoreManagementController extends Controller
      */
     public function bulkCreateStoresFromMultiSheet(Request $request)
     {
+        Log::info('매장 대량 생성 시작', ['user_id' => auth()->id()]);
+
         try {
             // 권한 체크 (본사와 지사만 가능)
             $currentUser = auth()->user();
             if (! in_array($currentUser->role, ['headquarters', 'branch'])) {
+                Log::warning('매장 생성 권한 없음', ['user_id' => $currentUser->id, 'role' => $currentUser->role]);
                 return response()->json([
                     'success' => false,
                     'error' => '매장 생성 권한이 없습니다.',
                 ], 403);
             }
+
+            Log::info('파일 검증 시작');
 
             // 파일 검증
             $request->validate([
@@ -840,13 +845,17 @@ class StoreManagementController extends Controller
             ]);
 
             $file = $request->file('file');
+            Log::info('파일 업로드 확인', ['filename' => $file->getClientOriginalName(), 'size' => $file->getSize()]);
 
             // 파일을 임시 위치에 저장
             $filePath = $file->getRealPath();
+            Log::info('파일 경로', ['path' => $filePath]);
 
             // Import 처리
+            Log::info('Import 시작');
             $import = new StoresBulkImport($filePath);
             $import->processAllSheets();
+            Log::info('Import 완료');
 
             $results = $import->getResults();
             $errors = $import->getErrors();
