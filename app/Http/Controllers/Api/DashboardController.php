@@ -406,15 +406,38 @@ class DashboardController extends Controller
     {
         try {
             $yearMonth = $request->get('year_month', now()->format('Y-m'));
+            $user = auth()->user();
+
+            // 캐시 키 생성
+            $cacheKey = sprintf(
+                'dealer_performance_%s_%s_%s_%s',
+                $user->role,
+                $user->id,
+                $yearMonth,
+                now()->format('Y-m-d-H:i')
+            );
+            // 5분 단위로 반올림
+            $cacheKey = substr($cacheKey, 0, -1) . floor(now()->minute / 5) * 5;
+
+            return Cache::remember($cacheKey, 300, function () use ($user, $yearMonth, $request) {
+
             [$year, $month] = explode('-', $yearMonth);
 
             // 날짜 범위 계산
             $startDate = date('Y-m-d', mktime(0, 0, 0, $month, 1, $year));
             $endDate = date('Y-m-t', mktime(0, 0, 0, $month, 1, $year)); // 해당 월의 마지막 날
 
-            $performances = Sale::with(['store', 'store.branch'])
-                ->whereBetween('sale_date', [$startDate, $endDate])
-                ->select('agency')
+            $query = Sale::with(['store', 'store.branch'])
+                ->whereBetween('sale_date', [$startDate, $endDate]);
+
+            // 권한별 필터링
+            if ($user->isBranch()) {
+                $query->where('branch_id', $user->branch_id);
+            } elseif ($user->isStore()) {
+                $query->where('store_id', $user->store_id);
+            }
+
+            $performances = $query->select('agency')
                 ->selectRaw('COUNT(*) as count')
                 ->selectRaw('SUM(settlement_amount) as total_amount')
                 ->groupBy('agency')
@@ -430,11 +453,16 @@ class DashboardController extends Controller
                 ];
             });
 
-            return response()->json([
-                'success' => true,
-                'data' => $data,
-                'meta' => ['year_month' => $yearMonth],
-            ]);
+                return response()->json([
+                    'success' => true,
+                    'data' => $data,
+                    'meta' => [
+                        'year_month' => $yearMonth,
+                        'cached_at' => now()->toISOString(),
+                        'generated_at' => now()->toISOString(),
+                    ],
+                ]);
+            }); // Cache::remember 종료
 
         } catch (\Exception $e) {
             Log::error('Dealer performance API error', ['error' => $e->getMessage()]);
@@ -450,6 +478,18 @@ class DashboardController extends Controller
     {
         try {
             $user = auth()->user();
+
+            // 캐시 키 생성
+            $cacheKey = sprintf(
+                'rankings_%s_%s_%s',
+                $user->role,
+                $user->id,
+                now()->format('Y-m-d-H:i')
+            );
+            // 5분 단위로 반올림
+            $cacheKey = substr($cacheKey, 0, -1) . floor(now()->minute / 5) * 5;
+
+            return Cache::remember($cacheKey, 300, function () use ($user, $request) {
 
             // 이번 달 기준 매출 데이터
             $startOfMonth = now()->startOfMonth();
@@ -502,27 +542,29 @@ class DashboardController extends Controller
                 } // 데이터 없으면 null
             }
 
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'branch' => [
-                        'rank' => $branchRank,
-                        'total' => $branchTotal,
-                        'user_branch_id' => $user->branch_id,
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'branch' => [
+                            'rank' => $branchRank,
+                            'total' => $branchTotal,
+                            'user_branch_id' => $user->branch_id,
+                        ],
+                        'store' => [
+                            'rank' => $storeRank,
+                            'total' => $storeTotal,
+                            'user_store_id' => $user->store_id,
+                            'scope' => $user->isHeadquarters() ? 'nationwide' : 'branch_only',
+                        ],
                     ],
-                    'store' => [
-                        'rank' => $storeRank,
-                        'total' => $storeTotal,
-                        'user_store_id' => $user->store_id,
-                        'scope' => $user->isHeadquarters() ? 'nationwide' : 'branch_only',
+                    'meta' => [
+                        'user_role' => $user->role,
+                        'period' => now()->format('Y-m'),
+                        'cached_at' => now()->toISOString(),
+                        'generated_at' => now()->toISOString(),
                     ],
-                ],
-                'meta' => [
-                    'user_role' => $user->role,
-                    'period' => now()->format('Y-m'),
-                    'generated_at' => now()->toISOString(),
-                ],
-            ]);
+                ]);
+            }); // Cache::remember 종료
 
         } catch (\Exception $e) {
             Log::error('Rankings API error', ['error' => $e->getMessage(), 'user_id' => auth()->id()]);
@@ -540,6 +582,20 @@ class DashboardController extends Controller
             $type = $request->query('type', 'store'); // branch|store
             $limit = min($request->query('limit', 5), 20); // 최대 20개
             $user = auth()->user();
+
+            // 캐시 키 생성
+            $cacheKey = sprintf(
+                'top_list_%s_%s_%s_%s_%s',
+                $user->role,
+                $user->id,
+                $type,
+                $limit,
+                now()->format('Y-m-d-H:i')
+            );
+            // 5분 단위로 반올림
+            $cacheKey = substr($cacheKey, 0, -1) . floor(now()->minute / 5) * 5;
+
+            return Cache::remember($cacheKey, 300, function () use ($user, $type, $limit, $request) {
 
             $startOfMonth = now()->startOfMonth();
             $endOfMonth = now()->endOfMonth();
@@ -599,17 +655,20 @@ class DashboardController extends Controller
                 }
             }
 
-            return response()->json([
-                'success' => true,
-                'data' => $topList,
-                'meta' => [
-                    'type' => $type,
-                    'limit' => $limit,
-                    'scope' => $user->isHeadquarters() ? 'nationwide' : 'branch_only',
-                    'user_role' => $user->role,
-                    'period' => now()->format('Y-m'),
-                ],
-            ]);
+                return response()->json([
+                    'success' => true,
+                    'data' => $topList,
+                    'meta' => [
+                        'type' => $type,
+                        'limit' => $limit,
+                        'scope' => $user->isHeadquarters() ? 'nationwide' : 'branch_only',
+                        'user_role' => $user->role,
+                        'period' => now()->format('Y-m'),
+                        'cached_at' => now()->toISOString(),
+                        'generated_at' => now()->toISOString(),
+                    ],
+                ]);
+            }); // Cache::remember 종료
 
         } catch (\Exception $e) {
             Log::error('Top list API error', ['error' => $e->getMessage(), 'type' => $request->query('type')]);
@@ -766,6 +825,20 @@ class DashboardController extends Controller
                 ], 401);
             }
 
+            // 캐시 키 생성
+            $cacheKey = sprintf(
+                'kpi_%s_%s_%s_%s_%s',
+                $user->role,
+                $user->id,
+                $days,
+                $storeId ?? 'all',
+                now()->format('Y-m-d-H:i')
+            );
+            // 5분 단위로 반올림
+            $cacheKey = substr($cacheKey, 0, -1) . floor(now()->minute / 5) * 5;
+
+            return Cache::remember($cacheKey, 300, function () use ($user, $days, $storeId, $request) {
+
             Log::info('KPI API 사용자 정보', [
                 'user_id' => $user->id,
                 'role' => $user->role,
@@ -879,38 +952,40 @@ class DashboardController extends Controller
                 ? round((($monthlyStats->month_sales - $lastMonthSales) / $lastMonthSales) * 100, 1)
                 : 0;
 
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'overview' => [
-                        'total_activations' => (int) $salesData->total_activations,
-                        'total_sales' => (float) $salesData->total_sales,
-                        'total_margin' => (float) $salesData->total_margin,
-                        'avg_sale_amount' => (float) $salesData->avg_sale_amount,
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'overview' => [
+                            'total_activations' => (int) $salesData->total_activations,
+                            'total_sales' => (float) $salesData->total_sales,
+                            'total_margin' => (float) $salesData->total_margin,
+                            'avg_sale_amount' => (float) $salesData->avg_sale_amount,
+                        ],
+                        'today' => [
+                            'activations' => (int) $todayStats->today_activations,
+                            'sales' => (float) $todayStats->today_sales,
+                        ],
+                        'monthly' => [
+                            'activations' => (int) $monthlyStats->month_activations,
+                            'sales' => (float) $monthlyStats->month_sales,
+                            'target_sales' => $targetSales,
+                            'achievement_rate' => $achievementRate,
+                            'growth_rate' => $growthRate,
+                        ],
                     ],
-                    'today' => [
-                        'activations' => (int) $todayStats->today_activations,
-                        'sales' => (float) $todayStats->today_sales,
+                    'meta' => [
+                        'days' => $days,
+                        'store_filter' => $storeId,
+                        'user_role' => $user->role,
+                        'period' => [
+                            'start' => now()->subDays($days - 1)->format('Y-m-d'),
+                            'end' => now()->format('Y-m-d'),
+                        ],
+                        'cached_at' => now()->toISOString(),
+                        'generated_at' => now()->toISOString(),
                     ],
-                    'monthly' => [
-                        'activations' => (int) $monthlyStats->month_activations,
-                        'sales' => (float) $monthlyStats->month_sales,
-                        'target_sales' => $targetSales,
-                        'achievement_rate' => $achievementRate,
-                        'growth_rate' => $growthRate,
-                    ],
-                ],
-                'meta' => [
-                    'days' => $days,
-                    'store_filter' => $storeId,
-                    'user_role' => $user->role,
-                    'period' => [
-                        'start' => now()->subDays($days - 1)->format('Y-m-d'),
-                        'end' => now()->format('Y-m-d'),
-                    ],
-                    'generated_at' => now()->toISOString(),
-                ],
-            ]);
+                ]);
+            }); // Cache::remember 종료
 
         } catch (\Exception $e) {
             Log::error('KPI API error', [
