@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Exports\BranchTemplateExport;
+use App\Exports\CreatedStoreAccountsExport;
 use App\Exports\StoreAccountsExport;
 use App\Exports\StoreTemplateExport;
 use App\Helpers\RandomDataGenerator;
+use App\Imports\StoresBulkImport;
 use App\Jobs\ProcessBulkBranchCreationJob;
 use App\Jobs\ProcessBulkStoreCreationJob;
 use App\Models\Branch;
@@ -14,6 +16,7 @@ use App\Models\Store;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 
 class StoreManagementController extends Controller
@@ -807,5 +810,115 @@ class StoreManagementController extends Controller
         }
 
         return $errors;
+    }
+
+    /**
+     * 지사별 시트로 구성된 엑셀 파일에서 매장 대량 생성
+     *
+     * 엑셀 형식:
+     * - 각 시트는 지사명으로 구성 (예: "서울지사", "부산지사")
+     * - 각 시트의 컬럼: 지사명, 매장명, 관리자명, 전화번호
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function bulkCreateStoresFromMultiSheet(Request $request)
+    {
+        try {
+            // 권한 체크 (본사와 지사만 가능)
+            $currentUser = auth()->user();
+            if (! in_array($currentUser->role, ['headquarters', 'branch'])) {
+                return response()->json([
+                    'success' => false,
+                    'error' => '매장 생성 권한이 없습니다.',
+                ], 403);
+            }
+
+            // 파일 검증
+            $request->validate([
+                'file' => 'required|file|mimes:xlsx,xls|max:10240', // 최대 10MB
+            ]);
+
+            $file = $request->file('file');
+
+            // Import 처리
+            $import = new StoresBulkImport();
+            Excel::import($import, $file);
+
+            $results = $import->getResults();
+            $errors = $import->getErrors();
+
+            // 결과 로깅
+            Log::info('매장 대량 생성 완료', [
+                'user_id' => $currentUser->id,
+                'success_count' => count($results),
+                'error_count' => count($errors),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => '매장 생성이 완료되었습니다.',
+                'data' => [
+                    'created_count' => count($results),
+                    'error_count' => count($errors),
+                    'created_stores' => $results,
+                    'errors' => $errors,
+                ],
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('매장 대량 생성 실패', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => '매장 생성 중 오류가 발생했습니다: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * 생성된 매장 계정 정보를 엑셀로 다운로드
+     *
+     * @param Request $request
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse
+     */
+    public function downloadCreatedAccounts(Request $request)
+    {
+        try {
+            // 세션에 저장된 생성 결과 가져오기 (또는 요청 바디에서)
+            $accounts = $request->input('accounts', []);
+
+            if (empty($accounts)) {
+                return response()->json([
+                    'success' => false,
+                    'error' => '다운로드할 계정 정보가 없습니다.',
+                ], 400);
+            }
+
+            $filename = '생성된_매장_계정_'.date('Y-m-d_His').'.xlsx';
+
+            return Excel::download(
+                new CreatedStoreAccountsExport($accounts),
+                $filename,
+                \Maatwebsite\Excel\Excel::XLSX,
+                [
+                    'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                    'Content-Disposition' => 'attachment; filename="'.$filename.'"',
+                ]
+            );
+
+        } catch (\Exception $e) {
+            Log::error('계정 정보 다운로드 실패', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => '다운로드 중 오류가 발생했습니다: '.$e->getMessage(),
+            ], 500);
+        }
     }
 }

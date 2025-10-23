@@ -1563,6 +1563,10 @@ if (config('app.env') !== 'production') {
         Route::post('stores/bulk/create', [App\Http\Controllers\Api\StoreManagementController::class, 'bulkCreate'])->name('api.stores.bulk.create');
         Route::post('stores/bulk/download-accounts', [App\Http\Controllers\Api\StoreManagementController::class, 'downloadAccounts'])->name('api.stores.bulk.download-accounts');
 
+        // 지사별 시트 엑셀 업로드를 통한 매장 대량 생성 (1회성)
+        Route::post('stores/bulk/multisheet/create', [App\Http\Controllers\Api\StoreManagementController::class, 'bulkCreateStoresFromMultiSheet'])->name('api.stores.bulk.multisheet.create');
+        Route::post('stores/bulk/multisheet/download-accounts', [App\Http\Controllers\Api\StoreManagementController::class, 'downloadCreatedAccounts'])->name('api.stores.bulk.multisheet.download');
+
         // 사용자 관리
         Route::get('users', [App\Http\Controllers\Api\UserManagementController::class, 'index']);
         Route::put('users/{id}', [App\Http\Controllers\Api\UserManagementController::class, 'update']);
