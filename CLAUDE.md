@@ -29,6 +29,8 @@ YKP ERP Dashboard - A Laravel-based sales management system with React frontend,
 - **API-First Design**: RESTful APIs with consistent response format
 - **Feature Flags**: Environment-based feature toggling
 - **Real-time Calculations**: SalesCalculator helper for margin calculations
+- **Background Job Queue**: Asynchronous processing for bulk operations
+- **Excel Export**: Laravel Excel integration for data export
 
 ## Development Commands
 
@@ -132,6 +134,29 @@ GET  /api/statistics/sales          # Sales statistics with filters
 POST /api/users                     # User management (HQ only)
 ```
 
+### Middleware Layer
+The application uses several key middleware for security and functionality:
+
+**RBAC Middleware** (`app/Http/Middleware/RBACMiddleware.php`)
+- Enforces role-based access control across all routes
+- Validates user permissions based on headquarters/branch/store roles
+- Automatically filters data based on user's organizational scope
+
+**API Authentication** (`app/Http/Middleware/ApiAuthenticate.php`)
+- Session-based authentication for API routes
+- Handles unauthenticated requests with JSON responses
+- Integrates with Laravel's authentication system
+
+**Performance Monitoring** (`app/Http/Middleware/PerformanceMonitoringMiddleware.php`)
+- Tracks request/response times for API endpoints
+- Logs slow queries and performance bottlenecks
+- Provides metrics for optimization
+
+**CSRF Protection** (`app/Http/Middleware/VerifyCsrfToken.php`)
+- Protects state-changing operations
+- Excludes specific API endpoints when needed
+- Prevents cross-site request forgery attacks
+
 ## Sales Calculation Engine
 
 Located in `app/Helpers/SalesCalculator.php`:
@@ -224,6 +249,68 @@ Complete user workflows:
 - Background jobs for bulk operations > 100 rows
 - Response caching for statistics (5-minute TTL)
 
+## Background Job Queue
+
+The system uses Laravel's queue system for asynchronous processing:
+
+### Job Classes
+**ProcessBatchCalculationJob** (`app/Jobs/ProcessBatchCalculationJob.php`)
+- Handles bulk sales calculations in background
+- Automatically triggered for operations with >100 rows
+- Uses dealer profiles for calculation consistency
+- Provides progress tracking and error handling
+- Retry mechanism: 3 attempts with exponential backoff
+
+### Queue Configuration
+```bash
+# Start queue worker
+php artisan queue:listen --tries=1
+
+# Monitor queue in real-time
+php artisan queue:work --verbose
+
+# Check failed jobs
+php artisan queue:failed
+
+# Retry failed jobs
+php artisan queue:retry all
+```
+
+### Queue Usage in Code
+```php
+// Dispatch job for bulk calculation
+if (count($rows) > 100) {
+    ProcessBatchCalculationJob::dispatch($rows, $profile);
+    return response()->json(['status' => 'queued']);
+}
+```
+
+## Excel Export Features
+
+The system includes Excel export capabilities using Laravel Excel (maatwebsite/excel):
+
+### Export Classes
+**StoreStatisticsExport** (`app/Exports/StoreStatisticsExport.php`)
+- Exports store-level statistics to Excel format
+- Supports filtering by date range, branch, and store
+- Includes calculated fields (margins, totals)
+- Formatted for business reporting
+
+### Export Endpoints
+```
+GET /api/sales/export              # Export sales data
+GET /api/statistics/export/stores  # Export store statistics
+```
+
+### Usage Example
+```php
+// Export with filters
+return Excel::download(
+    new StoreStatisticsExport($filters),
+    'store-statistics-' . date('Y-m-d') . '.xlsx'
+);
+```
+
 ## Environment Configuration
 
 ### Required Environment Variables
@@ -315,6 +402,20 @@ db_cluster-YYYY-MM-DD@HH-MM-SS.backup
 3. Enable SQL query logging in `.env` with `DB_LOG_QUERIES=true`
 4. Check browser console for API response details
 
+### Adding Excel Export for New Data Type
+1. Create export class in `app/Exports/` extending `FromCollection`
+2. Implement `collection()` method with data query
+3. Add `headings()` method for column headers
+4. Register route in `routes/api.php` with appropriate middleware
+5. Add download trigger in frontend component
+
+### Working with Background Jobs
+1. Create job class: `php artisan make:job ProcessYourDataJob`
+2. Implement `handle()` method with business logic
+3. Dispatch job: `ProcessYourDataJob::dispatch($data)`
+4. Monitor execution: `php artisan queue:work --verbose`
+5. Handle failures: `php artisan queue:failed` and `queue:retry`
+
 ## File Structure
 
 ### Key Directories
@@ -324,6 +425,8 @@ app/
 ├── Helpers/               # Utilities (SalesCalculator)
 ├── Http/Controllers/Api/  # API controllers
 ├── Models/               # Eloquent models
+├── Jobs/                 # Background job classes
+├── Exports/              # Excel export classes
 resources/
 ├── js/components/        # React components
 ├── js/hooks/            # Custom React hooks
@@ -332,6 +435,55 @@ tests/
 ├── Unit/                # Unit tests
 ├── Feature/             # API tests
 ├── playwright/          # E2E tests
+```
+
+### Application Service Layer
+The `app/Application/Services/` directory contains domain-specific business logic:
+
+**SaleService.php** (`app/Application/Services/SaleService.php`)
+- Core sales data management
+- CRUD operations with business rules
+- Integration with SalesCalculator
+- Role-based data filtering
+
+**MonthlySettlementService.php**
+- Month-end financial reconciliation
+- Aggregation of sales data by period
+- Settlement calculations and reports
+- Invoice generation
+
+**PayrollService.php**
+- Employee payroll management
+- Salary calculations based on sales performance
+- Commission tracking and distribution
+- Integration with sales metrics
+
+**RefundService.php**
+- Refund request processing
+- Financial adjustment calculations
+- Audit trail for refund transactions
+- Integration with settlement system
+
+**ExpenseService.php**
+- Daily and fixed expense tracking
+- Budget allocation and monitoring
+- Expense categorization and reporting
+- Integration with monthly settlements
+
+### Service Pattern Usage
+```php
+// Example: Using SaleService
+use App\Application\Services\SaleService;
+
+class SalesApiController extends Controller
+{
+    public function __construct(private SaleService $saleService) {}
+
+    public function store(CreateSaleRequest $request)
+    {
+        return $this->saleService->create($request->validated());
+    }
+}
 ```
 
 ### Important Files
