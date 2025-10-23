@@ -196,6 +196,21 @@
                     body: formData,
                 });
 
+                // Check response status first
+                if (!response.ok) {
+                    const text = await response.text();
+                    console.error('Server response:', text);
+                    throw new Error(`서버 오류 (${response.status}): ${response.statusText}`);
+                }
+
+                // Check if response is JSON
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const text = await response.text();
+                    console.error('Non-JSON response:', text);
+                    throw new Error('서버가 올바른 형식의 응답을 반환하지 않았습니다. 콘솔을 확인해주세요.');
+                }
+
                 const data = await response.json();
 
                 if (data.success) {
