@@ -641,6 +641,16 @@ Route::middleware(['auth', 'rbac'])->group(function () {
 
     // Enhanced 페이지 제거됨 - store-management.blade.php에 통합됨
 
+    // 매장 일괄 생성 페이지 (본사/지사 전용)
+    Route::get('/management/stores/bulk-upload', function () {
+        $userRole = auth()->user()->role;
+        if (!in_array($userRole, ['headquarters', 'branch'])) {
+            abort(403, '본사 또는 지사 관리자만 접근 가능합니다.');
+        }
+
+        return view('management.bulk-store-upload');
+    })->name('management.stores.bulk-upload');
+
     // 별도 지사 관리 페이지
     Route::get('/management/branches', function () {
         $userRole = auth()->user()->role;
