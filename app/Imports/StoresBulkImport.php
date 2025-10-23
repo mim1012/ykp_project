@@ -30,7 +30,18 @@ class StoresBulkImport
     public function processAllSheets()
     {
         try {
+            // 파일 확장자 확인
+            $extension = pathinfo($this->filePath, PATHINFO_EXTENSION);
+
+            if (strtolower($extension) === 'csv') {
+                // CSV 파일은 인코딩 변환 후 처리
+                $this->processCsvFile();
+                return;
+            }
+
+            // Excel 파일 처리
             $reader = IOFactory::createReader('Xlsx');
+            $reader->setReadDataOnly(false);
             $spreadsheet = $reader->load($this->filePath);
 
             // 모든 시트 반복 처리
@@ -54,6 +65,66 @@ class StoresBulkImport
             }
         } catch (\Exception $e) {
             Log::error('엑셀 시트 처리 실패', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * CSV 파일 처리 (인코딩 자동 감지 및 변환)
+     */
+    protected function processCsvFile()
+    {
+        try {
+            // 파일 내용 읽기
+            $content = file_get_contents($this->filePath);
+
+            // 인코딩 자동 감지
+            $encoding = mb_detect_encoding($content, ['UTF-8', 'CP949', 'EUC-KR', 'ISO-8859-1'], true);
+
+            if ($encoding && $encoding !== 'UTF-8') {
+                // UTF-8로 변환
+                $content = mb_convert_encoding($content, 'UTF-8', $encoding);
+                Log::info('CSV 인코딩 변환', ['from' => $encoding, 'to' => 'UTF-8']);
+            }
+
+            // 임시 파일에 UTF-8로 저장
+            $tempFile = tempnam(sys_get_temp_dir(), 'csv_utf8_');
+            file_put_contents($tempFile, $content);
+
+            // CSV 파싱
+            $rows = [];
+            if (($handle = fopen($tempFile, 'r')) !== false) {
+                while (($data = fgetcsv($handle, 1000, ',')) !== false) {
+                    $rows[] = $data;
+                }
+                fclose($handle);
+            }
+
+            // 임시 파일 삭제
+            unlink($tempFile);
+
+            // 첫 번째 행은 헤더
+            $header = array_shift($rows);
+
+            // 데이터 처리
+            foreach ($rows as $index => $row) {
+                $rowNumber = $index + 2; // 헤더 제외
+
+                // 배열 키를 A, B, C, D로 변환
+                $processedRow = [];
+                foreach ($row as $colIndex => $value) {
+                    $colLetter = chr(65 + $colIndex); // 65 = 'A'
+                    $processedRow[$colLetter] = $value;
+                }
+
+                $this->processRow($processedRow, $rowNumber, 'Sheet1');
+            }
+
+        } catch (\Exception $e) {
+            Log::error('CSV 파일 처리 실패', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
