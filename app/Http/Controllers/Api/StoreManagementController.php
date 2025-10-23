@@ -841,9 +841,12 @@ class StoreManagementController extends Controller
 
             $file = $request->file('file');
 
+            // 파일을 임시 위치에 저장
+            $filePath = $file->getRealPath();
+
             // Import 처리
-            $import = new StoresBulkImport();
-            Excel::import($import, $file);
+            $import = new StoresBulkImport($filePath);
+            $import->processAllSheets();
 
             $results = $import->getResults();
             $errors = $import->getErrors();
