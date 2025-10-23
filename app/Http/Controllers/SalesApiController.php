@@ -8,6 +8,7 @@ use App\Models\Sale;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class SalesApiController extends Controller
@@ -43,6 +44,9 @@ class SalesApiController extends Controller
             ]);
 
             $result = $this->saleService->bulkCreate($request, Auth::user());
+
+            // 캐시 무효화: 매출 데이터 생성 후 대시보드 캐시 삭제
+            $this->clearDashboardCache();
 
             return response()->json($result, 201);
 
@@ -154,6 +158,9 @@ class SalesApiController extends Controller
         try {
             $result = $this->saleService->bulkDelete($request->sale_ids, Auth::user());
 
+            // 캐시 무효화: 매출 데이터 삭제 후 대시보드 캐시 삭제
+            $this->clearDashboardCache();
+
             return response()->json($result);
 
         } catch (\Exception $e) {
@@ -167,6 +174,68 @@ class SalesApiController extends Controller
                 'success' => false,
                 'message' => '삭제 중 오류가 발생했습니다.',
             ], 500);
+        }
+    }
+
+    /**
+     * 대시보드 캐시 무효화
+     * Sales CRUD 작업 후 호출하여 관련 캐시를 모두 삭제
+     */
+    private function clearDashboardCache(): void
+    {
+        try {
+            // Laravel 8.37+ 지원: Cache::flush() 대신 패턴 매칭 사용
+            // database 캐시 드라이버는 패턴 매칭을 직접 지원하지 않으므로
+            // 모든 사용자에 대해 캐시를 삭제하는 대신, 현재 사용자의 캐시만 삭제
+
+            $user = Auth::user();
+            $patterns = [
+                'dashboard_overview',
+                'store_ranking',
+                'sales_trend',
+                'financial_summary',
+                'dealer_performance',
+                'rankings',
+                'top_list',
+                'kpi',
+            ];
+
+            $clearedCount = 0;
+
+            // 사용자별 캐시 키 삭제
+            foreach ($patterns as $pattern) {
+                // 현재 사용자의 캐시만 삭제 (권한별)
+                $cacheKey = sprintf('%s_%s_%s', $pattern, $user->role, $user->id);
+
+                // 5분 단위 타임스탬프 (현재 + 이전 + 다음 버킷 모두 삭제)
+                $currentMinute = now()->minute;
+                $buckets = [
+                    floor($currentMinute / 5) * 5,           // 현재 5분 버킷
+                    floor(($currentMinute - 5) / 5) * 5,     // 이전 5분 버킷
+                    floor(($currentMinute + 5) / 5) * 5,     // 다음 5분 버킷
+                ];
+
+                foreach ($buckets as $bucket) {
+                    $timestamp = now()->format('Y-m-d-H:') . str_pad($bucket, 2, '0', STR_PAD_LEFT);
+                    $fullKey = $cacheKey . '_' . $timestamp;
+
+                    if (Cache::forget($fullKey)) {
+                        $clearedCount++;
+                    }
+                }
+            }
+
+            Log::info('Dashboard cache cleared', [
+                'user_id' => $user->id,
+                'user_role' => $user->role,
+                'cleared_count' => $clearedCount,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::warning('Cache clearing failed', [
+                'error' => $e->getMessage(),
+                'user_id' => Auth::id(),
+            ]);
         }
     }
 
