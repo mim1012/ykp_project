@@ -8,6 +8,7 @@ use App\Models\Sale;
 use App\Models\Store;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -19,9 +20,21 @@ class DashboardController extends Controller
     public function overview(Request $request)
     {
         try {
-            Log::info('Dashboard overview API called', ['user_id' => auth()->id()]);
-
             $user = auth()->user();
+
+            // 캐시 키 생성 (5분 단위로 반올림하여 같은 시간대 사용자들이 같은 캐시 공유)
+            $cacheKey = sprintf(
+                'dashboard_overview_%s_%s_%s',
+                $user->role,
+                $user->id,
+                now()->format('Y-m-d-H:i') // 분 단위
+            );
+            // 5분 단위로 반올림 (14:37 → 14:35)
+            $cacheKey = substr($cacheKey, 0, -1) . floor(now()->minute / 5) * 5;
+
+            // 5분간 캐시 유지 (300초)
+            return Cache::remember($cacheKey, 300, function () use ($user, $request) {
+                Log::info('Dashboard overview API called (cache miss)', ['user_id' => $user->id]);
 
             // 사용자 정보 상세 로깅
             Log::info('Dashboard user details', [
@@ -195,7 +208,12 @@ class DashboardController extends Controller
                 $responseData['debug'] = $debugInfo;
             }
 
-            return response()->json($responseData);
+                // 캐시 생성 시간 메타데이터 추가
+                $responseData['data']['meta']['cached_at'] = now()->toISOString();
+                $responseData['data']['meta']['cache_key'] = $cacheKey;
+
+                return response()->json($responseData);
+            }); // Cache::remember 종료
 
         } catch (\Exception $e) {
             Log::error('Dashboard overview API error', [
@@ -220,6 +238,20 @@ class DashboardController extends Controller
             $user = auth()->user();
             $period = $request->get('period', 'monthly');
             $limit = min($request->get('limit', 10), 50);
+
+            // 캐시 키 생성 (기간별, 권한별로 다른 캐시)
+            $cacheKey = sprintf(
+                'store_ranking_%s_%s_%s_%s_%s',
+                $user->role,
+                $user->id,
+                $period,
+                $limit,
+                now()->format('Y-m-d-H:i')
+            );
+            // 5분 단위로 반올림
+            $cacheKey = substr($cacheKey, 0, -1) . floor(now()->minute / 5) * 5;
+
+            return Cache::remember($cacheKey, 300, function () use ($user, $period, $limit, $request) {
 
             // 기간별 필터링
             $query = Sale::with(['store', 'store.branch']);
@@ -273,15 +305,17 @@ class DashboardController extends Controller
                 }
             }
 
-            return response()->json([
-                'success' => true,
-                'data' => $rankedStores,
-                'meta' => [
-                    'period' => $period,
-                    'total_stores_with_sales' => count($rankedStores),
-                    'generated_at' => now()->toISOString(),
-                ],
-            ]);
+                return response()->json([
+                    'success' => true,
+                    'data' => $rankedStores,
+                    'meta' => [
+                        'period' => $period,
+                        'total_stores_with_sales' => count($rankedStores),
+                        'cached_at' => now()->toISOString(),
+                        'generated_at' => now()->toISOString(),
+                    ],
+                ]);
+            }); // Cache::remember 종료
 
         } catch (\Exception $e) {
             Log::error('Store ranking API error', ['error' => $e->getMessage()]);
@@ -302,9 +336,23 @@ class DashboardController extends Controller
         try {
             $startDate = $request->get('start_date', now()->startOfMonth()->toDateString());
             $endDate = $request->get('end_date', now()->endOfMonth()->toDateString());
+            $user = auth()->user();
+
+            // 캐시 키 생성 (날짜 범위별로 다른 캐시)
+            $cacheKey = sprintf(
+                'financial_summary_%s_%s_%s_%s_%s',
+                $user->role,
+                $user->id,
+                $startDate,
+                $endDate,
+                now()->format('Y-m-d-H:i')
+            );
+            // 5분 단위로 반올림
+            $cacheKey = substr($cacheKey, 0, -1) . floor(now()->minute / 5) * 5;
+
+            return Cache::remember($cacheKey, 300, function () use ($user, $startDate, $endDate, $request) {
 
             // 권한에 따른 필터링 추가
-            $user = auth()->user();
             $salesQuery = Sale::whereBetween('sale_date', [$startDate, $endDate]);
 
             // 본사: 전체 데이터
@@ -325,19 +373,24 @@ class DashboardController extends Controller
             // 마진율 계산
             $averageMarginRate = $totalSales > 0 ? round(($totalMargin / $totalSales) * 100, 1) : 0;
 
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'total_sales' => floatval($totalSales),
-                    'total_activations' => $totalActivations,
-                    'total_margin' => floatval($totalMargin),
-                    'average_margin_rate' => $averageMarginRate,
-                    'period' => [
-                        'start' => $startDate,
-                        'end' => $endDate,
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'total_sales' => floatval($totalSales),
+                        'total_activations' => $totalActivations,
+                        'total_margin' => floatval($totalMargin),
+                        'average_margin_rate' => $averageMarginRate,
+                        'period' => [
+                            'start' => $startDate,
+                            'end' => $endDate,
+                        ],
                     ],
-                ],
-            ]);
+                    'meta' => [
+                        'cached_at' => now()->toISOString(),
+                        'generated_at' => now()->toISOString(),
+                    ],
+                ]);
+            }); // Cache::remember 종료
 
         } catch (\Exception $e) {
             Log::error('Financial summary API error', ['error' => $e->getMessage()]);
@@ -574,6 +627,19 @@ class DashboardController extends Controller
             $days = min($request->get('days', 30), 90); // 최대 90일
             $user = auth()->user();
 
+            // 캐시 키 생성 (기간별로 다른 캐시)
+            $cacheKey = sprintf(
+                'sales_trend_%s_%s_%s_%s',
+                $user->role,
+                $user->id,
+                $days,
+                now()->format('Y-m-d-H:i')
+            );
+            // 5분 단위로 반올림
+            $cacheKey = substr($cacheKey, 0, -1) . floor(now()->minute / 5) * 5;
+
+            return Cache::remember($cacheKey, 300, function () use ($user, $days, $request) {
+
             // 날짜 범위 계산
             $endDate = now()->endOfDay()->format('Y-m-d H:i:s');
             $startDate = now()->subDays($days - 1)->startOfDay()->format('Y-m-d H:i:s');
@@ -621,25 +687,27 @@ class DashboardController extends Controller
                 ];
             }
 
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'trend_data' => $trendData,
-                    'summary' => [
-                        'total_activations' => array_sum(array_column($trendData, 'activations')),
-                        'total_sales' => array_sum(array_column($trendData, 'sales')),
-                        'average_daily_activations' => round(array_sum(array_column($trendData, 'activations')) / $days, 1),
-                        'average_daily_sales' => round(array_sum(array_column($trendData, 'sales')) / $days, 0),
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'trend_data' => $trendData,
+                        'summary' => [
+                            'total_activations' => array_sum(array_column($trendData, 'activations')),
+                            'total_sales' => array_sum(array_column($trendData, 'sales')),
+                            'average_daily_activations' => round(array_sum(array_column($trendData, 'activations')) / $days, 1),
+                            'average_daily_sales' => round(array_sum(array_column($trendData, 'sales')) / $days, 0),
+                        ],
                     ],
-                ],
-                'meta' => [
-                    'days' => $days,
-                    'start_date' => $startDate->format('Y-m-d'),
-                    'end_date' => $endDate->format('Y-m-d'),
-                    'user_role' => $user->role,
-                    'generated_at' => now()->toISOString(),
-                ],
-            ]);
+                    'meta' => [
+                        'days' => $days,
+                        'start_date' => date('Y-m-d', strtotime($startDate)),
+                        'end_date' => date('Y-m-d', strtotime($endDate)),
+                        'user_role' => $user->role,
+                        'cached_at' => now()->toISOString(),
+                        'generated_at' => now()->toISOString(),
+                    ],
+                ]);
+            }); // Cache::remember 종료
 
         } catch (\Exception $e) {
             Log::error('Sales trend API error', ['error' => $e->getMessage()]);
