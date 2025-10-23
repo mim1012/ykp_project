@@ -178,12 +178,73 @@ class StoresBulkImport
                 ->first();
 
             if ($existingStore) {
-                $this->errors[] = [
+                // 매장은 이미 있으니, user 계정만 확인하고 생성
+                $existingUser = User::where('store_id', $existingStore->id)->first();
+
+                if ($existingUser) {
+                    // 매장도 있고 user도 있으면 스킵
+                    $this->errors[] = [
+                        'sheet' => $sheetName,
+                        'row' => $rowNumber,
+                        'error' => '매장과 계정이 이미 존재합니다.',
+                        'data' => ['지사명' => $branchName, '매장명' => $storeName, '기존 이메일' => $existingUser->email],
+                    ];
+                    return;
+                }
+
+                // 매장은 있지만 user가 없으면 → user만 생성
+                $username = $this->generateUsername($storeName);
+                $email = strtolower($existingStore->code) . '@ykp.com';
+                $password = 'store' . str_pad($existingStore->id, 4, '0', STR_PAD_LEFT);
+
+                // 이메일 중복 체크
+                $emailExists = User::where('email', $email)->first();
+                if ($emailExists) {
+                    $this->errors[] = [
+                        'sheet' => $sheetName,
+                        'row' => $rowNumber,
+                        'error' => '이메일이 이미 존재합니다.',
+                        'data' => ['email' => $email, 'store_id' => $existingStore->id],
+                    ];
+                    return;
+                }
+
+                // user 계정 생성
+                $user = User::create([
+                    'name' => $ownerName ?: $storeName . ' 관리자',
+                    'username' => $username,
+                    'email' => $email,
+                    'password' => Hash::make($password),
+                    'role' => 'store',
+                    'store_id' => $existingStore->id,
+                    'branch_id' => $branch->id,
+                    'is_active' => true,
+                    'must_change_password' => true,
+                ]);
+
+                // 성공 결과 저장
+                $this->results[] = [
                     'sheet' => $sheetName,
                     'row' => $rowNumber,
-                    'error' => '이미 존재하는 매장입니다.',
-                    'data' => ['지사명' => $branchName, '매장명' => $storeName],
+                    'branch_name' => $branchName,
+                    'store_name' => $storeName,
+                    'store_code' => $existingStore->code,
+                    'owner_name' => $ownerName,
+                    'phone' => $phone,
+                    'email' => $email,
+                    'username' => $username,
+                    'password' => $password,
+                    'store_id' => $existingStore->id,
+                    'user_id' => $user->id,
                 ];
+
+                Log::info('기존 매장에 user 계정 생성 성공', [
+                    'sheet' => $sheetName,
+                    'row' => $rowNumber,
+                    'store_id' => $existingStore->id,
+                    'user_id' => $user->id,
+                ]);
+
                 return;
             }
 
