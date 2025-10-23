@@ -25,7 +25,7 @@ class StoresBulkImport
     }
 
     /**
-     * 엑셀 파일의 모든 시트를 처리
+     * 엑셀 파일의 모든 시트를 처리 (단일 시트 + 멀티 시트 모두 지원)
      */
     public function processAllSheets()
     {
@@ -37,6 +37,11 @@ class StoresBulkImport
             foreach ($spreadsheet->getAllSheets() as $worksheet) {
                 $sheetName = $worksheet->getTitle();
                 $rows = $worksheet->toArray(null, true, true, true);
+
+                // 빈 시트 스킵
+                if (count($rows) <= 1) {
+                    continue;
+                }
 
                 // 첫 번째 행은 헤더로 간주하고 스킵
                 $dataRows = array_slice($rows, 1);
