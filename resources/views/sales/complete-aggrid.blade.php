@@ -163,7 +163,7 @@
                 <div class="text-xl font-bold" id="total-rebate">₩0</div>
             </div>
             <div class="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white p-3 rounded-lg shadow-lg">
-                <div class="text-sm opacity-90">총 정산금</div>
+                <div class="text-sm opacity-90">총 매출</div>
                 <div class="text-xl font-bold" id="total-settlement">₩0</div>
             </div>
             <div class="bg-gradient-to-br from-violet-500 to-violet-600 text-white p-3 rounded-lg shadow-lg">
@@ -310,7 +310,7 @@
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase minus-field">신규/번이할인</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase minus-field">차감</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase total-field">리베총계</th>
-                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase total-field">정산금</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase total-field">매출</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase plus-field">현금받음</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase minus-field">페이백</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase margin-field">마진</th>
@@ -712,7 +712,7 @@
                     <td class="px-2 py-2 total-field">
                         <span class="field-calculated text-yellow-800" id="rebate-${row.id}">${(row.rebate_total || 0).toLocaleString()}원</span>
                     </td>
-                    <!-- 22. 정산금 (계산) -->
+                    <!-- 22. 매출 (계산) -->
                     <td class="px-2 py-2 total-field">
                         <span class="field-calculated text-yellow-800" id="settlement-${row.id}">${(row.settlement_amount || 0).toLocaleString()}원</span>
                     </td>
@@ -818,7 +818,7 @@
             const rebateTotal = (row.base_price || 0) + (row.verbal1 || 0) + (row.verbal2 || 0) +
                                (row.grade_amount || 0) + (row.additional_amount || 0);
 
-            // U = T - P + Q + R + S + W - X (정산금)
+            // U = T - P + Q + R + S + W - X (매출)
             const settlementAmount = rebateTotal - (row.cash_activation || 0) + (row.usim_fee || 0) +
                                    (row.new_mnp_discount || 0) + (row.deduction || 0) +
                                    (row.cash_received || 0) - (row.payback || 0);
@@ -829,7 +829,7 @@
             // 세금 계산 중단
             row.tax = 0;
 
-            // 마진 = 정산금 (세금 없음)
+            // 마진 = 매출 (세금 없음)
             row.margin_before_tax = settlementAmount;
             row.margin_after_tax = settlementAmount;
 
@@ -2319,7 +2319,7 @@
                                 '개통일', '휴대폰번호', '고객명', '생년월일',
                                 '액면/셋팅가', '구두1', '구두2', '그레이드', '부가추가',
                                 '서류상현금개통', '유심비 (+표기)', '신규,번이    (-800표기)', '차감(-표기)',
-                                '리베총계', '정산금', '부/소 세', '현금받음(+표기)', '페이백(-표기)',
+                                '리베총계', '매출', '부/소 세', '현금받음(+표기)', '페이백(-표기)',
                                 '세전 / 마진', '세후 / 마진', '메모'
                             ];
 
@@ -2689,7 +2689,7 @@
 
                                     // 계산 필드들
                                     total_rebate: parseNumber(getColValue(18)), // 리베총계
-                                    settlement_amount: parseNumber(getColValue(19)), // 정산금
+                                    settlement_amount: parseNumber(getColValue(19)), // 매출
                                     tax: parseNumber(getColValue(20)), // 부/소세
                                     cash_received: parseNumber(getColValue(21)), // 현금받음
                                     payback: parseNumber(getColValue(22)), // 페이백
@@ -2718,7 +2718,7 @@
 
                                     // 계산 (SalesCalculator.php와 동일한 공식)
                                     const T = K + L + M + N + O; // 리베총계
-                                    const U = T - P + Q + R + S; // 정산금
+                                    const U = T - P + Q + R + S; // 매출
                                     const V = Math.round(U * 0.1); // 세금 (10%)
                                     const Y = U - V + W + X; // 세전마진
                                     const Z = Y - V; // 세후마진 (세전마진 - 세금)
@@ -2819,7 +2819,7 @@
                 const templateData = [
                     ['판매자', '대리점', '통신사', '개통방식', '모델명', '개통일', '휴대폰번호', '고객명', '생년월일',
                      '액면/셋팅가', '구두1', '구두2', '그레이드', '부가추가', '서류상현금개통', '유심비',
-                     '신규/번이할인', '차감', '리베총계', '정산금', '부/소세', '현금받음', '페이백',
+                     '신규/번이할인', '차감', '리베총계', '매출', '부/소세', '현금받음', '페이백',
                      '세전마진', '세후마진', '메모'],
                     ['홍길동', 'SM', 'SK', '신규', 'iPhone 15', todayStr, '010-1234-5678', '김고객', '1990-01-01',
                      100000, 50000, 30000, 20000, 10000, 30000, 8800,
@@ -2852,7 +2852,7 @@
                     { wch: 15 }, // 신규/번이할인
                     { wch: 10 }, // 차감
                     { wch: 12 }, // 리베총계
-                    { wch: 12 }, // 정산금
+                    { wch: 12 }, // 매출
                     { wch: 10 }, // 부/소세
                     { wch: 12 }, // 현금받음
                     { wch: 10 }, // 페이백
@@ -2897,7 +2897,7 @@
                 '모델명', '용량', '전화번호', '고객명', '생년월일',
                 '액면가', '구두1', '구두2', '그레이드', '부가추가',
                 '서류상현금개통', '유심비', '신규번이할인', '차감',
-                '리베총계', '정산금', '현금받음', '페이백', '마진'
+                '리베총계', '매출', '현금받음', '페이백', '마진'
             ];
 
             // CSV 데이터 행
