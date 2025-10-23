@@ -1573,10 +1573,6 @@ if (config('app.env') !== 'production') {
         Route::post('stores/bulk/create', [App\Http\Controllers\Api\StoreManagementController::class, 'bulkCreate'])->name('api.stores.bulk.create');
         Route::post('stores/bulk/download-accounts', [App\Http\Controllers\Api\StoreManagementController::class, 'downloadAccounts'])->name('api.stores.bulk.download-accounts');
 
-        // 지사별 시트 엑셀 업로드를 통한 매장 대량 생성 (1회성)
-        Route::post('stores/bulk/multisheet/create', [App\Http\Controllers\Api\StoreManagementController::class, 'bulkCreateStoresFromMultiSheet'])->name('api.stores.bulk.multisheet.create');
-        Route::post('stores/bulk/multisheet/download-accounts', [App\Http\Controllers\Api\StoreManagementController::class, 'downloadCreatedAccounts'])->name('api.stores.bulk.multisheet.download');
-
         // 사용자 관리
         Route::get('users', [App\Http\Controllers\Api\UserManagementController::class, 'index']);
         Route::put('users/{id}', [App\Http\Controllers\Api\UserManagementController::class, 'update']);
@@ -1620,6 +1616,13 @@ if (config('app.env') !== 'production') {
 } // if (config('app.env') !== 'production') 블록 닫기
 
 // 매장/지사 관리 API (모든 환경에서 사용) - 프로덕션에서도 필요
+
+// 지사별 시트 엑셀 업로드를 통한 매장 대량 생성 (1회성) - 프로덕션에서도 사용 가능
+Route::middleware(['web', 'auth'])->prefix('api')->group(function () {
+    Route::post('stores/bulk/multisheet/create', [App\Http\Controllers\Api\StoreManagementController::class, 'bulkCreateStoresFromMultiSheet'])->name('api.stores.bulk.multisheet.create');
+    Route::post('stores/bulk/multisheet/download-accounts', [App\Http\Controllers\Api\StoreManagementController::class, 'downloadCreatedAccounts'])->name('api.stores.bulk.multisheet.download');
+});
+
 // 매장 계정 조회 API
 Route::middleware(['web', 'auth'])->get('/api/stores/{id}/account', function ($id) {
     try {
