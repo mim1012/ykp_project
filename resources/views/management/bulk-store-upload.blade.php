@@ -199,29 +199,64 @@
                 // Check response status first
                 if (!response.ok) {
                     const text = await response.text();
-                    console.error('Server response:', text);
-                    throw new Error(`서버 오류 (${response.status}): ${response.statusText}`);
+                    console.error('❌ Server Error Response:', {
+                        status: response.status,
+                        statusText: response.statusText,
+                        headers: Object.fromEntries(response.headers.entries()),
+                        body: text
+                    });
+
+                    // HTML 에러 페이지인 경우
+                    if (text.includes('<html') || text.includes('<!DOCTYPE')) {
+                        throw new Error(`서버 오류 (${response.status}): 500 Internal Server Error. 로그를 확인해주세요. (storage/logs/laravel.log)`);
+                    }
+
+                    throw new Error(`서버 오류 (${response.status}): ${text.substring(0, 200)}`);
                 }
 
                 // Check if response is JSON
                 const contentType = response.headers.get('content-type');
+                console.log('📡 Response Content-Type:', contentType);
+
                 if (!contentType || !contentType.includes('application/json')) {
                     const text = await response.text();
-                    console.error('Non-JSON response:', text);
-                    throw new Error('서버가 올바른 형식의 응답을 반환하지 않았습니다. 콘솔을 확인해주세요.');
+                    console.error('❌ Non-JSON response:', {
+                        contentType,
+                        body: text.substring(0, 500)
+                    });
+                    throw new Error('서버가 JSON이 아닌 응답을 반환했습니다. 브라우저 Console (F12)을 확인해주세요.');
                 }
 
                 const data = await response.json();
+                console.log('✅ Response Data:', data);
 
                 if (data.success) {
                     createdStores = data.data.created_stores || [];
                     showResult(data.data);
                 } else {
+                    console.error('❌ API Error:', data);
                     throw new Error(data.error || '알 수 없는 오류가 발생했습니다.');
                 }
             } catch (error) {
-                console.error('Upload error:', error);
-                alert('업로드 중 오류가 발생했습니다: ' + error.message);
+                console.error('❌ Upload error:', {
+                    message: error.message,
+                    stack: error.stack
+                });
+
+                // 더 자세한 에러 메시지 표시
+                const errorDetails = `
+업로드 중 오류가 발생했습니다:
+
+${error.message}
+
+해결 방법:
+1. 브라우저 개발자 도구 (F12) → Console 탭에서 상세 로그 확인
+2. 서버 로그 확인: storage/logs/laravel.log
+3. 로그인 상태 확인 (세션 만료 시 재로그인)
+4. 파일 형식 확인 (.xlsx 또는 .xls)
+                `.trim();
+
+                alert(errorDetails);
             } finally {
                 document.getElementById('loading').classList.add('hidden');
             }

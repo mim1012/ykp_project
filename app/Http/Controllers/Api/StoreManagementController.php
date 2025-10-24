@@ -824,47 +824,96 @@ class StoreManagementController extends Controller
      */
     public function bulkCreateStoresFromMultiSheet(Request $request)
     {
-        Log::info('매장 대량 생성 시작', ['user_id' => auth()->id()]);
+        Log::info('=== 매장 대량 생성 시작 ===', [
+            'user_id' => auth()->id(),
+            'request_method' => $request->method(),
+            'request_url' => $request->fullUrl(),
+            'has_file' => $request->hasFile('file'),
+        ]);
 
         try {
             // 권한 체크 (본사와 지사만 가능)
             $currentUser = auth()->user();
+
+            if (!$currentUser) {
+                Log::error('❌ 인증 실패: 사용자 없음');
+                return response()->json([
+                    'success' => false,
+                    'error' => '로그인이 필요합니다.',
+                ], 401);
+            }
+
+            Log::info('✅ 사용자 인증 확인', [
+                'user_id' => $currentUser->id,
+                'email' => $currentUser->email,
+                'role' => $currentUser->role,
+            ]);
+
             if (! in_array($currentUser->role, ['headquarters', 'branch'])) {
-                Log::warning('매장 생성 권한 없음', ['user_id' => $currentUser->id, 'role' => $currentUser->role]);
+                Log::warning('❌ 권한 부족', ['user_id' => $currentUser->id, 'role' => $currentUser->role]);
                 return response()->json([
                     'success' => false,
                     'error' => '매장 생성 권한이 없습니다.',
                 ], 403);
             }
 
-            Log::info('파일 검증 시작');
+            Log::info('📂 파일 검증 시작');
+
+            // 파일 존재 확인
+            if (!$request->hasFile('file')) {
+                Log::error('❌ 파일 없음', [
+                    'has_file' => $request->hasFile('file'),
+                    'all_files' => $request->allFiles(),
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'error' => '파일이 업로드되지 않았습니다.',
+                ], 400);
+            }
 
             // 파일 검증
-            $request->validate([
-                'file' => 'required|file|mimes:xlsx,xls|max:10240', // 최대 10MB
-            ]);
+            try {
+                $request->validate([
+                    'file' => 'required|file|mimes:xlsx,xls,csv|max:10240', // CSV도 추가, 최대 10MB
+                ]);
+            } catch (\Illuminate\Validation\ValidationException $e) {
+                Log::error('❌ 파일 검증 실패', [
+                    'errors' => $e->errors(),
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'error' => '파일 검증 실패: ' . json_encode($e->errors()),
+                ], 422);
+            }
 
             $file = $request->file('file');
-            Log::info('파일 업로드 확인', ['filename' => $file->getClientOriginalName(), 'size' => $file->getSize()]);
+            Log::info('✅ 파일 업로드 확인', [
+                'filename' => $file->getClientOriginalName(),
+                'size' => $file->getSize(),
+                'mime_type' => $file->getMimeType(),
+                'extension' => $file->getClientOriginalExtension(),
+            ]);
 
             // 파일을 임시 위치에 저장
             $filePath = $file->getRealPath();
-            Log::info('파일 경로', ['path' => $filePath]);
+            Log::info('📁 파일 경로', ['path' => $filePath, 'exists' => file_exists($filePath)]);
 
             // Import 처리
-            Log::info('Import 시작');
+            Log::info('🚀 Import 처리 시작');
             $import = new StoresBulkImport($filePath);
             $import->processAllSheets();
-            Log::info('Import 완료');
+            Log::info('✅ Import 처리 완료');
 
             $results = $import->getResults();
             $errors = $import->getErrors();
 
             // 결과 로깅
-            Log::info('매장 대량 생성 완료', [
+            Log::info('=== 매장 대량 생성 완료 ===', [
                 'user_id' => $currentUser->id,
                 'success_count' => count($results),
                 'error_count' => count($errors),
+                'sample_result' => !empty($results) ? $results[0] : null,
+                'sample_error' => !empty($errors) ? $errors[0] : null,
             ]);
 
             return response()->json([
@@ -878,15 +927,35 @@ class StoreManagementController extends Controller
                 ],
             ]);
 
-        } catch (\Exception $e) {
-            Log::error('매장 대량 생성 실패', [
+        } catch (\Illuminate\Database\QueryException $e) {
+            Log::error('❌ 데이터베이스 오류', [
                 'error' => $e->getMessage(),
+                'sql' => $e->getSql() ?? 'N/A',
+                'bindings' => $e->getBindings() ?? [],
                 'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
                 'success' => false,
-                'error' => '매장 생성 중 오류가 발생했습니다: '.$e->getMessage(),
+                'error' => '데이터베이스 오류: ' . $e->getMessage(),
+                'detail' => config('app.debug') ? $e->getTraceAsString() : null,
+            ], 500);
+
+        } catch (\Exception $e) {
+            Log::error('❌ 매장 대량 생성 실패', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => '매장 생성 중 오류가 발생했습니다: ' . $e->getMessage(),
+                'detail' => config('app.debug') ? [
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                ] : null,
             ], 500);
         }
     }
