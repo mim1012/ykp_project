@@ -116,8 +116,8 @@ class StoreManagementController extends Controller
                     'role' => 'store',
                     'branch_id' => $request->branch_id,
                     'store_id' => $store->id,
-                    'is_active' => \DB::raw('true'),  // PostgreSQL boolean 명시적 사용
-                    'created_by_user_id' => $currentUser ? strval($currentUser->id) : null, // null 체크 추가
+                    'is_active' => true,  // boolean 타입 (모델에서 자동 캐스팅)
+                    'created_by_user_id' => $currentUser ? $currentUser->id : null,
                 ]);
 
                 $accountCreated = true;

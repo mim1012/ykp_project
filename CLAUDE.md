@@ -11,9 +11,11 @@ YKP ERP Dashboard - A Laravel-based sales management system with React frontend,
 ### Backend Stack
 - **Laravel 12** with PHP 8.2+
 - **Filament v4** for admin panels
-- **PostgreSQL** (production) / **SQLite** (testing)
+- **PostgreSQL** (production) / **SQLite in-memory** (testing via PHPUnit)
 - **Application Service Pattern** in `app/Application/Services/`
-- **Job Queue System** for background processing
+- **Job Queue System** for background processing (database driver)
+- **Laravel Excel (Maatwebsite)** for import/export functionality
+- **Sentry** for error tracking and monitoring
 
 ### Frontend Stack
 - **Vite** build system with React integration
@@ -89,12 +91,15 @@ php artisan view:cache         # Cache views
 ## Database Schema
 
 ### Core Tables
-- **users**: System users with role-based access
+- **users**: System users with role-based access (roles: headquarters, branch, store)
 - **branches**: Regional management units
 - **stores**: Individual retail locations
 - **sales**: Transaction records with calculated margins
 - **monthly_settlements**: Month-end financial reconciliation
 - **dealer_profiles**: Calculation configurations per dealer
+- **jobs**: Queue system for background processing
+- **cache**: Database-backed cache storage
+- **sessions**: Database-backed session storage
 
 ### Key Relationships
 ```
@@ -106,12 +111,25 @@ Sales → DealerProfiles (for calculations)
 MonthlySettlements → Sales (aggregates by period)
 ```
 
+### Performance Indexes
+- `sales`: Indexed on `store_id`, `sale_date`, `agency`, `branch_id`
+- `users`: Indexed on role and relationship fields for faster RBAC queries
+
 ## API Architecture
 
-### Authentication
-- Session-based authentication for web routes
-- CSRF protection enabled for state-changing operations
-- RBAC middleware enforces role-based access
+### Authentication & Authorization
+- **Session-based authentication** for web routes
+- **CSRF protection** enabled for state-changing operations
+- **RBAC Middleware** (`RBACMiddleware`) enforces role-based access
+- **Policies**: `SalePolicy`, `UserPolicy` for fine-grained authorization
+- **API Authentication Middleware** (`ApiAuthenticate`) for API routes
+
+### Middleware Stack
+- `RBACMiddleware`: Role-based access control (headquarters/branch/store)
+- `PerformanceMonitoringMiddleware`: Tracks API performance metrics
+- `TrustProxies`: Handles proxy headers for Railway deployment
+- `VerifyCsrfToken`: CSRF protection with API route exceptions
+- `DisableTimebox`: Disables time-based throttling for development
 
 ### API Response Format
 ```php
@@ -130,16 +148,40 @@ POST /api/calculation/profile/row   # Real-time margin calculation
 GET  /api/monthly-settlements       # Financial reconciliation
 GET  /api/statistics/sales          # Sales statistics with filters
 POST /api/users                     # User management (HQ only)
+POST /api/stores/bulk-create        # Bulk store creation (queued)
+POST /api/branches/bulk-create      # Bulk branch creation (queued)
+GET  /api/stores/export/template    # Download store import template
+GET  /api/branches/export/template  # Download branch import template
 ```
 
-## Sales Calculation Engine
+## Core Helper Classes
 
-Located in `app/Helpers/SalesCalculator.php`:
+### SalesCalculator (`app/Helpers/SalesCalculator.php`)
+The primary calculation engine for the system:
 - Implements Excel-like calculation formulas
 - Real-time margin calculations based on dealer profiles
 - Handles both basic and profile-based calculations
 - Tax rate: 10% (constant: TAX_RATE)
 - Key calculations: total_rebate, settlement, tax, margin_before, margin_after
+
+### FieldMapper (`app/Helpers/FieldMapper.php`)
+Maps between different field naming conventions:
+- Handles multiple input formats (English/Korean field names)
+- Converts between Excel column letters and field names
+- Supports legacy field names for backward compatibility
+- Essential for Excel import/export functionality
+
+### DatabaseHelper (`app/Helpers/DatabaseHelper.php`)
+Database utility functions:
+- Connection testing and validation
+- Query optimization helpers
+- Database state management utilities
+
+### RandomDataGenerator (`app/Helpers/RandomDataGenerator.php`)
+Generates realistic test data:
+- Creates sample sales records for testing
+- Generates mock data for development
+- Used in seeders and test factories
 
 ### Calculation Fields Mapping
 ```php
@@ -164,6 +206,67 @@ margin_before = U-V+W+X      → Y (세전마진)
 margin_after = V+Y           → Z (세후마진)
 ```
 
+## Background Jobs & Queue System
+
+The system uses Laravel's queue system with database driver for asynchronous processing:
+
+### Job Classes
+- **`ProcessBatchCalculationJob`**: Handles bulk sales calculations (>100 rows)
+- **`ProcessBulkStoreCreationJob`**: Processes bulk store imports from Excel/CSV
+- **`ProcessBulkBranchCreationJob`**: Processes bulk branch imports from Excel/CSV
+
+### Queue Management
+```bash
+php artisan queue:listen --tries=1   # Start queue worker
+php artisan queue:work              # Process single batch
+php artisan queue:failed            # View failed jobs
+php artisan queue:retry all         # Retry failed jobs
+```
+
+### Excel Import/Export
+
+#### Import Classes (`app/Imports/`)
+- **`StoresBulkImport`**: Handles Excel/CSV imports for bulk store creation with automatic user account generation
+
+#### Export Classes (`app/Exports/`)
+- **`StoreTemplateExport`**: Generates Excel template for store import
+- **`BranchTemplateExport`**: Generates Excel template for branch import
+- **`StoreAccountsExport`**: Exports store account details
+- **`CreatedStoreAccountsExport`**: Exports newly created store accounts
+- **`StoreStatisticsExport`**: Exports store-level statistics
+
+## Application Services Pattern
+
+The system follows Domain-Driven Design principles with dedicated service classes in `app/Application/Services/`:
+
+### Service Classes
+- **`SaleService`**: Core business logic for sales operations
+  - Bulk operations and CRUD
+  - Data validation and normalization
+  - Integration with SalesCalculator
+- **`MonthlySettlementService`**: Financial reconciliation logic
+  - Month-end settlement processing
+  - Aggregation and reporting
+- **`RefundService`**: Handles refund processing
+- **`ExpenseService`**: Expense tracking and management
+- **`PayrollService`**: Payroll calculations
+
+### Usage Pattern
+Controllers delegate to services for all business logic:
+```php
+// Controller
+public function store(Request $request) {
+    return $this->saleService->createSale($request->validated());
+}
+
+// Service contains actual business logic
+class SaleService {
+    public function createSale(array $data) {
+        // Validation, calculation, persistence
+    }
+}
+```
+
 ## Role-Based Features
 
 ### Headquarters (role: headquarters)
@@ -171,18 +274,21 @@ margin_after = V+Y           → Z (세후마진)
 - Cross-branch reporting and analytics
 - Dealer profile management
 - System-wide statistics and reports
+- Bulk data import/export capabilities
 
 ### Branch (role: branch)
 - Branch-specific data access only
 - Store management within their branch
 - Branch-level reporting and analytics
 - Cannot access other branches' data
+- Limited bulk operations for owned stores
 
 ### Store (role: store)
 - Store-specific sales input only
 - Basic reporting for their store
 - No access to branch or HQ features
 - Limited to their own sales data
+- Cannot perform bulk operations
 
 ## Testing Strategy
 
@@ -214,10 +320,14 @@ Complete user workflows:
 - Query result caching for dashboard stats
 
 ### Frontend
-- Code splitting via Vite for optimal chunks
-- Virtual scrolling in AG-Grid for large datasets
-- TanStack Query caching with 5-minute stale time
-- Lazy loading for images and heavy components
+- **Code splitting via Vite**: Manual chunks for vendor, animations, query, icons, virtualization, aggrid, utils
+- **Virtual scrolling** in AG-Grid for large datasets
+- **TanStack Query caching** with 5-minute stale time
+- **Lazy loading** for images and heavy components
+- **Terser minification** with console/debugger removal in production
+- **ES2020 target** for modern browser features
+- **Dependency pre-bundling** for faster dev server startup
+- **HMR (Hot Module Replacement)** for instant updates during development
 
 ### API
 - Rate limiting on calculation endpoints (60/minute)
@@ -320,27 +430,47 @@ db_cluster-YYYY-MM-DD@HH-MM-SS.backup
 ### Key Directories
 ```
 app/
-├── Application/Services/   # Business logic services
-├── Helpers/               # Utilities (SalesCalculator)
-├── Http/Controllers/Api/  # API controllers
-├── Models/               # Eloquent models
+├── Application/Services/   # Business logic services (SaleService, MonthlySettlementService, etc.)
+├── Auth/                  # Authentication-related classes
+├── Exports/              # Excel export classes (Maatwebsite/Laravel Excel)
+├── Imports/              # Excel import classes (Maatwebsite/Laravel Excel)
+├── Helpers/              # Utilities (SalesCalculator, FieldMapper, DatabaseHelper)
+├── Http/
+│   ├── Controllers/Api/  # API controllers
+│   └── Middleware/       # Custom middleware (RBAC, Performance, etc.)
+├── Jobs/                 # Background job classes
+├── Models/              # Eloquent models
+├── Policies/            # Authorization policies
+└── Filament/            # Filament admin panel resources
 resources/
-├── js/components/        # React components
-├── js/hooks/            # Custom React hooks
-├── views/               # Blade templates
+├── js/
+│   ├── components/      # React components
+│   ├── hooks/          # Custom React hooks
+│   ├── pages/          # Page-level React components
+│   ├── providers/      # Context providers
+│   └── utils/          # Frontend utilities
+└── views/              # Blade templates
 tests/
-├── Unit/                # Unit tests
-├── Feature/             # API tests
-├── playwright/          # E2E tests
+├── Unit/               # Unit tests (SalesCalculator, permissions, etc.)
+├── Feature/            # API tests (endpoints, RBAC enforcement)
+└── playwright/         # E2E tests (user workflows)
+database/
+├── migrations/         # Database schema migrations
+├── seeders/           # Database seeders
+└── factories/         # Model factories for testing
 ```
 
 ### Important Files
-- `app/Helpers/SalesCalculator.php` - Core calculation engine
-- `routes/api.php` - API route definitions
-- `vite.config.js` - Frontend build configuration
-- `playwright.config.js` - E2E test configuration
-- `phpstan.neon` - Static analysis rules
-- `pint.json` - Code formatting rules
+- `app/Helpers/SalesCalculator.php` - Core calculation engine with Excel formula mapping
+- `app/Helpers/FieldMapper.php` - Maps various field naming conventions
+- `app/Application/Services/SaleService.php` - Main business logic for sales operations
+- `routes/api.php` - API route definitions (~38KB - extensive API surface)
+- `routes/web.php` - Web route definitions (~129KB - includes Filament routes)
+- `vite.config.js` - Frontend build with code splitting and optimization
+- `playwright.config.js` - E2E test configuration (90s timeout, sequential execution)
+- `phpstan.neon` - Static analysis rules (level max)
+- `pint.json` - Laravel Pint code formatting rules
+- `phpunit.xml` - PHPUnit configuration (SQLite in-memory for testing)
 
 ## Important Coding Guidelines
 
