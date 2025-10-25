@@ -143,11 +143,11 @@ class StoresBulkImport
                 return;
             }
 
-            // 데이터 추출 (A, B, C, D 컬럼)
-            $branchName = trim($row['A'] ?? '');
-            $storeName = trim($row['B'] ?? '');
-            $ownerName = trim($row['C'] ?? '');
-            $phone = trim($row['D'] ?? '');
+            // 데이터 추출 (A, B, C, D 컬럼) - UTF-8 정리 (mb_scrub은 PHP 8.4+에서 잘못된 UTF-8 시퀀스 정리)
+            $branchName = mb_scrub(trim($row['A'] ?? ''), 'UTF-8');
+            $storeName = mb_scrub(trim($row['B'] ?? ''), 'UTF-8');
+            $ownerName = mb_scrub(trim($row['C'] ?? ''), 'UTF-8');
+            $phone = mb_scrub(trim($row['D'] ?? ''), 'UTF-8');
 
             // 필수 필드 검증
             if (empty($branchName) || empty($storeName)) {
@@ -362,6 +362,17 @@ class StoresBulkImport
             '카' => 'ka', '타' => 'ta', '파' => 'pa', '하' => 'ha',
             '강' => 'gang', '남' => 'nam', '서' => 'seo', '울' => 'ul', '점' => '',
             '호' => 'ho', '매' => 'mae', '장' => 'jang', '동' => 'dong', '중' => 'jung',
+            '산' => 'san', '구' => 'gu', '주' => 'ju', '천' => 'cheon', '원' => 'won',
+            '평' => 'pyeong', '곡' => 'gok', '양' => 'yang', '성' => 'seong', '영' => 'young',
+            '포' => 'po', '항' => 'hang', '인' => 'in', '천' => 'cheon', '안' => 'an',
+            '용' => 'yong', '오' => 'o', '신' => 'sin', '정' => 'jeong', '로' => 'ro',
+            '왕' => 'wang', '생' => 'saeng', '경' => 'gyeong', '기' => 'gi', '리' => 'ri',
+            '수' => 'su', '역' => 'yeok', '시' => 'si', '문' => 'mun', '대' => 'dae',
+            '두' => 'du', '상' => 'sang', '봉' => 'bong', '모' => 'mo', '도' => 'do',
+            '농' => 'nong', '계' => 'gye', '명' => 'myeong', '황' => 'hwang', '진' => 'jin',
+            '량' => 'ryang', '하' => 'ha', '미' => 'mi', '덕' => 'deok', '혁' => 'hyeok',
+            '이' => 'i', '화' => 'hwa', '교' => 'gyo', '북' => 'buk', '서' => 'seo',
+            '문' => 'mun', '신' => 'sin', '반' => 'ban', '송' => 'song', '전' => 'jeon',
         ];
 
         $result = '';
@@ -372,10 +383,13 @@ class StoresBulkImport
                 $result .= strtolower($char);
             } elseif (isset($koreanToEnglish[$char])) {
                 $result .= $koreanToEnglish[$char];
-            } else {
-                // 매핑되지 않은 한글은 첫 자음으로 변환 (간단화)
-                $result .= substr($char, 0, 1);
             }
+            // 매핑되지 않은 한글은 스킵 (invalid UTF-8 방지)
+        }
+
+        // 결과가 너무 짧으면 기본값 사용
+        if (strlen($result) < 3) {
+            $result = 'store';
         }
 
         // 너무 길면 앞부분만 사용

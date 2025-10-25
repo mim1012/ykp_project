@@ -824,6 +824,9 @@ class StoreManagementController extends Controller
      */
     public function bulkCreateStoresFromMultiSheet(Request $request)
     {
+        // 대량 생성 시 타임아웃 방지
+        set_time_limit(300); // 5분
+
         Log::info('=== 매장 대량 생성 시작 ===', [
             'user_id' => auth()->id(),
             'request_method' => $request->method(),
@@ -906,6 +909,20 @@ class StoreManagementController extends Controller
 
             $results = $import->getResults();
             $errors = $import->getErrors();
+
+            // UTF-8 정리 함수 (재귀적으로 모든 문자열 정리)
+            $cleanUtf8 = function($data) use (&$cleanUtf8) {
+                if (is_string($data)) {
+                    return mb_scrub($data, 'UTF-8');
+                } elseif (is_array($data)) {
+                    return array_map($cleanUtf8, $data);
+                }
+                return $data;
+            };
+
+            // 결과와 에러 데이터 정리
+            $results = $cleanUtf8($results);
+            $errors = $cleanUtf8($errors);
 
             // 결과 로깅
             Log::info('=== 매장 대량 생성 완료 ===', [
