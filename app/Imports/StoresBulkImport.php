@@ -183,13 +183,32 @@ class StoresBulkImport
                 $existingUser = User::where('store_id', $existingStore->id)->first();
 
                 if ($existingUser) {
-                    // 매장도 있고 user도 있으면 스킵
-                    $this->errors[] = [
+                    // 매장도 있고 user도 있으면 기존 계정 정보를 결과에 포함
+                    $password = 'store' . str_pad($existingStore->id, 4, '0', STR_PAD_LEFT);
+
+                    $this->results[] = [
                         'sheet' => $sheetName,
                         'row' => $rowNumber,
-                        'error' => '매장과 계정이 이미 존재합니다.',
-                        'data' => ['지사명' => $branchName, '매장명' => $storeName, '기존 이메일' => $existingUser->email],
+                        'branch_name' => $branchName,
+                        'store_name' => $storeName,
+                        'store_code' => $existingStore->code,
+                        'owner_name' => $ownerName ?: $existingStore->owner_name,
+                        'phone' => $phone ?: $existingStore->phone,
+                        'email' => $existingUser->email,
+                        'username' => $existingUser->username,
+                        'password' => $password,
+                        'store_id' => $existingStore->id,
+                        'user_id' => $existingUser->id,
+                        'status' => 'existing', // 기존 계정임을 표시
                     ];
+
+                    Log::info('기존 매장 계정 정보 포함', [
+                        'sheet' => $sheetName,
+                        'row' => $rowNumber,
+                        'store_id' => $existingStore->id,
+                        'user_id' => $existingUser->id,
+                    ]);
+
                     return;
                 }
 
@@ -237,6 +256,7 @@ class StoresBulkImport
                     'password' => $password,
                     'store_id' => $existingStore->id,
                     'user_id' => $user->id,
+                    'status' => 'created_user', // 매장은 기존, 계정만 새로 생성
                 ];
 
                 Log::info('기존 매장에 user 계정 생성 성공', [
@@ -319,6 +339,7 @@ class StoresBulkImport
                 'password' => $password,
                 'store_id' => $store->id,
                 'user_id' => $user->id,
+                'status' => 'created_new', // 매장과 계정 모두 새로 생성
             ];
 
             Log::info('매장 및 계정 생성 성공', [

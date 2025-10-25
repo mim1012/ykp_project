@@ -47,6 +47,7 @@ class CreatedStoreAccountsExport implements FromCollection, WithHeadings, WithMa
             '초기 비밀번호',
             '매장 ID',
             '사용자 ID',
+            '상태',
             '생성 일시',
         ];
     }
@@ -57,6 +58,14 @@ class CreatedStoreAccountsExport implements FromCollection, WithHeadings, WithMa
     public function map($row): array
     {
         static $counter = 1;
+
+        // 상태를 한글로 변환
+        $statusMap = [
+            'existing' => '기존 계정',
+            'created_user' => '계정 신규 생성',
+            'created_new' => '매장/계정 신규 생성',
+        ];
+        $status = $statusMap[$row['status'] ?? 'created_new'] ?? '알 수 없음';
 
         return [
             $counter++,
@@ -70,6 +79,7 @@ class CreatedStoreAccountsExport implements FromCollection, WithHeadings, WithMa
             $row['password'],
             $row['store_id'],
             $row['user_id'],
+            $status,
             now()->format('Y-m-d H:i:s'),
         ];
     }
