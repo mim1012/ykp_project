@@ -18,6 +18,7 @@ class StoresBulkImport
     protected $results = [];
     protected $errors = [];
     protected $filePath;
+    protected $createdCodesInBatch = []; // 배치 내에서 생성된 매장 코드 추적
 
     public function __construct($filePath = null)
     {
@@ -248,9 +249,19 @@ class StoresBulkImport
                 return;
             }
 
-            // 매장 코드 자동 생성
+            // 매장 코드 자동 생성 (DB + 배치 내 생성 코드 모두 고려)
             $storeCount = Store::where('branch_id', $branch->id)->count();
+
+            // 이번 배치에서 이미 생성된 해당 지사의 코드 개수 추가
+            $branchCodesInBatch = array_filter($this->createdCodesInBatch, function($code) use ($branch) {
+                return str_starts_with($code, $branch->code . '-');
+            });
+            $storeCount += count($branchCodesInBatch);
+
             $storeCode = $branch->code . '-' . str_pad($storeCount + 1, 3, '0', STR_PAD_LEFT);
+
+            // 생성할 코드를 배치 추적 배열에 추가
+            $this->createdCodesInBatch[] = $storeCode;
 
             // 매장 생성
             $store = Store::create([
