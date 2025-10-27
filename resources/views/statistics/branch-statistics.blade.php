@@ -97,10 +97,6 @@
                     <div class="text-sm text-gray-500">총 지출</div>
                     <div class="text-lg font-semibold loading-pulse" id="branch-fin-total-expenses">로딩 중...</div>
                 </div>
-                <div class="p-4 bg-gray-50 rounded">
-                    <div class="text-sm text-gray-500">순이익</div>
-                    <div class="text-lg font-semibold loading-pulse" id="branch-fin-net-profit">로딩 중...</div>
-                </div>
             </div>
         </div>
 
@@ -460,15 +456,12 @@
                 const activations = finData?.data?.total_activations || 0;
                 const marginRate = finData?.data?.average_margin_rate || 0;
 
-                // 지출과 순이익 계산
                 const expenses = revenue - margin; // 매출 - 마진 = 지출
-                const netProfit = margin; // 순이익 = 마진
 
                 // 재무 요약 업데이트
                 const revenueEl = document.getElementById('branch-fin-total-revenue');
                 const marginEl = document.getElementById('branch-fin-total-margin');
                 const expensesEl = document.getElementById('branch-fin-total-expenses');
-                const profitEl = document.getElementById('branch-fin-net-profit');
 
                 if (revenueEl) {
                     revenueEl.textContent = `₩${Number(revenue).toLocaleString()}`;

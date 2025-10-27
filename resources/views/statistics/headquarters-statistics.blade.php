@@ -100,10 +100,6 @@
                     <div class="text-sm text-gray-500">총 지출</div>
                     <div class="text-lg font-semibold loading-pulse" id="hq-fin-total-expenses">로딩 중...</div>
                 </div>
-                <div class="p-4 bg-gray-50 rounded">
-                    <div class="text-sm text-gray-500">순이익</div>
-                    <div class="text-lg font-semibold loading-pulse" id="hq-fin-net-profit">로딩 중...</div>
-                </div>
             </div>
         </div>
 
@@ -399,18 +395,14 @@
                 const activations = finData.total_activations || 0;
                 const marginRate = finData.average_margin_rate || 0;
 
-                // 지출과 순이익 계산
                 const expenses = revenue - margin; // 매출 - 마진 = 지출
-                const netProfit = margin; // 순이익 = 마진
 
                 // 재무 요약 업데이트
                 document.getElementById('hq-fin-total-revenue').textContent = `₩${Number(revenue).toLocaleString()}`;
                 document.getElementById('hq-fin-total-margin').textContent = `₩${Number(margin).toLocaleString()}`;
                 document.getElementById('hq-fin-total-expenses').textContent = `₩${Number(expenses).toLocaleString()}`;
-                document.getElementById('hq-fin-net-profit').textContent = `₩${Number(margin).toLocaleString()}`;
 
                 // 긍정적/부정적 수치에 따른 색상 적용
-                document.getElementById('hq-fin-net-profit').className = margin >= 0 ? 'text-lg font-semibold text-green-600' : 'text-lg font-semibold text-red-600';
 
                 // 추가: 이번달 매출 업데이트 (KPI 카드)
                 const totalSalesEl = document.getElementById('total-sales');
