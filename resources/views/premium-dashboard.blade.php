@@ -1723,19 +1723,19 @@
                                     monthSales > 0 ? `${achievementRate}% 달성` : '이번달 실적 없음'
                                 );
                             } else {
-                                safeUpdateElement('system-goal-achievement', '매출 데이터 없음');
+                                safeUpdateElement('system-goal-achievement', '매출 집계 중');
                             }
 
                             safeUpdateElement('system-goal-target', `월 ${(monthTarget / 10000).toLocaleString()}만원 목표`);
                         } else {
-                            safeUpdateElement('system-goal-achievement', 'API 데이터 없음');
-                            safeUpdateElement('system-goal-target', '목표 정보 없음');
+                            safeUpdateElement('system-goal-achievement', '데이터 준비 중');
+                            safeUpdateElement('system-goal-target', '목표 설정 중');
                         }
                     })
                     .catch(error => {
                         console.warn('⚠️ 목표 데이터 로드 실패:', error);
-                        safeUpdateElement('system-goal-achievement', '로딩 실패');
-                        safeUpdateElement('system-goal-target', '데이터를 불러올 수 없음');
+                        safeUpdateElement('system-goal-achievement', '일시적 오류');
+                        safeUpdateElement('system-goal-target', '잠시 후 다시 시도');
                     });
             }
 
@@ -1760,13 +1760,13 @@
                             safeUpdateElement('branch-goal-target', `월 ${(branchTarget / 10000).toLocaleString()}만원 목표`);
                         } else {
                             safeUpdateElement('branch-goal-achievement', '데이터 없음');
-                            safeUpdateElement('branch-goal-target', '목표 정보 없음');
+                            safeUpdateElement('branch-goal-target', '목표 설정 중');
                         }
                     })
                     .catch(error => {
                         console.warn('⚠️ 지사 목표 데이터 로드 실패:', error);
-                        safeUpdateElement('branch-goal-achievement', '로딩 실패');
-                        safeUpdateElement('branch-goal-target', '데이터를 불러올 수 없음');
+                        safeUpdateElement('branch-goal-achievement', '일시적 오류');
+                        safeUpdateElement('branch-goal-target', '잠시 후 다시 시도');
                     });
             }
 
@@ -1794,13 +1794,13 @@
                             safeUpdateElement('store-goal-target', `월 ${(storeTarget / 10000).toLocaleString()}만원 목표`);
                         } else {
                             safeUpdateElement('store-goal-achievement', '데이터 없음');
-                            safeUpdateElement('store-goal-target', '목표 정보 없음');
+                            safeUpdateElement('store-goal-target', '목표 설정 중');
                         }
                     })
                     .catch(error => {
                         console.warn('⚠️ 매장 목표 데이터 로드 실패:', error);
-                        safeUpdateElement('store-goal-achievement', '로딩 실패');
-                        safeUpdateElement('store-goal-target', '데이터를 불러올 수 없음');
+                        safeUpdateElement('store-goal-achievement', '일시적 오류');
+                        safeUpdateElement('store-goal-target', '잠시 후 다시 시도');
                     });
             }
 
@@ -2100,7 +2100,7 @@
                     });
                 }
             } catch (error) {
-                console.error('대리점 목록 로딩 실패:', error);
+                console.error('대리점 목록 일시적 오류:', error);
                 alert('대리점 목록을 불러오는데 실패했습니다.');
             }
         }
@@ -2130,7 +2130,7 @@
                     }
                 }
             } catch (error) {
-                console.error('대리점 정보 로딩 실패:', error);
+                console.error('대리점 정보 일시적 오류:', error);
                 alert('대리점 정보를 불러오는데 실패했습니다.');
             }
         }
