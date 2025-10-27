@@ -58,22 +58,6 @@
                 </div>
             </div>
 
-            <!-- 순이익 -->
-            <div class="stat-card bg-gradient-to-r from-green-500 to-green-600 text-white p-6 rounded-xl shadow-lg">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="text-green-100 text-sm font-medium">순이익</p>
-                        <p class="text-2xl font-bold" id="net-profit">로딩 중...</p>
-                        <p class="text-green-200 text-xs mt-1" id="profit-margin">계산 중...</p>
-                    </div>
-                    <div class="bg-green-400 bg-opacity-30 p-3 rounded-full">
-                        <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                    </div>
-                </div>
-            </div>
-
             <!-- 총 개통 건수 -->
             <div class="stat-card bg-gradient-to-r from-purple-500 to-purple-600 text-white p-6 rounded-xl shadow-lg">
                 <div class="flex items-center justify-between">
@@ -398,8 +382,6 @@
                 if (error.message.includes('매장을 찾을 수 없습니다')) {
                     const emptyKPI = {
                         total_revenue: 0,
-                        net_profit: 0,
-                        profit_margin: 0,
                         total_activations: 0,
                         avg_daily: 0,
                         active_stores: 0,
@@ -413,8 +395,6 @@
                     // 일반 오류
                     const errorKPI = {
                         total_revenue: 0,
-                        net_profit: 0,
-                        profit_margin: 0,
                         total_activations: 0,
                         avg_daily: 0,
                         active_stores: 0,
@@ -431,8 +411,6 @@
         // KPI 카드 업데이트
         function updateKPICards(data) {
             document.getElementById('total-revenue').textContent = formatCurrency(data.total_revenue);
-            document.getElementById('net-profit').textContent = formatCurrency(data.net_profit);
-            document.getElementById('profit-margin').textContent = `마진율: ${data.profit_margin}%`;
             document.getElementById('total-activations').textContent = `${data.total_activations}건`;
             document.getElementById('avg-daily').textContent = `일평균: ${data.avg_daily}건`;
             document.getElementById('active-stores').textContent = `${data.active_stores}개`;
