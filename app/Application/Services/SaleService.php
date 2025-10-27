@@ -458,7 +458,6 @@ class SaleService implements SaleServiceInterface
                 'total_count' => 0,
                 'total_settlement' => 0,
                 'total_tax' => 0,
-                'total_margin' => 0,
                 'avg_settlement' => 0,
                 'active_stores' => 0,
             ],
@@ -475,7 +474,6 @@ class SaleService implements SaleServiceInterface
                 COUNT(*) as total_count,
                 COALESCE(SUM(settlement_amount), 0) as total_settlement,
                 COALESCE(SUM(tax), 0) as total_tax,
-                COALESCE(SUM(margin_after_tax), 0) as total_margin,
                 COALESCE(AVG(settlement_amount), 0) as avg_settlement,
                 COUNT(DISTINCT store_id) as active_stores
             ')
