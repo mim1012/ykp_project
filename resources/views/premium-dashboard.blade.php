@@ -1189,13 +1189,13 @@
                 // 권한별 메시지 차별화 (실제 데이터 기반)
                 const role = window.userData?.role || 'headquarters';
                 if (role === 'headquarters') {
-                    return `전체 시스템 관리 중 - 실시간 데이터 연동 완룼`;
+                    return `전체 시스템 관리 중 - 실시간 데이터 연동 완료`;
                 } else if (role === 'branch') {
-                    return `지사 매장 관리 중 - 실시간 데이터 연동 완룼`;
+                    return `지사 매장 관리 중 - 실시간 데이터 연동 완료`;
                 } else if (role === 'store') {
-                    return `매장 운영 중 - 실시간 데이터 연동 완룼`;
+                    return `매장 운영 중 - 실시간 데이터 연동 완료`;
                 } else {
-                    return `전체 시스템 관리 중 - 실시간 데이터 연동 완룼`;
+                    return `전체 시스템 관리 중 - 실시간 데이터 연동 완료`;
                 }
                 
             } catch (error) {
@@ -1961,7 +1961,7 @@
                     return data.success ? data.data.sales_target : 50000000;
                 }
             } catch (error) {
-                console.warn('시스템 목표 API 호출 실패:', error);
+                console.warn('시스템 목표 API 데이터를 불러올 수 없습니다. 기본값을 사용합니다:', error);
             }
             return 50000000; // API 실패 시에만 기본값
         }
