@@ -415,7 +415,8 @@ Route::get('/api/users/branches', function () {
 Route::get('/api/dashboard/rankings', function () {
     try {
         $user = auth()->user();
-        $response = ['success' => true];
+        $response = ['success' => true, 'data' => []];
+        
         // 본사/지사: 지사 순위 제공
         if ($user && ($user->role === 'headquarters' || $user->role === 'branch')) {
             $branchRankings = \App\Models\Sale::with('store.branch')
@@ -425,6 +426,7 @@ Route::get('/api/dashboard/rankings', function () {
                 ->groupBy('stores.branch_id')
                 ->orderBy('total_sales', 'desc')
                 ->get();
+            
             $branchRank = 0;
             if ($user->branch_id) {
                 foreach ($branchRankings as $index => $ranking) {
@@ -434,34 +436,69 @@ Route::get('/api/dashboard/rankings', function () {
                     }
                 }
             }
-            $response['branch'] = [
+            
+            $response['data']['branch'] = [
                 'rank' => $branchRank ?: null,
                 'total' => $branchRankings->count(),
             ];
         }
+        
         // 매장 순위 (모든 권한)
         if ($user && $user->store_id) {
-            // 전체 매장 순위 계산
+            // 전체 매장의 총 매출액 계산 (매출이 없는 매장은 0으로 처리)
             $storeRankings = \App\Models\Sale::select('store_id')
                 ->selectRaw('SUM(settlement_amount) as total_sales')
                 ->groupBy('store_id')
                 ->orderBy('total_sales', 'desc')
                 ->get();
+            
+            // 매출이 있는 매장 수
+            $storesWithSales = $storeRankings->count();
+            
+            // 전체 활성 매장 수
+            $totalActiveStores = \App\Models\Store::where('status', 'active')->count();
+            
+            // 현재 사용자의 매장 순위 찾기
             $storeRank = 0;
+            $userStoreSales = 0;
+            
             foreach ($storeRankings as $index => $ranking) {
                 if ($ranking->store_id == $user->store_id) {
                     $storeRank = $index + 1;
+                    $userStoreSales = $ranking->total_sales;
                     break;
                 }
             }
-            $response['store'] = [
-                'rank' => $storeRank ?: null,
-                'total' => \App\Models\Store::count(),
-                'scope' => $user->role === 'store' ? 'branch' : 'nationwide',
+            
+            // 매출이 없는 경우 공동 꼴찌로 처리
+            if ($storeRank === 0) {
+                // 매출이 있는 매장 다음 순위 (공동 꼴찌)
+                $storeRank = $storesWithSales + 1;
+            }
+            
+            $response['data']['store'] = [
+                'rank' => $storeRank,
+                'total' => $totalActiveStores, // 전체 활성 매장 수
+                'sales' => $userStoreSales, // 현재 매장의 총 매출액
+                'scope' => 'nationwide', // 전국 기준
             ];
+            
+            \Log::info('매장 순위 계산 완료', [
+                'user_id' => $user->id,
+                'store_id' => $user->store_id,
+                'rank' => $storeRank,
+                'total' => $totalActiveStores,
+                'sales' => $userStoreSales,
+                'stores_with_sales' => $storesWithSales,
+            ]);
         }
+        
         return response()->json($response);
     } catch (\Exception $e) {
+        \Log::error('Rankings API 오류', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+        ]);
         return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
     }
 })->name('api.dashboard.rankings');
@@ -847,17 +884,45 @@ Route::middleware(['web'])->get('/api/dashboard/sales-trend', function (Illumina
     try {
         $days = min($request->get('days', 30), 90);
         $user = auth()->user();
+        
         // 권한별 매장 필터링
         $query = App\Models\Sale::query();
-        if ($user && method_exists($user, 'getAccessibleStoreIds')) {
-            try {
-                $accessibleStoreIds = $user->getAccessibleStoreIds();
-                if (! empty($accessibleStoreIds)) {
-                    $query->whereIn('store_id', $accessibleStoreIds);
+        
+        if ($user) {
+            if ($user->role === 'store') {
+                // 매장 계정: 자신의 매장 데이터만 조회
+                $query->where('store_id', $user->store_id);
+            } elseif ($user->role === 'branch') {
+                // 지사 계정: 소속 매장들의 데이터 조회
+                $branchStoreIds = \App\Models\Store::where('branch_id', $user->branch_id)->pluck('id')->toArray();
+                if (!empty($branchStoreIds)) {
+                    $query->whereIn('store_id', $branchStoreIds);
+                } else {
+                    // 소속 매장이 없는 경우 빈 결과 반환
+                    $emptyTrendData = [];
+                    for ($i = 0; $i < $days; $i++) {
+                        $date = now()->subDays($days - 1 - $i);
+                        $emptyTrendData[] = [
+                            'date' => $date->toDateString(),
+                            'day_label' => $date->format('j일'),
+                            'sales' => 0,
+                            'activations' => 0,
+                        ];
+                    }
+                    return response()->json([
+                        'success' => true,
+                        'data' => [
+                            'trend_data' => $emptyTrendData,
+                            'period' => [
+                                'start_date' => now()->subDays($days - 1)->toDateString(),
+                                'end_date' => now()->toDateString(),
+                                'days' => $days,
+                            ],
+                        ],
+                    ]);
                 }
-            } catch (Exception $e) {
-                Log::warning('Permission check failed in trend', ['user_id' => $user->id]);
             }
+            // headquarters는 모든 데이터 조회 (필터링 없음)
         }
         $endDate = now();
         $startDate = $endDate->copy()->subDays($days - 1);
@@ -891,24 +956,43 @@ Route::middleware(['web'])->get('/api/dashboard/sales-trend', function (Illumina
             ],
         ]);
     } catch (Exception $e) {
-        Log::error('Sales trend API error', ['error' => $e->getMessage()]);
+        Log::error('Sales trend API error', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+            'user_id' => auth()->id(),
+        ]);
         return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
     }
 });
 Route::middleware(['web'])->get('/api/dashboard/dealer-performance', function () {
     try {
         $user = auth()->user();
+        
         // 권한별 매장 필터링
         $query = App\Models\Sale::query();
-        if ($user && method_exists($user, 'getAccessibleStoreIds')) {
-            try {
-                $accessibleStoreIds = $user->getAccessibleStoreIds();
-                if (! empty($accessibleStoreIds)) {
-                    $query->whereIn('store_id', $accessibleStoreIds);
+        
+        if ($user) {
+            if ($user->role === 'store') {
+                // 매장 계정: 자신의 매장 데이터만 조회
+                $query->where('store_id', $user->store_id);
+            } elseif ($user->role === 'branch') {
+                // 지사 계정: 소속 매장들의 데이터 조회
+                $branchStoreIds = \App\Models\Store::where('branch_id', $user->branch_id)->pluck('id')->toArray();
+                if (!empty($branchStoreIds)) {
+                    $query->whereIn('store_id', $branchStoreIds);
+                } else {
+                    // 소속 매장이 없는 경우 빈 결과 반환
+                    return response()->json([
+                        'success' => true,
+                        'data' => [
+                            'carrier_breakdown' => [],
+                            'total_activations' => 0,
+                            'current_month' => now()->format('Y-m'),
+                        ],
+                    ]);
                 }
-            } catch (Exception $e) {
-                Log::warning('Permission check failed in performance', ['user_id' => $user->id]);
             }
+            // headquarters는 모든 데이터 조회 (필터링 없음)
         }
         $startOfMonth = now()->startOfMonth();
         $endOfMonth = now()->endOfMonth();
@@ -945,7 +1029,11 @@ Route::middleware(['web'])->get('/api/dashboard/dealer-performance', function ()
             ],
         ]);
     } catch (Exception $e) {
-        Log::error('Dealer performance API error', ['error' => $e->getMessage()]);
+        Log::error('Dealer performance API error', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+            'user_id' => auth()->id(),
+        ]);
         return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
     }
 });
@@ -2179,6 +2267,12 @@ Route::middleware(['web', 'api.auth'])->group(function () {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
     });
+    // statistics/enhanced ud398uc774uc9c0uc5d0uc11c ud638ucd9cud558ub294 /api/revenue-trend ub77cuc6b0ud2b8 ucd94uac00
+    Route::get('/api/revenue-trend', function (Illuminate\Http\Request $request) {
+        // /api/statistics/revenue-trendub85c ub9acub2e4uc774ub809ud2b8
+        return redirect('/api/statistics/revenue-trend?' . http_build_query($request->all()));
+    });
+
     // 매출 추이 데이터 - 실제 데이터 연동
     Route::get('/api/statistics/revenue-trend', function (Illuminate\Http\Request $request) {
         try {
