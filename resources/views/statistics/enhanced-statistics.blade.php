@@ -669,7 +669,7 @@
                     profit_rate: { current: 0, target: 60.0 }
                 };
                 updateGoalProgress(emptyGoals);
-                showToast('목표 진척도 데이터를 불러올 수 없습니다.', 'error');
+                // showToast('목표 진척도 데이터를 불러올 수 없습니다.', 'error'); // 팝업 제거
             }
         }
 
