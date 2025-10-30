@@ -18,7 +18,7 @@ class User extends Authenticatable
      *
      * @var string|null
      */
-    protected $connection = 'pgsql_local';
+    // Connection will use default from config/database.php
 
     /**
      * The attributes that are mass assignable.

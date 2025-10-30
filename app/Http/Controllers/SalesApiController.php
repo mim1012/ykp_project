@@ -152,7 +152,7 @@ class SalesApiController extends Controller
     {
         $request->validate([
             'sale_ids' => ['required', 'array', 'min:1'],
-            'sale_ids.*' => ['required', 'integer', 'exists:pgsql_local.sales,id'],
+            'sale_ids.*' => ['required', 'integer', 'exists:sales,id'],
         ]);
 
         try {

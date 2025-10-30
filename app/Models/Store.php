@@ -14,7 +14,7 @@ class Store extends Model
      *
      * @var string|null
      */
-    protected $connection = 'pgsql_local';
+    // Connection will use default from config/database.php
 
     protected $fillable = [
         'branch_id',
