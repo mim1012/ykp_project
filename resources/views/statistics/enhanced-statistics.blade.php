@@ -28,8 +28,8 @@
                 <div class="flex items-center space-x-4">
                     <select id="period-selector" class="border rounded px-3 py-1 text-sm">
                         <option value="7">최근 7일</option>
-                        <option value="30" selected>최근 30일</option>
-                        <option value="90">최근 90일</option>
+                        <option value="30">최근 30일</option>
+                        <option value="90" selected>최근 90일</option>
                         <option value="365">최근 1년</option>
                     </select>
                     <button onclick="exportReport()" class="text-green-600 hover:text-green-800">📊 보고서 내보내기</button>
@@ -39,7 +39,7 @@
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto py-6 px-4" id="main-content" style="opacity: 0; transition: opacity 0.3s ease-in;">
+    <main class="max-w-7xl mx-auto py-6 px-4" id="main-content">
         <!-- 핵심 지표 카드 -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <!-- 총 매출 -->
@@ -218,7 +218,7 @@
 
     <script>
         // 전역 변수
-        let currentPeriod = 30;
+        let currentPeriod = 90;
         let charts = {};
         let storeFilter = null; // 매장 필터
         let userRole = null; // 사용자 권한 (전역)
@@ -711,10 +711,9 @@
             document.getElementById('loading-overlay').style.display = 'flex';
         }
 
-        // 로딩 숨김 + 콘텐츠 페이드인
+        // 로딩 숨김
         function hideLoading() {
             document.getElementById('loading-overlay').style.display = 'none';
-            document.getElementById('main-content').style.opacity = '1';
         }
 
         // 통화 포맷팅
