@@ -797,6 +797,14 @@
             options: {
                 responsive: true,
                 maintainAspectRatio: false, /* 컨테이너 크기에 맞춤 */
+                layout: {
+                    padding: {
+                        left: 10,
+                        right: 10,
+                        top: 10,
+                        bottom: 10
+                    }
+                },
                 plugins: {
                     legend: {
                         display: false
@@ -811,6 +819,15 @@
                         ticks: {
                             font: {
                                 size: 11
+                            },
+                            callback: function(value) {
+                                // 금액을 간결하게 표시 (1M = 100만원)
+                                if (value >= 1000000) {
+                                    return (value / 1000000).toFixed(1) + 'M';
+                                } else if (value >= 1000) {
+                                    return (value / 1000).toFixed(0) + 'K';
+                                }
+                                return value;
                             }
                         }
                     },
@@ -821,7 +838,9 @@
                         ticks: {
                             font: {
                                 size: 10
-                            }
+                            },
+                            maxRotation: 45,
+                            minRotation: 0
                         }
                     }
                 }
