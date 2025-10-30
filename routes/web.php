@@ -882,7 +882,18 @@ Route::get('/api/users/count', function () {
 // 간단한 그래프 데이터 API (웹용)
 Route::middleware(['web'])->get('/api/dashboard/sales-trend', function (Illuminate\Http\Request $request) {
     try {
-        $days = min($request->get('days', 30), 90);
+        // days 파라미터 받기 (기본값: 30일, null이면 전체 기간)
+        $days = $request->get('days');
+        
+        if ($days === null || $days === 'null') {
+            // 전체 기간
+            $startDate = null;
+            $endDate = now();
+        } else {
+            $days = min((int)$days, 365); // 최대 1년
+            $startDate = now()->subDays($days)->startOfDay();
+            $endDate = now()->endOfDay();
+        }
         $user = auth()->user();
         
         // 권한별 매장 필터링
@@ -899,23 +910,13 @@ Route::middleware(['web'])->get('/api/dashboard/sales-trend', function (Illumina
                     $query->whereIn('store_id', $branchStoreIds);
                 } else {
                     // 소속 매장이 없는 경우 빈 결과 반환
-                    $emptyTrendData = [];
-                    for ($i = 0; $i < $days; $i++) {
-                        $date = now()->subDays($days - 1 - $i);
-                        $emptyTrendData[] = [
-                            'date' => $date->toDateString(),
-                            'day_label' => $date->format('j일'),
-                            'sales' => 0,
-                            'activations' => 0,
-                        ];
-                    }
                     return response()->json([
                         'success' => true,
                         'data' => [
-                            'trend_data' => $emptyTrendData,
+                            'trend_data' => [],
                             'period' => [
-                                'start_date' => now()->subDays($days - 1)->toDateString(),
-                                'end_date' => now()->toDateString(),
+                                'start_date' => $startDate ? $startDate->toDateString() : null,
+                                'end_date' => $endDate->toDateString(),
                                 'days' => $days,
                             ],
                         ],
@@ -924,32 +925,57 @@ Route::middleware(['web'])->get('/api/dashboard/sales-trend', function (Illumina
             }
             // headquarters는 모든 데이터 조회 (필터링 없음)
         }
-        $endDate = now();
-        $startDate = $endDate->copy()->subDays($days - 1);
+        // 날짜 범위 생성
         $trendData = [];
-        for ($i = 0; $i < $days; $i++) {
-            $date = $startDate->copy()->addDays($i);
-            // PostgreSQL 호환 날짜 범위 쿼리
-            $dateStart = $date->startOfDay();
-            $dateEnd = $date->copy()->endOfDay();
-            $dailyQuery = (clone $query)->whereBetween('sale_date', [
-                $dateStart->toDateTimeString(),
-                $dateEnd->toDateTimeString(),
-            ]);
-            $dailySales = $dailyQuery->sum('settlement_amount') ?? 0;
-            $trendData[] = [
-                'date' => $date->toDateString(),
-                'day_label' => $date->format('j일'),
-                'sales' => floatval($dailySales),
-                'activations' => $dailyQuery->count(),
-            ];
+        
+        if ($startDate) {
+            // 특정 기간 조회
+            $currentDate = $startDate->copy();
+            while ($currentDate->lte($endDate)) {
+                $dateStart = $currentDate->copy()->startOfDay();
+                $dateEnd = $currentDate->copy()->endOfDay();
+                
+                $dailyQuery = (clone $query)->whereBetween('sale_date', [
+                    $dateStart->toDateTimeString(),
+                    $dateEnd->toDateTimeString(),
+                ]);
+                
+                $dailySales = $dailyQuery->sum('settlement_amount') ?? 0;
+                $trendData[] = [
+                    'date' => $currentDate->toDateString(),
+                    'day_label' => $currentDate->format('j일'),
+                    'sales' => floatval($dailySales),
+                    'activations' => $dailyQuery->count(),
+                ];
+                
+                $currentDate->addDay();
+            }
+        } else {
+            // 전체 기간 조회: 일별 집계
+            $salesByDate = $query
+                ->selectRaw('DATE(sale_date) as date, 
+                            SUM(settlement_amount) as total_sales,
+                            COUNT(*) as total_count')
+                ->groupBy('date')
+                ->orderBy('date', 'asc')
+                ->get();
+            
+            $trendData = $salesByDate->map(function ($item) {
+                $date = \Carbon\Carbon::parse($item->date);
+                return [
+                    'date' => $item->date,
+                    'day_label' => $date->format('j일'),
+                    'sales' => floatval($item->total_sales),
+                    'activations' => (int)$item->total_count,
+                ];
+            })->toArray();
         }
         return response()->json([
             'success' => true,
             'data' => [
                 'trend_data' => $trendData,
                 'period' => [
-                    'start_date' => $startDate->toDateString(),
+                    'start_date' => $startDate ? $startDate->toDateString() : null,
                     'end_date' => $endDate->toDateString(),
                     'days' => $days,
                 ],
@@ -964,8 +990,20 @@ Route::middleware(['web'])->get('/api/dashboard/sales-trend', function (Illumina
         return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
     }
 });
-Route::middleware(['web'])->get('/api/dashboard/dealer-performance', function () {
+Route::middleware(['web'])->get('/api/dashboard/dealer-performance', function (Illuminate\Http\Request $request) {
     try {
+        // days 파라미터 받기
+        $days = $request->get('days');
+        
+        if ($days === null || $days === 'null') {
+            $startDate = null;
+            $endDate = now();
+        } else {
+            $days = min((int)$days, 365);
+            $startDate = now()->subDays($days)->startOfDay();
+            $endDate = now()->endOfDay();
+        }
+        
         $user = auth()->user();
         
         // 권한별 매장 필터링
@@ -994,38 +1032,43 @@ Route::middleware(['web'])->get('/api/dashboard/dealer-performance', function ()
             }
             // headquarters는 모든 데이터 조회 (필터링 없음)
         }
-        $startOfMonth = now()->startOfMonth();
-        $endOfMonth = now()->endOfMonth();
-        $totalCurrentMonth = DatabaseHelper::executeWithRetry(function () use ($startOfMonth, $endOfMonth) {
-            return \App\Models\Sale::whereBetween('sale_date', [
-                $startOfMonth->toDateTimeString(),
-                $endOfMonth->toDateTimeString(),
-            ])->count();
+        // 날짜 필터링 적용
+        if ($startDate) {
+            $query->whereBetween('sale_date', [
+                $startDate->toDateTimeString(),
+                $endDate->toDateTimeString(),
+            ]);
+        }
+        
+        $totalCount = DatabaseHelper::executeWithRetry(function () use ($query) {
+            return (clone $query)->count();
         });
-        $carrierStats = DatabaseHelper::executeWithRetry(function () use ($query, $startOfMonth, $endOfMonth) {
-            return (clone $query)->whereBetween('sale_date', [
-                $startOfMonth->toDateTimeString(),
-                $endOfMonth->toDateTimeString(),
-            ])
+        
+        $carrierStats = DatabaseHelper::executeWithRetry(function () use ($query) {
+            return (clone $query)
                 ->selectRaw("COALESCE(carrier, '미지정') as carrier")
                 ->selectRaw('COUNT(*) as count')
                 ->selectRaw('SUM(settlement_amount) as total_sales')
                 ->groupByRaw("COALESCE(carrier, '미지정')")
                 ->get();
         })
-            ->map(function ($stat) use ($totalCurrentMonth) {
+            ->map(function ($stat) use ($totalCount) {
                 return [
                     'carrier' => $stat->carrier,
                     'count' => $stat->count,
                     'total_sales' => $stat->total_sales,
-                    'percentage' => $totalCurrentMonth > 0 ? round(($stat->count / $totalCurrentMonth) * 100, 1) : 0,
+                    'percentage' => $totalCount > 0 ? round(($stat->count / $totalCount) * 100, 1) : 0,
                 ];
             });
         return response()->json([
             'success' => true,
             'data' => [
                 'carrier_breakdown' => $carrierStats,
-                'year_month' => now()->format('Y-m'),
+                'period' => [
+                    'start_date' => $startDate ? $startDate->toDateString() : null,
+                    'end_date' => $endDate->toDateString(),
+                    'days' => $days,
+                ],
             ],
         ]);
     } catch (Exception $e) {
