@@ -574,7 +574,14 @@
             <!-- 차트 섹션 -->
             <div class="chart-grid">
                 <div class="chart-card">
-                    <div class="chart-title">30일 매출 추이</div>
+                    <div class="flex justify-between items-center mb-4">
+                        <div class="chart-title" id="sales-chart-title">최근 30일 매출 추이</div>
+                        <div class="flex gap-2">
+                            <button onclick="changePeriod(7)" id="period-7" class="px-3 py-1 text-xs rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors">최근 7일</button>
+                            <button onclick="changePeriod(30)" id="period-30" class="px-3 py-1 text-xs rounded-lg bg-blue-500 text-white transition-colors">최근 30일</button>
+                            <button onclick="changePeriod(90)" id="period-90" class="px-3 py-1 text-xs rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors">최근 90일</button>
+                        </div>
+                    </div>
                     <div class="chart-container">
                         <canvas id="salesChart"></canvas>
                     </div>
@@ -710,6 +717,66 @@
         
         // 페이지 로드 시 사용자 정보 표시
         document.addEventListener('DOMContentLoaded', updateUserInfo);
+        
+        // 기간 선택 변수
+        let currentDays = 30; // 기본값: 최근 30일
+        
+        // 기간 변경 함수
+        async function changePeriod(days) {
+            currentDays = days;
+            
+            // 버튼 스타일 업데이트
+            document.querySelectorAll('[id^="period-"]').forEach(btn => {
+                btn.className = 'px-3 py-1 text-xs rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors';
+            });
+            document.getElementById(`period-${days}`).className = 'px-3 py-1 text-xs rounded-lg bg-blue-500 text-white transition-colors';
+            
+            // 제목 업데이트
+            document.getElementById('sales-chart-title').textContent = `최근 ${days}일 매출 추이`;
+            
+            // 데이터 다시 로드
+            await loadChartData();
+        }
+        
+        // 차트 데이터 로드 함수
+        async function loadChartData() {
+            try {
+                console.log(`📈 차트 데이터 로드 시작 (최근 ${currentDays}일)`);
+                
+                // 1. 매출 추이 데이터
+                const trendResponse = await fetch(`/api/dashboard/sales-trend?days=${currentDays}`);
+                const trendData = await trendResponse.json();
+                
+                if (trendData.success && typeof salesChart !== 'undefined') {
+                    const labels = trendData.data.trend_data.map(item => item.day_label);
+                    const data = trendData.data.trend_data.map(item => item.sales);
+                    
+                    salesChart.data.labels = labels;
+                    salesChart.data.datasets[0].data = data;
+                    salesChart.update();
+                    
+                    console.log('✅ 매출 추이 차트 업데이트 완료');
+                }
+                
+                // 2. 시장별 매출 데이터
+                const carrierResponse = await fetch(`/api/dashboard/dealer-performance?days=${currentDays}`);
+                const carrierData = await carrierResponse.json();
+                
+                if (carrierData.success && typeof marketChart !== 'undefined') {
+                    const carriers = carrierData.data.carrier_breakdown.map(item => item.carrier);
+                    const sales = carrierData.data.carrier_breakdown.map(item => item.total_sales);
+                    
+                    marketChart.data.labels = carriers;
+                    marketChart.data.datasets[0].data = sales;
+                    marketChart.update();
+                    
+                    console.log('✅ 시장별 매출 차트 업데이트 완료');
+                }
+                
+            } catch (error) {
+                console.error('❌ 차트 데이터 로드 실패:', error);
+            }
+        }
         
         // 30일 매출 추이 차트
         const salesCtx = document.getElementById('salesChart').getContext('2d');
@@ -1066,30 +1133,8 @@
                     }
                 }
                 
-                // 30일 매출 추이 데이터 로드
-                const trendResponse = await fetch('/api/dashboard/sales-trend?days=30');
-                const trendData = await trendResponse.json();
-                
-                if (trendData.success && typeof salesChart !== 'undefined') {
-                    const labels = trendData.data.trend_data.map(item => item.day_label);
-                    const data = trendData.data.trend_data.map(item => item.sales);
-                    
-                    salesChart.data.labels = labels;
-                    salesChart.data.datasets[0].data = data;
-                    salesChart.update();
-                }
-                
-                // 대리점별 성과 데이터 로드
-                const performanceResponse = await fetch('/api/dashboard/dealer-performance');
-                const performanceData = await performanceResponse.json();
-                
-                if (performanceData.success && typeof marketChart !== 'undefined') {
-                    const labels = performanceData.data.carrier_breakdown.map(item => item.carrier);
-                    const data = performanceData.data.carrier_breakdown.map(item => Math.round(item.percentage));
-                    
-                    marketChart.data.labels = labels;
-                    marketChart.data.datasets[0].data = data;
-                    marketChart.update();
+                // 차트 데이터 로드 (기간 선택 기능 사용)
+                await loadChartData();
                 }
                 
             } catch (error) {
