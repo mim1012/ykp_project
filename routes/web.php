@@ -2696,11 +2696,17 @@ Route::middleware(['web', 'api.auth'])->group(function () {
                 // 지사 계정: 소속 매장들만 조회 가능
                 $allowedStoreIds = \App\Models\Store::where('branch_id', $user->branch_id)->pluck('id')->toArray();
             } elseif ($user && $user->role === 'store') {
-                // 매장 계정: 자신의 매장만 조회 가능
-                $allowedStoreIds = [$user->store_id];
+                // 매장 계정: 같은 지사 내 모든 매장 조회 가능 (지사 내 순위 확인)
+                $store = \App\Models\Store::find($user->store_id);
+                if ($store && $store->branch_id) {
+                    $allowedStoreIds = \App\Models\Store::where('branch_id', $store->branch_id)->pluck('id')->toArray();
+                } else {
+                    // branch_id가 없으면 자신의 매장만
+                    $allowedStoreIds = [$user->store_id];
+                }
             }
-            // 매장 필터 파라미터가 있으면 해당 매장만
-            if ($storeId) {
+            // 매장 필터 파라미터가 있으면 해당 매장만 (관리자용)
+            if ($storeId && (!$user || $user->role === 'admin')) {
                 $allowedStoreIds = [$storeId];
             }
             
