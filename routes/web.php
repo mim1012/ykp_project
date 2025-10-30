@@ -498,20 +498,7 @@ Route::get('/api/dashboard/store-ranking', function () {
 })->name('web.api.store.ranking');
 // Financial Summary API는 DashboardController에서 처리 (하드코딩 제거)
 // Route::get('/api/dashboard/financial-summary') -> api.php의 DashboardController::financialSummary 사용
-// 극단적 단순화 Dealer Performance API (SyntaxError 완전 방지)
-Route::get('/api/dashboard/dealer-performance', function () {
-    return response()->json([
-        'success' => true,
-        'data' => [
-            'carrier_breakdown' => [
-                ['carrier' => 'SK', 'count' => 14, 'percentage' => 53.8],
-                ['carrier' => 'KT', 'count' => 7, 'percentage' => 26.9],
-                ['carrier' => 'LG', 'count' => 5, 'percentage' => 19.2],
-            ],
-            'total_activations' => 26,
-        ],
-    ]);
-})->name('web.api.dealer-performance');
+// 🚨 Dealer Performance API는 Line 911에서 실제 DB 조회로 구현됨 (중복 제거)
 // Railway 테스트용 임시 통계 페이지 (인증 없음)
 Route::get('/test-statistics', function () {
     $fake_user = (object) [
