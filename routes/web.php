@@ -17,6 +17,19 @@ Route::get('/health', function () {
         'timestamp' => now()->toIso8601String(),
     ], 200);
 });
+
+// Temporary debug endpoint - REMOVE AFTER DEPLOYMENT VERIFICATION
+Route::get('/debug-env', function () {
+    return response()->json([
+        'DB_CONNECTION' => env('DB_CONNECTION'),
+        'DB_HOST' => env('DB_HOST'),
+        'DB_PORT' => env('DB_PORT'),
+        'DB_DATABASE' => env('DB_DATABASE'),
+        'config_db_host' => config('database.connections.pgsql.host'),
+        'config_default' => config('database.default'),
+        'APP_ENV' => env('APP_ENV'),
+    ]);
+});
 /*
 |--------------------------------------------------------------------------
 | Authentication Routes
