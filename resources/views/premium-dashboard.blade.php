@@ -1135,7 +1135,6 @@
                 
                 // 차트 데이터 로드 (기간 선택 기능 사용)
                 await loadChartData();
-                }
                 
             } catch (error) {
                 console.error('실시간 데이터 로드 오류:', error);
