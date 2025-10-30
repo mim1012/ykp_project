@@ -2225,14 +2225,52 @@ Route::middleware(['web', 'api.auth'])->group(function () {
                 $storeId = $user->store_id;
             }
 
+            // 빈 배열인 경우 조기 반환 (접근 가능한 매장 없음 = 빈 결과)
+            if (is_array($storeId) && count($storeId) === 0) {
+                // 빈 labels/data 배열을 days 수만큼 생성하여 차트가 제대로 표시되도록 함
+                $emptyTrendData = [];
+                if ($type === 'daily') {
+                    for ($i = $days - 1; $i >= 0; $i--) {
+                        $targetDate = now()->subDays($i);
+                        $emptyTrendData[] = [
+                            'date' => $targetDate->format('Y-m-d'),
+                            'value' => 0,
+                            'label' => $targetDate->format('m/d'),
+                        ];
+                    }
+                } elseif ($type === 'weekly') {
+                    $weeks = ceil($days / 7);
+                    for ($i = $weeks - 1; $i >= 0; $i--) {
+                        $weekStart = now()->subWeeks($i)->startOfWeek();
+                        $weekEnd = now()->subWeeks($i)->endOfWeek();
+                        $emptyTrendData[] = [
+                            'date' => $weekStart->format('Y-m-d'),
+                            'value' => 0,
+                            'label' => $weekStart->format('m/d').'-'.$weekEnd->format('m/d'),
+                        ];
+                    }
+                }
+                $labels = array_map(fn($item) => $item['label'], $emptyTrendData);
+                $revenueData = array_map(fn($item) => 0, $emptyTrendData);
+                $profitData = array_map(fn($item) => 0, $emptyTrendData);
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'labels' => $labels,
+                        'revenue_data' => $revenueData,
+                        'profit_data' => $profitData,
+                    ]
+                ]);
+            }
+
             $startDate = now()->subDays($days)->startOfDay();
             $endDate = now()->endOfDay();
             $query = \App\Models\Sale::whereBetween('sale_date', [
                 $startDate->toDateTimeString(),
                 $endDate->toDateTimeString(),
             ]);
-            // 빈 배열 체크 추가
-            if ($storeId && (!is_array($storeId) || count($storeId) > 0)) {
+            // store 필터 적용
+            if ($storeId) {
                 if (is_array($storeId)) {
                     $query->whereIn('store_id', $storeId);
                 } else {
@@ -2250,8 +2288,8 @@ Route::middleware(['web', 'api.auth'])->group(function () {
                         $dayStart->toDateTimeString(),
                         $dayEnd->toDateTimeString(),
                     ]);
-                    // 빈 배열 체크 추가
-                    if ($storeId && (!is_array($storeId) || count($storeId) > 0)) {
+                    // store 필터 적용
+                    if ($storeId) {
                         if (is_array($storeId)) {
                             $dailyRevenue->whereIn('store_id', $storeId);
                         } else {
@@ -2275,8 +2313,8 @@ Route::middleware(['web', 'api.auth'])->group(function () {
                         $weekStart->format('Y-m-d H:i:s'),
                         $weekEnd->format('Y-m-d H:i:s'),
                     ]);
-                    // 빈 배열 체크 추가
-                    if ($storeId && (!is_array($storeId) || count($storeId) > 0)) {
+                    // store 필터 적용
+                    if ($storeId) {
                         if (is_array($storeId)) {
                             $weeklyQuery->whereIn('store_id', $storeId);
                         } else {
