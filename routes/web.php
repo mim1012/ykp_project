@@ -2077,7 +2077,7 @@ Route::middleware(['web', 'api.auth'])->group(function () {
                 }
             } elseif ($user && $user->role === 'store') {
                 // 매장 계정: 자신의 매장만 조회 가능
-                if ($storeId && $storeId !== $user->store_id) {
+                if ($storeId && intval($storeId) !== intval($user->store_id)) {
                     return response()->json([
                         'success' => false,
                         'error' => '해당 매장에 대한 접근 권한이 없습니다.',
@@ -2216,7 +2216,7 @@ Route::middleware(['web', 'api.auth'])->group(function () {
                 }
             } elseif ($user && $user->role === 'store') {
                 // 매장 계정: 자신의 매장만 조회 가능
-                if ($storeId && $storeId !== $user->store_id) {
+                if ($storeId && intval($storeId) !== intval($user->store_id)) {
                     return response()->json([
                         'success' => false,
                         'error' => '해당 매장에 대한 접근 권한이 없습니다.',
