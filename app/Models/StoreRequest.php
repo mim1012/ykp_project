@@ -14,7 +14,7 @@ class StoreRequest extends Model
      *
      * @var string|null
      */
-    protected $connection = 'pgsql_local';
+    // Connection will use default from config/database.php
 
     protected $fillable = [
         'requested_by',
