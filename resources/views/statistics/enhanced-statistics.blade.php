@@ -617,6 +617,18 @@
         // Top 매장 렌더링
         function renderTopStores(stores) {
             const container = document.getElementById('top-stores');
+            
+            // 데이터가 없을 때
+            if (!stores || stores.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center p-8 text-gray-500">
+                        <p class="text-lg mb-2">📊 선택한 기간에 데이터가 없습니다</p>
+                        <p class="text-sm">다른 기간을 선택하거나 개통표를 입력해주세요</p>
+                    </div>
+                `;
+                return;
+            }
+            
             container.innerHTML = stores.map(store => {
                 const rankColors = ['text-yellow-600', 'text-gray-600', 'text-orange-600', 'text-blue-600', 'text-purple-600'];
                 const rankIcons = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];

@@ -2683,11 +2683,27 @@ Route::middleware(['web', 'api.auth'])->group(function () {
     // Top 매장 - 실제 데이터 연동
     Route::get('/api/statistics/top-stores', function (Illuminate\Http\Request $request) {
         try {
+            $user = auth()->user();
             $days = $request->get('days', 30);
             $storeId = $request->get('store');
-            $limit = $request->get('limit', 10);
+            $limit = $request->get('limit', 5); // TOP 5로 변경
             $startDate = now()->subDays($days)->startOfDay();
             $endDate = now()->endOfDay();
+            
+            // 권한별 매장 ID 목록 결정
+            $allowedStoreIds = null;
+            if ($user && $user->role === 'branch') {
+                // 지사 계정: 소속 매장들만 조회 가능
+                $allowedStoreIds = \App\Models\Store::where('branch_id', $user->branch_id)->pluck('id')->toArray();
+            } elseif ($user && $user->role === 'store') {
+                // 매장 계정: 자신의 매장만 조회 가능
+                $allowedStoreIds = [$user->store_id];
+            }
+            // 매장 필터 파라미터가 있으면 해당 매장만
+            if ($storeId) {
+                $allowedStoreIds = [$storeId];
+            }
+            
             $query = \App\Models\Sale::whereBetween('sale_date', [
                 $startDate->format('Y-m-d H:i:s'),
                 $endDate->format('Y-m-d H:i:s'),
@@ -2696,12 +2712,13 @@ Route::middleware(['web', 'api.auth'])->group(function () {
                 ->selectRaw('COALESCE(SUM(settlement_amount), 0) as revenue, COUNT(*) as activations')
                 ->groupBy('store_id')
                 ->orderBy('revenue', 'desc');
-            // 매장 필터가 있으면 해당 매장만
-            if ($storeId) {
-                $query->where('store_id', $storeId)->limit(1);
-            } else {
-                $query->limit($limit);
+            
+            // 권한별 필터링 적용
+            if ($allowedStoreIds !== null) {
+                $query->whereIn('store_id', $allowedStoreIds);
             }
+            
+            $query->limit($limit);
             $topStoresData = $query->get();
             $topStores = [];
             foreach ($topStoresData as $index => $storeData) {
@@ -2717,6 +2734,16 @@ Route::middleware(['web', 'api.auth'])->group(function () {
                     ];
                 }
             }
+            
+            // 데이터가 없을 때 메시지 추가
+            if (empty($topStores)) {
+                return response()->json([
+                    'success' => true,
+                    'data' => [],
+                    'message' => '선택한 기간에 데이터가 없습니다.'
+                ]);
+            }
+            
             return response()->json(['success' => true, 'data' => $topStores]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
