@@ -10,7 +10,7 @@ class DealerProfile extends Model
 {
     use HasFactory;
 
-    protected $connection = 'pgsql_local';
+    // Connection will use default from config/database.php
 
     protected $fillable = [
         'dealer_code',
