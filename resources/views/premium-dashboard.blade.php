@@ -617,7 +617,14 @@
             <div class="top-performers-section" style="margin: 30px 0;">
                 <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 20px; color: #1f2937;">🏪 {{ auth()->user()->branch->name ?? '지사' }} TOP 5 매장</h3>
                 <div style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                    <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #10b981;">🏆 지사 내 매장 순위</h4>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h4 style="font-size: 16px; font-weight: 600; margin: 0; color: #10b981;">🏆 지사 내 매장 순위</h4>
+                        <select id="stores-period-select" style="padding: 6px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; color: #374151; cursor: pointer; background: white;">
+                            <option value="this_month">이번 달</option>
+                            <option value="last_month">지난 달</option>
+                            <option value="last_3_months">최근 3개월</option>
+                        </select>
+                    </div>
                     <ul id="top-stores-list" style="list-style: none; padding: 0; margin: 0;">
                         <li style="padding: 8px 0; color: #6b7280;">데이터 로딩 중...</li>
                     </ul>
@@ -627,7 +634,14 @@
             <div class="top-performers-section" style="margin: 30px 0;">
                 <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 20px; color: #1f2937;">🏪 {{ auth()->user()->branch->name ?? '지사' }} 매장 현황</h3>
                 <div style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                    <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #f59e0b;">🏆 지사 내 TOP 5</h4>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h4 style="font-size: 16px; font-weight: 600; margin: 0; color: #f59e0b;">🏆 지사 내 TOP 5</h4>
+                        <select id="stores-period-select" style="padding: 6px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; color: #374151; cursor: pointer; background: white;">
+                            <option value="this_month">이번 달</option>
+                            <option value="last_month">지난 달</option>
+                            <option value="last_3_months">최근 3개월</option>
+                        </select>
+                    </div>
                     <ul id="top-stores-list" style="list-style: none; padding: 0; margin: 0;">
                         <li style="padding: 8px 0; color: #6b7280;">데이터 로딩 중...</li>
                     </ul>
@@ -1437,9 +1451,9 @@
         }
 
         // TOP 매장 로드 (권한별)
-        async function loadTopStores() {
+        async function loadTopStores(period = 'this_month') {
             try {
-                const response = await fetch('/api/dashboard/top-list?type=store&limit=5');
+                const response = await fetch(`/api/dashboard/top-list?type=store&limit=5&period=${period}`);
                 const result = await response.json();
                 
                 if (result.success) {
@@ -1512,7 +1526,21 @@
             } catch (error) {
                 console.error('❌ 실시간 데이터 초기 로드 오류:', error);
             }
-            
+
+            // 기간 선택 드롭다운 이벤트 리스너
+            const periodSelect = document.getElementById('stores-period-select');
+            if (periodSelect) {
+                periodSelect.addEventListener('change', async function(e) {
+                    const selectedPeriod = e.target.value;
+                    console.log(`📅 기간 변경: ${selectedPeriod}`);
+                    try {
+                        await loadTopStores(selectedPeriod);
+                    } catch (error) {
+                        console.error('기간 변경 시 데이터 로드 실패:', error);
+                    }
+                });
+            }
+
             // 5분마다 데이터 새로고침 (안전한 호출)
             setInterval(() => {
                 try {
