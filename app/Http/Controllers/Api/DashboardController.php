@@ -33,7 +33,7 @@ class DashboardController extends Controller
             $cacheKey = substr($cacheKey, 0, -1) . floor(now()->minute / 5) * 5;
 
             // 5분간 캐시 유지 (300초)
-            return Cache::remember($cacheKey, 300, function () use ($user, $request) {
+            return Cache::remember($cacheKey, 300, function () use ($user, $request, $cacheKey) {
                 Log::info('Dashboard overview API called (cache miss)', ['user_id' => $user->id]);
 
             // 사용자 정보 상세 로깅
@@ -184,9 +184,9 @@ class DashboardController extends Controller
                     'users' => [
                         'total' => $totalUsers,
                         'active' => $activeUsers,
-                        'headquarters' => User::where('role', 'headquarters')->count(),
-                        'branch_managers' => User::where('role', 'branch')->count(),
-                        'store_staff' => User::where('role', 'store')->count(),
+                        'headquarters' => (clone $userQuery)->where('role', 'headquarters')->count(),
+                        'branch_managers' => (clone $userQuery)->where('role', 'branch')->count(),
+                        'store_staff' => (clone $userQuery)->where('role', 'store')->count(),
                     ],
                     'this_month_sales' => floatval($thisMonthSales),
                     'today_activations' => $todayActivations,
@@ -288,10 +288,14 @@ class DashboardController extends Controller
                 ->limit($limit)
                 ->get();
 
-            // 매장 정보 로드
+            // 매장 정보를 한 번에 로드 (N+1 방지)
+            $storeIds = $rankings->pluck('store_id')->toArray();
+            $stores = Store::with('branch')->whereIn('id', $storeIds)->get()->keyBy('id');
+
+            // 매장 정보 매핑
             $rankedStores = [];
             foreach ($rankings as $index => $ranking) {
-                $store = Store::with('branch')->find($ranking->store_id);
+                $store = $stores->get($ranking->store_id);
                 if ($store) {
                     $rankedStores[] = [
                         'rank' => $index + 1,
@@ -516,14 +520,12 @@ class DashboardController extends Controller
                 } // 데이터 없으면 null
             }
 
-            // 2. 매장 순위 계산 (권한별 필터링)
+            // 2. 매장 순위 계산 (전국 전체 매장 기준)
             $storeQuery = $salesQuery->clone()
                 ->select('store_id', DB::raw('SUM(settlement_amount) as total'));
 
-            // 지사/매장 계정은 자기 지사 내부 순위만
-            if ($user->isBranch() || $user->isStore()) {
-                $storeQuery->where('branch_id', $user->branch_id);
-            }
+            // 🔥 수정: 전국 전체 매장 중 순위 계산 (필터링 제거)
+            // 모든 계정이 전국 순위를 볼 수 있도록 변경
 
             $storeRankings = $storeQuery->groupBy('store_id')
                 ->orderByDesc('total')
@@ -554,7 +556,7 @@ class DashboardController extends Controller
                             'rank' => $storeRank,
                             'total' => $storeTotal,
                             'user_store_id' => $user->store_id,
-                            'scope' => $user->isHeadquarters() ? 'nationwide' : 'branch_only',
+                            'scope' => 'nationwide', // 🔥 수정: 항상 전국 순위
                         ],
                     ],
                     'meta' => [
@@ -609,9 +611,13 @@ class DashboardController extends Controller
                     ->limit($limit)
                     ->get();
 
+                // 지사 정보를 한 번에 로드 (N+1 방지)
+                $branchIds = $rankings->pluck('branch_id')->toArray();
+                $branches = Branch::whereIn('id', $branchIds)->get()->keyBy('id');
+
                 $topList = [];
                 foreach ($rankings as $index => $ranking) {
-                    $branch = Branch::find($ranking->branch_id);
+                    $branch = $branches->get($ranking->branch_id);
                     if ($branch) {
                         $topList[] = [
                             'rank' => $index + 1,
@@ -638,9 +644,13 @@ class DashboardController extends Controller
                     ->limit($limit)
                     ->get();
 
+                // 매장 정보를 한 번에 로드 (N+1 방지)
+                $storeIds = $rankings->pluck('store_id')->toArray();
+                $stores = Store::with('branch')->whereIn('id', $storeIds)->get()->keyBy('id');
+
                 $topList = [];
                 foreach ($rankings as $index => $ranking) {
-                    $store = Store::with('branch')->find($ranking->store_id);
+                    $store = $stores->get($ranking->store_id);
                     if ($store) {
                         $topList[] = [
                             'rank' => $index + 1,

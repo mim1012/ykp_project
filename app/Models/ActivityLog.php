@@ -9,6 +9,13 @@ class ActivityLog extends Model
 {
     use HasFactory;
 
+    /**
+     * The connection name for the model.
+     *
+     * @var string|null
+     */
+    protected $connection = 'pgsql_local';
+
     protected $fillable = [
         'user_id',
         'activity_type',

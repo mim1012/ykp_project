@@ -5,7 +5,7 @@ import { Sidebar } from './components/dashboard';
 import { QueryProvider } from './providers/QueryProvider';
 import { AnimatedRoute } from './components/animations/PageTransition';
 import { LoadingSpinner } from './components/ui/LoadingSpinner';
-// Remove unused import for now
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Lazy load heavy components for code splitting
 const Dashboard = lazy(() => import('./components/dashboard').then(module => ({ default: module.Dashboard })));
@@ -122,5 +122,9 @@ App.displayName = 'App';
 const container = document.getElementById('dashboard-root');
 if (container) {
     const root = createRoot(container);
-    root.render(<App />);
+    root.render(
+        <ErrorBoundary>
+            <App />
+        </ErrorBoundary>
+    );
 }

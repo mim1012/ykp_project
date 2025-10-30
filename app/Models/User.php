@@ -14,6 +14,13 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     /**
+     * The connection name for the model.
+     *
+     * @var string|null
+     */
+    protected $connection = 'pgsql_local';
+
+    /**
      * The attributes that are mass assignable.
      *
      * @var list<string>

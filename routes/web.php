@@ -609,10 +609,10 @@ Route::middleware(['auth', 'rbac'])->group(function () {
     Route::get('/sales/complete-aggrid', function () {
         return view('sales.complete-aggrid');
     })->name('sales.complete-aggrid');
-    // 404 방지: 누락된 advanced-input 라우트 리디렉션
-    Route::get('/sales/advanced-input', function () {
-        return redirect('/sales/complete-aggrid');
-    })->name('sales.advanced-input.redirect');
+    // 레거시 URL 호환성 (필요시 활성화)
+    // Route::get('/sales/advanced-input', function () {
+    //     return redirect('/sales/complete-aggrid');
+    // })->name('sales.advanced-input.redirect');
     // Route::get('/sales/advanced-input-pro', function () {
     //     return view('sales.advanced-input-pro');
     // })->name('sales.advanced-input-pro');
@@ -716,9 +716,9 @@ if (config('app.env') !== 'production') {
 Route::get('/dev/sales', function () {
     return view('sales-navigation');
 })->name('sales.navigation');
-// 사용자 친화적 판매관리 (complete-aggrid로 통합)
+// 사용자 친화적 판매관리 (complete-aggrid로 직접 연결 - 리다이렉트 제거로 성능 개선)
 Route::get('/sales', function () {
-    return redirect('/sales/complete-aggrid');
+    return view('sales.complete-aggrid');
 })->name('sales.simple');
 // 메인 대시보드는 인증 후 접근
 Route::middleware(['auth', 'rbac'])->get('/main', function () {
@@ -2509,10 +2509,10 @@ Route::middleware(['web', 'api.auth'])->group(function () {
     Route::get('/api/statistics/goal-progress', function (Illuminate\Http\Request $request) {
         try {
             $storeId = $request->get('store');
-            // 이번 달 실제 데이터 - PostgreSQL/SQLite 호환
+            // 이번 달 실제 데이터 - PostgreSQL 연결 명시
             $thisMonthStart = now()->startOfMonth();
             $thisMonthEnd = now()->endOfMonth();
-            $thisMonthQuery = \App\Models\Sale::whereBetween('sale_date', [
+            $thisMonthQuery = \App\Models\Sale::on('pgsql_local')->whereBetween('sale_date', [
                 $thisMonthStart->toDateTimeString(),
                 $thisMonthEnd->toDateTimeString(),
             ]);
@@ -2522,16 +2522,17 @@ Route::middleware(['web', 'api.auth'])->group(function () {
             // 단일 쿼리로 집계 (성능 최적화 + PostgreSQL 호환)
             $monthlyStats = $thisMonthQuery->selectRaw('
                 COALESCE(SUM(settlement_amount), 0) as current_revenue,
-                COUNT(*) as current_activations,
+                COUNT(*) as current_activations
             ')->first();
             $currentRevenue = floatval($monthlyStats->current_revenue ?? 0);
-            // 목표 설정 (매장별 vs 전체) - Goals 테이블에서 조회
+            $currentActivations = intval($monthlyStats->current_activations ?? 0);
+            // 목표 설정 (매장별 vs 전체) - Goals 테이블에서 조회 (PostgreSQL 연결 명시)
             if ($storeId) {
                 // 매장별 목표
-                $storeGoal = \App\Models\Goal::where('target_type', 'store')
+                $storeGoal = \App\Models\Goal::on('pgsql_local')->where('target_type', 'store')
                     ->where('target_id', $storeId)
                     ->where('period_type', 'monthly')
-                    ->where('is_active', '=', config('database.default') === 'pgsql' ? \DB::raw('true') : true)
+                    ->where('is_active', true)
                     ->whereBetween('period_start', [now()->startOfMonth()->format('Y-m-d'), now()->endOfMonth()->format('Y-m-d')])
                     ->first();
                 $revenueTarget = $storeGoal ? $storeGoal->sales_target : 2000000;
@@ -2539,9 +2540,9 @@ Route::middleware(['web', 'api.auth'])->group(function () {
                 $profitRateTarget = 55.0;     // 55% 목표
             } else {
                 // 전체 목표
-                $systemGoal = \App\Models\Goal::where('target_type', 'system')
+                $systemGoal = \App\Models\Goal::on('pgsql_local')->where('target_type', 'system')
                     ->where('period_type', 'monthly')
-                    ->where('is_active', '=', config('database.default') === 'pgsql' ? \DB::raw('true') : true)
+                    ->where('is_active', true)
                     ->whereBetween('period_start', [now()->startOfMonth()->format('Y-m-d'), now()->endOfMonth()->format('Y-m-d')])
                     ->first();
                 $revenueTarget = $systemGoal ? $systemGoal->sales_target : 50000000;
@@ -2680,7 +2681,7 @@ Route::middleware(['web', 'auth'])->group(function () {
         try {
             $user = auth()->user();
             $limit = request()->get('limit', 10);
-            $query = App\Models\ActivityLog::with('user:id,name,role')
+            $query = App\Models\ActivityLog::on('pgsql_local')->with('user:id,name,role')
                 ->orderBy('performed_at', 'desc')
                 ->limit($limit);
             // 권한별 필터링
@@ -2688,7 +2689,7 @@ Route::middleware(['web', 'auth'])->group(function () {
                 $query->where(function ($q) use ($user) {
                     $q->where('user_id', $user->id)
                         ->orWhereIn('target_id', function ($subq) use ($user) {
-                            $subq->select('id')->from('stores')->where('branch_id', $user->branch_id);
+                            $subq->select('id')->from('pgsql_local.stores')->where('branch_id', $user->branch_id);
                         });
                 });
             } elseif ($user->role === 'store') {

@@ -10,6 +10,13 @@ class Sale extends Model
 {
     use HasFactory;
 
+    /**
+     * The connection name for the model.
+     *
+     * @var string|null
+     */
+    protected $connection = 'pgsql_local';
+
     protected $fillable = [
         'dealer_code',
         'store_id',

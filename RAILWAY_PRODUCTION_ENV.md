@@ -23,12 +23,12 @@ DB_HOST="aws-1-ap-southeast-1.pooler.supabase.com"
 DB_PORT="5432"
 DB_DATABASE="postgres"
 DB_USERNAME="postgres.qwafwqxdcfpqqwpmphkm"
-DB_PASSWORD="rlawlgns2233@"
+DB_PASSWORD="[REDACTED]"
 DB_SSLMODE="require"
 
 # Supabase API
 SUPABASE_URL="https://qwafwqxdcfpqqwpmphkm.supabase.co"
-SUPABASE_ANON_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF3YWZ3cXhkY2ZwcXF3cG1waGttIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc3NzY5ODcsImV4cCI6MjA3MzM1Mjk4N30.wfFOhuAZ6kpAr_55yoj9VQp5-rhqZrSMaWxvJfkTx3k"
+SUPABASE_ANON_KEY="[REDACTED]"
 
 # Session & Cache
 SESSION_DRIVER="database"

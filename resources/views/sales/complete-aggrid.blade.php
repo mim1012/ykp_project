@@ -1113,22 +1113,48 @@
             if (confirm(`선택한 ${selectedRowIds.size}개 행을 삭제하시겠습니까?`)) {
                 const idsToDelete = Array.from(selectedRowIds);
 
+                console.log('🔍 salesData 확인:', {
+                    length: salesData.length,
+                    firstFewRows: salesData.slice(0, 3),
+                    idsToDelete: idsToDelete,
+                    idsToDeleteTypes: idsToDelete.map(id => typeof id)
+                });
+
                 // isPersisted 플래그를 사용해 DB에 저장된 ID와 미저장 ID 분리
                 const savedIds = [];
                 const unsavedIds = [];
 
                 idsToDelete.forEach(id => {
-                    const row = salesData.find(r => r.id === id);
+                    // 문자열 ID를 숫자로 변환해서 찾기 시도
+                    const row = salesData.find(r => r.id === id || r.id === Number(id) || String(r.id) === id);
+                    console.log(`🔍 행 ${id} 확인:`, {
+                        found: !!row,
+                        isPersisted: row?.isPersisted,
+                        rowData: row
+                    });
                     if (row && row.isPersisted) {
-                        savedIds.push(id);
+                        // 실제 DB ID를 사용 (임시 ID가 아닌 row.id)
+                        savedIds.push(row.id);
                     } else {
                         unsavedIds.push(id);
                     }
                 });
 
+                console.log('📊 분류 결과:', {
+                    savedIds,
+                    unsavedIds,
+                    totalIds: idsToDelete
+                });
+
                 try {
                     // DB에 저장된 데이터가 있으면 백엔드 호출
                     if (savedIds.length > 0) {
+                        console.log('📡 삭제 API 요청:', {
+                            url: '/api/sales/bulk-delete',
+                            savedIds: savedIds,
+                            count: savedIds.length
+                        });
+
                         const response = await fetch('/api/sales/bulk-delete', {
                             method: 'POST',
                             headers: {
@@ -1139,40 +1165,109 @@
                             body: JSON.stringify({ sale_ids: savedIds })
                         });
 
+                        console.log('📡 응답 상태:', response.status, response.statusText);
+
                         if (!response.ok) {
-                            throw new Error(`HTTP ${response.status}`);
+                            const errorText = await response.text();
+                            console.error('❌ HTTP 에러:', {
+                                status: response.status,
+                                statusText: response.statusText,
+                                body: errorText
+                            });
+                            throw new Error(`HTTP ${response.status}: ${errorText}`);
                         }
 
                         const result = await response.json();
+                        console.log('✅ 삭제 API 응답:', result);
+
                         if (!result.success) {
                             throw new Error(result.message || '삭제 실패');
                         }
+                    } else {
+                        console.log('⚠️ 저장된 행이 없어서 API 요청 건너뜀');
                     }
 
-                    // 모든 선택된 행 제거
-                    salesData = salesData.filter(row => !idsToDelete.includes(row.id));
+                    console.log('🎯 if/else 블록 완료, UI 업데이트 시작 예정');
+                    console.log('🎯 현재 salesData:', { length: salesData.length, idsToDelete });
 
-                    // 필터가 적용된 경우 filteredData도 업데이트
+                    // 모든 선택된 행 제거 (ID 타입 변환 포함)
+                    const beforeCount = salesData.length;
+                    console.log('🎯 beforeCount:', beforeCount);
+
+                    // ID를 문자열로 통일해서 비교
+                    const idsToDeleteStrings = idsToDelete.map(id => String(id));
+                    salesData = salesData.filter(row => {
+                        const rowIdString = String(row.id);
+                        const shouldKeep = !idsToDeleteStrings.includes(rowIdString);
+                        console.log(`🎯 행 ${row.id} (${rowIdString}): shouldKeep=${shouldKeep}`);
+                        return shouldKeep;
+                    });
+
+                    const afterCount = salesData.length;
+                    console.log('🎯 afterCount:', afterCount);
+
+                    console.log('🔄 UI 업데이트:', {
+                        beforeCount,
+                        afterCount,
+                        removed: beforeCount - afterCount,
+                        idsToDelete
+                    });
+
+                    // 필터가 적용된 경우 filteredData도 업데이트 (ID 타입 변환 포함)
                     if (filteredData.length > 0) {
-                        filteredData = filteredData.filter(row => !idsToDelete.includes(row.id));
+                        const beforeFilteredCount = filteredData.length;
+                        filteredData = filteredData.filter(row => {
+                            const rowIdString = String(row.id);
+                            return !idsToDeleteStrings.includes(rowIdString);
+                        });
+                        const afterFilteredCount = filteredData.length;
+                        console.log('📋 filteredData도 업데이트:', {
+                            before: beforeFilteredCount,
+                            after: afterFilteredCount,
+                            removed: beforeFilteredCount - afterFilteredCount
+                        });
                     }
 
                     // 삭제된 행들을 selectedRowIds에서도 제거
                     idsToDelete.forEach(id => selectedRowIds.delete(String(id)));
 
                     // 필터 상태에 따라 적절히 렌더링
-                    if (hasActiveFilters()) {
+                    const hasFilters = hasActiveFilters();
+                    console.log('🎨 렌더링 시작:', { hasFilters });
+
+                    if (hasFilters) {
+                        console.log('📌 renderFilteredData() 호출');
                         renderFilteredData();
                     } else {
+                        console.log('📌 renderTableRows() 호출');
                         renderTableRows();
                     }
 
+                    // 통계 업데이트 (총 개수, 총 리베이트, 총 정산금 등)
+                    updateStatistics();
+
                     // 전체 선택 체크박스 상태 업데이트
                     updateSelectAllState();
-                    showStatus(`${idsToDelete.length}개 행이 삭제되었습니다.`, 'success');
+
+                    // 삭제 성공 메시지 (개수 변화 포함)
+                    const deletedCount = idsToDelete.length;
+                    const remainingCount = salesData.length;
+
+                    if (remainingCount === 0) {
+                        // 모든 데이터가 삭제된 경우
+                        showStatus(`✅ ${deletedCount}개 행이 삭제되었습니다. 📭 현재 표시할 항목이 없습니다.`, 'success');
+                    } else {
+                        // 일부 데이터만 삭제된 경우
+                        showStatus(`✅ ${deletedCount}개 행이 삭제되었습니다. (총 ${beforeCount}건 → ${remainingCount}건)`, 'success');
+                    }
                 } catch (error) {
                     // 일괄 삭제 오류 발생
-                    showStatus('삭제 중 오류가 발생했습니다.', 'error');
+                    console.error('❌ 삭제 실패:', error);
+                    console.error('Error details:', {
+                        message: error.message,
+                        stack: error.stack
+                    });
+                    showStatus(`삭제 중 오류가 발생했습니다: ${error.message}`, 'error');
                 }
             }
         }
@@ -1430,6 +1525,14 @@
                             if (data.id_mappings[row.id]) {
                                 const oldId = row.id;
                                 const newId = data.id_mappings[row.id];
+
+                                // selectedRowIds도 함께 업데이트
+                                if (selectedRowIds.has(String(oldId))) {
+                                    selectedRowIds.delete(String(oldId));
+                                    selectedRowIds.add(String(newId));
+                                    console.log(`🔄 selectedRowIds 업데이트: ${oldId} → ${newId}`);
+                                }
+
                                 row.id = newId;
                                 console.log(`✅ ID 교체: ${oldId} → ${newId}`);
                             }
@@ -2580,7 +2683,15 @@
                                 // 대소문자 구분 없이 통신사 매칭 함수
                                 const matchCarrier = (inputCarrier) => {
                                     if (!inputCarrier) return '';
-                                    const upperInput = inputCarrier.toUpperCase();
+                                    const upperInput = inputCarrier.toUpperCase().trim();
+
+                                    // 부분 문자열 매칭 (오타 허용)
+                                    if (upperInput.includes('SK') || upperInput === 'S') return 'SK';
+                                    if (upperInput.includes('KT') || upperInput === 'K') return 'KT';
+                                    if (upperInput.includes('LG') || upperInput === 'L' || upperInput.includes('LGU')) return 'LG';
+                                    if (upperInput.includes('알뜰') || upperInput.includes('MVNO')) return '알뜰';
+
+                                    // 정확한 매칭
                                     const carrierMap = {
                                         'SK': 'SK',
                                         'KT': 'KT',
@@ -2605,10 +2716,17 @@
                                     const upperInput = inputType.toUpperCase();
                                     const typeMap = {
                                         '신규': '신규',
+                                        'NEW': '신규',
                                         '번이': '번이',
-                                        '기변': '기변',
+                                        'MNP': '번이',
                                         '번호이동': '번이',
-                                        '기기변경': '기변'
+                                        '기변': '기변',
+                                        'UPGRADE': '기변',
+                                        '기기변경': '기변',
+                                        '유선': '유선',
+                                        'WIRED': '유선',
+                                        '2ND': '2nd',
+                                        'SECOND': '2nd'
                                     };
 
                                     for (const [key, value] of Object.entries(typeMap)) {
@@ -3200,11 +3318,17 @@
 
         // 필터 상태 확인
         function hasActiveFilters() {
-            return document.getElementById('carrier-filter').value ||
-                   document.getElementById('dealer-filter').value ||
-                   document.getElementById('salesperson-filter').value ||
-                   document.getElementById('customer-filter').value ||
-                   document.getElementById('sale-date-filter').value;
+            const carrierFilter = document.getElementById('carrier-filter');
+            const dealerFilter = document.getElementById('dealer-filter');
+            const salespersonFilter = document.getElementById('salesperson-filter');
+            const customerFilter = document.getElementById('customer-filter');
+            const saleDateFilter = document.getElementById('sale-date-filter');
+
+            return (carrierFilter && carrierFilter.value) ||
+                   (dealerFilter && dealerFilter.value) ||
+                   (salespersonFilter && salespersonFilter.value) ||
+                   (customerFilter && customerFilter.value) ||
+                   (saleDateFilter && saleDateFilter.value);
         }
 
         // 필터 상태 표시
