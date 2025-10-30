@@ -448,7 +448,7 @@
             } catch (error) {
                 // DB 데이터 로드 실패 시 에러 표시 (demoData 제거)
                 console.error('차트 데이터 로드 실패:', error);
-                document.getElementById('revenue-chart').innerHTML = '<p class="text-red-500 text-center p-4">차트 데이터를 불러올 수 없습니다. 관리자에게 문의하세요.</p>';
+                document.getElementById('revenue-trend-chart').innerHTML = '<p class="text-red-500 text-center p-4">차트 데이터를 불러올 수 없습니다. 관리자에게 문의하세요.</p>';
             }
         }
 
