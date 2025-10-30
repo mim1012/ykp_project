@@ -14,7 +14,7 @@ class SaleService implements SaleServiceInterface
 {
     public function bulkCreate(CreateSaleRequest $request, User $user): array
     {
-        return DB::connection('pgsql_local')->transaction(function () use ($request, $user) {
+        return DB::transaction(function () use ($request, $user) {
             $savedCount = 0;
             $idMappings = []; // 임시 ID → 실제 DB ID 매핑
 
@@ -517,9 +517,9 @@ class SaleService implements SaleServiceInterface
      */
     public function bulkDelete(array $saleIds, User $user): array
     {
-        return DB::connection('pgsql_local')->transaction(function () use ($saleIds, $user) {
+        return DB::transaction(function () use ($saleIds, $user) {
             // 권한 확인: 사용자가 접근 가능한 판매 데이터인지 확인
-            $query = Sale::on('pgsql_local')->whereIn('id', $saleIds);
+            $query = Sale::whereIn('id', $saleIds);
 
             // 사용자 권한에 따른 필터링
             if ($user->isStore()) {

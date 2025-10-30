@@ -14,7 +14,7 @@ class Goal extends Model
      *
      * @var string|null
      */
-    protected $connection = 'pgsql_local';
+    // Connection will use default from config/database.php
 
     protected $fillable = [
         'target_type',
