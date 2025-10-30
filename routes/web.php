@@ -2231,7 +2231,8 @@ Route::middleware(['web', 'api.auth'])->group(function () {
                 $startDate->toDateTimeString(),
                 $endDate->toDateTimeString(),
             ]);
-            if ($storeId) {
+            // 빈 배열 체크 추가
+            if ($storeId && (!is_array($storeId) || count($storeId) > 0)) {
                 if (is_array($storeId)) {
                     $query->whereIn('store_id', $storeId);
                 } else {
@@ -2249,7 +2250,8 @@ Route::middleware(['web', 'api.auth'])->group(function () {
                         $dayStart->toDateTimeString(),
                         $dayEnd->toDateTimeString(),
                     ]);
-                    if ($storeId) {
+                    // 빈 배열 체크 추가
+                    if ($storeId && (!is_array($storeId) || count($storeId) > 0)) {
                         if (is_array($storeId)) {
                             $dailyRevenue->whereIn('store_id', $storeId);
                         } else {
@@ -2273,7 +2275,8 @@ Route::middleware(['web', 'api.auth'])->group(function () {
                         $weekStart->format('Y-m-d H:i:s'),
                         $weekEnd->format('Y-m-d H:i:s'),
                     ]);
-                    if ($storeId) {
+                    // 빈 배열 체크 추가
+                    if ($storeId && (!is_array($storeId) || count($storeId) > 0)) {
                         if (is_array($storeId)) {
                             $weeklyQuery->whereIn('store_id', $storeId);
                         } else {
