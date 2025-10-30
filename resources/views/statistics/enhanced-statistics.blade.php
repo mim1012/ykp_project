@@ -46,7 +46,9 @@
             <div class="stat-card bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-xl shadow-lg">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="text-blue-100 text-sm font-medium">총 매출</p>
+                        <p class="text-blue-100 text-sm font-medium">
+                            총 매출 <span id="revenue-period" class="text-blue-200">(최근 30일)</span>
+                        </p>
                         <p class="text-2xl font-bold" id="total-revenue">로딩 중...</p>
                         <p class="text-blue-200 text-xs mt-1" id="revenue-growth">데이터 로딩 중...</p>
                     </div>
@@ -279,10 +281,23 @@
             setupEventListeners();
         });
 
+        // 기간 텍스트 업데이트 함수
+        function updatePeriodText(days) {
+            const periodText = {
+                7: '최근 7일',
+                30: '최근 30일',
+                90: '최근 90일',
+                365: '최근 1년'
+            }[days] || `최근 ${days}일`;
+
+            document.getElementById('revenue-period').textContent = `(${periodText})`;
+        }
+
         // 이벤트 리스너 설정
         function setupEventListeners() {
             document.getElementById('period-selector').addEventListener('change', function() {
                 currentPeriod = parseInt(this.value);
+                updatePeriodText(currentPeriod);  // 기간 텍스트 업데이트
                 loadAllData();
             });
 
@@ -293,6 +308,7 @@
 
         // 페이지 초기화
         function initializePage() {
+            updatePeriodText(currentPeriod);  // 초기 기간 텍스트 설정
             showLoading();
             loadAllData();
         }

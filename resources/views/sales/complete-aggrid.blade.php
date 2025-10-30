@@ -1133,8 +1133,8 @@
                         rowData: row
                     });
                     if (row && row.isPersisted) {
-                        // 실제 DB ID를 사용 (임시 ID가 아닌 row.id)
-                        savedIds.push(row.id);
+                        // 실제 DB ID를 사용 (임시 ID가 아닌 row.id) - integer로 변환
+                        savedIds.push(Number(row.id));
                     } else {
                         unsavedIds.push(id);
                     }
