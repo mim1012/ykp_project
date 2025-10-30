@@ -2195,9 +2195,36 @@ Route::middleware(['web', 'api.auth'])->group(function () {
     // 매출 추이 데이터 - 실제 데이터 연동
     Route::get('/api/statistics/revenue-trend', function (Illuminate\Http\Request $request) {
         try {
+            $user = auth()->user();
             $days = $request->get('days', 30);
             $type = $request->get('type', 'daily');
             $storeId = $request->get('store');
+
+            // 권한별 데이터 필터링
+            if ($user && $user->role === 'branch') {
+                // 지사 계정: 소속 매장들만 조회 가능
+                $branchStoreIds = \App\Models\Store::where('branch_id', $user->branch_id)->pluck('id')->toArray();
+                if ($storeId && !in_array($storeId, $branchStoreIds)) {
+                    return response()->json([
+                        'success' => false,
+                        'error' => '해당 매장에 대한 접근 권한이 없습니다.',
+                    ], 403);
+                }
+                // 매장 ID가 지정되지 않은 경우 지사 전체 매장 대상
+                if (!$storeId) {
+                    $storeId = $branchStoreIds;
+                }
+            } elseif ($user && $user->role === 'store') {
+                // 매장 계정: 자신의 매장만 조회 가능
+                if ($storeId && $storeId !== $user->store_id) {
+                    return response()->json([
+                        'success' => false,
+                        'error' => '해당 매장에 대한 접근 권한이 없습니다.',
+                    ], 403);
+                }
+                $storeId = $user->store_id;
+            }
+
             $startDate = now()->subDays($days)->startOfDay();
             $endDate = now()->endOfDay();
             $query = \App\Models\Sale::whereBetween('sale_date', [
@@ -2205,7 +2232,11 @@ Route::middleware(['web', 'api.auth'])->group(function () {
                 $endDate->toDateTimeString(),
             ]);
             if ($storeId) {
-                $query->where('store_id', $storeId);
+                if (is_array($storeId)) {
+                    $query->whereIn('store_id', $storeId);
+                } else {
+                    $query->where('store_id', $storeId);
+                }
             }
             $trendData = [];
             if ($type === 'daily') {
@@ -2219,7 +2250,11 @@ Route::middleware(['web', 'api.auth'])->group(function () {
                         $dayEnd->toDateTimeString(),
                     ]);
                     if ($storeId) {
-                        $dailyRevenue->where('store_id', $storeId);
+                        if (is_array($storeId)) {
+                            $dailyRevenue->whereIn('store_id', $storeId);
+                        } else {
+                            $dailyRevenue->where('store_id', $storeId);
+                        }
                     }
                     $revenue = $dailyRevenue->sum('settlement_amount') ?? 0;
                     $trendData[] = [
@@ -2239,7 +2274,11 @@ Route::middleware(['web', 'api.auth'])->group(function () {
                         $weekEnd->format('Y-m-d H:i:s'),
                     ]);
                     if ($storeId) {
-                        $weeklyQuery->where('store_id', $storeId);
+                        if (is_array($storeId)) {
+                            $weeklyQuery->whereIn('store_id', $storeId);
+                        } else {
+                            $weeklyQuery->where('store_id', $storeId);
+                        }
                     }
                     $weeklySales = $weeklyQuery->sum('settlement_amount') ?? 0;
                     $trendData[] = [
