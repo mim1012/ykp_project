@@ -2690,11 +2690,20 @@ Route::middleware(['web', 'api.auth'])->group(function () {
             $startDate = now()->subDays($days)->startOfDay();
             $endDate = now()->endOfDay();
             
+            // 디버깅 로그
+            \Log::info('Top Stores API Called', [
+                'user_id' => $user ? $user->id : null,
+                'user_role' => $user ? $user->role : null,
+                'days' => $days,
+                'storeId_param' => $storeId,
+            ]);
+            
             // 권한별 매장 ID 목록 결정
             $allowedStoreIds = null;
             if ($user && $user->role === 'branch') {
                 // 지사 계정: 소속 매장들만 조회 가능
                 $allowedStoreIds = \App\Models\Store::where('branch_id', $user->branch_id)->pluck('id')->toArray();
+                \Log::info('Branch user allowed stores', ['branch_id' => $user->branch_id, 'store_ids' => $allowedStoreIds]);
             } elseif ($user && $user->role === 'store') {
                 // 매장 계정: 같은 지사 내 모든 매장 조회 가능 (지사 내 순위 확인)
                 $store = \App\Models\Store::find($user->store_id);
@@ -2726,6 +2735,7 @@ Route::middleware(['web', 'api.auth'])->group(function () {
             
             $query->limit($limit);
             $topStoresData = $query->get();
+            \Log::info('Top Stores Query Result', ['count' => $topStoresData->count(), 'data' => $topStoresData->toArray()]);
             $topStores = [];
             foreach ($topStoresData as $index => $storeData) {
                 $store = \App\Models\Store::with('branch')->find($storeData->store_id);
