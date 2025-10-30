@@ -9,6 +9,13 @@ class Branch extends Model
 {
     use HasFactory;
 
+    /**
+     * The connection name for the model.
+     *
+     * @var string|null
+     */
+    protected $connection = 'pgsql_local';
+
     protected $fillable = [
         'code',
         'name',

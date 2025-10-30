@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Carrier extends Model
 {
+    protected $connection = 'pgsql_local';
+
     protected $fillable = [
         'code',
         'name',

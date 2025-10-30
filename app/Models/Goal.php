@@ -9,6 +9,13 @@ class Goal extends Model
 {
     use HasFactory;
 
+    /**
+     * The connection name for the model.
+     *
+     * @var string|null
+     */
+    protected $connection = 'pgsql_local';
+
     protected $fillable = [
         'target_type',
         'target_id',

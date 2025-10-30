@@ -34,12 +34,16 @@ class DealerProfileController extends Controller
         } catch (\Exception $e) {
             Log::error('대리점 목록 조회 오류', [
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
                 'user_id' => Auth::id()
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => '대리점 목록을 불러오는 중 오류가 발생했습니다.'
+                'message' => '대리점 목록을 불러오는 중 오류가 발생했습니다.',
+                'debug' => config('app.debug') ? $e->getMessage() : null
             ], 500);
         }
     }

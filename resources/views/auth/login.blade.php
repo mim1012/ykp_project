@@ -27,18 +27,24 @@
     </script>
 </head>
 <body class="bg-gray-50 min-h-screen flex items-center justify-center">
-    <div class="max-w-md w-full space-y-8">
-        <div class="text-center">
-            <div class="mx-auto h-20 w-20 bg-gradient-to-br from-primary-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-2xl">
+    <main class="max-w-md w-full space-y-8">
+        <header class="text-center">
+            <div class="mx-auto h-20 w-20 bg-gradient-to-br from-primary-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-2xl" aria-hidden="true">
                 Y
             </div>
-            <h2 class="mt-6 text-3xl font-bold text-gray-900">YKP ERP 로그인</h2>
+            <h1 class="mt-6 text-3xl font-bold text-gray-900">YKP ERP 로그인</h1>
             <p class="mt-2 text-sm text-gray-600">계정에 로그인하여 대시보드에 접속하세요</p>
-        </div>
+        </header>
 
         <div class="bg-white py-8 px-6 shadow-lg rounded-xl">
             @if(session('message'))
-                <div class="mb-4 p-4 bg-green-50 border border-green-200 text-green-800 rounded-lg">
+                @php
+                    $type = session('type', 'success');
+                    $bgColor = $type === 'error' ? 'bg-red-50' : 'bg-green-50';
+                    $borderColor = $type === 'error' ? 'border-red-200' : 'border-green-200';
+                    $textColor = $type === 'error' ? 'text-red-800' : 'text-green-800';
+                @endphp
+                <div class="mb-4 p-4 {{ $bgColor }} border {{ $borderColor }} {{ $textColor }} rounded-lg">
                     {{ session('message') }}
                 </div>
             @endif
@@ -73,16 +79,18 @@
             <form method="POST" action="{{ route('login') }}" class="space-y-6">
                 @csrf
                 <div>
-                    <label for="email" class="block text-sm font-medium text-gray-700 mb-1">이메일 주소</label>
-                    <input 
-                        id="email" 
-                        name="email" 
-                        type="email" 
-                        autocomplete="username email" 
-                        required 
+                    <label for="email" id="email-label" class="block text-sm font-medium text-gray-700 mb-1">이메일 주소</label>
+                    <input
+                        id="email"
+                        name="email"
+                        type="email"
+                        autocomplete="email"
+                        required
                         value="{{ old('email') }}"
-                        class="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm @error('email') border-red-300 @enderror" 
+                        class="appearance-none rounded-lg relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm @error('email') border-red-300 @enderror"
                         placeholder="이메일을 입력하세요"
+                        aria-label="이메일 주소"
+                        aria-describedby="email-label"
                     >
                 </div>
 
@@ -114,9 +122,10 @@
                 </div>
 
                 <div>
-                    <button 
-                        type="submit" 
-                        class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 transition-colors"
+                    <button
+                        type="submit"
+                        class="group relative w-full flex justify-center py-2.5 px-4 border border-transparent text-sm font-semibold rounded-lg text-white bg-primary-700 hover:bg-primary-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-600 transition-colors shadow-sm"
+                        aria-label="로그인 제출"
                     >
                         로그인
                     </button>
@@ -124,7 +133,7 @@
 
                 @if(config('app.env') !== 'production')
                 <div class="text-center">
-                    <a href="{{ route('register') }}" class="text-primary-600 hover:text-primary-500 text-sm">
+                    <a href="{{ route('register') }}" class="text-primary-700 hover:text-primary-800 text-sm font-medium underline" aria-label="회원가입 페이지로 이동">
                         계정이 없으신가요? 회원가입
                     </a>
                 </div>
@@ -132,7 +141,7 @@
             </form>
         </div>
 
-    </div>
+    </main>
 
     <script>
         // CSRF token for AJAX requests

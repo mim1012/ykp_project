@@ -62,3 +62,6 @@ Thumbs.db
 !/bootstrap/cache/.gitkeep
 /storage/framework/cache/*
 !/storage/framework/cache/.gitkeep
+
+# Claude Code settings with sensitive data
+.claude/settings.local.json

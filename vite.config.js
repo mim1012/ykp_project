@@ -7,10 +7,9 @@ export default defineConfig({
     plugins: [
         laravel({
             input: [
-                'resources/css/app.css', 
+                'resources/css/app.css',
                 'resources/js/app.js',
-                'resources/js/dashboard.jsx',
-                'resources/js/sales-aggrid.jsx'
+                'resources/js/dashboard.jsx'
             ],
             refresh: true,
         }),

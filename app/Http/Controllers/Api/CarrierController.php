@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Carrier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class CarrierController extends Controller
@@ -23,9 +24,18 @@ class CarrierController extends Controller
                 'data' => $carriers
             ]);
         } catch (\Exception $e) {
+            Log::error('Carrier index error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'user_id' => Auth::id()
+            ]);
+
             return response()->json([
                 'success' => false,
-                'message' => '통신사 목록을 불러오는 중 오류가 발생했습니다.'
+                'message' => '통신사 목록을 불러오는 중 오류가 발생했습니다.',
+                'debug' => config('app.debug') ? $e->getMessage() : null
             ], 500);
         }
     }

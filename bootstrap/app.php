@@ -12,10 +12,14 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Register custom authenticate middleware
+        $middleware->redirectGuestsTo(fn () => route('login'));
+
         $middleware->alias([
             'rbac' => \App\Http\Middleware\RBACMiddleware::class,
             'performance' => \App\Http\Middleware\PerformanceMonitoringMiddleware::class,
             'api.auth' => \App\Http\Middleware\ApiAuthenticate::class,
+            'auth' => \App\Http\Middleware\Authenticate::class,
         ]);
 
         // 프록시 신뢰 미들웨어 추가 (Railway 환경용)

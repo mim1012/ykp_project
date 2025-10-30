@@ -39,7 +39,7 @@
         </div>
     </header>
 
-    <main class="max-w-7xl mx-auto py-6 px-4">
+    <main class="max-w-7xl mx-auto py-6 px-4" id="main-content" style="opacity: 0; transition: opacity 0.3s ease-in;">
         <!-- 핵심 지표 카드 -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <!-- 총 매출 -->
@@ -79,8 +79,8 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-orange-100 text-sm font-medium">활성 매장</p>
-                        <p class="text-2xl font-bold" id="active-stores">0개</p>
-                        <p class="text-orange-200 text-xs mt-1" id="store-growth">신규: +0개</p>
+                        <p class="text-2xl font-bold" id="active-stores">로딩 중...</p>
+                        <p class="text-orange-200 text-xs mt-1" id="store-growth">계산 중...</p>
                     </div>
                     <div class="bg-orange-400 bg-opacity-30 p-3 rounded-full">
                         <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -153,16 +153,8 @@
             </div>
         </div>
 
-        <!-- 실시간 모니터링 -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- 실시간 활동 -->
-            <div class="bg-white rounded-xl shadow-lg p-6">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">⚡ 실시간 활동</h3>
-                <div id="real-time-activity" class="space-y-3 max-h-60 overflow-y-auto">
-                    <!-- 실시간 데이터 -->
-                </div>
-            </div>
-
+        <!-- 목표 대비 진척도 -->
+        <div class="grid grid-cols-1 gap-6">
             <!-- 목표 대비 진척도 -->
             <div class="bg-white rounded-xl shadow-lg p-6">
                 <h3 class="text-lg font-semibold text-gray-900 mb-4">🎯 목표 달성률</h3>
@@ -226,7 +218,6 @@
         // 전역 변수
         let currentPeriod = 30;
         let charts = {};
-        let updateInterval;
         let storeFilter = null; // 매장 필터
         let userRole = null; // 사용자 권한 (전역)
 
@@ -283,10 +274,9 @@
                 document.getElementById('store-filter-badge').textContent = `${storeName} 매장 통계`;
                 document.querySelector('h1').textContent = `${storeName} 매장 통계 분석`;
             }
-            
+
             initializePage();
             setupEventListeners();
-            startRealTimeUpdates();
         });
 
         // 이벤트 리스너 설정
@@ -316,8 +306,7 @@
                     loadChartData(),
                     loadBranchPerformance(),
                     loadTopStores(),
-                    loadGoalProgress(),
-                    updateRealTimeActivity() // 실시간 활동 데이터도 함께 로드
+                    loadGoalProgress()
                 ]);
                 hideLoading();
             } catch (error) {
@@ -468,13 +457,6 @@
                         backgroundColor: 'rgba(59, 130, 246, 0.1)',
                         tension: 0.4,
                         fill: true
-                    }, {
-                        label: '순이익',
-                        data: data.profit_data,
-                        borderColor: 'rgb(34, 197, 94)',
-                        backgroundColor: 'rgba(34, 197, 94, 0.1)',
-                        tension: 0.4,
-                        fill: false
                     }]
                 },
                 options: {
@@ -687,77 +669,6 @@
                 `${goals.profit_rate.current}% / ${goals.profit_rate.target}%`;
         }
 
-        // 실시간 업데이트 시작
-        function startRealTimeUpdates() {
-            updateRealTimeActivity();
-            
-            updateInterval = setInterval(() => {
-                updateRealTimeActivity();
-            }, 30000); // 30초마다 업데이트
-        }
-
-        // 실시간 활동 업데이트 - 실제 API 데이터 사용
-        async function updateRealTimeActivity() {
-            try {
-                console.log('📡 실시간 활동 API 호출: /api/activities/recent');
-                const response = await fetch('/api/activities/recent?limit=10');
-
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-
-                const result = await response.json();
-                const container = document.getElementById('real-time-activity');
-
-                if (result.success && result.data && result.data.length > 0) {
-                    // 실제 활동 데이터 표시
-                    container.innerHTML = result.data.map(activity => {
-                        // 활동 타입에 따른 색상 설정
-                        let dotColor = 'bg-gray-500';
-                        if (activity.type === 'sale_create' || activity.type === 'goal_achieve') {
-                            dotColor = 'bg-green-500';
-                        } else if (activity.type === 'user_login' || activity.type === 'goal_create') {
-                            dotColor = 'bg-blue-500';
-                        } else if (activity.type === 'sale_update' || activity.type === 'report_generate') {
-                            dotColor = 'bg-yellow-500';
-                        }
-
-                        return `
-                            <div class="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded">
-                                <div class="w-2 h-2 rounded-full ${dotColor}"></div>
-                                <div class="flex-1">
-                                    <p class="text-sm text-gray-900">${activity.description || activity.title}</p>
-                                    <p class="text-xs text-gray-500">${activity.time_ago}</p>
-                                </div>
-                            </div>
-                        `;
-                    }).join('');
-
-                    console.log(`✅ 실시간 활동 ${result.data.length}개 로드 완료`);
-                } else {
-                    // 활동이 없을 때 메시지
-                    container.innerHTML = `
-                        <div class="text-center py-4 text-gray-500">
-                            <p class="text-sm">아직 기록된 활동이 없습니다.</p>
-                            <p class="text-xs mt-1">판매 데이터를 입력하면 여기에 표시됩니다.</p>
-                        </div>
-                    `;
-                    console.log('ℹ️ 실시간 활동 데이터 없음');
-                }
-            } catch (error) {
-                console.error('❌ 실시간 활동 로드 실패:', error);
-                const container = document.getElementById('real-time-activity');
-
-                // 에러 시 기본 메시지 표시 (데모 데이터 제거)
-                container.innerHTML = `
-                    <div class="text-center py-4 text-gray-400">
-                        <p class="text-sm">활동 데이터를 불러올 수 없습니다.</p>
-                        <p class="text-xs mt-1">잠시 후 다시 시도해주세요.</p>
-                    </div>
-                `;
-            }
-        }
-
         // 통신사 데이터 새로고침
         function refreshCarrierData() {
             showToast('통신사 데이터를 새로고침합니다...', 'info');
@@ -784,9 +695,10 @@
             document.getElementById('loading-overlay').style.display = 'flex';
         }
 
-        // 로딩 숨김
+        // 로딩 숨김 + 콘텐츠 페이드인
         function hideLoading() {
             document.getElementById('loading-overlay').style.display = 'none';
+            document.getElementById('main-content').style.opacity = '1';
         }
 
         // 통화 포맷팅
@@ -824,13 +736,6 @@
                 toast.style.display = 'none';
             }, 3000);
         }
-
-        // 페이지 종료 시 정리
-        window.addEventListener('beforeunload', function() {
-            if (updateInterval) {
-                clearInterval(updateInterval);
-            }
-        });
     </script>
 </body>
 </html>

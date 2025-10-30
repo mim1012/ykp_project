@@ -65,8 +65,8 @@ npx playwright test tests/playwright/specific-test.spec.js  # Run specific test 
 ```bash
 composer format                 # Fix code style with Laravel Pint
 composer format-check          # Check style without changes
-composer analyse               # Run PHPStan static analysis
-./vendor/bin/phpstan analyse --level=max app/Helpers/SalesCalculator.php  # Analyze specific file
+composer analyse               # Run PHPStan static analysis (level 5)
+./vendor/bin/phpstan analyse --level=5 app/Helpers/SalesCalculator.php  # Analyze specific file
 ./vendor/bin/pint app/         # Format specific directory
 ```
 
@@ -77,6 +77,24 @@ php artisan migrate:fresh --seed  # Reset with seeders
 php artisan db:seed            # Run seeders only
 php artisan migrate            # Run pending migrations
 php artisan migrate:rollback   # Rollback last migration batch
+php artisan migrate:status     # Check migration status
+php artisan db:show            # Show database information
+php artisan db:table sales     # Show specific table structure
+```
+
+### Local PostgreSQL Setup
+```bash
+# Start PostgreSQL server (Windows)
+postgresql-17.6-2-windows-x64-binaries/bin/pg_ctl.exe -D postgresql-data start
+
+# Stop PostgreSQL server
+postgresql-17.6-2-windows-x64-binaries/bin/pg_ctl.exe -D postgresql-data stop
+
+# Connect to local database
+postgresql-17.6-2-windows-x64-binaries/bin/psql.exe -U postgres -d ykp_dashboard_local
+
+# Check server status
+postgresql-17.6-2-windows-x64-binaries/bin/pg_ctl.exe -D postgresql-data status
 ```
 
 ### Production Deployment
@@ -338,22 +356,35 @@ Complete user workflows:
 
 ### Required Environment Variables
 ```env
-# Database
-DB_CONNECTION=pgsql
-DB_HOST=localhost
-DB_PORT=5432
-DB_DATABASE=ykp_dashboard
-DB_USERNAME=your_username
-DB_PASSWORD=your_password
+# Database - Local PostgreSQL
+DB_CONNECTION=pgsql_local
+DB_HOST_LOCAL=localhost
+DB_PORT_LOCAL=5432
+DB_DATABASE_LOCAL=ykp_dashboard_local
+DB_USERNAME_LOCAL=postgres
+DB_PASSWORD_LOCAL=1234
+
+# Database - Production Supabase (optional, for backup/comparison)
+DB_CONNECTION_PROD=pgsql
+DB_HOST_PROD=aws-1-ap-southeast-1.pooler.supabase.com
+DB_PORT_PROD=5432
+DB_DATABASE_PROD=postgres
+DB_USERNAME_PROD=postgres.qwafwqxdcfpqqwpmphkm
+DB_PASSWORD_PROD=your_password
+DB_SSLMODE_PROD=require
 
 # Feature Flags
 FEATURE_EXCEL_INPUT=true
 FEATURE_ADVANCED_REPORTS=true
 FEATURE_UI_V2=false
-FEATURE_SUPABASE_ENHANCED=false
+FEATURE_SUPABASE_ENHANCED=true
 
 # Queue Configuration
 QUEUE_CONNECTION=database
+
+# Session/Cache
+SESSION_DRIVER=database
+CACHE_STORE=database
 ```
 
 ### Feature Flags Usage
@@ -467,10 +498,11 @@ database/
 - `routes/api.php` - API route definitions (~38KB - extensive API surface)
 - `routes/web.php` - Web route definitions (~129KB - includes Filament routes)
 - `vite.config.js` - Frontend build with code splitting and optimization
-- `playwright.config.js` - E2E test configuration (90s timeout, sequential execution)
-- `phpstan.neon` - Static analysis rules (level max)
+- `playwright.config.js` - E2E test configuration (90s timeout, sequential execution, single worker)
+- `phpstan.neon` - Static analysis rules (level 5)
 - `pint.json` - Laravel Pint code formatting rules
 - `phpunit.xml` - PHPUnit configuration (SQLite in-memory for testing)
+- `composer.json` - Composer scripts: dev, dev-with-logs, test, analyse, format, quality
 
 ## Important Coding Guidelines
 

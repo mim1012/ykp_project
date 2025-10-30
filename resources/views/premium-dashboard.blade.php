@@ -649,14 +649,6 @@
                         <div style="font-size: 14px;">새로운 공지사항이 등록되면 여기에 표시됩니다.</div>
                     </div>
                 </div>
-                <div class="bottom-card">
-                    <div class="chart-title">공지사항</div>
-                    <div style="text-align: center; padding: 40px 20px; color: #6b7280;">
-                        <div style="font-size: 24px; margin-bottom: 12px;"></div>
-                        <div style="font-weight: 600; margin-bottom: 8px;">공지사항 없음</div>
-                        <div style="font-size: 14px;">새로운 공지사항이 등록되면 여기에 표시됩니다.</div>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
@@ -1032,11 +1024,11 @@
                         console.log('✅ 매장 계정 데이터 업데이트 완료:', { todayActivations, monthSales });
                     }
 
-                    // 순위 데이터 로드
-                    await loadRankings();
-
-                    // TOP N 리스트 로드
-                    await loadTopLists();
+                    // 순위 데이터 및 TOP N 리스트 병렬 로드
+                    await Promise.all([
+                        loadRankings(),
+                        loadTopLists()
+                    ]);
                     
                     // 본사 계정 전용 KPI 카드 업데이트
                     if (window.userData.role === 'headquarters') {
@@ -1328,10 +1320,12 @@
             try {
                 const userRole = window.userData.role;
                 
-                // 본사: 지사 + 매장 TOP 5
+                // 본사: 지사 + 매장 TOP 5 병렬 로드
                 if (userRole === 'headquarters') {
-                    await loadTopBranches();
-                    await loadTopStores();
+                    await Promise.all([
+                        loadTopBranches(),
+                        loadTopStores()
+                    ]);
                 } else {
                     // 지사/매장: 매장 TOP 5만
                     await loadTopStores();

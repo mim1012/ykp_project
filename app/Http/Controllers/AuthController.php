@@ -45,9 +45,15 @@ class AuthController extends Controller
             $loginSuccess = Auth::attempt($credentials, $remember);
         } catch (\Exception $e) {
             \Log::error('Timebox 인증 오류: '.$e->getMessage());
-            // 대안: 직접 사용자 검증
-            $user = \App\Models\User::where('email', $credentials['email'])->first();
-            if ($user && \Hash::check($credentials['password'], $user->password)) {
+            // 대안: 직접 사용자 검증 (PostgreSQL 강제 연결)
+            $userData = \DB::connection('pgsql')->table('users')->where('email', $credentials['email'])->first();
+            if ($userData && \Hash::check($credentials['password'], $userData->password)) {
+                // User 모델을 직접 생성하여 Auth::login 사용
+                $user = new \App\Models\User();
+                $user->id = $userData->id;
+                $user->email = $userData->email;
+                $user->name = $userData->name;
+                $user->password = $userData->password;
                 Auth::login($user, $remember);
                 $loginSuccess = true;
             } else {
