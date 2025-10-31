@@ -298,7 +298,7 @@
             document.getElementById('period-selector').addEventListener('change', function() {
                 currentPeriod = parseInt(this.value);
                 updatePeriodText(currentPeriod);  // 기간 텍스트 업데이트
-                loadAllData();
+                loadChartData();  // 차트만 업데이트 (KPI/지사/매장 데이터는 재로딩하지 않음)
             });
 
             document.getElementById('chart-type').addEventListener('change', function() {
@@ -433,13 +433,14 @@
 
         // 매출 추이 차트 업데이트
         async function updateRevenueChart() {
-            const chartType = document.getElementById('chart-type').value;
-            
+            // 90일 이상은 자동으로 주별 보기로 전환 (X축 가독성 향상)
+            const chartType = currentPeriod >= 90 ? 'weekly' : document.getElementById('chart-type').value;
+
             try {
                 const storeParam = storeFilter ? `&store=${storeFilter.id}` : '';
                 const response = await fetch(`/api/statistics/revenue-trend?days=${currentPeriod}&type=${chartType}${storeParam}`);
                 const result = await response.json();
-                
+
                 if (result.success) {
                     renderRevenueChart(result.data);
                 } else {
