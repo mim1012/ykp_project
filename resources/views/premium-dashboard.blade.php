@@ -835,11 +835,9 @@
                                 size: 11
                             },
                             callback: function(value) {
-                                // 금액을 간결하게 표시 (1M = 100만원)
-                                if (value >= 1000000) {
-                                    return (value / 1000000).toFixed(1) + 'M';
-                                } else if (value >= 1000) {
-                                    return (value / 1000).toFixed(0) + 'K';
+                                // 만원 단위로 표시
+                                if (value >= 10000) {
+                                    return (value / 10000).toFixed(0) + '만원';
                                 }
                                 return value;
                             }
