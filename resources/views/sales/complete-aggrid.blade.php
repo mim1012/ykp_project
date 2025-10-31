@@ -2081,9 +2081,9 @@
 
                     // 그리드 렌더링
                     renderTableRows();
-                    // DOM 렌더링 완료 후 계산 실행 (비동기)
+                    // DOM 렌더링 완료 후 통계만 업데이트 (비동기)
+                    // DB에서 로드한 계산 값을 그대로 사용 (재계산 안 함)
                     setTimeout(() => {
-                        salesData.forEach(row => calculateRow(row.id));
                         updateStatistics();
                     }, 100);
                     // Sales data loaded
