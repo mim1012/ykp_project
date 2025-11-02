@@ -504,6 +504,236 @@ database/
 - `phpunit.xml` - PHPUnit configuration (SQLite in-memory for testing)
 - `composer.json` - Composer scripts: dev, dev-with-logs, test, analyse, format, quality
 
+## Git Workflow & Branching Strategy
+
+This project follows **Simplified GitFlow** for organized feature development and release management.
+
+### Branch Structure
+
+```
+main (production)
+  └── develop (integration)
+       ├── feature/* (기능 개발)
+       ├── fix/* (버그 수정)
+       ├── hotfix/* (긴급 수정, main에서 분기)
+       └── release/* (릴리즈 준비)
+```
+
+### Branch Naming Convention by Domain
+
+Use these prefixes to organize work by functional domain:
+
+```bash
+# Sales Management (판매 관리)
+feature/sales-bulk-import-v2
+feature/sales-calculation-refactor
+fix/sales-calculation-precision
+
+# Dashboard & Statistics (대시보드/통계)
+feature/dashboard-chart-period-selector
+feature/dashboard-realtime-updates
+perf/dashboard-cache-strategy
+
+# Store & Branch Management (매장/지사 관리)
+feature/store-bulk-upload-csv
+feature/store-account-management
+fix/store-rbac-permissions
+
+# Calculation & Settlement (계산/정산)
+feature/calculation-profile-optimization
+feature/settlement-monthly-automation
+fix/calculation-dealer-profile
+
+# Expenses & Payroll (비용/급여)
+feature/expense-category-management
+feature/payroll-auto-calculation
+
+# Authentication & RBAC (사용자/인증)
+feature/auth-2fa-support
+security/auth-csrf-hardening
+fix/auth-session-timeout
+
+# Reports & Export (보고서)
+feature/report-excel-export
+feature/report-custom-templates
+
+# Performance (성능 최적화)
+perf/query-optimization
+perf/frontend-bundle-splitting
+
+# UI/UX Improvements (UI/UX 개선)
+feature/ui-responsive-design
+feature/ui-dark-mode
+```
+
+### Workflow: Feature Development
+
+```bash
+# 1. Create feature branch from develop
+git checkout develop
+git pull origin develop
+git checkout -b feature/sales-bulk-import-v2
+
+# 2. Develop with multiple commits
+git add .
+git commit -m "feat: add CSV parser for bulk import"
+git commit -m "feat: add validation for imported data"
+git commit -m "test: add unit tests for CSV parser"
+
+# 3. Push and create Pull Request
+git push origin feature/sales-bulk-import-v2
+# Create PR on GitHub: feature/sales-bulk-import-v2 → develop
+
+# 4. After PR approval, merge (squash merge recommended)
+# Delete branch after merge
+git branch -d feature/sales-bulk-import-v2
+git push origin --delete feature/sales-bulk-import-v2
+```
+
+### Workflow: Release to Production
+
+```bash
+# 1. Create release branch from develop
+git checkout develop
+git checkout -b release/v1.3.0
+
+# 2. Prepare release
+# - Update version in package.json and composer.json
+# - Update CHANGELOG.md
+# - Run full test suite: composer quality && npm run test:smoke
+
+# 3. Merge to both main and develop
+git checkout main
+git merge --no-ff release/v1.3.0
+git tag -a v1.3.0 -m "Release v1.3.0"
+git push origin main --tags
+
+git checkout develop
+git merge --no-ff release/v1.3.0
+git push origin develop
+
+# 4. Delete release branch
+git branch -d release/v1.3.0
+```
+
+### Workflow: Hotfix (Emergency Production Fix)
+
+```bash
+# 1. Create hotfix branch from main
+git checkout main
+git checkout -b hotfix/sales-critical-bug
+
+# 2. Fix and test immediately
+git commit -m "hotfix: fix critical sales calculation bug"
+composer test  # Must pass
+
+# 3. Merge to both main and develop
+git checkout main
+git merge --no-ff hotfix/sales-critical-bug
+git tag -a v1.3.1 -m "Hotfix v1.3.1"
+git push origin main --tags
+
+git checkout develop
+git merge --no-ff hotfix/sales-critical-bug
+git push origin develop
+
+# 4. Delete hotfix branch
+git branch -d hotfix/sales-critical-bug
+```
+
+### Branch Protection Rules
+
+**main branch:**
+- ✅ Require pull request reviews (minimum 1 approval)
+- ✅ Require status checks to pass (CI/CD tests)
+- ✅ Require branches to be up to date before merging
+- ✅ Include administrators
+- ❌ Allow force pushes (disabled)
+
+**develop branch:**
+- ✅ Require pull request reviews (minimum 1 approval)
+- ✅ Require status checks to pass
+- ❌ Allow force pushes (disabled)
+
+### Branch Lifecycle Rules
+
+1. **Feature branches**: Maximum lifetime 2 weeks
+   - If longer needed, break into smaller features
+   - Rebase regularly with develop to avoid conflicts
+
+2. **Release branches**: Maximum lifetime 1 week
+   - Only bug fixes and documentation updates
+   - No new features
+
+3. **Hotfix branches**: Maximum lifetime 1 day
+   - Critical fixes only
+   - Immediate merge after testing
+
+### Commit Message Convention
+
+Follow conventional commits for clear history:
+
+```bash
+# Format: <type>(<scope>): <subject>
+
+feat(sales): add bulk import via CSV
+fix(dashboard): correct chart date range calculation
+perf(api): optimize sales query with proper indexing
+refactor(auth): extract RBAC logic to service
+test(calculation): add unit tests for dealer profiles
+docs(readme): update installation instructions
+chore(deps): upgrade Laravel to 12.0
+```
+
+**Types:**
+- `feat`: New feature
+- `fix`: Bug fix
+- `perf`: Performance improvement
+- `refactor`: Code refactoring
+- `test`: Adding tests
+- `docs`: Documentation
+- `chore`: Maintenance tasks
+- `security`: Security fixes
+
+### Module Dependencies & Impact
+
+When working on these modules, be aware of impact:
+
+**High Impact (affects many modules):**
+- `SalesCalculator` helper → Sales, Calculation, Dashboard, Settlement
+- `RBACMiddleware` → All API endpoints
+- `User/Auth` → All modules (authentication required)
+
+**Medium Impact:**
+- `Sales` model → Dashboard, Statistics, Settlement, Reports
+- `Store/Branch` models → Sales, Dashboard, User management
+
+**Low Impact (isolated modules):**
+- `DailyExpense`, `FixedExpense`, `Refund`, `Payroll`
+- Can be developed independently
+
+### Domain-Specific Development Notes
+
+#### Sales Module
+- **ALWAYS test** with `SalesCalculatorTest` when changing calculation logic
+- **Check Excel formulas** match specifications in CLAUDE.md
+- **Verify RBAC** for all role types (headquarters/branch/store)
+
+#### Dashboard Module
+- **Performance critical**: Check query count and response time
+- **Cache properly**: Use 5-minute TTL for statistics
+- **Test with real data**: Use seeded database for accurate testing
+
+#### Store/Branch Module
+- **Queue testing**: Verify bulk operations trigger jobs correctly
+- **Excel validation**: Test with malformed CSV/Excel files
+- **User creation**: Ensure account generation works correctly
+
+#### Auth/RBAC Module
+- **Security first**: Test all permission boundaries
+- **Audit changes**: All auth changes require security review
+- **Test all roles**: Verify headquarters, branch, and store access
+
 ## Important Coding Guidelines
 
 ### File Creation Policy
