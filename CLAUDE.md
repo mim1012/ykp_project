@@ -506,194 +506,291 @@ database/
 
 ## Git Workflow & Branching Strategy
 
-This project follows **Simplified GitFlow** for organized feature development and release management.
+This project follows **GitHub Flow** optimized for **1-person development with AI assistants** (Claude Code + Cursor).
 
 ### Branch Structure
 
 ```
-main (production)
-  └── develop (integration)
-       ├── feature/* (기능 개발)
-       ├── fix/* (버그 수정)
-       ├── hotfix/* (긴급 수정, main에서 분기)
-       └── release/* (릴리즈 준비)
+main (production, always deployable)
+  ├── claude/* (Claude Code 전용 브랜치)
+  │   ├── claude/sales-feature
+  │   ├── claude/dashboard-optimization
+  │   └── claude/fix-calculation
+  ├── cursor/* (Cursor AI 전용 브랜치)
+  │   ├── cursor/ui-improvements
+  │   ├── cursor/refactor-components
+  │   └── cursor/add-feature
+  └── feature/* (Manual work or experiments)
+      ├── feature/manual-hotfix
+      └── feature/experimental
 ```
 
-### Branch Naming Convention by Domain
+### Why AI-Specific Branches?
 
-Use these prefixes to organize work by functional domain:
+**Problem**: Claude Code와 Cursor가 같은 브랜치에서 작업하면 충돌 가능성↑
+**Solution**: 각 AI 도구가 전용 브랜치에서 작업하여 **작업 히스토리 명확화**
 
+**Benefits**:
+- ✅ AI 도구 간 충돌 방지
+- ✅ 작업 주체 명확 (커밋 히스토리로 추적 가능)
+- ✅ AI별 코드 스타일 일관성 유지
+- ✅ 롤백 시 영향 범위 파악 용이
+
+### Branch Naming Convention
+
+**Format**: `<tool>/<domain>-<description>`
+
+#### Claude Code Branches (claude/*)
 ```bash
 # Sales Management (판매 관리)
-feature/sales-bulk-import-v2
-feature/sales-calculation-refactor
-fix/sales-calculation-precision
+claude/sales-bulk-import-v2
+claude/sales-calculation-refactor
+claude/fix-sales-precision
 
 # Dashboard & Statistics (대시보드/통계)
-feature/dashboard-chart-period-selector
-feature/dashboard-realtime-updates
-perf/dashboard-cache-strategy
+claude/dashboard-chart-selector
+claude/dashboard-optimization
+claude/perf-dashboard-cache
 
 # Store & Branch Management (매장/지사 관리)
-feature/store-bulk-upload-csv
-feature/store-account-management
-fix/store-rbac-permissions
+claude/store-bulk-upload
+claude/store-account-mgmt
+claude/fix-store-rbac
 
 # Calculation & Settlement (계산/정산)
-feature/calculation-profile-optimization
-feature/settlement-monthly-automation
-fix/calculation-dealer-profile
+claude/calculation-optimization
+claude/settlement-automation
+claude/fix-dealer-profile
 
-# Expenses & Payroll (비용/급여)
-feature/expense-category-management
-feature/payroll-auto-calculation
-
-# Authentication & RBAC (사용자/인증)
-feature/auth-2fa-support
-security/auth-csrf-hardening
-fix/auth-session-timeout
-
-# Reports & Export (보고서)
-feature/report-excel-export
-feature/report-custom-templates
-
-# Performance (성능 최적화)
-perf/query-optimization
-perf/frontend-bundle-splitting
-
-# UI/UX Improvements (UI/UX 개선)
-feature/ui-responsive-design
-feature/ui-dark-mode
+# Backend/API Work (백엔드/API)
+claude/api-endpoint-refactor
+claude/database-migration
+claude/security-enhancement
 ```
 
-### Workflow: Feature Development
+#### Cursor Branches (cursor/*)
+```bash
+# UI/UX Improvements (UI/UX 개선)
+cursor/ui-responsive-design
+cursor/ui-dark-mode
+cursor/component-library
+
+# Frontend Features (프론트엔드 기능)
+cursor/chart-improvements
+cursor/form-validation
+cursor/table-virtualization
+
+# Styling & Layout (스타일링/레이아웃)
+cursor/tailwind-refactor
+cursor/mobile-layout
+cursor/accessibility
+
+# Component Refactoring (컴포넌트 리팩토링)
+cursor/refactor-hooks
+cursor/optimize-renders
+cursor/split-components
+```
+
+#### Manual/Experimental Branches (feature/*)
+```bash
+# Emergency fixes (긴급 수정)
+feature/hotfix-critical-bug
+feature/emergency-deploy
+
+# Experiments (실험적 기능)
+feature/experimental-ai-feature
+feature/poc-new-architecture
+```
+
+### Workflow: Claude Code Development
 
 ```bash
-# 1. Create feature branch from develop
-git checkout develop
-git pull origin develop
-git checkout -b feature/sales-bulk-import-v2
+# 1. Create Claude branch from main
+git checkout main
+git pull origin main
+git checkout -b claude/sales-bulk-import
 
-# 2. Develop with multiple commits
+# 2. Let Claude Code do the work with multiple commits
+# Claude will automatically commit with proper messages
 git add .
-git commit -m "feat: add CSV parser for bulk import"
-git commit -m "feat: add validation for imported data"
-git commit -m "test: add unit tests for CSV parser"
+git commit -m "🤖 feat(sales): add CSV parser for bulk import"
+git commit -m "🤖 feat(sales): add validation for imported data"
+git commit -m "🤖 test(sales): add unit tests for CSV parser"
 
 # 3. Push and create Pull Request
-git push origin feature/sales-bulk-import-v2
-# Create PR on GitHub: feature/sales-bulk-import-v2 → develop
+git push origin claude/sales-bulk-import
+# Create PR on GitHub: claude/sales-bulk-import → main
 
-# 4. After PR approval, merge (squash merge recommended)
-# Delete branch after merge
-git branch -d feature/sales-bulk-import-v2
-git push origin --delete feature/sales-bulk-import-v2
+# 4. Request AI review (optional but recommended)
+# Ask Claude Code: "Please review the code in this PR"
+# Or use: /sc:analyze for automated review
+
+# 5. After review, merge to main
+# No approval required (1-person dev), but CI must pass
+# Squash merge recommended for clean history
+
+# 6. Delete branch after merge
+git branch -d claude/sales-bulk-import
+git push origin --delete claude/sales-bulk-import
 ```
 
-### Workflow: Release to Production
+### Workflow: Cursor Development
 
 ```bash
-# 1. Create release branch from develop
-git checkout develop
-git checkout -b release/v1.3.0
-
-# 2. Prepare release
-# - Update version in package.json and composer.json
-# - Update CHANGELOG.md
-# - Run full test suite: composer quality && npm run test:smoke
-
-# 3. Merge to both main and develop
+# 1. Create Cursor branch from main
 git checkout main
-git merge --no-ff release/v1.3.0
-git tag -a v1.3.0 -m "Release v1.3.0"
-git push origin main --tags
+git pull origin main
+git checkout -b cursor/ui-improvements
 
-git checkout develop
-git merge --no-ff release/v1.3.0
-git push origin develop
+# 2. Use Cursor AI for development
+# Cursor Composer or Chat features
+# Commits with Cursor tag
+git add .
+git commit -m "🔮 feat(ui): improve responsive layout"
+git commit -m "🔮 style(ui): refactor Tailwind classes"
 
-# 4. Delete release branch
-git branch -d release/v1.3.0
+# 3. Push and create Pull Request
+git push origin cursor/ui-improvements
+# Create PR: cursor/ui-improvements → main
+
+# 4. Review in Claude Code (cross-check)
+# Switch to Claude Code and ask:
+# "Please review the code in cursor/ui-improvements branch"
+
+# 5. Merge to main after CI passes
+# Delete branch
+git branch -d cursor/ui-improvements
+git push origin --delete cursor/ui-improvements
 ```
 
-### Workflow: Hotfix (Emergency Production Fix)
+### Workflow: Emergency Hotfix
 
 ```bash
-# 1. Create hotfix branch from main
+# 1. Create hotfix branch from main (use feature/* for clarity)
 git checkout main
-git checkout -b hotfix/sales-critical-bug
+git checkout -b feature/hotfix-critical-bug
 
-# 2. Fix and test immediately
-git commit -m "hotfix: fix critical sales calculation bug"
-composer test  # Must pass
+# 2. Fix immediately (manual or with AI)
+git commit -m "🚨 hotfix: fix critical sales calculation bug"
+composer test  # Must pass!
 
-# 3. Merge to both main and develop
+# 3. Deploy ASAP - Direct merge to main
 git checkout main
-git merge --no-ff hotfix/sales-critical-bug
-git tag -a v1.3.1 -m "Hotfix v1.3.1"
+git merge --no-ff feature/hotfix-critical-bug
+git tag -a v1.3.1 -m "Hotfix v1.3.1 - Critical bug fix"
 git push origin main --tags
-
-git checkout develop
-git merge --no-ff hotfix/sales-critical-bug
-git push origin develop
 
 # 4. Delete hotfix branch
-git branch -d hotfix/sales-critical-bug
+git branch -d feature/hotfix-critical-bug
 ```
 
-### Branch Protection Rules
+### AI Code Review Process
+
+#### How to Request Claude Code Review
+
+```bash
+# After pushing your branch
+git push origin claude/your-feature
+
+# In Claude Code chat:
+"Please review the code in claude/your-feature branch:
+- Check for potential bugs
+- Verify test coverage
+- Suggest improvements
+- Check security issues"
+
+# Or use slash command:
+/sc:analyze
+```
+
+#### How to Request Cursor Review
+
+```bash
+# In Cursor IDE
+1. Open the PR in Cursor
+2. Use Cursor Chat: "Review this PR for code quality"
+3. Or use Cursor Composer for inline suggestions
+```
+
+#### Cross-Review (Recommended)
+
+**Best Practice**: Ask the other AI to review
+- Claude branch → Ask Cursor to review
+- Cursor branch → Ask Claude to review
+- Different perspectives = Better code quality
+
+### Branch Protection Rules (1-Person Dev Optimized)
 
 **main branch:**
-- ✅ Require pull request reviews (minimum 1 approval)
+- ✅ Require pull requests (for history tracking)
+- ⬜ **NO approval required** (1-person dev)
 - ✅ Require status checks to pass (CI/CD tests)
-- ✅ Require branches to be up to date before merging
-- ✅ Include administrators
-- ❌ Allow force pushes (disabled)
+- ⬜ Require branches to be up to date (optional, for flexibility)
+- ❌ Allow force pushes (disabled for safety)
+- ✅ Auto-merge after CI passes (optional, for speed)
 
-**develop branch:**
-- ✅ Require pull request reviews (minimum 1 approval)
-- ✅ Require status checks to pass
-- ❌ Allow force pushes (disabled)
+**No develop branch needed** - GitHub Flow uses main only
 
 ### Branch Lifecycle Rules
 
-1. **Feature branches**: Maximum lifetime 2 weeks
-   - If longer needed, break into smaller features
-   - Rebase regularly with develop to avoid conflicts
+1. **AI branches (claude/*, cursor/*)**: Maximum lifetime 3 days
+   - Short-lived branches for focused changes
+   - Merge quickly to avoid drift from main
+   - Delete immediately after merge
 
-2. **Release branches**: Maximum lifetime 1 week
-   - Only bug fixes and documentation updates
-   - No new features
+2. **Manual branches (feature/*)**: Maximum lifetime 1 week
+   - Break into smaller tasks if longer
+   - Merge or close stale branches
 
-3. **Hotfix branches**: Maximum lifetime 1 day
-   - Critical fixes only
-   - Immediate merge after testing
+3. **Hotfix branches**: Maximum lifetime 4 hours
+   - Emergency only
+   - Immediate merge + deploy
 
-### Commit Message Convention
+### Commit Message Convention with AI Tags
 
-Follow conventional commits for clear history:
+Follow conventional commits with AI tool identification:
 
 ```bash
-# Format: <type>(<scope>): <subject>
+# Format: <emoji> <type>(<scope>): <subject>
 
-feat(sales): add bulk import via CSV
-fix(dashboard): correct chart date range calculation
-perf(api): optimize sales query with proper indexing
-refactor(auth): extract RBAC logic to service
-test(calculation): add unit tests for dealer profiles
-docs(readme): update installation instructions
-chore(deps): upgrade Laravel to 12.0
+# Claude Code commits (use 🤖 emoji)
+🤖 feat(sales): add bulk import via CSV
+🤖 fix(dashboard): correct chart date range calculation
+🤖 perf(api): optimize sales query with proper indexing
+🤖 refactor(auth): extract RBAC logic to service
+🤖 test(calculation): add unit tests for dealer profiles
+
+# Cursor commits (use 🔮 emoji)
+🔮 feat(ui): add responsive layout
+🔮 style(components): refactor Tailwind classes
+🔮 fix(ui): correct mobile menu positioning
+🔮 refactor(hooks): extract custom hooks
+
+# Manual commits (use standard emojis)
+✨ feat(auth): implement 2FA
+🐛 fix(critical): patch security vulnerability
+🚨 hotfix: emergency production fix
+📝 docs(readme): update installation guide
+🔧 chore(deps): upgrade Laravel to 12.0
 ```
 
-**Types:**
+**Commit Types:**
 - `feat`: New feature
 - `fix`: Bug fix
 - `perf`: Performance improvement
-- `refactor`: Code refactoring
-- `test`: Adding tests
-- `docs`: Documentation
+- `refactor`: Code refactoring (no functional change)
+- `test`: Adding/updating tests
+- `docs`: Documentation only
+- `style`: Code style/formatting (no logic change)
 - `chore`: Maintenance tasks
 - `security`: Security fixes
+
+**AI Tool Emojis:**
+- 🤖 = Claude Code
+- 🔮 = Cursor AI
+- ✨ = Manual (new feature)
+- 🐛 = Manual (bug fix)
+- 🚨 = Emergency/Hotfix
 
 ### Module Dependencies & Impact
 
