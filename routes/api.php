@@ -2,6 +2,7 @@
 
 use App\Helpers\DatabaseHelper;
 use App\Http\Controllers\Api\CalculationController;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\SalesApiController;
 use App\Http\Controllers\UserManagementController;
 use Illuminate\Http\Request;
@@ -640,6 +641,18 @@ if (config('app.env') !== 'production') {
         Route::get('/payroll/summary/monthly', [App\Http\Controllers\Api\PayrollController::class, 'monthlySummary'])->name('dev.payroll.monthly-summary');
     });
 }
+
+/*
+|--------------------------------------------------------------------------
+| User Profile & Password Management
+|--------------------------------------------------------------------------
+| 모든 사용자가 자신의 비밀번호를 변경할 수 있습니다.
+*/
+
+Route::middleware(['web', 'auth'])->group(function () {
+    Route::post('/users/change-password', [AuthController::class, 'changePassword'])
+        ->name('api.users.change-password');
+});
 
 /*
 |--------------------------------------------------------------------------
