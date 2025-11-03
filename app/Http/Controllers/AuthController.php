@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rules\Password;
 
 class AuthController extends Controller
 {
@@ -188,6 +189,53 @@ class AuthController extends Controller
             'store_id' => $user->store_id,
             'branch' => $user->branch?->name,
             'store' => $user->store?->name,
+        ]);
+    }
+
+    /**
+     * Change password for authenticated user
+     */
+    public function changePassword(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'current_password' => 'required|string|current_password',
+            'password' => [
+                'required',
+                'string',
+                'confirmed',
+                Password::min(8)
+                    ->letters()
+                    ->numbers()
+                    ->symbols(),
+            ],
+        ], [
+            'current_password.required' => '현재 비밀번호를 입력해주세요.',
+            'current_password.current_password' => '현재 비밀번호가 올바르지 않습니다.',
+            'password.required' => '새 비밀번호를 입력해주세요.',
+            'password.confirmed' => '비밀번호 확인이 일치하지 않습니다.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'error' => '입력값이 유효하지 않습니다.',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $user = Auth::user();
+        $user->password = Hash::make($request->password);
+        $user->save();
+
+        // Log successful password change
+        \Log::info('Password changed for user: '.$user->email, [
+            'user_id' => $user->id,
+            'ip' => $request->ip(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => '비밀번호가 성공적으로 변경되었습니다.',
         ]);
     }
 }
