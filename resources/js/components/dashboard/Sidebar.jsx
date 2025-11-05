@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Icon } from '../ui';
 import { UserProfile } from './UserProfile';
+import { ChangePasswordModal } from './ChangePasswordModal';
 import { handleLogout } from '../../utils/auth';
 
 export const Sidebar = ({ activeMenu, setActiveMenu, isMobile = false }) => {
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+    const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
     
     const menuItems = [
         { id: 'dashboard', icon: 'layout-dashboard', label: '대시보드' },
@@ -80,7 +82,21 @@ export const Sidebar = ({ activeMenu, setActiveMenu, isMobile = false }) => {
                         )
                     ))}
                 </nav>
-                <button 
+
+                {/* 비밀번호 변경 버튼 */}
+                <button
+                    onClick={() => setShowChangePasswordModal(true)}
+                    className="w-12 h-12 rounded-lg flex items-center justify-center text-gray-500 hover:bg-primary-50 hover:text-primary-600 group relative transition-all mb-2"
+                    title="비밀번호 변경"
+                >
+                    <Icon name="lock" className="w-5 h-5" />
+                    <span className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                        비밀번호 변경
+                    </span>
+                </button>
+
+                {/* 로그아웃 버튼 */}
+                <button
                     onClick={handleLogout}
                     className="w-12 h-12 rounded-lg flex items-center justify-center text-gray-500 hover:bg-red-50 hover:text-red-600 group relative transition-all"
                     title="로그아웃"
@@ -90,6 +106,12 @@ export const Sidebar = ({ activeMenu, setActiveMenu, isMobile = false }) => {
                         로그아웃
                     </span>
                 </button>
+
+                {/* 비밀번호 변경 모달 */}
+                <ChangePasswordModal
+                    isOpen={showChangePasswordModal}
+                    onClose={() => setShowChangePasswordModal(false)}
+                />
             </div>
         );
     }
