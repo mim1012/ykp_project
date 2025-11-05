@@ -127,7 +127,7 @@
                             </p>
                         </div>
                         <div class="text-right">
-                            <form action="{{ route('auth.logout') }}" method="POST" class="inline">
+                            <form action="{{ route('logout') }}" method="POST" class="inline">
                                 @csrf
                                 <button type="submit" class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors">
                                     로그아웃
@@ -434,5 +434,8 @@
             }, 1000);
         }
     </script>
+
+    <!-- Vite React Dashboard -->
+    @vite('resources/js/dashboard.jsx')
 </body>
 </html>

@@ -373,8 +373,9 @@
                     <!-- 기본 액션 -->
                     <button class="btn btn-outline" onclick="location.reload()">새로고침</button>
                 @endif
+                <button class="btn btn-outline" onclick="openChangePasswordModal()" style="background: #3b82f6; color: white; margin-right: 10px;">🔒 비밀번호 변경</button>
                 <button class="btn btn-outline" onclick="logout()" style="background: #ef4444; color: white;">로그아웃</button>
-                
+
                 <script>
                 // 🚑 강화된 로그아웃 함수 (완전한 세션 정리)
                 function logout() {
@@ -2756,5 +2757,137 @@
         console.log('Carrier management functions loaded');
     </script>
     @endif
+
+    <!-- 비밀번호 변경 모달 -->
+    <div id="changePasswordModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+        <div style="background: white; border-radius: 12px; padding: 24px; max-width: 500px; width: 90%;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; font-size: 20px; font-weight: bold;">비밀번호 변경</h2>
+                <button onclick="closeChangePasswordModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #999;">&times;</button>
+            </div>
+
+            <div id="passwordChangeMessage" style="display: none; padding: 12px; border-radius: 8px; margin-bottom: 16px;"></div>
+
+            <form id="changePasswordForm" onsubmit="handlePasswordChange(event)">
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">현재 비밀번호</label>
+                    <input type="password" id="currentPassword" required
+                           style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">새 비밀번호</label>
+                    <input type="password" id="newPassword" required minlength="8"
+                           style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                    <div id="passwordStrength" style="margin-top: 8px; font-size: 12px; color: #666;">
+                        <div>✓ 최소 8자</div>
+                        <div>✓ 영문 포함</div>
+                        <div>✓ 숫자 포함</div>
+                        <div>✓ 특수문자 포함</div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">비밀번호 확인</label>
+                    <input type="password" id="confirmPassword" required
+                           style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                </div>
+
+                <div style="display: flex; gap: 12px;">
+                    <button type="button" onclick="closeChangePasswordModal()"
+                            style="flex: 1; padding: 12px; background: #f3f4f6; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">
+                        취소
+                    </button>
+                    <button type="submit" id="submitPasswordBtn"
+                            style="flex: 1; padding: 12px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">
+                        변경하기
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openChangePasswordModal() {
+            document.getElementById('changePasswordModal').style.display = 'flex';
+            document.getElementById('changePasswordForm').reset();
+            document.getElementById('passwordChangeMessage').style.display = 'none';
+        }
+
+        function closeChangePasswordModal() {
+            document.getElementById('changePasswordModal').style.display = 'none';
+        }
+
+        function showPasswordMessage(message, isError = false) {
+            const msgEl = document.getElementById('passwordChangeMessage');
+            msgEl.textContent = message;
+            msgEl.style.display = 'block';
+            msgEl.style.background = isError ? '#fee2e2' : '#dcfce7';
+            msgEl.style.color = isError ? '#991b1b' : '#166534';
+        }
+
+        async function handlePasswordChange(event) {
+            event.preventDefault();
+
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            // 클라이언트 측 검증
+            if (newPassword !== confirmPassword) {
+                showPasswordMessage('비밀번호가 일치하지 않습니다.', true);
+                return;
+            }
+
+            if (newPassword.length < 8) {
+                showPasswordMessage('새 비밀번호는 최소 8자 이상이어야 합니다.', true);
+                return;
+            }
+
+            // 버튼 비활성화
+            const btn = document.getElementById('submitPasswordBtn');
+            btn.disabled = true;
+            btn.textContent = '변경 중...';
+
+            try {
+                const response = await fetch('/api/users/change-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        current_password: currentPassword,
+                        password: newPassword,
+                        password_confirmation: confirmPassword
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showPasswordMessage('비밀번호가 성공적으로 변경되었습니다!', false);
+                    setTimeout(() => {
+                        closeChangePasswordModal();
+                    }, 2000);
+                } else {
+                    showPasswordMessage(data.message || '비밀번호 변경에 실패했습니다.', true);
+                }
+            } catch (error) {
+                console.error('비밀번호 변경 오류:', error);
+                showPasswordMessage('비밀번호 변경 중 오류가 발생했습니다.', true);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '변경하기';
+            }
+        }
+
+        // 모달 외부 클릭 시 닫기
+        document.getElementById('changePasswordModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeChangePasswordModal();
+            }
+        });
+    </script>
 </body>
 </html>
