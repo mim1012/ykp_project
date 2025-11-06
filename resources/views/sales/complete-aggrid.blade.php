@@ -2815,7 +2815,7 @@
                                 }
 
                                 const newRowData = {
-                                    id: 'row-' + Date.now() + '-' + i,
+                                    id: nextId++, // 숫자 ID 사용 (문자열 ID는 Number() 변환 시 NaN 발생)
                                     salesperson: getColValue(0, '{{ Auth::user()->name ?? '' }}'), // 판매자
                                     dealer_name: dealer, // 대리점
                                     carrier: carrier, // 통신사
