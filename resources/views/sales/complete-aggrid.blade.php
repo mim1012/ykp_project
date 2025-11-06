@@ -2660,11 +2660,16 @@
                                     if (cleanStr.length === 6) {
                                         // YYMMDD 형식
                                         const year = parseInt(cleanStr.substring(0, 2));
-                                        const fullYear = year > 50 ? '19' + cleanStr.substring(0, 2) : '20' + cleanStr.substring(0, 2);
-                                        return `${fullYear}-${cleanStr.substring(2, 4)}-${cleanStr.substring(4, 6)}`;
+                                        // 50을 기준으로 19XX / 20XX 판단 (00-50 → 2000-2050, 51-99 → 1951-1999)
+                                        const fullYear = year >= 51 ? '19' + cleanStr.substring(0, 2) : '20' + cleanStr.substring(0, 2);
+                                        const result = `${fullYear}-${cleanStr.substring(2, 4)}-${cleanStr.substring(4, 6)}`;
+                                        console.log(`📅 YYMMDD 변환: ${cleanStr} → ${result} (year=${year}, century=${year >= 51 ? '19' : '20'})`);
+                                        return result;
                                     } else if (cleanStr.length === 8) {
                                         // YYYYMMDD 형식
-                                        return `${cleanStr.substring(0, 4)}-${cleanStr.substring(4, 6)}-${cleanStr.substring(6, 8)}`;
+                                        const result = `${cleanStr.substring(0, 4)}-${cleanStr.substring(4, 6)}-${cleanStr.substring(6, 8)}`;
+                                        console.log(`📅 YYYYMMDD 변환: ${cleanStr} → ${result}`);
+                                        return result;
                                     }
 
                                     // 슬래시나 점으로 구분된 경우
@@ -2672,8 +2677,16 @@
                                         const parts = str.split(/[\/\.]/).filter(p => p);
                                         if (parts.length === 3) {
                                             // YYYY/MM/DD 또는 YY/MM/DD 형식
-                                            const year = parts[0].length === 4 ? parts[0] : (parseInt(parts[0]) > 50 ? '19' + parts[0] : '20' + parts[0]);
-                                            return `${year}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+                                            let year;
+                                            if (parts[0].length === 4) {
+                                                year = parts[0]; // 이미 4자리면 그대로
+                                            } else {
+                                                const yy = parseInt(parts[0]);
+                                                year = yy >= 51 ? '19' + parts[0].padStart(2, '0') : '20' + parts[0].padStart(2, '0');
+                                            }
+                                            const result = `${year}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+                                            console.log(`📅 구분자 변환: ${str} → ${result}`);
+                                            return result;
                                         }
                                     }
 
@@ -2793,6 +2806,12 @@
                                 // 생년월일 변환 (디버깅 로그 포함)
                                 const rawBirthDate = getColValue(8, '');
                                 const birthDate = formatBirthDate(rawBirthDate);
+
+                                // 2000년 이후 데이터 특별 로깅
+                                if (birthDate && birthDate.startsWith('20')) {
+                                    console.log(`🎯 2000년 이후 생년월일 발견 - 원본: ${rawBirthDate} → 변환: ${birthDate}`);
+                                }
+
                                 if (addedCount < 3) {
                                     console.log(`생년월일 변환 - 원본: ${rawBirthDate} (타입: ${typeof rawBirthDate}) → 변환: ${birthDate}`);
                                 }
