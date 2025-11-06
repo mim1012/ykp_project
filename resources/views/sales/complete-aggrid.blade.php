@@ -1138,11 +1138,20 @@
                     if (row && row.isPersisted) {
                         // 실제 DB ID를 사용 (임시 ID가 아닌 row.id) - integer로 변환
                         const dbId = Number(row.id);
-                        savedIds.push(dbId);
-                        console.log(`✅ DB 저장된 행 추가: ${id} → ${dbId}`);
+
+                        // NaN 체크 - 숫자 변환 실패 시 오류 로깅
+                        if (isNaN(dbId)) {
+                            console.error(`❌ ID 변환 실패: ${id} → NaN (row.id: ${row.id}, type: ${typeof row.id})`);
+                        } else if (!Number.isInteger(dbId)) {
+                            console.warn(`⚠️ 정수가 아닌 ID: ${dbId}`);
+                            savedIds.push(Math.floor(dbId)); // 정수로 변환
+                        } else {
+                            savedIds.push(dbId);
+                            console.log(`✅ DB 저장된 행 추가: ${id} → ${dbId}`);
+                        }
                     } else {
                         unsavedIds.push(id);
-                        console.log(`ℹ️ 미저장 행: ${id}`);
+                        console.log(`ℹ️ 미저장 행: ${id}` + (row ? '' : ' (행을 찾을 수 없음)'));
                     }
                 });
 
@@ -1155,10 +1164,17 @@
                 try {
                     // DB에 저장된 데이터가 있으면 백엔드 호출
                     if (savedIds.length > 0) {
+                        const requestBody = { sale_ids: savedIds };
+                        const requestBodyString = JSON.stringify(requestBody);
+
                         console.log('📡 삭제 API 요청:', {
                             url: '/api/sales/bulk-delete',
                             savedIds: savedIds,
-                            count: savedIds.length
+                            count: savedIds.length,
+                            requestBody: requestBody,
+                            requestBodyString: requestBodyString,
+                            firstIdType: typeof savedIds[0],
+                            firstIdValue: savedIds[0]
                         });
 
                         const response = await fetch('/api/sales/bulk-delete', {
@@ -1168,7 +1184,7 @@
                                 'Content-Type': 'application/json',
                                 'Accept': 'application/json'
                             },
-                            body: JSON.stringify({ sale_ids: savedIds })
+                            body: requestBodyString
                         });
 
                         console.log('📡 응답 상태:', response.status, response.statusText);
