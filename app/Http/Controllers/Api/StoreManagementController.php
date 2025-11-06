@@ -22,29 +22,43 @@ use Maatwebsite\Excel\Facades\Excel;
 class StoreManagementController extends Controller
 {
     /**
-     * Display stores based on user role
+     * Display stores based on user role with pagination and search
      */
     public function index(Request $request)
     {
         try {
             $user = auth()->user();
+            $query = Store::with('branch');
 
-            // 권한별 매장 필터링
+            // 권한별 매장 필터링 (RBAC)
             if ($user->role === 'headquarters') {
-                $stores = Store::with('branch')->get(); // 본사: 모든 매장
+                // 본사: 모든 매장
             } elseif ($user->role === 'branch') {
-                $stores = Store::with('branch')
-                    ->where('branch_id', $user->branch_id)
-                    ->get(); // 지사: 소속 매장만
+                $query->where('branch_id', $user->branch_id); // 지사: 소속 매장만
             } elseif ($user->role === 'store') {
-                $stores = Store::with('branch')
-                    ->where('id', $user->store_id)
-                    ->get(); // 매장: 자기 매장만
+                $query->where('id', $user->store_id); // 매장: 자기 매장만
             } else {
-                $stores = collect(); // 기타: 빈 컬렉션
+                // 기타: 빈 결과
+                return response()->json([
+                    'success' => true,
+                    'data' => [],
+                    'current_page' => 1,
+                    'last_page' => 1,
+                    'total' => 0,
+                ]);
             }
 
-            return response()->json(['success' => true, 'data' => $stores]);
+            // 검색 기능 (매장명 ILIKE 검색)
+            if ($search = $request->input('search')) {
+                $query->where('name', 'ILIKE', "%{$search}%");
+            }
+
+            // 지사별 정렬 + 매장명 정렬
+            $stores = $query->orderBy('branch_id')
+                ->orderBy('name')
+                ->paginate(30);
+
+            return response()->json($stores);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
@@ -193,7 +207,7 @@ class StoreManagementController extends Controller
     }
 
     /**
-     * Update the specified store
+     * Update the specified store (supports partial updates)
      */
     public function update(Request $request, string $id)
     {
@@ -211,21 +225,35 @@ class StoreManagementController extends Controller
                 return response()->json(['success' => false, 'error' => '다른 지사 매장은 수정할 수 없습니다.'], 403);
             }
 
-            $request->validate([
-                'name' => 'required|string|max:255',
+            // 부분 업데이트 지원 (제공된 필드만 검증)
+            $validated = $request->validate([
+                'name' => 'nullable|string|max:255',
                 'owner_name' => 'nullable|string|max:255',
                 'phone' => 'nullable|string|max:20',
                 'address' => 'nullable|string|max:500',
-                'status' => 'required|in:active,inactive',
-                'branch_id' => 'required|exists:branches,id',
+                'status' => 'nullable|in:active,inactive',
+                'branch_id' => 'nullable|exists:branches,id',
             ]);
 
-            $store->update($request->only(['name', 'owner_name', 'phone', 'address', 'status', 'branch_id']));
+            // 지사 변경은 본사만 가능
+            if (isset($validated['branch_id']) && $currentUser->role !== 'headquarters') {
+                return response()->json([
+                    'success' => false,
+                    'error' => '지사 배정은 본사 관리자만 변경할 수 있습니다.',
+                ], 403);
+            }
+
+            // 제공된 필드만 업데이트
+            $updateData = array_filter($validated, function ($value) {
+                return $value !== null;
+            });
+
+            $store->update($updateData);
 
             return response()->json([
                 'success' => true,
                 'message' => '매장 정보가 수정되었습니다.',
-                'data' => $store->load('branch'),
+                'store' => $store->load('branch'),
             ]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
