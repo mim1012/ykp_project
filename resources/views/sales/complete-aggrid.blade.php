@@ -1129,14 +1129,20 @@
                     const row = salesData.find(r => r.id === id || r.id === Number(id) || String(r.id) === id);
                     console.log(`🔍 행 ${id} 확인:`, {
                         found: !!row,
+                        id_type: typeof id,
+                        row_id: row?.id,
+                        row_id_type: row?.id ? typeof row.id : 'N/A',
                         isPersisted: row?.isPersisted,
-                        rowData: row
+                        customer_name: row?.customer_name || 'N/A'
                     });
                     if (row && row.isPersisted) {
                         // 실제 DB ID를 사용 (임시 ID가 아닌 row.id) - integer로 변환
-                        savedIds.push(Number(row.id));
+                        const dbId = Number(row.id);
+                        savedIds.push(dbId);
+                        console.log(`✅ DB 저장된 행 추가: ${id} → ${dbId}`);
                     } else {
                         unsavedIds.push(id);
+                        console.log(`ℹ️ 미저장 행: ${id}`);
                     }
                 });
 
@@ -1520,24 +1526,34 @@
                     // 임시 ID를 실제 DB ID로 교체
                     if (data.id_mappings && Object.keys(data.id_mappings).length > 0) {
                         console.log('🔄 ID 매핑 적용 중...', data.id_mappings);
+
+                        // 모든 매핑을 먼저 처리
+                        const updatedSelections = new Set();
                         salesData.forEach(row => {
                             // 임시 ID가 매핑에 있으면 실제 DB ID로 교체
                             if (data.id_mappings[row.id]) {
                                 const oldId = row.id;
                                 const newId = data.id_mappings[row.id];
 
-                                // selectedRowIds도 함께 업데이트
+                                // 선택된 행이었으면 새로운 ID로 추적
                                 if (selectedRowIds.has(String(oldId))) {
-                                    selectedRowIds.delete(String(oldId));
-                                    selectedRowIds.add(String(newId));
+                                    updatedSelections.add(String(newId));
                                     console.log(`🔄 selectedRowIds 업데이트: ${oldId} → ${newId}`);
                                 }
 
                                 row.id = newId;
                                 console.log(`✅ ID 교체: ${oldId} → ${newId}`);
+                            } else if (selectedRowIds.has(String(row.id))) {
+                                // 매핑이 없는 행(UPDATE된 행)도 선택 상태 유지
+                                updatedSelections.add(String(row.id));
                             }
                             row.isPersisted = true;
                         });
+
+                        // selectedRowIds를 완전히 교체 (임시 ID 제거)
+                        selectedRowIds.clear();
+                        updatedSelections.forEach(id => selectedRowIds.add(id));
+                        console.log('🔄 최종 selectedRowIds:', Array.from(selectedRowIds));
                     } else {
                         // ID 매핑이 없으면 (모두 UPDATE인 경우) 단순히 isPersisted만 설정
                         salesData.forEach(row => {
