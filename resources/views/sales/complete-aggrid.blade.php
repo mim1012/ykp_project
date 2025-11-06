@@ -1535,6 +1535,11 @@
                 return response.json();
             })
             .then(data => {
+                console.log('💾 저장 응답 전체:', data);
+                console.log('💾 id_mappings 존재 여부:', !!data.id_mappings);
+                console.log('💾 id_mappings 내용:', data.id_mappings);
+                console.log('💾 id_mappings 키 개수:', data.id_mappings ? Object.keys(data.id_mappings).length : 0);
+
                 if (data.success) {
                     showStatus('✅ ' + data.message, 'success');
                     // Data saved successfully

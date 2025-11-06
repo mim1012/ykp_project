@@ -248,14 +248,23 @@ class SaleService implements SaleServiceInterface
                 'count' => $savedCount,
                 'store_id' => $storeInfo['store_id'],
                 'id_mappings_count' => count($idMappings),
+                'id_mappings' => $idMappings, // 실제 매핑 내용 로깅
             ]);
 
-            return [
+            $response = [
                 'success' => true,
                 'message' => "{$savedCount}개의 판매 데이터가 저장되었습니다.",
                 'saved_count' => $savedCount,
                 'id_mappings' => $idMappings, // 임시 ID → 실제 DB ID 매핑 반환
             ];
+
+            Log::info('💾 Returning response', [
+                'has_id_mappings' => !empty($idMappings),
+                'id_mappings_keys' => array_keys($idMappings),
+                'response' => $response,
+            ]);
+
+            return $response;
         });
     }
 
