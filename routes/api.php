@@ -1,7 +1,9 @@
 <?php
 
 use App\Helpers\DatabaseHelper;
+use App\Http\Controllers\Api\BranchController;
 use App\Http\Controllers\Api\CalculationController;
+use App\Http\Controllers\Api\StoreManagementController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\SalesApiController;
 use App\Http\Controllers\UserManagementController;
@@ -703,17 +705,6 @@ Route::middleware(['web', 'auth', 'rbac'])->prefix('users')->group(function () {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
     })->name('api.users.branches');
-
-    // 매장 목록 (특정 지사의 매장들)
-    Route::get('/stores', function () {
-        try {
-            $stores = \App\Models\Store::with('branch')->get();
-
-            return response()->json(['success' => true, 'data' => $stores]);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
-        }
-    })->name('api.users.stores');
 });
 
 // Profile API (긴급 실배포용 - 인증 제거 버전)
@@ -822,4 +813,25 @@ Route::prefix('monthly-settlements')->name('api.monthly-settlements.')->group(fu
 // 매장별 통계 엑셀 다운로드 (본사 전용)
 Route::middleware(['web', 'auth'])->get('/reports/store-statistics', [App\Http\Controllers\Api\ReportController::class, 'exportStoreStatistics'])
     ->name('api.reports.store-statistics');
+
+/*
+|--------------------------------------------------------------------------
+| 매장 관리 API (Store Management)
+|--------------------------------------------------------------------------
+| 매장 목록 조회 (페이지네이션 + 검색) 및 매장 정보 수정 (점주명, 지사 배정)
+*/
+
+Route::middleware(['web', 'auth'])->group(function () {
+    // 매장 목록 (페이지네이션 + 검색)
+    Route::get('/stores', [App\Http\Controllers\Api\StoreManagementController::class, 'index'])
+        ->name('api.stores-management.index');
+
+    // 매장 정보 수정 (점주명, 지사 배정)
+    Route::patch('/stores/{id}', [App\Http\Controllers\Api\StoreManagementController::class, 'update'])
+        ->name('api.stores-management.update');
+
+    // 지사 목록 (드롭다운용)
+    Route::get('/branches/list', [App\Http\Controllers\Api\BranchController::class, 'list'])
+        ->name('api.branches.list');
+});
 
