@@ -1202,6 +1202,9 @@
         // 탭 시스템 제거됨 - 직접 매장 관리만 표시
 
         // ✨ 최고 우선순위: loadStores 함수 정의 (다른 모든 것보다 먼저)
+        // 서버사이드에서 전달받은 데이터 사용 (API 호출 제거)
+        window.serverStores = @json($stores);
+        
         window.loadStores = async function() {
             console.log('🔄 loadStores 시작');
             
@@ -1215,28 +1218,25 @@
                 
                 gridElement.innerHTML = '<div class="p-4 text-center text-gray-500">🔄 매장 목록 로딩 중...</div>';
                 
-                // Supabase 실제 API 호출
-                const response = await fetch('/api/dev/stores/list');
-                console.log('✅ API 응답 상태:', response.status);
+                // 서버사이드 데이터 사용
+                const storesData = window.serverStores;
+                console.log('✅ 서버 데이터:', storesData.length + '개 매장');
                 
-                const data = await response.json();
-                console.log('✅ 받은 데이터:', data.data?.length + '개 매장');
-                
-                if (data.success && data.data && Array.isArray(data.data)) {
-                    // 매장 카드 생성 (매우 단순한 HTML)
-                    const html = data.data.map(store => `
+                if (storesData && Array.isArray(storesData) && storesData.length > 0) {
+                    // 매장 카드 생성
+                    const html = storesData.map(store => `
                         <div class="bg-white p-4 rounded-lg border shadow-sm mb-4">
                             <h3 class="font-bold text-lg mb-2">${store.name}</h3>
                             <div class="text-sm text-gray-600 space-y-1">
-                                <p>📍 ${store.code}</p>
-                                <p>👤 ${store.owner_name}</p>
+                                <p>📍 ${store.code || '미등록'}</p>
+                                <p>👤 ${store.owner_name || '미등록'}</p>
                                 <p>📞 ${store.phone || '미등록'}</p>
                                 <p>🏢 ${store.branch?.name || '미지정'}</p>
                             </div>
                             <div class="mt-3 flex gap-2">
-                                <button class="px-2 py-1 bg-blue-500 text-white rounded text-xs">✏️ 수정</button>
-                                <button class="px-2 py-1 bg-red-500 text-white rounded text-xs">🗑️ 삭제</button>
-                                <button class="px-2 py-1 bg-green-500 text-white rounded text-xs">👤 계정</button>
+                                <button onclick="editStore(${store.id})" class="px-2 py-1 bg-blue-500 text-white rounded text-xs">✏️ 수정</button>
+                                <button onclick="deleteStore(${store.id}, '${store.name}')" class="px-2 py-1 bg-red-500 text-white rounded text-xs">🗑️ 삭제</button>
+                                <button onclick="manageStoreAccount(${store.id})" class="px-2 py-1 bg-green-500 text-white rounded text-xs">👤 계정</button>
                             </div>
                         </div>
                     `).join('');
@@ -1244,7 +1244,8 @@
                     gridElement.innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">${html}</div>`;
                     console.log('✅ 매장 목록 표시 완료');
                 } else {
-                    throw new Error('유효하지 않은 API 응답');
+                    gridElement.innerHTML = '<div class="p-4 text-center text-gray-500">📭 등록된 매장이 없습니다</div>';
+                    console.log('ℹ️ 매장 데이터 없음');
                 }
                 
             } catch (error) {
@@ -1253,7 +1254,7 @@
                 if (gridElement) {
                     gridElement.innerHTML = `
                         <div class="p-4 text-center text-red-500">
-                            <p>❌ 매장 목록 로딩 실패</p>
+                            <p>❌ 매장 목록 로딩 실패: ${error.message}</p>
                             <button onclick="window.loadStores()" class="mt-2 px-4 py-2 bg-blue-500 text-white rounded">🔄 재시도</button>
                         </div>
                     `;
