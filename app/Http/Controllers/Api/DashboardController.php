@@ -583,24 +583,41 @@ class DashboardController extends Controller
         try {
             $type = $request->query('type', 'store'); // branch|store
             $limit = min($request->query('limit', 5), 20); // 최대 20개
+            $period = $request->query('period', 'this_month'); // this_month|last_month|last_3_months
             $user = auth()->user();
 
             // 캐시 키 생성
             $cacheKey = sprintf(
-                'top_list_%s_%s_%s_%s_%s',
+                'top_list_%s_%s_%s_%s_%s_%s',
                 $user->role,
                 $user->id,
                 $type,
                 $limit,
+                $period,
                 now()->format('Y-m-d-H:i')
             );
             // 5분 단위로 반올림
             $cacheKey = substr($cacheKey, 0, -1) . floor(now()->minute / 5) * 5;
 
-            return Cache::remember($cacheKey, 300, function () use ($user, $type, $limit, $request) {
+            return Cache::remember($cacheKey, 300, function () use ($user, $type, $limit, $period, $request) {
 
-            $startOfMonth = now()->startOfMonth();
-            $endOfMonth = now()->endOfMonth();
+            // 기간별 날짜 범위 설정
+            switch ($period) {
+                case 'last_month':
+                    $startOfMonth = now()->subMonth()->startOfMonth();
+                    $endOfMonth = now()->subMonth()->endOfMonth();
+                    break;
+                case 'last_3_months':
+                    $startOfMonth = now()->subMonths(2)->startOfMonth();
+                    $endOfMonth = now()->endOfMonth();
+                    break;
+                case 'this_month':
+                default:
+                    $startOfMonth = now()->startOfMonth();
+                    $endOfMonth = now()->endOfMonth();
+                    break;
+            }
+
             $salesQuery = Sale::whereBetween('sale_date', [$startOfMonth, $endOfMonth]);
 
             if ($type === 'branch') {
@@ -673,7 +690,12 @@ class DashboardController extends Controller
                         'limit' => $limit,
                         'scope' => $user->isHeadquarters() ? 'nationwide' : 'branch_only',
                         'user_role' => $user->role,
-                        'period' => now()->format('Y-m'),
+                        'period' => $period,
+                        'period_label' => $this->getPeriodLabel($period),
+                        'date_range' => [
+                            'start' => $startOfMonth->format('Y-m-d'),
+                            'end' => $endOfMonth->format('Y-m-d'),
+                        ],
                         'cached_at' => now()->toISOString(),
                         'generated_at' => now()->toISOString(),
                     ],
@@ -1010,6 +1032,22 @@ class DashboardController extends Controller
                 'success' => false,
                 'error' => $e->getMessage(),
             ], 500);
+        }
+    }
+
+    /**
+     * Get period label in Korean
+     */
+    private function getPeriodLabel($period)
+    {
+        switch ($period) {
+            case 'last_month':
+                return '지난 달';
+            case 'last_3_months':
+                return '최근 3개월';
+            case 'this_month':
+            default:
+                return '이번 달';
         }
     }
 }

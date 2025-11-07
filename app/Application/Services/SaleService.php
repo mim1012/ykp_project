@@ -139,10 +139,11 @@ class SaleService implements SaleServiceInterface
                 // PostgreSQL 호환 방식으로 생성 또는 업데이트
                 try {
                     // ID 존재 여부로 UPDATE/INSERT 판단
-                    // 임시 ID(문자열 포함)는 실제 DB ID가 아니므로 INSERT 처리
+                    // 임시 ID(문자열 포함 또는 매우 큰 숫자)는 실제 DB ID가 아니므로 INSERT 처리
                     $hasRealId = isset($saleData['id'])
                         && $saleData['id']
-                        && is_numeric($saleData['id']);
+                        && is_numeric($saleData['id'])
+                        && $saleData['id'] < 9999999999; // 임시 ID는 Date.now() 기반이므로 10자리 이상 (예: 1730000000000)
 
                     Log::info('💾 Processing sale record', [
                         'row_index' => $index,
@@ -150,6 +151,7 @@ class SaleService implements SaleServiceInterface
                         'id' => $saleData['id'] ?? 'null',
                         'id_type' => isset($saleData['id']) ? gettype($saleData['id']) : 'not_set',
                         'is_numeric' => isset($saleData['id']) ? is_numeric($saleData['id']) : false,
+                        'is_temp_id' => isset($saleData['id']) && is_numeric($saleData['id']) && $saleData['id'] >= 9999999999,
                         'store_id' => $mergedData['store_id'],
                         'branch_id' => $mergedData['branch_id'],
                         'user_role' => $user->role,
@@ -246,14 +248,23 @@ class SaleService implements SaleServiceInterface
                 'count' => $savedCount,
                 'store_id' => $storeInfo['store_id'],
                 'id_mappings_count' => count($idMappings),
+                'id_mappings' => $idMappings, // 실제 매핑 내용 로깅
             ]);
 
-            return [
+            $response = [
                 'success' => true,
                 'message' => "{$savedCount}개의 판매 데이터가 저장되었습니다.",
                 'saved_count' => $savedCount,
                 'id_mappings' => $idMappings, // 임시 ID → 실제 DB ID 매핑 반환
             ];
+
+            Log::info('💾 Returning response', [
+                'has_id_mappings' => !empty($idMappings),
+                'id_mappings_keys' => array_keys($idMappings),
+                'response' => $response,
+            ]);
+
+            return $response;
         });
     }
 

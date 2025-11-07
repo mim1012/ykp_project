@@ -315,8 +315,9 @@
                                 beginAtZero: true,
                                 ticks: {
                                     callback: function(value) {
-                                        if (value >= 1000000) {
-                                            return '₩' + (value / 1000000).toFixed(0) + 'M';
+                                        // 만원 단위로 표시
+                                        if (value >= 10000) {
+                                            return (value / 10000).toFixed(0) + '만원';
                                         }
                                         return '₩' + Number(value).toLocaleString();
                                     }
