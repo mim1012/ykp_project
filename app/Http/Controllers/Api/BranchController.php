@@ -169,4 +169,21 @@ class BranchController extends Controller
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
     }
+
+    /**
+     * Get simple list of all branches for dropdown
+     */
+    public function list()
+    {
+        try {
+            $branches = Branch::where('status', 'active')
+                ->orderBy('name')
+                ->select('id', 'name', 'code')
+                ->get();
+
+            return response()->json($branches);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    }
 }

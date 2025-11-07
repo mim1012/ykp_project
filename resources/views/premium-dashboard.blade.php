@@ -373,8 +373,9 @@
                     <!-- 기본 액션 -->
                     <button class="btn btn-outline" onclick="location.reload()">새로고침</button>
                 @endif
+                <button class="btn btn-outline" onclick="openChangePasswordModal()" style="background: #3b82f6; color: white; margin-right: 10px;">🔒 비밀번호 변경</button>
                 <button class="btn btn-outline" onclick="logout()" style="background: #ef4444; color: white;">로그아웃</button>
-                
+
                 <script>
                 // 🚑 강화된 로그아웃 함수 (완전한 세션 정리)
                 function logout() {
@@ -617,7 +618,14 @@
             <div class="top-performers-section" style="margin: 30px 0;">
                 <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 20px; color: #1f2937;">🏪 {{ auth()->user()->branch->name ?? '지사' }} TOP 5 매장</h3>
                 <div style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                    <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #10b981;">🏆 지사 내 매장 순위</h4>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h4 style="font-size: 16px; font-weight: 600; margin: 0; color: #10b981;">🏆 지사 내 매장 순위</h4>
+                        <select id="stores-period-select" style="padding: 6px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; color: #374151; cursor: pointer; background: white;">
+                            <option value="this_month">이번 달</option>
+                            <option value="last_month">지난 달</option>
+                            <option value="last_3_months">최근 3개월</option>
+                        </select>
+                    </div>
                     <ul id="top-stores-list" style="list-style: none; padding: 0; margin: 0;">
                         <li style="padding: 8px 0; color: #6b7280;">데이터 로딩 중...</li>
                     </ul>
@@ -627,7 +635,14 @@
             <div class="top-performers-section" style="margin: 30px 0;">
                 <h3 style="font-size: 18px; font-weight: 600; margin-bottom: 20px; color: #1f2937;">🏪 {{ auth()->user()->branch->name ?? '지사' }} 매장 현황</h3>
                 <div style="background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                    <h4 style="font-size: 16px; font-weight: 600; margin-bottom: 15px; color: #f59e0b;">🏆 지사 내 TOP 5</h4>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h4 style="font-size: 16px; font-weight: 600; margin: 0; color: #f59e0b;">🏆 지사 내 TOP 5</h4>
+                        <select id="stores-period-select" style="padding: 6px 12px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 14px; color: #374151; cursor: pointer; background: white;">
+                            <option value="this_month">이번 달</option>
+                            <option value="last_month">지난 달</option>
+                            <option value="last_3_months">최근 3개월</option>
+                        </select>
+                    </div>
                     <ul id="top-stores-list" style="list-style: none; padding: 0; margin: 0;">
                         <li style="padding: 8px 0; color: #6b7280;">데이터 로딩 중...</li>
                     </ul>
@@ -821,11 +836,9 @@
                                 size: 11
                             },
                             callback: function(value) {
-                                // 금액을 간결하게 표시 (1M = 100만원)
-                                if (value >= 1000000) {
-                                    return (value / 1000000).toFixed(1) + 'M';
-                                } else if (value >= 1000) {
-                                    return (value / 1000).toFixed(0) + 'K';
+                                // 만원 단위로 표시
+                                if (value >= 10000) {
+                                    return (value / 10000).toFixed(0) + '만원';
                                 }
                                 return value;
                             }
@@ -1437,9 +1450,9 @@
         }
 
         // TOP 매장 로드 (권한별)
-        async function loadTopStores() {
+        async function loadTopStores(period = 'this_month') {
             try {
-                const response = await fetch('/api/dashboard/top-list?type=store&limit=5');
+                const response = await fetch(`/api/dashboard/top-list?type=store&limit=5&period=${period}`);
                 const result = await response.json();
                 
                 if (result.success) {
@@ -1512,7 +1525,21 @@
             } catch (error) {
                 console.error('❌ 실시간 데이터 초기 로드 오류:', error);
             }
-            
+
+            // 기간 선택 드롭다운 이벤트 리스너
+            const periodSelect = document.getElementById('stores-period-select');
+            if (periodSelect) {
+                periodSelect.addEventListener('change', async function(e) {
+                    const selectedPeriod = e.target.value;
+                    console.log(`📅 기간 변경: ${selectedPeriod}`);
+                    try {
+                        await loadTopStores(selectedPeriod);
+                    } catch (error) {
+                        console.error('기간 변경 시 데이터 로드 실패:', error);
+                    }
+                });
+            }
+
             // 5분마다 데이터 새로고침 (안전한 호출)
             setInterval(() => {
                 try {
@@ -2730,5 +2757,137 @@
         console.log('Carrier management functions loaded');
     </script>
     @endif
+
+    <!-- 비밀번호 변경 모달 -->
+    <div id="changePasswordModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+        <div style="background: white; border-radius: 12px; padding: 24px; max-width: 500px; width: 90%;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; font-size: 20px; font-weight: bold;">비밀번호 변경</h2>
+                <button onclick="closeChangePasswordModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #999;">&times;</button>
+            </div>
+
+            <div id="passwordChangeMessage" style="display: none; padding: 12px; border-radius: 8px; margin-bottom: 16px;"></div>
+
+            <form id="changePasswordForm" onsubmit="handlePasswordChange(event)">
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">현재 비밀번호</label>
+                    <input type="password" id="currentPassword" required
+                           style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                </div>
+
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">새 비밀번호</label>
+                    <input type="password" id="newPassword" required minlength="8"
+                           style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                    <div id="passwordStrength" style="margin-top: 8px; font-size: 12px; color: #666;">
+                        <div>✓ 최소 8자</div>
+                        <div>✓ 영문 포함</div>
+                        <div>✓ 숫자 포함</div>
+                        <div>✓ 특수문자 포함</div>
+                    </div>
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500;">비밀번호 확인</label>
+                    <input type="password" id="confirmPassword" required
+                           style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                </div>
+
+                <div style="display: flex; gap: 12px;">
+                    <button type="button" onclick="closeChangePasswordModal()"
+                            style="flex: 1; padding: 12px; background: #f3f4f6; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">
+                        취소
+                    </button>
+                    <button type="submit" id="submitPasswordBtn"
+                            style="flex: 1; padding: 12px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">
+                        변경하기
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openChangePasswordModal() {
+            document.getElementById('changePasswordModal').style.display = 'flex';
+            document.getElementById('changePasswordForm').reset();
+            document.getElementById('passwordChangeMessage').style.display = 'none';
+        }
+
+        function closeChangePasswordModal() {
+            document.getElementById('changePasswordModal').style.display = 'none';
+        }
+
+        function showPasswordMessage(message, isError = false) {
+            const msgEl = document.getElementById('passwordChangeMessage');
+            msgEl.textContent = message;
+            msgEl.style.display = 'block';
+            msgEl.style.background = isError ? '#fee2e2' : '#dcfce7';
+            msgEl.style.color = isError ? '#991b1b' : '#166534';
+        }
+
+        async function handlePasswordChange(event) {
+            event.preventDefault();
+
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+
+            // 클라이언트 측 검증
+            if (newPassword !== confirmPassword) {
+                showPasswordMessage('비밀번호가 일치하지 않습니다.', true);
+                return;
+            }
+
+            if (newPassword.length < 8) {
+                showPasswordMessage('새 비밀번호는 최소 8자 이상이어야 합니다.', true);
+                return;
+            }
+
+            // 버튼 비활성화
+            const btn = document.getElementById('submitPasswordBtn');
+            btn.disabled = true;
+            btn.textContent = '변경 중...';
+
+            try {
+                const response = await fetch('/api/users/change-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        current_password: currentPassword,
+                        password: newPassword,
+                        password_confirmation: confirmPassword
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showPasswordMessage('비밀번호가 성공적으로 변경되었습니다!', false);
+                    setTimeout(() => {
+                        closeChangePasswordModal();
+                    }, 2000);
+                } else {
+                    showPasswordMessage(data.message || '비밀번호 변경에 실패했습니다.', true);
+                }
+            } catch (error) {
+                console.error('비밀번호 변경 오류:', error);
+                showPasswordMessage('비밀번호 변경 중 오류가 발생했습니다.', true);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = '변경하기';
+            }
+        }
+
+        // 모달 외부 클릭 시 닫기
+        document.getElementById('changePasswordModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeChangePasswordModal();
+            }
+        });
+    </script>
 </body>
 </html>

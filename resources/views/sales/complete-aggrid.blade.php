@@ -1129,14 +1129,29 @@
                     const row = salesData.find(r => r.id === id || r.id === Number(id) || String(r.id) === id);
                     console.log(`🔍 행 ${id} 확인:`, {
                         found: !!row,
+                        id_type: typeof id,
+                        row_id: row?.id,
+                        row_id_type: row?.id ? typeof row.id : 'N/A',
                         isPersisted: row?.isPersisted,
-                        rowData: row
+                        customer_name: row?.customer_name || 'N/A'
                     });
                     if (row && row.isPersisted) {
                         // 실제 DB ID를 사용 (임시 ID가 아닌 row.id) - integer로 변환
-                        savedIds.push(Number(row.id));
+                        const dbId = Number(row.id);
+
+                        // NaN 체크 - 숫자 변환 실패 시 오류 로깅
+                        if (isNaN(dbId)) {
+                            console.error(`❌ ID 변환 실패: ${id} → NaN (row.id: ${row.id}, type: ${typeof row.id})`);
+                        } else if (!Number.isInteger(dbId)) {
+                            console.warn(`⚠️ 정수가 아닌 ID: ${dbId}`);
+                            savedIds.push(Math.floor(dbId)); // 정수로 변환
+                        } else {
+                            savedIds.push(dbId);
+                            console.log(`✅ DB 저장된 행 추가: ${id} → ${dbId}`);
+                        }
                     } else {
                         unsavedIds.push(id);
+                        console.log(`ℹ️ 미저장 행: ${id}` + (row ? '' : ' (행을 찾을 수 없음)'));
                     }
                 });
 
@@ -1149,10 +1164,17 @@
                 try {
                     // DB에 저장된 데이터가 있으면 백엔드 호출
                     if (savedIds.length > 0) {
+                        const requestBody = { sale_ids: savedIds };
+                        const requestBodyString = JSON.stringify(requestBody);
+
                         console.log('📡 삭제 API 요청:', {
                             url: '/api/sales/bulk-delete',
                             savedIds: savedIds,
-                            count: savedIds.length
+                            count: savedIds.length,
+                            requestBody: requestBody,
+                            requestBodyString: requestBodyString,
+                            firstIdType: typeof savedIds[0],
+                            firstIdValue: savedIds[0]
                         });
 
                         const response = await fetch('/api/sales/bulk-delete', {
@@ -1162,7 +1184,7 @@
                                 'Content-Type': 'application/json',
                                 'Accept': 'application/json'
                             },
-                            body: JSON.stringify({ sale_ids: savedIds })
+                            body: requestBodyString
                         });
 
                         console.log('📡 응답 상태:', response.status, response.statusText);
@@ -1513,6 +1535,11 @@
                 return response.json();
             })
             .then(data => {
+                console.log('💾 저장 응답 전체:', data);
+                console.log('💾 id_mappings 존재 여부:', !!data.id_mappings);
+                console.log('💾 id_mappings 내용:', data.id_mappings);
+                console.log('💾 id_mappings 키 개수:', data.id_mappings ? Object.keys(data.id_mappings).length : 0);
+
                 if (data.success) {
                     showStatus('✅ ' + data.message, 'success');
                     // Data saved successfully
@@ -1520,24 +1547,34 @@
                     // 임시 ID를 실제 DB ID로 교체
                     if (data.id_mappings && Object.keys(data.id_mappings).length > 0) {
                         console.log('🔄 ID 매핑 적용 중...', data.id_mappings);
+
+                        // 모든 매핑을 먼저 처리
+                        const updatedSelections = new Set();
                         salesData.forEach(row => {
                             // 임시 ID가 매핑에 있으면 실제 DB ID로 교체
                             if (data.id_mappings[row.id]) {
                                 const oldId = row.id;
                                 const newId = data.id_mappings[row.id];
 
-                                // selectedRowIds도 함께 업데이트
+                                // 선택된 행이었으면 새로운 ID로 추적
                                 if (selectedRowIds.has(String(oldId))) {
-                                    selectedRowIds.delete(String(oldId));
-                                    selectedRowIds.add(String(newId));
+                                    updatedSelections.add(String(newId));
                                     console.log(`🔄 selectedRowIds 업데이트: ${oldId} → ${newId}`);
                                 }
 
                                 row.id = newId;
                                 console.log(`✅ ID 교체: ${oldId} → ${newId}`);
+                            } else if (selectedRowIds.has(String(row.id))) {
+                                // 매핑이 없는 행(UPDATE된 행)도 선택 상태 유지
+                                updatedSelections.add(String(row.id));
                             }
                             row.isPersisted = true;
                         });
+
+                        // selectedRowIds를 완전히 교체 (임시 ID 제거)
+                        selectedRowIds.clear();
+                        updatedSelections.forEach(id => selectedRowIds.add(id));
+                        console.log('🔄 최종 selectedRowIds:', Array.from(selectedRowIds));
                     } else {
                         // ID 매핑이 없으면 (모두 UPDATE인 경우) 단순히 isPersisted만 설정
                         salesData.forEach(row => {
@@ -2081,9 +2118,9 @@
 
                     // 그리드 렌더링
                     renderTableRows();
-                    // DOM 렌더링 완료 후 계산 실행 (비동기)
+                    // DOM 렌더링 완료 후 통계만 업데이트 (비동기)
+                    // DB에서 로드한 계산 값을 그대로 사용 (재계산 안 함)
                     setTimeout(() => {
-                        salesData.forEach(row => calculateRow(row.id));
                         updateStatistics();
                     }, 100);
                     // Sales data loaded
@@ -2623,11 +2660,16 @@
                                     if (cleanStr.length === 6) {
                                         // YYMMDD 형식
                                         const year = parseInt(cleanStr.substring(0, 2));
-                                        const fullYear = year > 50 ? '19' + cleanStr.substring(0, 2) : '20' + cleanStr.substring(0, 2);
-                                        return `${fullYear}-${cleanStr.substring(2, 4)}-${cleanStr.substring(4, 6)}`;
+                                        // 50을 기준으로 19XX / 20XX 판단 (00-50 → 2000-2050, 51-99 → 1951-1999)
+                                        const fullYear = year >= 51 ? '19' + cleanStr.substring(0, 2) : '20' + cleanStr.substring(0, 2);
+                                        const result = `${fullYear}-${cleanStr.substring(2, 4)}-${cleanStr.substring(4, 6)}`;
+                                        console.log(`📅 YYMMDD 변환: ${cleanStr} → ${result} (year=${year}, century=${year >= 51 ? '19' : '20'})`);
+                                        return result;
                                     } else if (cleanStr.length === 8) {
                                         // YYYYMMDD 형식
-                                        return `${cleanStr.substring(0, 4)}-${cleanStr.substring(4, 6)}-${cleanStr.substring(6, 8)}`;
+                                        const result = `${cleanStr.substring(0, 4)}-${cleanStr.substring(4, 6)}-${cleanStr.substring(6, 8)}`;
+                                        console.log(`📅 YYYYMMDD 변환: ${cleanStr} → ${result}`);
+                                        return result;
                                     }
 
                                     // 슬래시나 점으로 구분된 경우
@@ -2635,8 +2677,16 @@
                                         const parts = str.split(/[\/\.]/).filter(p => p);
                                         if (parts.length === 3) {
                                             // YYYY/MM/DD 또는 YY/MM/DD 형식
-                                            const year = parts[0].length === 4 ? parts[0] : (parseInt(parts[0]) > 50 ? '19' + parts[0] : '20' + parts[0]);
-                                            return `${year}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+                                            let year;
+                                            if (parts[0].length === 4) {
+                                                year = parts[0]; // 이미 4자리면 그대로
+                                            } else {
+                                                const yy = parseInt(parts[0]);
+                                                year = yy >= 51 ? '19' + parts[0].padStart(2, '0') : '20' + parts[0].padStart(2, '0');
+                                            }
+                                            const result = `${year}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
+                                            console.log(`📅 구분자 변환: ${str} → ${result}`);
+                                            return result;
                                         }
                                     }
 
@@ -2756,6 +2806,12 @@
                                 // 생년월일 변환 (디버깅 로그 포함)
                                 const rawBirthDate = getColValue(8, '');
                                 const birthDate = formatBirthDate(rawBirthDate);
+
+                                // 2000년 이후 데이터 특별 로깅
+                                if (birthDate && birthDate.startsWith('20')) {
+                                    console.log(`🎯 2000년 이후 생년월일 발견 - 원본: ${rawBirthDate} → 변환: ${birthDate}`);
+                                }
+
                                 if (addedCount < 3) {
                                     console.log(`생년월일 변환 - 원본: ${rawBirthDate} (타입: ${typeof rawBirthDate}) → 변환: ${birthDate}`);
                                 }
@@ -2783,7 +2839,7 @@
                                 }
 
                                 const newRowData = {
-                                    id: 'row-' + Date.now() + '-' + i,
+                                    id: nextId++, // 숫자 ID 사용 (문자열 ID는 Number() 변환 시 NaN 발생)
                                     salesperson: getColValue(0, '{{ Auth::user()->name ?? '' }}'), // 판매자
                                     dealer_name: dealer, // 대리점
                                     carrier: carrier, // 통신사
