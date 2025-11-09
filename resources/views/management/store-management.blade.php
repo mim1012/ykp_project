@@ -1221,14 +1221,15 @@
 
         // 탭 시스템 제거됨 - 직접 매장 관리만 표시
 
-        // ✨ 매장 목록 로드 함수 (페이지네이션 + 검색 지원)
-        let currentPage = 1;
+        // ✨ 매장 목록 로드 함수 (지사별 독립 페이지네이션 + 검색 지원)
+        let allStores = []; // 전체 매장 데이터 캐시
+        let branchPages = {}; // 각 지사별 현재 페이지 { branchId: pageNumber }
         let currentSearch = '';
+        const STORES_PER_BRANCH_PAGE = 9; // 지사당 한 페이지에 표시할 매장 수 (3x3 그리드)
 
-        window.loadStores = async function(page = 1, search = '') {
-            console.log('🔄 loadStores 시작 - 페이지:', page, '검색:', search);
+        window.loadStores = async function(search = '') {
+            console.log('🔄 loadStores 시작 - 검색:', search);
 
-            currentPage = page;
             currentSearch = search;
 
             try {
@@ -1241,8 +1242,8 @@
                 // 로딩 메시지 표시
                 gridElement.innerHTML = '<div class="p-8 text-center text-gray-500"><div class="text-4xl mb-4">🔄</div><p>매장 목록 로딩 중...</p></div>';
 
-                // API 호출 (페이지네이션 + 검색)
-                const url = `/api/stores?page=${page}${search ? `&search=${encodeURIComponent(search)}` : ''}`;
+                // API 호출 (충분히 큰 페이지 크기로 모든 매장 가져오기)
+                const url = `/api/stores?per_page=500${search ? `&search=${encodeURIComponent(search)}` : ''}`;
                 const response = await fetch(url, {
                     headers: {
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
@@ -1258,13 +1259,26 @@
                 const result = await response.json();
                 console.log('✅ API 응답:', result);
 
-                // Laravel pagination response has 'data' at root level
-                if (result.data) {
-                    renderStores(result.data);
-                    renderPagination(result); // Pass whole result (contains pagination info)
-                } else {
-                    throw new Error(result.error || result.message || '유효하지 않은 API 응답');
+                // 🛡️ API 응답 구조 방어
+                const storesData = Array.isArray(result.data)
+                    ? result.data
+                    : (result.data?.data || []);
+
+                console.log('📦 매장 데이터 추출:', {
+                    isArray: Array.isArray(result.data),
+                    count: storesData.length,
+                    sample: storesData[0]
+                });
+
+                // 전체 매장 데이터 캐시
+                allStores = storesData;
+
+                // 각 지사별 페이지 초기화 (검색 시 리셋)
+                if (search !== currentSearch || Object.keys(branchPages).length === 0) {
+                    branchPages = {};
                 }
+
+                renderStoresByBranch();
 
             } catch (error) {
                 console.error('❌ loadStores 오류:', error);
@@ -1275,7 +1289,7 @@
                             <div class="text-4xl mb-4">❌</div>
                             <p class="font-medium">매장 목록 로딩 실패</p>
                             <p class="text-sm text-gray-500 mt-2">${error.message}</p>
-                            <button onclick="window.loadStores(${page}, '${search}')" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                            <button onclick="window.loadStores('${search}')" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
                                 🔄 재시도
                             </button>
                         </div>
@@ -1284,153 +1298,185 @@
             }
         };
 
-        // 매장 카드 렌더링 함수
-        function renderStores(stores) {
-            const gridElement = document.getElementById('stores-grid');
-            const userRole = '{{ auth()->user()->role }}';
+        // 🎨 지사별 독립 페이지네이션으로 매장 렌더링
+        function renderStoresByBranch() {
+            try {
+                console.log('🎨 renderStoresByBranch 시작 - 전체 매장:', allStores.length);
 
-            if (!stores || stores.length === 0) {
-                gridElement.innerHTML = `
-                    <div class="p-8 text-center text-gray-500">
-                        <div class="text-4xl mb-4">🔍</div>
-                        <p class="text-lg font-medium">검색 결과가 없습니다</p>
-                        <p class="text-sm text-gray-400 mt-2">${currentSearch ? '다른 검색어로 시도해보세요' : '새 매장을 추가해보세요'}</p>
-                    </div>
-                `;
-                return;
-            }
+                const gridElement = document.getElementById('stores-grid');
+                const userRole = '{{ auth()->user()->role }}';
 
-            // 지사별로 그룹화
-            const storesByBranch = {};
-            stores.forEach(store => {
-                const branchName = store.branch?.name || '미배정';
-                if (!storesByBranch[branchName]) {
-                    storesByBranch[branchName] = [];
+                if (!gridElement) {
+                    throw new Error('❌ stores-grid 요소를 찾을 수 없습니다');
                 }
-                storesByBranch[branchName].push(store);
-            });
 
-            let html = '<div class="space-y-6">';
-
-            Object.entries(storesByBranch).forEach(([branchName, branchStores]) => {
-                html += `
-                    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                        <div class="bg-gradient-to-r from-blue-500 to-indigo-600 px-6 py-4">
-                            <h3 class="text-xl font-bold text-white">🏢 ${branchName} (${branchStores.length}개 매장)</h3>
-                        </div>
-                        <div class="p-6">
-                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                `;
-
-                branchStores.forEach(store => {
-                    html += `
-                        <div class="bg-gray-50 rounded-lg p-4 hover:bg-white hover:shadow-md transition-all border">
-                            <div class="flex justify-between items-start mb-3">
-                                <h4 class="font-bold text-lg">${store.name}</h4>
-                                <span class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">✅ 운영중</span>
-                            </div>
-                            <div class="text-sm text-gray-600 space-y-1">
-                                <p><span class="font-medium">코드:</span> ${store.code}</p>
-                                <p><span class="font-medium">점주:</span> ${store.owner_name || '미등록'}</p>
-                                <p><span class="font-medium">연락처:</span> ${store.phone || '미등록'}</p>
-                            </div>
-                            <div class="mt-3 flex gap-2">
-                                <button onclick="openEditModal(${store.id})"
-                                        class="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600">
-                                    ✏️ 수정
-                                </button>
-                                <button onclick="createStoreAccount(${store.id}, '${escapeJs(store.name)}')"
-                                        class="px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600">
-                                    👤 계정
-                                </button>
-                                <button onclick="deleteStore(${store.id})"
-                                        class="px-2 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600">
-                                    🗑️ 삭제
-                                </button>
-                            </div>
+                if (!allStores || allStores.length === 0) {
+                    console.log('ℹ️ 매장 데이터 없음 - 빈 화면 표시');
+                    gridElement.innerHTML = `
+                        <div class="p-8 text-center text-gray-500">
+                            <div class="text-4xl mb-4">🔍</div>
+                            <p class="text-lg font-medium">검색 결과가 없습니다</p>
+                            <p class="text-sm text-gray-400 mt-2">${currentSearch ? '다른 검색어로 시도해보세요' : '새 매장을 추가해보세요'}</p>
                         </div>
                     `;
+                    return;
+                }
+
+                // 지사별로 그룹화
+                const storesByBranch = {};
+                allStores.forEach(store => {
+                    const branchId = store.branch?.id || 0;
+                    const branchName = store.branch?.name || '미배정';
+                    if (!storesByBranch[branchId]) {
+                        storesByBranch[branchId] = {
+                            name: branchName,
+                            stores: []
+                        };
+                    }
+                    storesByBranch[branchId].stores.push(store);
                 });
 
-                html += '</div></div></div>';
-            });
+                console.log('🏢 지사별 그룹화:', Object.keys(storesByBranch).map(id => storesByBranch[id].name));
 
-            html += '</div>';
-            gridElement.innerHTML = html;
+                let html = '<div class="space-y-6">';
+
+                Object.entries(storesByBranch).forEach(([branchId, branchData]) => {
+                    const branchStores = branchData.stores;
+                    const branchName = branchData.name;
+
+                    // 현재 지사의 페이지 번호 (기본값: 1)
+                    const currentPage = branchPages[branchId] || 1;
+
+                    // 페이지네이션 계산
+                    const totalStores = branchStores.length;
+                    const totalPages = Math.ceil(totalStores / STORES_PER_BRANCH_PAGE);
+                    const startIndex = (currentPage - 1) * STORES_PER_BRANCH_PAGE;
+                    const endIndex = Math.min(startIndex + STORES_PER_BRANCH_PAGE, totalStores);
+                    const paginatedStores = branchStores.slice(startIndex, endIndex);
+
+                    html += `
+                        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                            <div class="bg-gradient-to-r from-blue-500 to-indigo-600 px-6 py-4 flex justify-between items-center">
+                                <h3 class="text-xl font-bold text-white">🏢 ${branchName}</h3>
+                                <span class="text-white text-sm bg-white/20 px-3 py-1 rounded-full">
+                                    총 ${totalStores}개 매장 | ${currentPage} / ${totalPages} 페이지
+                                </span>
+                            </div>
+                            <div class="p-6">
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    `;
+
+                    paginatedStores.forEach(store => {
+                        html += `
+                            <div class="bg-gray-50 rounded-lg p-4 hover:bg-white hover:shadow-md transition-all border">
+                                <div class="flex justify-between items-start mb-3">
+                                    <h4 class="font-bold text-lg">${store.name}</h4>
+                                    <span class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">✅ 운영중</span>
+                                </div>
+                                <div class="text-sm text-gray-600 space-y-1">
+                                    <p><span class="font-medium">코드:</span> ${store.code}</p>
+                                    <p><span class="font-medium">점주:</span> ${store.owner_name || '미등록'}</p>
+                                    <p><span class="font-medium">연락처:</span> ${store.phone || '미등록'}</p>
+                                </div>
+                                <div class="mt-3 flex gap-2">
+                                    <button onclick="openEditModal(${store.id})"
+                                            class="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600">
+                                        ✏️ 수정
+                                    </button>
+                                    <button onclick="createStoreAccount(${store.id}, '${escapeJs(store.name)}')"
+                                            class="px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600">
+                                        👤 계정
+                                    </button>
+                                    <button onclick="deleteStore(${store.id})"
+                                            class="px-2 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600">
+                                        🗑️ 삭제
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    html += '</div>';
+
+                    // 지사별 페이지네이션 UI (2페이지 이상일 때만 표시)
+                    if (totalPages > 1) {
+                        html += `
+                            <div class="mt-6 flex justify-center items-center gap-2">
+                                <button onclick="changeBranchPage(${branchId}, ${currentPage - 1})"
+                                        ${currentPage === 1 ? 'disabled' : ''}
+                                        class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed">
+                                    ← 이전
+                                </button>
+                                <div class="flex gap-1">
+                        `;
+
+                        // 페이지 번호 버튼들
+                        for (let page = 1; page <= totalPages; page++) {
+                            const isActive = page === currentPage;
+                            html += `
+                                <button onclick="changeBranchPage(${branchId}, ${page})"
+                                        class="px-3 py-2 ${isActive ? 'bg-blue-600 text-white' : 'bg-gray-200 hover:bg-gray-300'} rounded">
+                                    ${page}
+                                </button>
+                            `;
+                        }
+
+                        html += `
+                                </div>
+                                <button onclick="changeBranchPage(${branchId}, ${currentPage + 1})"
+                                        ${currentPage === totalPages ? 'disabled' : ''}
+                                        class="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed">
+                                    다음 →
+                                </button>
+                            </div>
+                        `;
+                    }
+
+                    html += '</div></div>';
+                });
+
+                html += '</div>';
+                gridElement.innerHTML = html;
+                console.log('✅ 렌더링 완료 - 총 매장:', allStores.length);
+            } catch (error) {
+                console.error('❌ renderStoresByBranch 오류:', error);
+                console.error('오류 스택:', error.stack);
+
+                const gridElement = document.getElementById('stores-grid');
+                if (gridElement) {
+                    gridElement.innerHTML = `
+                        <div class="p-8 text-center text-red-500">
+                            <div class="text-4xl mb-4">❌</div>
+                            <p class="font-medium">렌더링 오류 발생</p>
+                            <p class="text-sm text-gray-600 mt-2">${error.message}</p>
+                            <button onclick="window.loadStores()"
+                                    class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                                🔄 재시도
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    alert('치명적 오류: stores-grid 요소를 찾을 수 없습니다.');
+                }
+                throw error;
+            }
         }
 
-        // 페이지네이션 렌더링 함수
-        function renderPagination(pagination) {
-            const container = document.getElementById('pagination-container');
-            if (!pagination || !container) return;
+        // 지사별 페이지 변경 함수
+        window.changeBranchPage = function(branchId, newPage) {
+            branchPages[branchId] = newPage;
+            renderStoresByBranch(); // 재렌더링
 
-            const { current_page, last_page, total } = pagination;
-
-            if (last_page <= 1) {
-                container.innerHTML = '';
-                return;
-            }
-
-            let html = `
-                <div class="flex items-center space-x-2">
-                    <span class="text-sm text-gray-600">총 ${total}개 매장</span>
-                    <div class="flex space-x-1">
-            `;
-
-            // 이전 버튼
-            if (current_page > 1) {
-                html += `<button onclick="loadStores(${current_page - 1}, '${currentSearch}')"
-                                class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-100">
-                            ← 이전
-                        </button>`;
-            }
-
-            // 페이지 번호들
-            const maxPages = 5;
-            let startPage = Math.max(1, current_page - Math.floor(maxPages / 2));
-            let endPage = Math.min(last_page, startPage + maxPages - 1);
-
-            if (endPage - startPage < maxPages - 1) {
-                startPage = Math.max(1, endPage - maxPages + 1);
-            }
-
-            if (startPage > 1) {
-                html += `<button onclick="loadStores(1, '${currentSearch}')"
-                                class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-100">1</button>`;
-                if (startPage > 2) {
-                    html += '<span class="px-2">...</span>';
+            // 해당 지사 섹션으로 부드럽게 스크롤
+            setTimeout(() => {
+                const branchSection = document.querySelector(`[data-branch-id="${branchId}"]`);
+                if (branchSection) {
+                    branchSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
-            }
+            }, 100);
+        };
 
-            for (let i = startPage; i <= endPage; i++) {
-                const activeClass = i === current_page
-                    ? 'bg-blue-500 text-white'
-                    : 'border border-gray-300 hover:bg-gray-100';
-                html += `<button onclick="loadStores(${i}, '${currentSearch}')"
-                                class="px-3 py-1 rounded ${activeClass}">
-                            ${i}
-                        </button>`;
-            }
-
-            if (endPage < last_page) {
-                if (endPage < last_page - 1) {
-                    html += '<span class="px-2">...</span>';
-                }
-                html += `<button onclick="loadStores(${last_page}, '${currentSearch}')"
-                                class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-100">${last_page}</button>`;
-            }
-
-            // 다음 버튼
-            if (current_page < last_page) {
-                html += `<button onclick="loadStores(${current_page + 1}, '${currentSearch}')"
-                                class="px-3 py-1 border border-gray-300 rounded hover:bg-gray-100">
-                            다음 →
-                        </button>`;
-            }
-
-            html += '</div></div>';
-            container.innerHTML = html;
-        }
+        // 🗑️ 전체 페이지네이션 함수 제거됨 (지사별 독립 페이지네이션으로 대체)
 
         // 검색 기능 (실시간 검색)
         let searchTimeout;
@@ -1444,7 +1490,7 @@
                     // 300ms 디바운싱
                     searchTimeout = setTimeout(() => {
                         console.log('🔍 검색 실행:', searchValue);
-                        loadStores(1, searchValue);
+                        loadStores(searchValue); // 지사별 페이지네이션에 맞게 수정됨
                     }, 300);
                 });
             }
@@ -1612,8 +1658,8 @@
                 if (result.success) {
                     alert('✅ 매장 정보가 성공적으로 수정되었습니다!');
                     closeEditStoreModal();
-                    // 목록 새로고침
-                    loadStores(currentPage, currentSearch);
+                    // 목록 새로고침 (지사별 페이지네이션)
+                    loadStores(currentSearch);
                 } else {
                     throw new Error(result.error || '매장 정보 수정 실패');
                 }
@@ -3692,67 +3738,9 @@
             
             console.log('✅ 매장 버튼 이벤트 등록 완료');
         }
-        
-        
-        // 3가지 초기화 전략 (안전성 강화)
-        document.addEventListener('DOMContentLoaded', initializeStoresPage);
-        
-        // 대안 1: 즉시 실행 (이미 DOM이 로드된 경우)
-        if (document.readyState === 'complete' || document.readyState === 'interactive') {
-            console.log('✅ DOM 이미 로드됨 - 즉시 초기화');
-            setTimeout(initializeStoresPage, 100);
-        }
-        
-        // 대안 2: 윈도우 로드 이벤트 (최후 수단)
-        window.addEventListener('load', function() {
-            if (!window.storesPageInitialized) {
-                console.log('⚠️ 최후 수단: window.onload로 초기화');
-                initializeStoresPage();
-            }
-        });
-        
-        // 대안 3: 지연 실행 (모든 것이 실패한 경우)
-        setTimeout(function() {
-            if (!window.storesPageInitialized) {
-                console.log('🚑 긴급 지연 초기화 (3초 후)');
-                initializeStoresPage();
-            }
-        }, 3000);
-        
 
-        // 🚀 4단계 초기화 전략 실행
-        
-        // 1단계: 즉시 실행
-        if (document.readyState === 'complete' || document.readyState === 'interactive') {
-            console.log('🚀 1단계: DOM 이미 준비됨 - 즉시 초기화');
-            setTimeout(initializeStoresPage, 50);
-        }
-        
-        // 2단계: DOMContentLoaded
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 2단계: DOMContentLoaded 이벤트');
-            initializeStoresPage();
+        // ⚠️ 중복 초기화 코드 제거됨 - 라인 4097의 단순 초기화만 사용
 
-            // 매장 데이터 캐싱 (권한 체크용)
-            setTimeout(cacheStoreData, 1000);
-        });
-        
-        // 3단계: window.load
-        window.addEventListener('load', function() {
-            console.log('🚑 3단계: window.load 이벤트');
-            if (!window.storesPageInitialized) {
-                initializeStoresPage();
-            }
-        });
-        
-        // 4단계: 최종 안전장치 (3초 뒤)
-        setTimeout(function() {
-            if (!window.storesPageInitialized) {
-                console.log('🎆 4단계: 최종 안전장치 가동');
-                initializeStoresPage();
-            }
-        }, 3000);
-        
         // 전역 오류 처리
         window.addEventListener('error', function(e) {
             console.error('JavaScript 오류:', e.error);
@@ -4092,6 +4080,16 @@
             printWindow.document.close();
             printWindow.print();
         }
+
+        // 🔥 페이지 로드 시 매장 목록 자동 로딩 (초기화 코드)
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log('✅ 페이지 로드 완료 - 매장 목록 로딩 시작');
+            if (typeof loadStores === 'function') {
+                loadStores(); // 매장 목록 로드
+            } else {
+                console.error('❌ loadStores 함수를 찾을 수 없습니다');
+            }
+        });
 
     </script>
 </body>
