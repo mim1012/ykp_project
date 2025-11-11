@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Log;
 class StoreController extends Controller
 {
     /**
-     * 매장 목록 조회
+     * 매장 목록 조회 (페이지네이션 + 검색)
      */
     public function index(Request $request): JsonResponse
     {
@@ -31,11 +31,35 @@ class StoreController extends Controller
             $query->where('id', $user->store_id);
         }
 
-        $stores = $query->orderBy('name')->get();
+        // 검색 기능 (토큰 기반 - 매장명, 지사명, 점주명, 코드)
+        if ($request->has('search') && !empty($request->search)) {
+            $searchTerm = $request->search;
+            
+            $query->where(function ($q) use ($searchTerm) {
+                // 매장명 검색
+                $q->where('name', 'ILIKE', '%' . $searchTerm . '%')
+                    // 점주명 검색
+                    ->orWhere('owner_name', 'ILIKE', '%' . $searchTerm . '%')
+                    // 매장 코드 검색
+                    ->orWhere('code', 'ILIKE', '%' . $searchTerm . '%')
+                    // 지사명 검색 (relation)
+                    ->orWhereHas('branch', function ($branchQuery) use ($searchTerm) {
+                        $branchQuery->where('name', 'ILIKE', '%' . $searchTerm . '%');
+                    });
+            });
+        }
+
+        // 페이지네이션 (기본 20개씩)
+        $perPage = $request->get('per_page', 20);
+        $stores = $query->orderBy('name')->paginate($perPage);
 
         return response()->json([
             'success' => true,
-            'data' => $stores,
+            'data' => $stores->items(),
+            'current_page' => $stores->currentPage(),
+            'last_page' => $stores->lastPage(),
+            'per_page' => $stores->perPage(),
+            'total' => $stores->total(),
         ]);
     }
 
