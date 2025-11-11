@@ -11,14 +11,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Railway CLI
-        uses: railwayapp/actions@v1
-        with:
-          railwayToken: ${{ secrets.RAILWAY_TOKEN }}
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
 
       - name: Deploy (Railway Prod Service)
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
         run: |
-          railway up --service ${{ secrets.RAILWAY_PROD_SERVICE_ID }} --yes
+          railway up --service "Production ERP"
 
