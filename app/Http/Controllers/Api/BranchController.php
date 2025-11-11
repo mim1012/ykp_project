@@ -181,7 +181,10 @@ class BranchController extends Controller
                 ->select('id', 'name', 'code')
                 ->get();
 
-            return response()->json($branches);
+            return response()->json([
+                'success' => true,
+                'data' => $branches
+            ]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }

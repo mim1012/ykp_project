@@ -1669,10 +1669,13 @@
         function generateDealerOptions(selectedValue = '') {
             let options = '<option value="">선택</option>';
 
+            // dealersList의 모든 대리점 추가
             dealersList.forEach(dealer => {
                 const selected = selectedValue === dealer.name ? 'selected' : '';
                 options += `<option value="${dealer.name}" ${selected}>${dealer.name}</option>`;
             });
+
+            // DB에 없는 값은 선택 안함 (드롭다운에 추가하지 않음)
 
             return options;
         }
@@ -2414,6 +2417,7 @@
                 const file = e.target.files[0];
                 if (file) {
                     console.log('파일 정보:', file.name, file.type, file.size);
+                    console.log(`📋 대리점 목록 상태: ${dealersList.length}개 로드됨`, dealersList.map(d => d.name).join(', '));
 
                     // XLSX 파일인지 CSV 파일인지 확인
                     const isExcel = file.name.match(/\.(xlsx?|xls)$/i);
@@ -2619,6 +2623,26 @@
                                 };
 
                                 // 생년월일 형식 변환 함수
+                                // 날짜 유효성 검증 함수 (2월 30일 같은 잘못된 날짜 감지)
+                                const isValidDate = (dateStr) => {
+                                    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return false;
+
+                                    const [year, month, day] = dateStr.split('-').map(num => parseInt(num, 10));
+
+                                    // 기본 범위 검증
+                                    if (month < 1 || month > 12) return false;
+                                    if (day < 1 || day > 31) return false;
+                                    if (year < 1900 || year > 2100) return false;
+
+                                    // JavaScript Date 객체로 실제 날짜 유효성 확인
+                                    const date = new Date(year, month - 1, day);
+                                    return (
+                                        date.getFullYear() === year &&
+                                        date.getMonth() === month - 1 &&
+                                        date.getDate() === day
+                                    );
+                                };
+
                                 const formatBirthDate = (dateStr) => {
                                     if (!dateStr) return '';
 
@@ -2629,15 +2653,16 @@
                                         const year = date.getFullYear();
                                         const month = String(date.getMonth() + 1).padStart(2, '0');
                                         const day = String(date.getDate()).padStart(2, '0');
-                                        return `${year}-${month}-${day}`;
+                                        const result = `${year}-${month}-${day}`;
+                                        return isValidDate(result) ? result : '';
                                     }
 
                                     const str = String(dateStr).trim();
                                     if (str === '') return '';
 
-                                    // 이미 YYYY-MM-DD 형식인 경우
+                                    // 이미 YYYY-MM-DD 형식인 경우 (유효성 검증)
                                     if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
-                                        return str;
+                                        return isValidDate(str) ? str : '';
                                     }
 
                                     // 숫자만 있는 경우
@@ -2653,7 +2678,8 @@
                                             const year = date.getFullYear();
                                             const month = String(date.getMonth() + 1).padStart(2, '0');
                                             const day = String(date.getDate()).padStart(2, '0');
-                                            return `${year}-${month}-${day}`;
+                                            const result = `${year}-${month}-${day}`;
+                                            return isValidDate(result) ? result : '';
                                         }
                                     }
 
@@ -2663,13 +2689,26 @@
                                         // 50을 기준으로 19XX / 20XX 판단 (00-50 → 2000-2050, 51-99 → 1951-1999)
                                         const fullYear = year >= 51 ? '19' + cleanStr.substring(0, 2) : '20' + cleanStr.substring(0, 2);
                                         const result = `${fullYear}-${cleanStr.substring(2, 4)}-${cleanStr.substring(4, 6)}`;
-                                        console.log(`📅 YYMMDD 변환: ${cleanStr} → ${result} (year=${year}, century=${year >= 51 ? '19' : '20'})`);
-                                        return result;
+
+                                        // 유효성 검증 후 반환
+                                        if (isValidDate(result)) {
+                                            console.log(`📅 YYMMDD 변환 성공: ${cleanStr} → ${result} (year=${year}, century=${year >= 51 ? '19' : '20'})`);
+                                            return result;
+                                        } else {
+                                            console.error(`❌ 유효하지 않은 날짜: ${cleanStr} → ${result} (예: 2월 30일 같은 존재하지 않는 날짜)`);
+                                            return ''; // 유효하지 않은 날짜는 빈 문자열 반환
+                                        }
                                     } else if (cleanStr.length === 8) {
                                         // YYYYMMDD 형식
                                         const result = `${cleanStr.substring(0, 4)}-${cleanStr.substring(4, 6)}-${cleanStr.substring(6, 8)}`;
-                                        console.log(`📅 YYYYMMDD 변환: ${cleanStr} → ${result}`);
-                                        return result;
+
+                                        if (isValidDate(result)) {
+                                            console.log(`📅 YYYYMMDD 변환 성공: ${cleanStr} → ${result}`);
+                                            return result;
+                                        } else {
+                                            console.error(`❌ 유효하지 않은 날짜: ${cleanStr} → ${result}`);
+                                            return '';
+                                        }
                                     }
 
                                     // 슬래시나 점으로 구분된 경우
@@ -2685,8 +2724,14 @@
                                                 year = yy >= 51 ? '19' + parts[0].padStart(2, '0') : '20' + parts[0].padStart(2, '0');
                                             }
                                             const result = `${year}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
-                                            console.log(`📅 구분자 변환: ${str} → ${result}`);
-                                            return result;
+
+                                            if (isValidDate(result)) {
+                                                console.log(`📅 구분자 변환 성공: ${str} → ${result}`);
+                                                return result;
+                                            } else {
+                                                console.error(`❌ 유효하지 않은 날짜: ${str} → ${result}`);
+                                                return '';
+                                            }
                                         }
                                     }
 
@@ -2727,7 +2772,16 @@
                                         d.name.toUpperCase() === upperInput ||
                                         d.code.toUpperCase() === upperInput
                                     );
-                                    return matched ? matched.name : inputDealer;
+
+                                    if (matched) {
+                                        return matched.name;
+                                    } else {
+                                        // 매칭 실패 시 로그 (처음 3개 행만)
+                                        if (addedCount < 3) {
+                                            console.log(`⚠️ 대리점 매칭 실패: "${inputDealer}" (dealersList에 없음, 드롭다운 "선택없음"으로 표시)`);
+                                        }
+                                        return ''; // DB에 없는 값은 빈 문자열 반환 (드롭다운 "선택없음")
+                                    }
                                 };
 
                                 // 대소문자 구분 없이 통신사 매칭 함수
@@ -2787,6 +2841,25 @@
                                     return inputType;
                                 };
 
+                                // 휴대폰번호 포맷팅 함수 (숫자만 반환, 하이픈 제거 + 앞의 0 복구)
+                                const formatPhoneNumber = (phoneStr) => {
+                                    if (!phoneStr) return '';
+
+                                    // 숫자만 추출
+                                    let numbers = String(phoneStr).replace(/[^0-9]/g, '');
+                                    if (numbers.length === 0) return '';
+
+                                    // 엑셀에서 숫자로 읽혀서 앞의 0이 사라진 경우 (10자리 → 11자리로 복구)
+                                    if (numbers.length === 10 && !numbers.startsWith('02')) {
+                                        // 1052072940 → 01052072940
+                                        numbers = '0' + numbers;
+                                        console.log(`📱 휴대폰번호 0 복구: ${phoneStr} → ${numbers}`);
+                                    }
+
+                                    // 하이픈 없이 숫자만 반환
+                                    return numbers;
+                                };
+
                                 // 필수 필드 추출 (대소문자 매칭 적용)
                                 const dealer = matchDealer(getColValue(1, ''));
                                 const carrier = matchCarrier(getColValue(2, ''));
@@ -2800,7 +2873,7 @@
                                     console.log(`개통일 변환 - 원본: ${rawSaleDate} (타입: ${typeof rawSaleDate}) → 변환: ${saleDate}`);
                                 }
 
-                                const phoneNumber = getColValue(6, ''); // 휴대폰번호 (6번 인덱스)
+                                const phoneNumber = formatPhoneNumber(getColValue(6, '')); // 휴대폰번호 (6번 인덱스, 하이픈 자동 추가)
                                 const customerName = getColValue(7, ''); // 고객명 (7번 인덱스)
 
                                 // 생년월일 변환 (디버깅 로그 포함)
