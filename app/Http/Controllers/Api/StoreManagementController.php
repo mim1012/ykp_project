@@ -48,17 +48,45 @@ class StoreManagementController extends Controller
                 ]);
             }
 
-            // 검색 기능 (매장명 ILIKE 검색)
+            // 검색 기능 (매장명, 점주명, 코드, 지사명 ILIKE 검색)
             if ($search = $request->input('search')) {
-                $query->where('name', 'ILIKE', "%{$search}%");
+                Log::info('🔍 Store search executed', ['search_term' => $search]);
+
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'ILIKE', "%{$search}%")
+                        ->orWhere('owner_name', 'ILIKE', "%{$search}%")
+                        ->orWhere('code', 'ILIKE', "%{$search}%")
+                        ->orWhereHas('branch', function ($branchQuery) use ($search) {
+                            $branchQuery->where('name', 'ILIKE', "%{$search}%");
+                        });
+                });
             }
+
+            // 페이지네이션 (기본 30개씩, 요청 시 변경 가능)
+            $perPage = $request->get('per_page', 30);
 
             // 지사별 정렬 + 매장명 정렬
             $stores = $query->orderBy('branch_id')
                 ->orderBy('name')
-                ->paginate(30);
+                ->paginate($perPage);
 
-            return response()->json($stores);
+            Log::info('📊 Store query result', [
+                'total' => $stores->total(),
+                'per_page' => $stores->perPage(),
+                'has_search' => $request->has('search'),
+                'search_value' => $request->get('search')
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => $stores->items(),
+                'current_page' => $stores->currentPage(),
+                'last_page' => $stores->lastPage(),
+                'per_page' => $stores->perPage(),
+                'total' => $stores->total(),
+                'debug_version' => 'v2.0-with-search',
+                'debug_search_applied' => $request->has('search') && !empty($request->search),
+            ]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
