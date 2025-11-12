@@ -17,6 +17,7 @@ class StoreController extends Controller
 {
     /**
      * 매장 목록 조회 (페이지네이션 + 검색)
+     * Updated: 2025-11-12 - Force rebuild
      */
     public function index(Request $request): JsonResponse
     {
