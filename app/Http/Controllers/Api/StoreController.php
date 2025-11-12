@@ -68,6 +68,8 @@ class StoreController extends Controller
             'last_page' => $stores->lastPage(),
             'per_page' => $stores->perPage(),
             'total' => $stores->total(),
+            'debug_version' => 'v2.0-with-search',
+            'debug_search_applied' => $request->has('search') && !empty($request->search),
         ]);
     }
 
