@@ -2,7 +2,7 @@
 FROM php:8.3-apache
 
 # Cache bust to force rebuild (update this value to force rebuild)
-ARG CACHE_BUST=2025-11-12-search-fix-v1
+ARG CACHE_BUST=2025-11-12-search-fix-v2
 
 WORKDIR /var/www/html
 
@@ -36,8 +36,8 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 COPY . .
 
 # Create health check files directly
-RUN echo "OK-v2025-11-12-search-fix" > /var/www/html/public/health.txt \
-    && echo '<?php http_response_code(200); echo "OK-v2025-11-12-search-fix";' > /var/www/html/public/health.php
+RUN echo "OK-v2025-11-12-search-fix-v2" > /var/www/html/public/health.txt \
+    && echo '<?php http_response_code(200); echo "OK-v2025-11-12-search-fix-v2";' > /var/www/html/public/health.php
 
 # Clean install with Carbon 3.x for Laravel 12 compatibility
 RUN rm -rf vendor composer.lock \
@@ -94,6 +94,10 @@ RUN echo '<?php return ["current" => "2.0.0", "build" => ["number" => "prod", "c
 RUN php artisan config:clear \
     && php artisan cache:clear \
     && php artisan view:clear 2>/dev/null || true
+
+# CRITICAL: Regenerate autoloader to pick up latest controller files
+RUN composer dump-autoload --optimize --no-dev \
+    && echo "Autoloader regenerated successfully"
 
 # Set ServerName to avoid warnings
 RUN echo "ServerName localhost" >> /etc/apache2/apache2.conf
