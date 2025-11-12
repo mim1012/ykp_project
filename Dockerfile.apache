@@ -2,7 +2,7 @@
 FROM php:8.3-apache
 
 # Cache bust to force rebuild (update this value to force rebuild)
-ARG CACHE_BUST=2024-12-20-v21-complete-git-removal
+ARG CACHE_BUST=2025-11-12-search-fix-v1
 
 WORKDIR /var/www/html
 
