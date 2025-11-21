@@ -51,6 +51,8 @@ class Sale extends Model
         'model_name',         // 기본 필드 (필수)
         'customer_name',      // PM 요구사항: 고객명 추가
         'customer_birth_date', // PM 요구사항: 생년월일 추가
+        'customer_address',   // 고객 주소 (선택)
+        'visit_path',         // 방문 경로 (선택)
     ];
 
     protected $casts = [
@@ -91,6 +93,15 @@ class Sale extends Model
     public function dealerProfile(): BelongsTo
     {
         return $this->belongsTo(DealerProfile::class, 'dealer_code', 'dealer_code');
+    }
+
+    /**
+     * Get the customer that was converted from prospect to activated.
+     * (역참조: customers.activated_sale_id → sales.id)
+     */
+    public function customer()
+    {
+        return $this->hasOne(Customer::class, 'activated_sale_id');
     }
 
     /**

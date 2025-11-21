@@ -1,13 +1,36 @@
 import React, { useRef, useEffect } from 'react';
-import { Card, Button, Icon, Badge } from '../ui';
+import { useQuery } from '@tanstack/react-query';
+import { Card, Button, Icon, Badge, LoadingSpinner } from '../ui';
 import { KPICard } from './KPICard';
 import { useDashboardData } from '../../hooks/useDashboardData';
 import { formatCurrency } from '../../utils/formatters';
 
-export const Dashboard = () => {
+export const Dashboard = ({ onNavigate }) => {
     const chartRef = useRef(null);
     const donutRef = useRef(null);
     const { dashboardData, dataStatus } = useDashboardData();
+
+    // Fetch recent notices (최근 공지사항 3개)
+    const { data: notices, isLoading: noticesLoading } = useQuery({
+        queryKey: ['notices-preview'],
+        queryFn: async () => {
+            const response = await fetch('/api/notices?limit=3');
+            if (!response.ok) throw new Error('Failed to fetch notices');
+            const result = await response.json();
+            return result.data || [];
+        }
+    });
+
+    // Fetch recent Q&A posts (최근 Q&A 3개)
+    const { data: qnaPosts, isLoading: qnaLoading } = useQuery({
+        queryKey: ['qna-preview'],
+        queryFn: async () => {
+            const response = await fetch('/api/qna/posts?limit=3');
+            if (!response.ok) throw new Error('Failed to fetch Q&A');
+            const result = await response.json();
+            return result.data || [];
+        }
+    });
 
     useEffect(() => {
         // Initialize charts only if Chart.js is available
@@ -213,53 +236,119 @@ export const Dashboard = () => {
                 </Card>
             </div>
 
-            {/* Timeline & Notifications - Mobile Responsive */}
+            {/* Q&A & Notifications - Mobile Responsive */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
                 <Card className="p-4 sm:p-6">
-                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">최근 활동</h3>
-                    <div className="space-y-3 sm:space-y-4">
-                        {[
-                            { time: '10분 전', text: '서울지점 일일 정산 완료', type: 'success' },
-                            { time: '1시간 전', text: '경기지점 신규 매장 등록', type: 'info' },
-                            { time: '3시간 전', text: '부산지점 재고 부족 알림', type: 'warning' }
-                        ].map((item, i) => (
-                            <div key={i} className="flex items-start gap-3">
-                                <div className={`w-2 h-2 rounded-full mt-2 flex-shrink-0
-                                    ${item.type === 'success' ? 'bg-green-500' : 
-                                      item.type === 'warning' ? 'bg-yellow-500' : 'bg-blue-500'}`} 
-                                />
-                                <div className="flex-1 min-w-0">
-                                    <p className="text-sm text-gray-900 break-words">{item.text}</p>
-                                    <p className="text-xs text-gray-500 mt-1">{item.time}</p>
-                                </div>
-                            </div>
-                        ))}
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900">Q&A</h3>
+                        {onNavigate && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => onNavigate('qna')}
+                                className="text-blue-600 hover:text-blue-700"
+                            >
+                                더보기 →
+                            </Button>
+                        )}
                     </div>
-                </Card>
-                <Card className="p-4 sm:p-6">
-                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">공지사항</h3>
-                    <div className="space-y-2 sm:space-y-3">
-                        {[
-                            { title: '시스템 점검 안내', date: '2024-01-15', badge: '중요' },
-                            { title: '신규 기능 업데이트', date: '2024-01-14', badge: '신규' },
-                            { title: '정산 프로세스 변경', date: '2024-01-13' }
-                        ].map((item, i) => (
-                            <div key={i} className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
-                                <div className="flex items-center gap-3 flex-1 min-w-0">
-                                    <Icon name="file-text" className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                                    <div className="min-w-0 flex-1">
-                                        <p className="text-sm font-medium text-gray-900 truncate">{item.title}</p>
-                                        <p className="text-xs text-gray-500">{item.date}</p>
+                    {qnaLoading ? (
+                        <div className="flex items-center justify-center py-8">
+                            <LoadingSpinner size="sm" />
+                        </div>
+                    ) : qnaPosts && qnaPosts.length > 0 ? (
+                        <div className="space-y-3 sm:space-y-4">
+                            {qnaPosts.map((post) => (
+                                <div
+                                    key={post.id}
+                                    className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                                    onClick={() => onNavigate && onNavigate('qna')}
+                                >
+                                    <Icon name="message-circle" className="w-4 h-4 text-gray-400 flex-shrink-0 mt-1" />
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <Badge variant={post.status === 'answered' ? 'success' : 'warning'} size="sm">
+                                                {post.status === 'answered' ? '답변완료' : '대기중'}
+                                            </Badge>
+                                            {post.is_private && (
+                                                <Badge variant="danger" size="sm">
+                                                    <Icon name="lock" className="w-3 h-3 inline" /> 비밀
+                                                </Badge>
+                                            )}
+                                        </div>
+                                        <p className="text-sm font-medium text-gray-900 truncate">{post.title}</p>
+                                        <p className="text-xs text-gray-500 mt-1">
+                                            {new Date(post.created_at).toLocaleDateString('ko-KR')} ·
+                                            답변 {post.replies?.length || 0}
+                                        </p>
                                     </div>
                                 </div>
-                                {item.badge && (
-                                    <Badge variant="danger" className="ml-2 flex-shrink-0">
-                                        {item.badge}
-                                    </Badge>
-                                )}
-                            </div>
-                        ))}
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-8 text-gray-500">
+                            <Icon name="inbox" className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                            <p className="text-sm">등록된 질문이 없습니다.</p>
+                        </div>
+                    )}
+                </Card>
+                <Card className="p-4 sm:p-6">
+                    <div className="flex items-center justify-between mb-4">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900">공지사항</h3>
+                        {onNavigate && (
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => onNavigate('notices')}
+                                className="text-blue-600 hover:text-blue-700"
+                            >
+                                더보기 →
+                            </Button>
+                        )}
                     </div>
+                    {noticesLoading ? (
+                        <div className="flex items-center justify-center py-8">
+                            <LoadingSpinner size="sm" />
+                        </div>
+                    ) : notices && notices.length > 0 ? (
+                        <div className="space-y-2 sm:space-y-3">
+                            {notices.map((notice) => (
+                                <div
+                                    key={notice.id}
+                                    className={`flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors ${
+                                        notice.is_pinned ? 'border-l-4 border-blue-500 bg-blue-50' : ''
+                                    }`}
+                                    onClick={() => onNavigate && onNavigate('notices')}
+                                >
+                                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                                        <Icon
+                                            name={notice.is_pinned ? 'pin' : 'bell'}
+                                            className="w-4 h-4 text-gray-400 flex-shrink-0"
+                                        />
+                                        <div className="min-w-0 flex-1">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                {notice.is_pinned && (
+                                                    <Badge variant="primary" size="sm">고정</Badge>
+                                                )}
+                                                {notice.priority > 50 && (
+                                                    <Badge variant="danger" size="sm">중요</Badge>
+                                                )}
+                                            </div>
+                                            <p className="text-sm font-medium text-gray-900 truncate">{notice.title}</p>
+                                            <p className="text-xs text-gray-500">
+                                                {new Date(notice.published_at || notice.created_at).toLocaleDateString('ko-KR')}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="text-center py-8 text-gray-500">
+                            <Icon name="inbox" className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                            <p className="text-sm">등록된 공지사항이 없습니다.</p>
+                        </div>
+                    )}
                 </Card>
             </div>
         </div>

@@ -2,7 +2,7 @@ import React from 'react';
 
 export const Button = ({ children, variant = "primary", size = "md", className = "", ...props }) => {
     const variants = {
-        primary: "bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500 active:bg-primary-800",
+        primary: "bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500 active:bg-primary-800 shadow-sm hover:shadow",
         secondary: "bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-gray-500 active:bg-gray-300",
         ghost: "text-gray-600 hover:bg-gray-100 focus:ring-gray-500 active:bg-gray-200",
         danger: "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 active:bg-red-800"
@@ -13,7 +13,7 @@ export const Button = ({ children, variant = "primary", size = "md", className =
         lg: "px-6 py-3 text-lg min-h-[48px]"
     };
     return (
-        <button 
+        <button
             className={`inline-flex items-center justify-center font-medium rounded-lg transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-offset-2 transform active:scale-95 touch-manipulation ${variants[variant]} ${sizes[size]} ${className}`}
             {...props}
         >

@@ -20,6 +20,7 @@ class BranchFactory extends Factory
     public function definition(): array
     {
         return [
+            'code' => strtoupper($this->faker->unique()->lexify('??')),
             'name' => $this->faker->city().'지사',
             'address' => $this->faker->address(),
             'phone' => $this->faker->phoneNumber(),
