@@ -17,6 +17,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 use Maatwebsite\Excel\Facades\Excel;
 
 class StoreManagementController extends Controller
@@ -285,6 +286,126 @@ class StoreManagementController extends Controller
             ]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Update store classification (store_type)
+     * PUT /api/stores/{id}/classification
+     * Only Branch + HQ users can update
+     */
+    public function updateClassification(Request $request, string $id)
+    {
+        $user = auth()->user();
+
+        // RBAC: Only Branch and HQ can update classification
+        if ($user->role === 'store') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Store users cannot update store classification',
+            ], 403);
+        }
+
+        // Validate request - this will automatically return 422 on validation failure
+        $validated = $request->validate([
+            'store_type' => ['required', Rule::in(['franchise', 'direct'])],
+        ]);
+
+        try {
+            $store = Store::findOrFail($id);
+
+            // Branch users can only update stores in their branch
+            if ($user->role === 'branch' && $store->branch_id !== $user->branch_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You can only update stores in your branch',
+                ], 403);
+            }
+
+            $store->update($validated);
+
+            Log::info('Store classification updated', [
+                'store_id' => $id,
+                'store_type' => $validated['store_type'],
+                'updated_by' => $user->id,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Store classification updated successfully',
+                'data' => $store->load('branch'),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to update store classification', [
+                'store_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update store classification',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Update store business information
+     * PUT /api/stores/{id}/business-info
+     * Only Branch + HQ users can update
+     */
+    public function updateBusinessInfo(Request $request, string $id)
+    {
+        $user = auth()->user();
+
+        // RBAC: Only Branch and HQ can update business info
+        if ($user->role === 'store') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Store users cannot update business information',
+            ], 403);
+        }
+
+        // Validate request - this will automatically return 422 on validation failure
+        $validated = $request->validate([
+            'business_registration_number' => 'nullable|string|max:20',
+            'email' => 'nullable|email|max:100',
+        ]);
+
+        try {
+            $store = Store::findOrFail($id);
+
+            // Branch users can only update stores in their branch
+            if ($user->role === 'branch' && $store->branch_id !== $user->branch_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You can only update stores in your branch',
+                ], 403);
+            }
+
+            $store->update($validated);
+
+            Log::info('Store business info updated', [
+                'store_id' => $id,
+                'updated_by' => $user->id,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Store business information updated successfully',
+                'data' => $store->load('branch'),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to update store business info', [
+                'store_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update store business information',
+                'error' => $e->getMessage(),
+            ], 500);
         }
     }
 

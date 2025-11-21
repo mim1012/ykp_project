@@ -11,6 +11,10 @@ import ErrorBoundary from './components/ErrorBoundary';
 const Dashboard = lazy(() => import('./components/dashboard').then(module => ({ default: module.Dashboard })));
 const StoreManagement = lazy(() => import('./components/dashboard').then(module => ({ default: module.StoreManagement })));
 const Reports = lazy(() => import('./components/dashboard').then(module => ({ default: module.Reports })));
+const CustomerManagement = lazy(() => import('./components/dashboard').then(module => ({ default: module.CustomerManagement })));
+const ExpenseManagement = lazy(() => import('./components/dashboard').then(module => ({ default: module.ExpenseManagement })));
+const QnaBoard = lazy(() => import('./components/dashboard').then(module => ({ default: module.QnaBoard })));
+const NoticeBoard = lazy(() => import('./components/dashboard').then(module => ({ default: module.NoticeBoard })));
 
 // Enhanced loading component with skeleton
 const EnhancedLoadingSpinner = memo(() => (
@@ -75,19 +79,28 @@ const App = memo(() => {
             dashboard: Dashboard,
             stores: StoreManagement,
             reports: Reports,
-            settings: Settings
+            settings: Settings,
+            customers: CustomerManagement,
+            expenses: ExpenseManagement,
+            qna: QnaBoard,
+            notices: NoticeBoard
         };
-        
+
         const Component = contentMap[activeMenu] || Dashboard;
         const isSettings = activeMenu === 'settings';
-        
+        const isDashboard = activeMenu === 'dashboard';
+
         return (
             <AnimatedRoute routeKey={activeMenu} transitionType="fade">
                 {isSettings ? (
                     <Settings />
                 ) : (
                     <Suspense fallback={<EnhancedLoadingSpinner />}>
-                        <Component />
+                        {isDashboard ? (
+                            <Component onNavigate={setActiveMenu} />
+                        ) : (
+                            <Component />
+                        )}
                     </Suspense>
                 )}
             </AnimatedRoute>

@@ -22,10 +22,11 @@ class StoreFactory extends Factory
     {
         return [
             'branch_id' => Branch::factory(),
+            'code' => strtoupper($this->faker->unique()->bothify('??-###')),
             'name' => $this->faker->company().'점',
-            'address' => $this->faker->address(),
+            'owner_name' => $this->faker->name(),
             'phone' => $this->faker->phoneNumber(),
-            'manager_name' => $this->faker->name(),
+            'address' => $this->faker->address(),
             'created_at' => now(),
             'updated_at' => now(),
         ];

@@ -830,8 +830,127 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::patch('/stores/{id}', [App\Http\Controllers\Api\StoreManagementController::class, 'update'])
         ->name('api.stores-management.update');
 
+    // 매장 분류 및 사업자 정보 수정 (지사/본사만)
+    Route::put('/stores/{id}/classification', [App\Http\Controllers\Api\StoreManagementController::class, 'updateClassification'])
+        ->name('api.stores-management.update-classification');
+
+    Route::put('/stores/{id}/business-info', [App\Http\Controllers\Api\StoreManagementController::class, 'updateBusinessInfo'])
+        ->name('api.stores-management.update-business-info');
+
     // 지사 목록 (드롭다운용)
     Route::get('/branches/list', [App\Http\Controllers\Api\BranchController::class, 'list'])
         ->name('api.branches.list');
 });
+
+/*
+|--------------------------------------------------------------------------
+| 고객 관리 API (Customer Management - CRM)
+|--------------------------------------------------------------------------
+| 가망고객 수동 등록 + 개통 시 전화번호로 자동 연결
+*/
+
+Route::middleware(['web', 'auth', 'rbac'])->prefix('customers')->group(function () {
+    Route::get('/', [App\Http\Controllers\Api\CustomerController::class, 'index'])->name('api.customers.index');
+    Route::post('/', [App\Http\Controllers\Api\CustomerController::class, 'store'])->name('api.customers.store');
+    Route::get('/statistics', [App\Http\Controllers\Api\CustomerController::class, 'statistics'])->name('api.customers.statistics');
+    Route::get('/{id}', [App\Http\Controllers\Api\CustomerController::class, 'show'])->name('api.customers.show');
+    Route::put('/{id}', [App\Http\Controllers\Api\CustomerController::class, 'update'])->name('api.customers.update');
+    Route::delete('/{id}', [App\Http\Controllers\Api\CustomerController::class, 'destroy'])->name('api.customers.destroy');
+});
+
+/*
+|--------------------------------------------------------------------------
+| 매장 통계 API (Store Statistics)
+|--------------------------------------------------------------------------
+| 일별/월별/년도별 통계, 통신사 분포, 개통유형 분포, 목표 달성률
+*/
+
+Route::middleware(['web', 'auth'])->group(function () {
+    Route::get('/stores/{id}/statistics', [App\Http\Controllers\Api\StoreStatisticsController::class, 'index'])
+        ->name('api.stores.statistics');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Q&A 게시판 API (Q&A Board)
+|--------------------------------------------------------------------------
+| 매장이 질문 작성 (공개/비밀글), 지사/본사가 답변
+| 비밀글은 작성자+지사+본사만 조회 가능
+*/
+
+Route::middleware(['web', 'auth'])->prefix('qna')->group(function () {
+    Route::get('/posts', [App\Http\Controllers\Api\QnaPostController::class, 'index'])
+        ->name('api.qna.posts.index');
+    Route::post('/posts', [App\Http\Controllers\Api\QnaPostController::class, 'store'])
+        ->name('api.qna.posts.store');
+    Route::get('/posts/{id}', [App\Http\Controllers\Api\QnaPostController::class, 'show'])
+        ->name('api.qna.posts.show');
+    Route::put('/posts/{id}', [App\Http\Controllers\Api\QnaPostController::class, 'update'])
+        ->name('api.qna.posts.update');
+    Route::delete('/posts/{id}', [App\Http\Controllers\Api\QnaPostController::class, 'destroy'])
+        ->name('api.qna.posts.destroy');
+    Route::post('/posts/{id}/replies', [App\Http\Controllers\Api\QnaPostController::class, 'addReply'])
+        ->name('api.qna.posts.replies.store');
+    Route::post('/posts/{id}/close', [App\Http\Controllers\Api\QnaPostController::class, 'close'])
+        ->name('api.qna.posts.close');
+});
+
+/*
+|--------------------------------------------------------------------------
+| 공지사항 API (Notice Board)
+|--------------------------------------------------------------------------
+| 본사/지사가 작성, 대상 필터링 (전체/지사/매장/특정)
+| 고정/우선순위/게시기간 관리
+*/
+
+Route::middleware(['web', 'auth'])->prefix('notices')->group(function () {
+    Route::get('/', [App\Http\Controllers\Api\NoticePostController::class, 'index'])
+        ->name('api.notices.index');
+    Route::post('/', [App\Http\Controllers\Api\NoticePostController::class, 'store'])
+        ->name('api.notices.store');
+    Route::get('/{id}', [App\Http\Controllers\Api\NoticePostController::class, 'show'])
+        ->name('api.notices.show');
+    Route::put('/{id}', [App\Http\Controllers\Api\NoticePostController::class, 'update'])
+        ->name('api.notices.update');
+    Route::delete('/{id}', [App\Http\Controllers\Api\NoticePostController::class, 'destroy'])
+        ->name('api.notices.destroy');
+    Route::post('/{id}/toggle-pin', [App\Http\Controllers\Api\NoticePostController::class, 'togglePin'])
+        ->name('api.notices.toggle-pin');
+});
+
+/*
+|--------------------------------------------------------------------------
+| 지출 내역 API (Expense Management)
+|--------------------------------------------------------------------------
+| 간단한 표 형태 (날짜/내용/금액), 매장 전용
+*/
+
+Route::middleware(['web', 'auth', 'rbac'])->prefix('expenses')->group(function () {
+    Route::get('/', [App\Http\Controllers\Api\ExpenseController::class, 'index'])->name('api.expenses.index');
+    Route::post('/', [App\Http\Controllers\Api\ExpenseController::class, 'store'])->name('api.expenses.store');
+    Route::get('/summary', [App\Http\Controllers\Api\ExpenseController::class, 'summary'])->name('api.expenses.summary');
+    Route::get('/{id}', [App\Http\Controllers\Api\ExpenseController::class, 'show'])->name('api.expenses.show');
+    Route::put('/{id}', [App\Http\Controllers\Api\ExpenseController::class, 'update'])->name('api.expenses.update');
+    Route::delete('/{id}', [App\Http\Controllers\Api\ExpenseController::class, 'destroy'])->name('api.expenses.destroy');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Q&A 게시판 API (Q&A Board)
+|--------------------------------------------------------------------------
+| 비밀글 기능, 답변 상태 관리
+*/
+
+Route::middleware(['web', 'auth'])->prefix('qna')->group(function () {
+    Route::get('/', [App\Http\Controllers\Api\QnaController::class, 'index'])->name('api.qna.index');
+    Route::post('/', [App\Http\Controllers\Api\QnaController::class, 'store'])->name('api.qna.store');
+    Route::get('/{id}', [App\Http\Controllers\Api\QnaController::class, 'show'])->name('api.qna.show');
+    Route::put('/{id}', [App\Http\Controllers\Api\QnaController::class, 'update'])->name('api.qna.update');
+    Route::delete('/{id}', [App\Http\Controllers\Api\QnaController::class, 'destroy'])->name('api.qna.destroy');
+    Route::post('/{id}/reply', [App\Http\Controllers\Api\QnaController::class, 'reply'])->name('api.qna.reply');
+    Route::put('/reply/{id}', [App\Http\Controllers\Api\QnaController::class, 'updateReply'])->name('api.qna.update-reply');
+    Route::delete('/reply/{id}', [App\Http\Controllers\Api\QnaController::class, 'deleteReply'])->name('api.qna.delete-reply');
+    Route::post('/{id}/close', [App\Http\Controllers\Api\QnaController::class, 'close'])->name('api.qna.close');
+});
+
 

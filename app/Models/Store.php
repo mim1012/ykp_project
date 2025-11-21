@@ -24,6 +24,9 @@ class Store extends Model
         'phone',
         'address',
         'status',
+        'store_type',
+        'business_registration_number',
+        'email',
         'opened_at',
         'metadata',
         'created_by',
@@ -48,5 +51,42 @@ class Store extends Model
     public function users()
     {
         return $this->hasMany(User::class);
+    }
+
+    public function customers()
+    {
+        return $this->hasMany(Customer::class);
+    }
+
+    public function expenses()
+    {
+        return $this->hasMany(Expense::class);
+    }
+
+    // Scopes
+    public function scopeFranchise($query)
+    {
+        return $query->where('store_type', 'franchise');
+    }
+
+    public function scopeDirect($query)
+    {
+        return $query->where('store_type', 'direct');
+    }
+
+    // Methods
+    public function canEditClassification(User $user): bool
+    {
+        // 본사는 모든 매장 수정 가능
+        if ($user->isHeadquarters()) {
+            return true;
+        }
+
+        // 지사는 자기 지사 매장만 수정 가능
+        if ($user->isBranch() && $this->branch_id === $user->branch_id) {
+            return true;
+        }
+
+        return false;
     }
 }

@@ -12,6 +12,10 @@ export const Sidebar = ({ activeMenu, setActiveMenu, isMobile = false }) => {
         { id: 'dashboard', icon: 'layout-dashboard', label: '대시보드' },
         { id: 'complete-aggrid', icon: 'grid-3x3', label: '완전한 판매관리', url: '/test/complete-aggrid' },
         { id: 'stores', icon: 'store', label: '매장 관리', url: '/management/stores' },
+        { id: 'customers', icon: 'users', label: '고객 관리' },
+        { id: 'expenses', icon: 'wallet', label: '경비 관리' },
+        { id: 'qna', icon: 'message-circle', label: 'Q&A' },
+        { id: 'notices', icon: 'bell', label: '공지사항' },
         { id: 'reports', icon: 'file-text', label: '보고서' },
         { id: 'settings', icon: 'settings', label: '설정' }
     ];
@@ -38,7 +42,7 @@ export const Sidebar = ({ activeMenu, setActiveMenu, isMobile = false }) => {
         return (
             <div className="fixed left-0 top-0 h-full w-16 bg-white border-r border-gray-200 flex flex-col items-center py-4 z-50">
                 <div className="mb-6">
-                    <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold">
+                    <div className="w-10 h-10 bg-primary-900 rounded-xl flex items-center justify-center text-white font-bold shadow-sm">
                         Y
                     </div>
                 </div>
@@ -71,8 +75,8 @@ export const Sidebar = ({ activeMenu, setActiveMenu, isMobile = false }) => {
                                 onClick={() => setActiveMenu(item.id)}
                                 className={`w-12 h-12 rounded-lg flex items-center justify-center transition-all group relative
                                     ${activeMenu === item.id 
-                                        ? 'bg-primary-50 text-primary-600' 
-                                        : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'}`}
+                                        ? 'bg-primary-900 text-white shadow-md' 
+                                        : 'text-gray-500 hover:bg-gray-100 hover:text-gray-900'}`}
                             >
                                 <Icon name={item.icon} className="w-5 h-5" />
                                 <span className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
@@ -129,7 +133,7 @@ export const Sidebar = ({ activeMenu, setActiveMenu, isMobile = false }) => {
                     >
                         <Icon name={isMobileMenuOpen ? 'x' : 'menu'} className="w-6 h-6" />
                     </button>
-                    <div className="w-8 h-8 bg-gradient-to-br from-primary-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
+                    <div className="w-8 h-8 bg-primary-900 rounded-lg flex items-center justify-center text-white font-bold text-sm shadow-sm">
                         Y
                     </div>
                     <span className="font-semibold text-gray-900">YKP Dashboard</span>
@@ -157,7 +161,7 @@ export const Sidebar = ({ activeMenu, setActiveMenu, isMobile = false }) => {
                     {/* Mobile Header */}
                     <div className="flex items-center justify-between p-4 border-b border-gray-200">
                         <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold">
+                            <div className="w-10 h-10 bg-primary-900 rounded-xl flex items-center justify-center text-white font-bold shadow-sm">
                                 Y
                             </div>
                             <div>
@@ -213,7 +217,7 @@ export const Sidebar = ({ activeMenu, setActiveMenu, isMobile = false }) => {
                                         }}
                                         className={`w-full flex items-center gap-3 px-3 py-3 rounded-lg transition-colors ${
                                             activeMenu === item.id 
-                                                ? 'bg-primary-50 text-primary-600' 
+                                                ? 'bg-primary-50 text-primary-900 font-semibold' 
                                                 : 'text-gray-700 hover:bg-gray-100'
                                         }`}
                                     >

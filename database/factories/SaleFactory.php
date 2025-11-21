@@ -37,7 +37,7 @@ class SaleFactory extends Factory
             'branch_id' => Branch::factory(),
             'sale_date' => $this->faker->dateTimeBetween('-1 year', 'now')->format('Y-m-d'),
             'carrier' => $this->faker->randomElement(['SK', 'KT', 'LG', 'MVNO']),
-            'activation_type' => $this->faker->randomElement(['신규', '기변', 'MNP']),
+            'activation_type' => $this->faker->randomElement(['신규', '기변', 'MNP', '번이']),
             'model_name' => $this->faker->randomElement([
                 'iPhone 15', 'iPhone 15 Pro', 'Galaxy S24', 'Galaxy S24 Ultra',
                 'Galaxy A54', 'iPhone 14', 'Galaxy Z Fold5', 'Galaxy Z Flip5',
