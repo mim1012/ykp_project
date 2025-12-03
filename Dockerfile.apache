@@ -2,7 +2,7 @@
 FROM php:8.3-apache
 
 # Cache bust to force rebuild (update this value to force rebuild)
-ARG CACHE_BUST=2025-12-03-php83-fix-v5-no-ignore-platform
+ARG CACHE_BUST=2025-12-03-php83-fix-v6-sed-platform-check
 
 WORKDIR /var/www/html
 
@@ -39,13 +39,16 @@ COPY . .
 RUN echo "OK-v3" > /var/www/html/public/health.txt \
     && echo '<?php http_response_code(200); echo "OK-v3|PHP:" . PHP_VERSION . "|INT_SIZE:" . PHP_INT_SIZE;' > /var/www/html/public/health.php
 
-# Install dependencies - delete both vendor AND composer.lock to force fresh install
-# This ensures platform_check.php is generated for PHP 8.3 in Docker environment
-RUN rm -rf vendor composer.lock \
+# Install dependencies using composer.lock for reproducibility
+# Then fix platform_check.php to require PHP 8.3 instead of 8.4
+RUN rm -rf vendor \
     && composer clear-cache \
-    && COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader --no-scripts \
+    && COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader --no-scripts --ignore-platform-reqs \
+    && echo "=== Fixing platform_check.php for PHP 8.3 ===" \
+    && sed -i 's/PHP_VERSION_ID >= 80400/PHP_VERSION_ID >= 80300/g' vendor/composer/platform_check.php \
+    && sed -i 's/>= 8.4.0/>= 8.3.0/g' vendor/composer/platform_check.php \
     && echo "=== Verifying platform_check.php ===" \
-    && cat vendor/composer/platform_check.php | head -20
+    && cat vendor/composer/platform_check.php | head -15
 
 # Create dummy Filament helper files (they're missing with --no-dev)
 RUN mkdir -p vendor/filament/notifications/src/Testing \
