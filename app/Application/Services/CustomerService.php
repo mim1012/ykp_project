@@ -66,6 +66,20 @@ class CustomerService
         }
         // 본사는 전체 조회 가능
 
+        // 특정 매장 필터 (본사/지사용)
+        if (isset($filters['store_id']) && $filters['store_id']) {
+            // 지사인 경우 자기 지사 소속 매장만 필터 가능
+            if ($user->isBranch()) {
+                $store = \App\Models\Store::find($filters['store_id']);
+                if ($store && $store->branch_id === $user->branch_id) {
+                    $query->where('store_id', $filters['store_id']);
+                }
+            } else {
+                // 본사는 모든 매장 필터 가능
+                $query->where('store_id', $filters['store_id']);
+            }
+        }
+
         // 고객 유형 필터
         if (isset($filters['customer_type'])) {
             $query->where('customer_type', $filters['customer_type']);

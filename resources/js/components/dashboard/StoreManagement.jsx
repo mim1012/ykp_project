@@ -106,8 +106,8 @@ export const StoreManagement = () => {
     // Table actions
     const actions = (store) => (
         <div className="flex gap-2">
-            <Button 
-                variant="ghost" 
+            <Button
+                variant="ghost"
                 size="sm"
                 onClick={(e) => {
                     e.stopPropagation();
@@ -117,8 +117,8 @@ export const StoreManagement = () => {
                 <Icon name="eye" className="w-4 h-4" />
                 <span className="hidden sm:inline ml-1">보기</span>
             </Button>
-            <Button 
-                variant="ghost" 
+            <Button
+                variant="ghost"
                 size="sm"
                 onClick={(e) => {
                     e.stopPropagation();
@@ -136,7 +136,7 @@ export const StoreManagement = () => {
         return (
             <div className="space-y-6">
                 <div className="flex items-center justify-center p-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
                     <span className="ml-3 text-gray-600">매장 데이터 로딩 중...</span>
                 </div>
             </div>
@@ -172,22 +172,20 @@ export const StoreManagement = () => {
                     <div className="flex border rounded-lg overflow-hidden">
                         <button
                             onClick={() => setViewMode('branch')}
-                            className={`px-4 py-2 text-sm font-medium ${
-                                viewMode === 'branch'
-                                    ? 'bg-blue-600 text-white'
+                            className={`px-4 py-2 text-sm font-medium ${viewMode === 'branch'
+                                    ? 'bg-primary-900 text-white shadow-sm'
                                     : 'bg-white text-gray-700 hover:bg-gray-50'
-                            }`}
+                                }`}
                         >
                             <Icon name="grid" className="w-4 h-4 mr-2 inline" />
                             지사별
                         </button>
                         <button
                             onClick={() => setViewMode('table')}
-                            className={`px-4 py-2 text-sm font-medium border-l ${
-                                viewMode === 'table'
-                                    ? 'bg-blue-600 text-white'
+                            className={`px-4 py-2 text-sm font-medium border-l ${viewMode === 'table'
+                                    ? 'bg-primary-900 text-white shadow-sm'
                                     : 'bg-white text-gray-700 hover:bg-gray-50'
-                            }`}
+                                }`}
                         >
                             <Icon name="list" className="w-4 h-4 mr-2 inline" />
                             목록
@@ -466,9 +464,9 @@ const BulkCreateModal = ({ type, onClose, onSuccess }) => {
                     {/* Step 1: 파일 업로드 */}
                     {step === 1 && (
                         <div className="space-y-6">
-                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                                <h3 className="font-medium text-blue-900 mb-2">📋 업로드 안내</h3>
-                                <ul className="text-sm text-blue-800 space-y-1">
+                            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                                <h3 className="font-medium text-gray-900 mb-2">📋 업로드 안내</h3>
+                                <ul className="text-sm text-gray-600 space-y-1">
                                     {isBranch ? (
                                         <>
                                             <li>• 필수 입력: 지사명, 지역장 이름 (2개 필드만)</li>
@@ -496,7 +494,7 @@ const BulkCreateModal = ({ type, onClose, onSuccess }) => {
                                 </Button>
 
                                 <label className="block">
-                                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-500 cursor-pointer transition">
+                                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-primary-500 cursor-pointer transition">
                                         <Icon name="upload" className="w-12 h-12 mx-auto text-gray-400 mb-4" />
                                         <p className="text-sm text-gray-600 mb-2">
                                             작성한 엑셀 파일을 클릭하거나 드래그하세요
@@ -537,7 +535,7 @@ const BulkCreateModal = ({ type, onClose, onSuccess }) => {
 
                             {loading && (
                                 <div className="flex items-center justify-center py-4">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
                                     <span className="ml-3 text-gray-600">파일 검증 중...</span>
                                 </div>
                             )}
@@ -596,7 +594,7 @@ const BulkCreateModal = ({ type, onClose, onSuccess }) => {
                     {/* Step 3: 생성 중 */}
                     {step === 3 && (
                         <div className="flex flex-col items-center justify-center py-12">
-                            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mb-4"></div>
+                            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary-600 mb-4"></div>
                             <p className="text-lg font-medium text-gray-900">생성 중...</p>
                             <p className="text-sm text-gray-600 mt-2">잠시만 기다려주세요</p>
                         </div>
@@ -610,7 +608,7 @@ const BulkCreateModal = ({ type, onClose, onSuccess }) => {
                                 <h3 className="text-2xl font-bold text-gray-900 mb-2">생성 완료!</h3>
                                 {createResult.status === 'queued' ? (
                                     <p className="text-gray-600">
-                                        백그라운드에서 처리 중입니다.<br/>
+                                        백그라운드에서 처리 중입니다.<br />
                                         잠시 후 새로고침해주세요.
                                     </p>
                                 ) : (
@@ -627,11 +625,11 @@ const BulkCreateModal = ({ type, onClose, onSuccess }) => {
                                             </div>
                                             <div className="text-sm text-red-800">실패</div>
                                         </div>
-                                        <div className="bg-blue-50 rounded-lg p-4">
-                                            <div className="text-2xl font-bold text-blue-600">
+                                        <div className="bg-gray-50 rounded-lg p-4">
+                                            <div className="text-2xl font-bold text-gray-900">
                                                 {createResult.summary?.total || 0}
                                             </div>
-                                            <div className="text-sm text-blue-800">전체</div>
+                                            <div className="text-sm text-gray-600">전체</div>
                                         </div>
                                     </div>
                                 )}

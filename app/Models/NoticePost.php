@@ -43,6 +43,11 @@ class NoticePost extends Model
         return $this->morphMany(BoardView::class, 'viewable');
     }
 
+    public function images()
+    {
+        return $this->morphMany(PostImage::class, 'imageable');
+    }
+
     // Scopes
     /**
      * Scope: Only published notices
@@ -71,15 +76,28 @@ class NoticePost extends Model
      */
     public function scopeVisibleTo($query, User $user)
     {
+        // 본사는 모든 공지를 볼 수 있음
+        if ($user->isHeadquarters()) {
+            return $query;
+        }
+
         return $query->where(function ($q) use ($user) {
             // 전체 대상 공지
             $q->where('target_audience', 'all');
 
-            // 지사 대상 공지
-            if ($user->branch_id) {
+            // 지사 사용자: 자기 지사 대상 공지 + 자기 지사가 작성한 공지
+            if ($user->isBranch() && $user->branch_id) {
                 $q->orWhere(function ($subQ) use ($user) {
                     $subQ->where('target_audience', 'branches')
                          ->whereJsonContains('target_branch_ids', $user->branch_id);
+                });
+
+                // 지사가 자기 소속 매장에게 보낸 공지도 볼 수 있음
+                $q->orWhere(function ($subQ) use ($user) {
+                    $subQ->where('target_audience', 'stores')
+                         ->whereHas('author', function ($authorQ) use ($user) {
+                             $authorQ->where('branch_id', $user->branch_id);
+                         });
                 });
             }
 

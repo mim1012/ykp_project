@@ -8,6 +8,7 @@ use App\Models\Sale;
 use App\Models\Store;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class StoreStatisticsApiTest extends TestCase
@@ -57,7 +58,7 @@ class StoreStatisticsApiTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function can_get_daily_statistics()
     {
         // Create test sales for today
@@ -111,7 +112,7 @@ class StoreStatisticsApiTest extends TestCase
         echo "Total sales: {$data['summary']['total_sales']}, Amount: {$data['summary']['total_settlement_amount']}\n";
     }
 
-    /** @test */
+    #[Test]
     public function can_get_monthly_statistics()
     {
         // Create test sales for this month
@@ -157,7 +158,7 @@ class StoreStatisticsApiTest extends TestCase
         echo "Total sales: {$data['summary']['total_sales']}\n";
     }
 
-    /** @test */
+    #[Test]
     public function can_get_yearly_statistics()
     {
         $currentYear = now()->year;
@@ -203,7 +204,7 @@ class StoreStatisticsApiTest extends TestCase
         echo "\n✅ Test passed: Can get yearly statistics\n";
     }
 
-    /** @test */
+    #[Test]
     public function statistics_includes_goal_achievement_when_goal_exists()
     {
         // Create a goal for this month
@@ -238,7 +239,7 @@ class StoreStatisticsApiTest extends TestCase
         echo "Achievement rate: {$data['goal_achievement']['sales_achievement_rate']}%\n";
     }
 
-    /** @test */
+    #[Test]
     public function store_user_can_only_view_own_statistics()
     {
         $response = $this->actingAs($this->storeUser)
@@ -256,7 +257,7 @@ class StoreStatisticsApiTest extends TestCase
         echo "\n✅ Test passed: Store user RBAC working correctly\n";
     }
 
-    /** @test */
+    #[Test]
     public function branch_user_can_only_view_branch_stores()
     {
         $response = $this->actingAs($this->branchUser)
@@ -276,7 +277,7 @@ class StoreStatisticsApiTest extends TestCase
         echo "\n✅ Test passed: Branch user RBAC working correctly\n";
     }
 
-    /** @test */
+    #[Test]
     public function hq_user_can_view_all_stores()
     {
         $response = $this->actingAs($this->hqUser)
@@ -296,7 +297,7 @@ class StoreStatisticsApiTest extends TestCase
         echo "\n✅ Test passed: HQ user can view all stores\n";
     }
 
-    /** @test */
+    #[Test]
     public function carrier_distribution_is_accurate()
     {
         Sale::factory()->count(10)->create([
@@ -334,7 +335,7 @@ class StoreStatisticsApiTest extends TestCase
         echo "\n✅ Test passed: Carrier distribution accurate\n";
     }
 
-    /** @test */
+    #[Test]
     public function activation_type_distribution_is_accurate()
     {
         Sale::factory()->count(7)->create([

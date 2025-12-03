@@ -942,15 +942,40 @@ Route::middleware(['web', 'auth', 'rbac'])->prefix('expenses')->group(function (
 */
 
 Route::middleware(['web', 'auth'])->prefix('qna')->group(function () {
-    Route::get('/', [App\Http\Controllers\Api\QnaController::class, 'index'])->name('api.qna.index');
-    Route::post('/', [App\Http\Controllers\Api\QnaController::class, 'store'])->name('api.qna.store');
-    Route::get('/{id}', [App\Http\Controllers\Api\QnaController::class, 'show'])->name('api.qna.show');
-    Route::put('/{id}', [App\Http\Controllers\Api\QnaController::class, 'update'])->name('api.qna.update');
-    Route::delete('/{id}', [App\Http\Controllers\Api\QnaController::class, 'destroy'])->name('api.qna.destroy');
-    Route::post('/{id}/reply', [App\Http\Controllers\Api\QnaController::class, 'reply'])->name('api.qna.reply');
-    Route::put('/reply/{id}', [App\Http\Controllers\Api\QnaController::class, 'updateReply'])->name('api.qna.update-reply');
-    Route::delete('/reply/{id}', [App\Http\Controllers\Api\QnaController::class, 'deleteReply'])->name('api.qna.delete-reply');
-    Route::post('/{id}/close', [App\Http\Controllers\Api\QnaController::class, 'close'])->name('api.qna.close');
+    Route::get('/', [App\Http\Controllers\Api\QnaPostController::class, 'index'])->name('api.qna.index');
+    Route::post('/', [App\Http\Controllers\Api\QnaPostController::class, 'store'])->name('api.qna.store');
+    Route::get('/{id}', [App\Http\Controllers\Api\QnaPostController::class, 'show'])->name('api.qna.show');
+    Route::put('/{id}', [App\Http\Controllers\Api\QnaPostController::class, 'update'])->name('api.qna.update');
+    Route::delete('/{id}', [App\Http\Controllers\Api\QnaPostController::class, 'destroy'])->name('api.qna.destroy');
+    Route::post('/{id}/reply', [App\Http\Controllers\Api\QnaPostController::class, 'addReply'])->name('api.qna.reply');
+    Route::post('/{id}/close', [App\Http\Controllers\Api\QnaPostController::class, 'close'])->name('api.qna.close');
+});
+
+/*
+|--------------------------------------------------------------------------
+| 이미지 업로드 API (Image Upload)
+|--------------------------------------------------------------------------
+| Q&A/공지사항 게시글 이미지 업로드 및 삭제
+*/
+
+Route::middleware(['web', 'auth'])->prefix('images')->group(function () {
+    Route::post('/upload', [App\Http\Controllers\Api\ImageController::class, 'upload'])->name('api.images.upload');
+    Route::delete('/{id}', [App\Http\Controllers\Api\ImageController::class, 'destroy'])->name('api.images.destroy');
+});
+
+/*
+|--------------------------------------------------------------------------
+| 매장 월 목표 API (Store Monthly Goal)
+|--------------------------------------------------------------------------
+| 매장 사용자만 자기 목표를 설정/조회 가능
+| 본사/지사는 접근 불가 (프라이버시 보호, 동기부여 목적)
+*/
+
+Route::middleware(['web', 'auth'])->group(function () {
+    Route::get('/my-goal', [App\Http\Controllers\Api\GoalController::class, 'show'])
+        ->name('api.my-goal.show');
+    Route::post('/my-goal', [App\Http\Controllers\Api\GoalController::class, 'store'])
+        ->name('api.my-goal.store');
 });
 
 

@@ -7,6 +7,7 @@ use App\Models\Expense;
 use App\Models\Store;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class ExpenseApiTest extends TestCase
@@ -56,7 +57,7 @@ class ExpenseApiTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function store_user_can_create_expense()
     {
         $response = $this->actingAs($this->storeUser)
@@ -81,7 +82,7 @@ class ExpenseApiTest extends TestCase
         echo "\n✅ Test passed: Store user can create expense\n";
     }
 
-    /** @test */
+    #[Test]
     public function branch_user_cannot_create_expense()
     {
         $response = $this->actingAs($this->branchUser)
@@ -100,7 +101,7 @@ class ExpenseApiTest extends TestCase
         echo "\n✅ Test passed: Branch user cannot create expense\n";
     }
 
-    /** @test */
+    #[Test]
     public function store_user_can_get_their_expenses()
     {
         // Create test expenses
@@ -125,7 +126,7 @@ class ExpenseApiTest extends TestCase
         echo "Total expenses: " . count($response->json('data')) . "\n";
     }
 
-    /** @test */
+    #[Test]
     public function store_user_can_update_their_expense()
     {
         $expense = Expense::factory()->create([
@@ -155,7 +156,7 @@ class ExpenseApiTest extends TestCase
         echo "\n✅ Test passed: Store user can update their expense\n";
     }
 
-    /** @test */
+    #[Test]
     public function branch_user_cannot_update_expense()
     {
         $expense = Expense::factory()->create([
@@ -176,7 +177,7 @@ class ExpenseApiTest extends TestCase
         echo "\n✅ Test passed: Branch user cannot update expense\n";
     }
 
-    /** @test */
+    #[Test]
     public function store_user_can_delete_their_expense()
     {
         $expense = Expense::factory()->create([
@@ -199,7 +200,7 @@ class ExpenseApiTest extends TestCase
         echo "\n✅ Test passed: Store user can delete their expense\n";
     }
 
-    /** @test */
+    #[Test]
     public function store_user_can_get_monthly_summary()
     {
         // Create expenses for current month
@@ -232,7 +233,7 @@ class ExpenseApiTest extends TestCase
         echo "Period: {$data['period']}, Count: {$data['count']}, Total: {$data['total']}\n";
     }
 
-    /** @test */
+    #[Test]
     public function branch_user_can_view_branch_expenses()
     {
         // Create expenses for stores in this branch
@@ -252,7 +253,7 @@ class ExpenseApiTest extends TestCase
         echo "Total expenses visible: " . count($response->json('data')) . "\n";
     }
 
-    /** @test */
+    #[Test]
     public function hq_user_can_view_all_expenses()
     {
         // Create expenses for this store

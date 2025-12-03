@@ -6,6 +6,7 @@ use App\Models\Branch;
 use App\Models\Store;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class StoreClassificationApiTest extends TestCase
@@ -56,7 +57,7 @@ class StoreClassificationApiTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function branch_user_can_update_store_classification()
     {
         $response = $this->actingAs($this->branchUser)
@@ -78,7 +79,7 @@ class StoreClassificationApiTest extends TestCase
         echo "\n✅ Test passed: Branch user can update store classification\n";
     }
 
-    /** @test */
+    #[Test]
     public function hq_user_can_update_store_classification()
     {
         $response = $this->actingAs($this->hqUser)
@@ -94,7 +95,7 @@ class StoreClassificationApiTest extends TestCase
         echo "\n✅ Test passed: HQ user can update store classification\n";
     }
 
-    /** @test */
+    #[Test]
     public function store_user_cannot_update_classification()
     {
         $response = $this->actingAs($this->storeUser)
@@ -117,7 +118,7 @@ class StoreClassificationApiTest extends TestCase
         echo "\n✅ Test passed: Store user cannot update classification (RBAC)\n";
     }
 
-    /** @test */
+    #[Test]
     public function branch_user_cannot_update_other_branch_store()
     {
         // Create another branch and store
@@ -138,7 +139,7 @@ class StoreClassificationApiTest extends TestCase
         echo "\n✅ Test passed: Branch user cannot update other branch stores (RBAC)\n";
     }
 
-    /** @test */
+    #[Test]
     public function classification_only_accepts_valid_values()
     {
         $response = $this->actingAs($this->hqUser)
@@ -151,7 +152,7 @@ class StoreClassificationApiTest extends TestCase
         echo "\n✅ Test passed: Invalid store_type rejected\n";
     }
 
-    /** @test */
+    #[Test]
     public function branch_user_can_update_business_info()
     {
         $response = $this->actingAs($this->branchUser)
@@ -175,7 +176,7 @@ class StoreClassificationApiTest extends TestCase
         echo "\n✅ Test passed: Branch user can update business info\n";
     }
 
-    /** @test */
+    #[Test]
     public function hq_user_can_update_business_info()
     {
         $response = $this->actingAs($this->hqUser)
@@ -192,7 +193,7 @@ class StoreClassificationApiTest extends TestCase
         echo "\n✅ Test passed: HQ user can update business info\n";
     }
 
-    /** @test */
+    #[Test]
     public function store_user_cannot_update_business_info()
     {
         $response = $this->actingAs($this->storeUser)
@@ -209,7 +210,7 @@ class StoreClassificationApiTest extends TestCase
         echo "\n✅ Test passed: Store user cannot update business info (RBAC)\n";
     }
 
-    /** @test */
+    #[Test]
     public function business_info_fields_are_optional()
     {
         // Update only email
@@ -236,7 +237,7 @@ class StoreClassificationApiTest extends TestCase
         echo "\n✅ Test passed: Business info fields are optional\n";
     }
 
-    /** @test */
+    #[Test]
     public function email_validation_works()
     {
         $response = $this->actingAs($this->hqUser)

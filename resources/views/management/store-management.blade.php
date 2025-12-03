@@ -12,6 +12,32 @@
     <!-- 강제 새로고침용 타임스탬프 -->
     <script>console.log('페이지 로드 시간: {{ now()->toISOString() }}');</script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f4f8',
+                            100: '#d9e2ec',
+                            200: '#bcccdc',
+                            300: '#9fb3c8',
+                            400: '#829ab1',
+                            500: '#627d98',
+                            600: '#486581',
+                            700: '#334e68',
+                            800: '#243b53',
+                            900: '#102a43',
+                            950: '#06152b',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Pretendard Variable', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
     <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css" rel="stylesheet">
 
     {{-- 🔒 세션 안정성 강화 스크립트 --}}
@@ -194,7 +220,7 @@
                                 <label class="block text-xs font-medium text-gray-500 uppercase">로그인 아이디</label>
                                 <div class="mt-1 flex items-center">
                                     <span class="font-mono text-sm bg-white px-3 py-2 rounded border flex-1">${account.email}</span>
-                                    <button onclick="copyToClipboard('${account.email}')" class="ml-2 px-2 py-2 text-gray-500 hover:text-blue-500">
+                                    <button onclick="copyToClipboard('${account.email}')" class="ml-2 px-2 py-2 text-gray-500 hover:text-primary-500">
                                         📋
                                     </button>
                                 </div>
@@ -203,7 +229,7 @@
                                 <label class="block text-xs font-medium text-gray-500 uppercase">임시 비밀번호</label>
                                 <div class="mt-1 flex items-center">
                                     <span class="font-mono text-sm bg-white px-3 py-2 rounded border flex-1">${account.password}</span>
-                                    <button onclick="copyToClipboard('${account.password}')" class="ml-2 px-2 py-2 text-gray-500 hover:text-blue-500">
+                                    <button onclick="copyToClipboard('${account.password}')" class="ml-2 px-2 py-2 text-gray-500 hover:text-primary-500">
                                         📋
                                     </button>
                                 </div>
@@ -231,7 +257,7 @@
                             🖨️ 인쇄하기
                         </button>
                         <button onclick="this.parentElement.parentElement.parentElement.remove()"
-                                class="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">
+                                class="flex-1 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors shadow-sm">
                             ✅ 확인
                         </button>
                     </div>
@@ -253,7 +279,11 @@
                 owner_name: document.getElementById('modal-owner-name')?.value || '',
                 phone: document.getElementById('modal-phone')?.value || '',
                 address: '',
-                code: '' // 자동 생성됨
+                code: '', // 자동 생성됨
+                // 분류 필드
+                store_type: document.getElementById('modal-store-type')?.value || null,
+                business_registration_number: document.getElementById('modal-business-registration')?.value || null,
+                email: document.getElementById('modal-email')?.value || null
             };
 
             console.log('매장 데이터:', formData);
@@ -516,7 +546,7 @@
                             <span class="text-2xl">📍</span>
                             <div>
                                 <span class="font-semibold text-gray-700">매장명:</span>
-                                <span class="ml-2 font-bold text-blue-600">${store.name} (${store.code})</span>
+                                <span class="ml-2 font-bold text-primary-600">${store.name} (${store.code})</span>
                             </div>
                         </div>
                         
@@ -525,8 +555,8 @@
                             <div class="flex-1">
                                 <span class="font-semibold text-gray-700">계정:</span>
                                 <div class="flex items-center space-x-2 mt-1">
-                                    <code class="bg-white px-3 py-2 rounded border text-blue-600 font-mono flex-1">${account.email}</code>
-                                    <button onclick="copyToClipboard('${account.email}')" class="px-3 py-2 bg-blue-500 text-white rounded text-sm hover:bg-blue-600">복사</button>
+                                    <code class="bg-white px-3 py-2 rounded border text-primary-600 font-mono flex-1">${account.email}</code>
+                                    <button onclick="copyToClipboard('${account.email}')" class="px-3 py-2 bg-primary-600 text-white rounded text-sm hover:bg-primary-700">복사</button>
                                 </div>
                             </div>
                         </div>
@@ -582,11 +612,11 @@
                 <div class="flex items-center">
                     <h1 class="text-xl font-semibold text-gray-900">매장 관리</h1>
                     @if(auth()->user()->role === 'headquarters')
-                        <span class="ml-2 px-2 py-1 text-xs bg-red-100 text-red-800 rounded">🏢 본사 전용</span>
+                        <span class="ml-2 px-2 py-1 text-xs bg-rose-50 text-rose-700 border border-rose-200 rounded font-medium">🏢 본사 전용</span>
                     @elseif(auth()->user()->role === 'branch')
-                        <span class="ml-2 px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded">🏬 지사 전용</span>
+                        <span class="ml-2 px-2 py-1 text-xs bg-primary-50 text-primary-700 border border-primary-200 rounded font-medium">🏬 지사 전용</span>
                     @elseif(auth()->user()->role === 'store')
-                        <span class="ml-2 px-2 py-1 text-xs bg-green-100 text-green-800 rounded">🏪 매장 전용</span>
+                        <span class="ml-2 px-2 py-1 text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 rounded font-medium">🏪 매장 전용</span>
                     @endif
                 </div>
                 <div class="flex items-center space-x-4">
@@ -598,33 +628,34 @@
 
     <main class="max-w-7xl mx-auto py-6 px-4">
         <!-- 권한별 안내 -->
+        <!-- 권한별 안내 -->
         @if(auth()->user()->role === 'headquarters')
-            <div class="bg-red-500 text-white p-4 mb-6 rounded-lg shadow-lg">
+            <div class="bg-white border-l-4 border-rose-500 p-6 mb-6 rounded-r-lg shadow-sm">
                 <div class="flex items-center">
-                    <div class="text-2xl mr-3">🏢</div>
+                    <div class="text-2xl mr-4">🏢</div>
                     <div>
-                        <h3 class="text-lg font-semibold">본사 관리자님 환영합니다</h3>
-                        <p class="text-red-100 text-sm mt-1">지사와 매장을 통합 관리할 수 있습니다.</p>
+                        <h3 class="text-lg font-bold text-gray-900">본사 관리자님 환영합니다</h3>
+                        <p class="text-gray-600 text-sm mt-1">지사와 매장을 통합 관리할 수 있습니다.</p>
                     </div>
                 </div>
             </div>
         @elseif(auth()->user()->role === 'branch')
-            <div class="bg-blue-500 text-white p-4 mb-6 rounded-lg shadow-lg">
+            <div class="bg-white border-l-4 border-primary-500 p-6 mb-6 rounded-r-lg shadow-sm">
                 <div class="flex items-center">
-                    <div class="text-2xl mr-3">🏬</div>
+                    <div class="text-2xl mr-4">🏬</div>
                     <div>
-                        <h3 class="text-lg font-semibold">지사 관리자님 환영합니다</h3>
-                        <p class="text-blue-100 text-sm mt-1">소속 지사 매장을 관리할 수 있습니다.</p>
+                        <h3 class="text-lg font-bold text-gray-900">지사 관리자님 환영합니다</h3>
+                        <p class="text-gray-600 text-sm mt-1">소속 지사 매장을 관리할 수 있습니다.</p>
                     </div>
                 </div>
             </div>
         @elseif(auth()->user()->role === 'store')
-            <div class="bg-green-500 text-white p-4 mb-6 rounded-lg shadow-lg">
+            <div class="bg-white border-l-4 border-emerald-500 p-6 mb-6 rounded-r-lg shadow-sm">
                 <div class="flex items-center">
-                    <div class="text-2xl mr-3">🏪</div>
+                    <div class="text-2xl mr-4">🏪</div>
                     <div>
-                        <h3 class="text-lg font-semibold">매장 관리자님 환영합니다</h3>
-                        <p class="text-green-100 text-sm mt-1">자기 매장의 개통표와 성과를 확인할 수 있습니다.</p>
+                        <h3 class="text-lg font-bold text-gray-900">매장 관리자님 환영합니다</h3>
+                        <p class="text-gray-600 text-sm mt-1">자기 매장의 개통표와 성과를 확인할 수 있습니다.</p>
                     </div>
                 </div>
             </div>
@@ -635,23 +666,39 @@
         <div class="bg-white rounded-lg shadow mb-6">
             <div class="p-6">
                 <!-- 검색 및 액션 바 -->
-                <div class="flex justify-between items-center mb-6 gap-4">
+                <div class="flex flex-wrap justify-between items-center mb-6 gap-4">
                     <!-- 검색창 -->
                     <div class="flex-1 max-w-md">
                         <div class="relative">
                             <input type="text"
                                    id="store-search-input"
                                    placeholder="매장명으로 검색..."
-                                   class="w-full border border-gray-300 rounded-lg px-4 py-2 pl-10 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                   class="w-full border border-gray-300 rounded-lg px-4 py-2 pl-10 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors">
                             <svg class="absolute left-3 top-2.5 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                             </svg>
                         </div>
                     </div>
 
+                    <!-- 매장 유형 필터 버튼 -->
+                    <div class="flex gap-2">
+                        <button onclick="filterByStoreType('all')" id="filter-all"
+                                class="px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-primary-600 text-white">
+                            전체
+                        </button>
+                        <button onclick="filterByStoreType('direct')" id="filter-direct"
+                                class="px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-gray-200 text-gray-700 hover:bg-gray-300">
+                            직영점
+                        </button>
+                        <button onclick="filterByStoreType('franchise')" id="filter-franchise"
+                                class="px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-gray-200 text-gray-700 hover:bg-gray-300">
+                            가맹점
+                        </button>
+                    </div>
+
                     <!-- 매장 추가 버튼 -->
                     @if(in_array(auth()->user()->role, ['headquarters', 'branch']))
-                        <button onclick="showAddStoreModal()" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 font-semibold whitespace-nowrap">
+                        <button onclick="showAddStoreModal()" class="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 font-medium shadow-sm whitespace-nowrap transition-colors">
                             ➕ 매장 추가
                         </button>
                     @endif
@@ -684,30 +731,53 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">매장명</label>
                     <input type="text" id="modal-store-name" placeholder="예: 강남점" 
-                           class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                           class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500">
                 </div>
                 <div id="branch-select-container">
                     <label class="block text-sm font-medium text-gray-700 mb-1">지사 선택</label>
-                    <select id="modal-branch-select" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <select id="modal-branch-select" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500">
                         <option value="">지사를 선택하세요...</option>
                     </select>
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">점주명</label>
                     <input type="text" id="modal-owner-name" placeholder="예: 김사장"
-                           class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                           class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500">
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">연락처</label>
                     <input type="tel" id="modal-phone" placeholder="010-1234-5678"
-                           class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                           class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                </div>
+
+                <!-- 직영점/가맹점 분류 -->
+                <div class="border-t pt-4 mt-4">
+                    <h4 class="text-sm font-medium text-gray-700 mb-3">매장 분류</h4>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">매장 유형</label>
+                        <select id="modal-store-type" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            <option value="">선택하세요</option>
+                            <option value="direct">직영점</option>
+                            <option value="franchise">가맹점</option>
+                        </select>
+                    </div>
+                    <div class="mt-3">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">사업자등록번호</label>
+                        <input type="text" id="modal-business-registration" placeholder="000-00-00000"
+                               class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    </div>
+                    <div class="mt-3">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">이메일</label>
+                        <input type="email" id="modal-email" placeholder="store@example.com"
+                               class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    </div>
                 </div>
             </div>
             <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
                 <button onclick="closeAddStoreModal()" class="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50">
                     취소
                 </button>
-                <button onclick="submitAddStore()" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
+                <button onclick="submitAddStore()" class="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 shadow-sm">
                     ✅ 매장 추가
                 </button>
             </div>
@@ -733,13 +803,13 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">점주명 <span class="text-red-500">*</span></label>
                     <input type="text" id="edit-store-owner" placeholder="점주명을 입력하세요"
-                           class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                           class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500">
                 </div>
 
                 @if(auth()->user()->role === 'headquarters')
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">지사 배정 <span class="text-red-500">*</span></label>
-                    <select id="edit-store-branch" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <select id="edit-store-branch" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500">
                         <option value="">로딩 중...</option>
                     </select>
                     <p class="text-xs text-gray-500 mt-1">본사 계정만 지사 변경 가능</p>
@@ -756,14 +826,37 @@
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">연락처</label>
                     <input type="tel" id="edit-store-phone" placeholder="010-1234-5678"
-                           class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                           class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                </div>
+
+                <!-- 직영점/가맹점 분류 -->
+                <div class="border-t pt-4 mt-4">
+                    <h4 class="text-sm font-medium text-gray-700 mb-3">매장 분류</h4>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">매장 유형</label>
+                        <select id="edit-store-type" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                            <option value="">선택하세요</option>
+                            <option value="direct">직영점</option>
+                            <option value="franchise">가맹점</option>
+                        </select>
+                    </div>
+                    <div class="mt-3">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">사업자등록번호</label>
+                        <input type="text" id="edit-business-registration" placeholder="000-00-00000"
+                               class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    </div>
+                    <div class="mt-3">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">이메일</label>
+                        <input type="email" id="edit-store-email" placeholder="store@example.com"
+                               class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    </div>
                 </div>
             </div>
             <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
                 <button onclick="closeEditStoreModal()" class="px-4 py-2 text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50">
                     취소
                 </button>
-                <button onclick="saveStoreChanges()" class="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">
+                <button onclick="saveStoreChanges()" class="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 shadow-sm">
                     💾 저장
                 </button>
             </div>
@@ -1016,47 +1109,94 @@
                     </svg>
                 </button>
             </div>
+
+            <!-- 기간 필터 -->
+            <div class="px-6 py-4 bg-gray-50 border-b flex flex-wrap items-center gap-3">
+                <span class="text-sm font-medium text-gray-700">기간:</span>
+                <div class="flex gap-2">
+                    <button onclick="changeStatsPeriod('daily')" id="stats-period-daily"
+                            class="px-3 py-1.5 text-sm rounded-md bg-white border hover:bg-gray-100">
+                        일별
+                    </button>
+                    <button onclick="changeStatsPeriod('monthly')" id="stats-period-monthly"
+                            class="px-3 py-1.5 text-sm rounded-md bg-blue-600 text-white">
+                        월별
+                    </button>
+                    <button onclick="changeStatsPeriod('yearly')" id="stats-period-yearly"
+                            class="px-3 py-1.5 text-sm rounded-md bg-white border hover:bg-gray-100">
+                        연도별
+                    </button>
+                </div>
+                <div id="stats-date-selector" class="flex items-center gap-2 ml-4">
+                    <select id="stats-year" onchange="refreshStoreStats()" class="px-3 py-1.5 text-sm border rounded-md">
+                        <option value="2025">2025년</option>
+                        <option value="2024">2024년</option>
+                        <option value="2023">2023년</option>
+                    </select>
+                    <select id="stats-month" onchange="refreshStoreStats()" class="px-3 py-1.5 text-sm border rounded-md">
+                        <option value="1">1월</option>
+                        <option value="2">2월</option>
+                        <option value="3">3월</option>
+                        <option value="4">4월</option>
+                        <option value="5">5월</option>
+                        <option value="6">6월</option>
+                        <option value="7">7월</option>
+                        <option value="8">8월</option>
+                        <option value="9">9월</option>
+                        <option value="10">10월</option>
+                        <option value="11">11월</option>
+                        <option value="12">12월</option>
+                    </select>
+                    <input type="date" id="stats-date" onchange="refreshStoreStats()"
+                           class="hidden px-3 py-1.5 text-sm border rounded-md">
+                </div>
+            </div>
+
             <div class="px-6 py-6">
                 <!-- KPI 카드들 -->
                 <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                     <div class="bg-blue-50 rounded-lg p-4">
-                        <div class="text-sm text-blue-600 font-medium">오늘 매출</div>
-                        <div class="text-2xl font-bold text-blue-700" id="stats-today-sales">₩0</div>
-                        <div class="text-xs text-blue-500" id="stats-today-change">전일 대비 -</div>
+                        <div class="text-sm text-blue-600 font-medium" id="stats-period-label-1">이번 기간</div>
+                        <div class="text-2xl font-bold text-blue-700" id="stats-total-amount">₩0</div>
+                        <div class="text-xs text-blue-500" id="stats-total-count">0건 개통</div>
                     </div>
                     <div class="bg-green-50 rounded-lg p-4">
-                        <div class="text-sm text-green-600 font-medium">이번달 매출</div>
-                        <div class="text-2xl font-bold text-green-700" id="stats-month-sales">₩0</div>
-                        <div class="text-xs text-green-500" id="stats-month-change">전월 대비 -</div>
+                        <div class="text-sm text-green-600 font-medium">건당 평균</div>
+                        <div class="text-2xl font-bold text-green-700" id="stats-avg-amount">₩0</div>
+                        <div class="text-xs text-green-500">정산금액 기준</div>
                     </div>
                     <div class="bg-purple-50 rounded-lg p-4">
-                        <div class="text-sm text-purple-600 font-medium">전체 순위</div>
-                        <div class="text-2xl font-bold text-purple-700" id="stats-rank">#-</div>
-                        <div class="text-xs text-purple-500" id="stats-rank-change">순위 변동 -</div>
+                        <div class="text-sm text-purple-600 font-medium">개통유형</div>
+                        <div class="text-lg font-bold text-purple-700" id="stats-activation-summary">-</div>
+                        <div class="text-xs text-purple-500" id="stats-activation-detail">상세 내역</div>
                     </div>
                     <div class="bg-orange-50 rounded-lg p-4">
                         <div class="text-sm text-orange-600 font-medium">목표 달성률</div>
-                        <div class="text-2xl font-bold text-orange-700" id="stats-goal">0%</div>
-                        <div class="text-xs text-orange-500">월간 목표 대비</div>
+                        <div class="text-2xl font-bold text-orange-700" id="stats-goal">-</div>
+                        <div class="text-xs text-orange-500" id="stats-goal-detail">목표 대비</div>
                     </div>
                 </div>
-                
-                <!-- 차트 영역 -->
+
+                <!-- 통신사별 분포 -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                     <div class="bg-white border rounded-lg p-4">
-                        <h4 class="text-lg font-medium mb-4">📈 최근 30일 매출 추이</h4>
-                        <canvas id="store-sales-chart" width="400" height="200"></canvas>
+                        <h4 class="text-lg font-medium mb-4">📊 통신사별 분포</h4>
+                        <div id="stats-carrier-distribution" class="space-y-3">
+                            <!-- 동적 로드 -->
+                        </div>
                     </div>
                     <div class="bg-white border rounded-lg p-4">
-                        <h4 class="text-lg font-medium mb-4">📊 통신사별 비율</h4>
-                        <canvas id="store-carrier-chart" width="400" height="200"></canvas>
+                        <h4 class="text-lg font-medium mb-4">📱 개통유형별 분포</h4>
+                        <div id="stats-activation-distribution" class="space-y-3">
+                            <!-- 동적 로드 -->
+                        </div>
                     </div>
                 </div>
-                
-                <!-- 최근 거래 내역 -->
+
+                <!-- 모델별 판매 TOP 5 -->
                 <div class="bg-white border rounded-lg p-4">
-                    <h4 class="text-lg font-medium mb-4">📋 최근 거래 내역</h4>
-                    <div id="recent-transactions" class="space-y-2">
+                    <h4 class="text-lg font-medium mb-4">🏆 모델별 판매 TOP 5</h4>
+                    <div id="stats-model-ranking" class="space-y-3">
                         <!-- 동적 로드 -->
                     </div>
                 </div>
@@ -1225,7 +1365,54 @@
         let allStores = []; // 전체 매장 데이터 캐시
         let branchPages = {}; // 각 지사별 현재 페이지 { branchId: pageNumber }
         let currentSearch = '';
+        let currentStoreTypeFilter = 'all'; // 매장 유형 필터: 'all', 'direct', 'franchise'
         const STORES_PER_BRANCH_PAGE = 9; // 지사당 한 페이지에 표시할 매장 수 (3x3 그리드)
+
+        // 매장 유형 필터 함수
+        window.filterByStoreType = function(storeType) {
+            currentStoreTypeFilter = storeType;
+            branchPages = {}; // 페이지 초기화
+
+            // 버튼 스타일 업데이트
+            const filterButtons = ['filter-all', 'filter-direct', 'filter-franchise'];
+            filterButtons.forEach(btnId => {
+                const btn = document.getElementById(btnId);
+                if (btn) {
+                    if (btnId === `filter-${storeType}`) {
+                        btn.className = 'px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-primary-600 text-white';
+                    } else {
+                        btn.className = 'px-4 py-2 rounded-lg text-sm font-medium transition-colors bg-gray-200 text-gray-700 hover:bg-gray-300';
+                    }
+                }
+            });
+
+            // 매장 목록 다시 렌더링
+            renderFilteredStores();
+        };
+
+        // 필터링된 매장 렌더링 함수
+        function renderFilteredStores() {
+            const gridElement = document.getElementById('stores-grid');
+            if (!gridElement) return;
+
+            // 필터 적용
+            let filteredStores = allStores;
+            if (currentStoreTypeFilter !== 'all') {
+                filteredStores = allStores.filter(store => store.store_type === currentStoreTypeFilter);
+            }
+
+            // 검색 필터 적용
+            if (currentSearch) {
+                const searchLower = currentSearch.toLowerCase();
+                filteredStores = filteredStores.filter(store =>
+                    store.name.toLowerCase().includes(searchLower) ||
+                    (store.code && store.code.toLowerCase().includes(searchLower))
+                );
+            }
+
+            // 지사별 그룹화 및 렌더링
+            renderStoresByBranch(filteredStores, gridElement);
+        }
 
         window.loadStores = async function(search = '') {
             console.log('🔄 loadStores 시작 - 검색:', search);
@@ -1299,23 +1486,34 @@
         };
 
         // 🎨 지사별 독립 페이지네이션으로 매장 렌더링
-        function renderStoresByBranch() {
+        function renderStoresByBranch(storesToRender = null, targetElement = null) {
             try {
-                console.log('🎨 renderStoresByBranch 시작 - 전체 매장:', allStores.length);
+                // 필터링된 매장이 전달되지 않으면 전체 매장 + 현재 필터 적용
+                let filteredStores = storesToRender;
+                if (!filteredStores) {
+                    filteredStores = allStores;
+                    if (currentStoreTypeFilter !== 'all') {
+                        filteredStores = allStores.filter(store => store.store_type === currentStoreTypeFilter);
+                    }
+                }
 
-                const gridElement = document.getElementById('stores-grid');
+                console.log('🎨 renderStoresByBranch 시작 - 필터된 매장:', filteredStores.length);
+
+                const gridElement = targetElement || document.getElementById('stores-grid');
                 const userRole = '{{ auth()->user()->role }}';
 
                 if (!gridElement) {
                     throw new Error('❌ stores-grid 요소를 찾을 수 없습니다');
                 }
 
-                if (!allStores || allStores.length === 0) {
+                if (!filteredStores || filteredStores.length === 0) {
                     console.log('ℹ️ 매장 데이터 없음 - 빈 화면 표시');
+                    const filterText = currentStoreTypeFilter === 'direct' ? '직영점' :
+                                       currentStoreTypeFilter === 'franchise' ? '가맹점' : '';
                     gridElement.innerHTML = `
                         <div class="p-8 text-center text-gray-500">
                             <div class="text-4xl mb-4">🔍</div>
-                            <p class="text-lg font-medium">검색 결과가 없습니다</p>
+                            <p class="text-lg font-medium">${filterText ? filterText + ' ' : ''}검색 결과가 없습니다</p>
                             <p class="text-sm text-gray-400 mt-2">${currentSearch ? '다른 검색어로 시도해보세요' : '새 매장을 추가해보세요'}</p>
                         </div>
                     `;
@@ -1324,7 +1522,7 @@
 
                 // 지사별로 그룹화
                 const storesByBranch = {};
-                allStores.forEach(store => {
+                filteredStores.forEach(store => {
                     const branchId = store.branch?.id || 0;
                     const branchName = store.branch?.name || '미배정';
                     if (!storesByBranch[branchId]) {
@@ -1367,18 +1565,28 @@
                     `;
 
                     paginatedStores.forEach(store => {
+                        // 매장 유형 뱃지 생성
+                        const storeTypeBadge = store.store_type === 'direct'
+                            ? '<span class="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">직영점</span>'
+                            : store.store_type === 'franchise'
+                            ? '<span class="px-2 py-1 text-xs bg-orange-100 text-orange-800 rounded-full">가맹점</span>'
+                            : '<span class="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">미분류</span>';
+
                         html += `
                             <div class="bg-gray-50 rounded-lg p-4 hover:bg-white hover:shadow-md transition-all border">
                                 <div class="flex justify-between items-start mb-3">
                                     <h4 class="font-bold text-lg">${store.name}</h4>
-                                    <span class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">✅ 운영중</span>
+                                    <div class="flex gap-1">
+                                        ${storeTypeBadge}
+                                        <span class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">운영중</span>
+                                    </div>
                                 </div>
                                 <div class="text-sm text-gray-600 space-y-1">
                                     <p><span class="font-medium">코드:</span> ${store.code}</p>
                                     <p><span class="font-medium">점주:</span> ${store.owner_name || '미등록'}</p>
                                     <p><span class="font-medium">연락처:</span> ${store.phone || '미등록'}</p>
                                 </div>
-                                <div class="mt-3 flex gap-2">
+                                <div class="mt-3 flex flex-wrap gap-2">
                                     <button onclick="openEditModal(${store.id})"
                                             class="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600">
                                         ✏️ 수정
@@ -1386,6 +1594,10 @@
                                     <button onclick="createStoreAccount(${store.id}, '${escapeJs(store.name)}')"
                                             class="px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600">
                                         👤 계정
+                                    </button>
+                                    <button onclick="viewStoreStatsModal(${store.id})"
+                                            class="px-3 py-1 bg-purple-500 text-white text-xs rounded hover:bg-purple-600">
+                                        📊 성과
                                     </button>
                                     <button onclick="deleteStore(${store.id})"
                                             class="px-2 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600">
@@ -1527,6 +1739,11 @@
                 document.getElementById('edit-store-owner').value = store.owner_name || '';
                 document.getElementById('edit-store-phone').value = store.phone || '';
 
+                // 분류 필드 채우기
+                document.getElementById('edit-store-type').value = store.store_type || '';
+                document.getElementById('edit-business-registration').value = store.business_registration_number || '';
+                document.getElementById('edit-store-email').value = store.email || '';
+
                 const userRole = '{{ auth()->user()->role }}';
 
                 if (userRole === 'headquarters') {
@@ -1626,9 +1843,18 @@
                 }
             }
 
+            // 분류 필드 가져오기
+            const storeType = document.getElementById('edit-store-type').value || null;
+            const businessRegistration = document.getElementById('edit-business-registration').value.trim() || null;
+            const storeEmail = document.getElementById('edit-store-email').value.trim() || null;
+
             const updateData = {
                 owner_name: ownerName,
-                phone: phone
+                phone: phone,
+                // 분류 필드
+                store_type: storeType,
+                business_registration_number: businessRegistration,
+                email: storeEmail
             };
 
             // 본사 계정인 경우에만 branch_id 포함
@@ -2712,19 +2938,28 @@
                 });
         };
         
-        // 수정 모달용 실시간 통계 로드
+        // 수정 모달용 실시간 통계 로드 (StoreStatisticsController API 연동)
         function loadStoreStatsForEdit(storeId) {
-            fetch(`/api/stores/${storeId}/stats`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        const stats = data.data;
-                        document.getElementById('edit-today-sales').textContent = '₩' + Number(stats.today_sales || 0).toLocaleString();
-                        document.getElementById('edit-month-sales').textContent = '₩' + Number(stats.month_sales || 0).toLocaleString();
-                        document.getElementById('edit-store-rank').textContent = '#' + (Math.floor(Math.random() * 50) + 1); // 임시 순위
-                    }
-                })
-                .catch(error => console.log('통계 로드 실패:', error));
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth() + 1;
+            const today = now.toISOString().slice(0, 10);
+
+            // 이번달 통계와 오늘 통계 동시 로드
+            Promise.all([
+                fetch(`/api/stores/${storeId}/statistics?period=monthly&year=${year}&month=${month}`).then(r => r.json()),
+                fetch(`/api/stores/${storeId}/statistics?period=daily&date=${today}`).then(r => r.json())
+            ])
+            .then(([monthlyData, dailyData]) => {
+                if (monthlyData.success) {
+                    document.getElementById('edit-month-sales').textContent = '₩' + Number(monthlyData.data.summary?.total_settlement_amount || 0).toLocaleString();
+                }
+                if (dailyData.success) {
+                    document.getElementById('edit-today-sales').textContent = '₩' + Number(dailyData.data.summary?.total_settlement_amount || 0).toLocaleString();
+                }
+                document.getElementById('edit-store-rank').textContent = '-'; // 순위는 별도 API 필요
+            })
+            .catch(error => console.log('통계 로드 실패:', error));
         }
         
         // 매장 수정 저장
@@ -2772,6 +3007,10 @@
             currentEditStoreId = null;
         }
 
+        // 📊 매장 통계 관련 상태 변수
+        let currentStatsStoreId = null;
+        let currentStatsPeriod = 'monthly'; // 'daily', 'monthly', 'yearly'
+
         // 📊 통합된 매장 성과 보기 함수 (중복 제거)
         function viewStoreStatsModal(storeId) {
             // 권한 체크 먼저 (permissionManager가 있다면)
@@ -2780,53 +3019,244 @@
                 return;
             }
 
+            currentStatsStoreId = storeId;
+            currentStatsPeriod = 'monthly';
+
+            // 현재 날짜로 초기화
+            const now = new Date();
+            document.getElementById('stats-year').value = now.getFullYear();
+            document.getElementById('stats-month').value = now.getMonth() + 1;
+            document.getElementById('stats-date').value = now.toISOString().slice(0, 10);
+
             // 매장 이름 설정
             fetch(`/api/stores/${storeId}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
                         document.getElementById('stats-store-name').textContent = data.data.name;
-
-                        // 성과 대시보드 모달 표시
                         document.getElementById('store-stats-modal').classList.remove('hidden');
 
-                        // 실시간 통계 로드
-                        loadFullStoreStats(storeId);
+                        // 기간 버튼 초기화
+                        updatePeriodButtons('monthly');
 
+                        // 통계 로드
+                        refreshStoreStats();
                         showToast(`📈 ${data.data.name} 성과 데이터를 로딩합니다...`, 'info');
                     }
                 });
         }
-        
-        // 풀스크린 성과 통계 로드
-        function loadFullStoreStats(storeId) {
-            fetch(`/api/stores/${storeId}/stats`)
-                .then(response => response.json())
+
+        // 기간 변경
+        function changeStatsPeriod(period) {
+            currentStatsPeriod = period;
+            updatePeriodButtons(period);
+
+            // 날짜 선택기 표시/숨기기
+            const monthSelect = document.getElementById('stats-month');
+            const dateInput = document.getElementById('stats-date');
+
+            if (period === 'daily') {
+                monthSelect.classList.add('hidden');
+                dateInput.classList.remove('hidden');
+                document.getElementById('stats-breakdown-title').textContent = '📋 시간대별 상세';
+            } else if (period === 'monthly') {
+                monthSelect.classList.remove('hidden');
+                dateInput.classList.add('hidden');
+                document.getElementById('stats-breakdown-title').textContent = '📋 일별 상세';
+            } else { // yearly
+                monthSelect.classList.add('hidden');
+                dateInput.classList.add('hidden');
+                document.getElementById('stats-breakdown-title').textContent = '📋 월별 상세';
+            }
+
+            refreshStoreStats();
+        }
+
+        // 기간 버튼 스타일 업데이트
+        function updatePeriodButtons(activePeriod) {
+            ['daily', 'monthly', 'yearly'].forEach(p => {
+                const btn = document.getElementById(`stats-period-${p}`);
+                if (p === activePeriod) {
+                    btn.className = 'px-3 py-1.5 text-sm rounded-md bg-blue-600 text-white';
+                } else {
+                    btn.className = 'px-3 py-1.5 text-sm rounded-md bg-white border hover:bg-gray-100';
+                }
+            });
+        }
+
+        // 통계 새로고침
+        function refreshStoreStats() {
+            if (!currentStatsStoreId) return;
+
+            const year = document.getElementById('stats-year').value;
+            const month = document.getElementById('stats-month').value;
+            const date = document.getElementById('stats-date').value;
+
+            let url = `/api/stores/${currentStatsStoreId}/statistics?period=${currentStatsPeriod}`;
+
+            if (currentStatsPeriod === 'daily') {
+                url += `&date=${date}`;
+                document.getElementById('stats-period-label-1').textContent = `${date} 매출`;
+            } else if (currentStatsPeriod === 'monthly') {
+                url += `&year=${year}&month=${month}`;
+                document.getElementById('stats-period-label-1').textContent = `${year}년 ${month}월 매출`;
+            } else {
+                url += `&year=${year}`;
+                document.getElementById('stats-period-label-1').textContent = `${year}년 연간 매출`;
+            }
+
+            fetch(url)
+                .then(r => r.json())
                 .then(data => {
                     if (data.success) {
-                        const stats = data.data;
-                        
-                        // KPI 카드 업데이트
-                        document.getElementById('stats-today-sales').textContent = '₩' + Number(stats.today_sales || 0).toLocaleString();
-                        document.getElementById('stats-month-sales').textContent = '₩' + Number(stats.month_sales || 0).toLocaleString();
-                        document.getElementById('stats-rank').textContent = '#' + (Math.floor(Math.random() * 50) + 1);
-                        document.getElementById('stats-goal').textContent = Math.floor(Math.random() * 100) + '%';
-                        
-                        // 변동률 계산 (임시)
-                        document.getElementById('stats-today-change').textContent = '+12.5%';
-                        document.getElementById('stats-month-change').textContent = '+8.3%';
-                        document.getElementById('stats-rank-change').textContent = '↑2';
-                        
-                        // 최근 거래 내역 표시
-                        displayRecentTransactions(stats.recent_sales || []);
-                        
+                        updateStatsDisplay(data.data);
                         showToast('📊 성과 데이터 로드 완료!', 'success');
+                    } else {
+                        showToast('❌ 데이터 로드 실패', 'error');
                     }
                 })
                 .catch(error => {
-                    console.error('성과 데이터 로드 오류:', error);
+                    console.error('통계 로드 오류:', error);
                     showToast('❌ 성과 데이터 로드 실패', 'error');
                 });
+        }
+
+        // 통계 화면 업데이트
+        function updateStatsDisplay(data) {
+            const summary = data.summary || {};
+
+            // KPI 카드 업데이트
+            document.getElementById('stats-total-amount').textContent = '₩' + Number(summary.total_settlement_amount || 0).toLocaleString();
+            document.getElementById('stats-total-count').textContent = `${summary.total_sales || 0}건 개통`;
+            document.getElementById('stats-avg-amount').textContent = '₩' + Number(summary.average_settlement_per_sale || 0).toLocaleString();
+
+            // 개통유형 요약
+            const activationTypes = data.activation_type_distribution || {};
+            const activationEntries = Object.entries(activationTypes);
+            if (activationEntries.length > 0) {
+                const topType = activationEntries.sort((a, b) => b[1] - a[1])[0];
+                document.getElementById('stats-activation-summary').textContent = `${topType[0]} ${topType[1]}건`;
+                document.getElementById('stats-activation-detail').textContent = `총 ${activationEntries.length}개 유형`;
+            } else {
+                document.getElementById('stats-activation-summary').textContent = '-';
+                document.getElementById('stats-activation-detail').textContent = '데이터 없음';
+            }
+
+            // 목표 달성률
+            const goal = data.goal_achievement;
+            if (goal) {
+                const rate = goal.sales_achievement_rate || goal.daily_sales_achievement_rate || goal.yearly_sales_achievement_rate || 0;
+                document.getElementById('stats-goal').textContent = rate + '%';
+                document.getElementById('stats-goal-detail').textContent = '목표 대비 달성률';
+            } else {
+                document.getElementById('stats-goal').textContent = '-';
+                document.getElementById('stats-goal-detail').textContent = '목표 미설정';
+            }
+
+            // 통신사별 분포
+            renderCarrierDistribution(data.carrier_distribution || {}, summary.total_sales || 0);
+
+            // 개통유형별 분포
+            renderActivationDistribution(data.activation_type_distribution || {}, summary.total_sales || 0);
+
+            // 모델별 판매 TOP 5
+            renderModelRanking(data.model_ranking || {});
+        }
+
+        // 통신사별 분포 렌더링 (프로그레스 바 포함)
+        function renderCarrierDistribution(distribution, total) {
+            const container = document.getElementById('stats-carrier-distribution');
+            const carriers = Object.entries(distribution);
+
+            if (carriers.length === 0) {
+                container.innerHTML = '<div class="text-center text-gray-500 py-4">데이터 없음</div>';
+                return;
+            }
+
+            const colors = { 'SK': 'bg-red-500', 'KT': 'bg-blue-500', 'LG': 'bg-pink-500', 'LG U+': 'bg-pink-500', 'MVNO': 'bg-gray-500', '알뜰': 'bg-green-500' };
+
+            let html = '';
+            carriers.sort((a, b) => b[1] - a[1]).forEach(([carrier, count]) => {
+                const percentage = total > 0 ? Math.round((count / total) * 100) : 0;
+                const color = colors[carrier] || 'bg-indigo-500';
+                html += `
+                    <div>
+                        <div class="flex justify-between text-sm mb-1">
+                            <span class="font-medium">${carrier || '미지정'}</span>
+                            <span class="text-gray-600">${count}건 (${percentage}%)</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div class="${color} h-2.5 rounded-full" style="width: ${percentage}%"></div>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        // 개통유형별 분포 렌더링
+        function renderActivationDistribution(distribution, total) {
+            const container = document.getElementById('stats-activation-distribution');
+            const types = Object.entries(distribution);
+
+            if (types.length === 0) {
+                container.innerHTML = '<div class="text-center text-gray-500 py-4">데이터 없음</div>';
+                return;
+            }
+
+            const colors = { '신규': 'bg-green-500', '번이': 'bg-blue-500', '기변': 'bg-orange-500', '유선': 'bg-purple-500', '2nd': 'bg-pink-500' };
+
+            let html = '';
+            types.sort((a, b) => b[1] - a[1]).forEach(([type, count]) => {
+                const percentage = total > 0 ? Math.round((count / total) * 100) : 0;
+                const color = colors[type] || 'bg-gray-500';
+                html += `
+                    <div>
+                        <div class="flex justify-between text-sm mb-1">
+                            <span class="font-medium">${type}</span>
+                            <span class="text-gray-600">${count}건 (${percentage}%)</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2.5">
+                            <div class="${color} h-2.5 rounded-full" style="width: ${percentage}%"></div>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        // 모델별 판매 TOP 5 렌더링
+        function renderModelRanking(ranking) {
+            const container = document.getElementById('stats-model-ranking');
+            const entries = Object.entries(ranking);
+
+            if (entries.length === 0) {
+                container.innerHTML = '<div class="text-center text-gray-500 py-4">판매 데이터 없음</div>';
+                return;
+            }
+
+            // 색상 배열 (1등~5등)
+            const colors = ['bg-yellow-500', 'bg-gray-400', 'bg-amber-600', 'bg-blue-500', 'bg-green-500'];
+            const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+
+            let html = '';
+            entries.slice(0, 5).forEach(([modelName, data], index) => {
+                const color = colors[index] || 'bg-gray-400';
+                const medal = medals[index] || `${index + 1}`;
+                html += `
+                    <div class="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+                        <span class="text-2xl">${medal}</span>
+                        <div class="flex-1">
+                            <div class="font-medium text-gray-900">${modelName || '미지정'}</div>
+                            <div class="text-sm text-gray-500">₩${Number(data.total_amount || 0).toLocaleString()}</div>
+                        </div>
+                        <div class="text-right">
+                            <span class="px-3 py-1 ${color} text-white rounded-full text-sm font-bold">${data.count || 0}건</span>
+                        </div>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
         }
         
         // 최근 거래 내역 표시

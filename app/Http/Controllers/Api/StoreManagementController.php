@@ -115,6 +115,10 @@ class StoreManagementController extends Controller
             'owner_name' => 'nullable|string|max:255',
             'phone' => 'nullable|string|max:20',
             'address' => 'nullable|string|max:500',
+            // 분류 필드
+            'store_type' => ['nullable', Rule::in(['franchise', 'direct'])],
+            'business_registration_number' => 'nullable|string|max:20',
+            'email' => 'nullable|email|max:100',
         ]);
 
         try {
@@ -132,6 +136,10 @@ class StoreManagementController extends Controller
                 'address' => $request->address ?? '',
                 'status' => 'active',
                 'opened_at' => now()->toDateTimeString(), // PostgreSQL timestamp 호환 형식
+                // 분류 필드
+                'store_type' => $request->store_type,
+                'business_registration_number' => $request->business_registration_number,
+                'email' => $request->email,
             ]);
 
             // 매장 계정 자동 생성 (더 안전한 방식)
@@ -262,6 +270,10 @@ class StoreManagementController extends Controller
                 'address' => 'nullable|string|max:500',
                 'status' => 'nullable|in:active,inactive',
                 'branch_id' => 'nullable|exists:branches,id',
+                // 분류 필드
+                'store_type' => ['nullable', Rule::in(['franchise', 'direct', ''])],
+                'business_registration_number' => 'nullable|string|max:20',
+                'email' => 'nullable|email|max:100',
             ]);
 
             // 지사 변경은 본사만 가능

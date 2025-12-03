@@ -565,6 +565,17 @@ Route::middleware(['auth', 'rbac'])->group(function () {
             return response("Error: " . $e->getMessage() . "<br><pre>" . $e->getTraceAsString() . "</pre>", 500);
         }
     })->name('dashboard.home');
+
+    // 커뮤니티 - Q&A 게시판
+    Route::get('/community/qna', function () {
+        return view('community.qna');
+    })->name('community.qna');
+
+    // 커뮤니티 - 공지사항
+    Route::get('/community/notices', function () {
+        return view('community.notices');
+    })->name('community.notices');
+
     // 개통표 Excel 스타일 입력 (삭제됨 - complete-aggrid로 통합)
     // Route::get('/sales/excel-input', function () {
     //     return view('sales.excel-input');
@@ -611,6 +622,11 @@ Route::middleware(['auth', 'rbac'])->group(function () {
         }
         return view('management.branch-management');
     })->name('management.branches');
+
+    // 고객 관리 페이지 (모든 권한)
+    Route::get('/management/customers', function () {
+        return view('management.customers');
+    })->name('management.customers');
     // 권한별 통계 페이지 라우팅
     Route::get('/statistics', function () {
         $user = auth()->user();
