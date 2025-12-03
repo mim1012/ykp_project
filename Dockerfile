@@ -41,11 +41,11 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/* \
  && apt-get clean
 
-# Set DocumentRoot and use index-debug.php for debugging
+# Set DocumentRoot (production uses index.php only)
 ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' \
       /etc/apache2/sites-available/000-default.conf \
-    && echo "DirectoryIndex index-debug.php index.php" >> /etc/apache2/apache2.conf
+    && echo "DirectoryIndex index.php" >> /etc/apache2/apache2.conf
 
 # Install Composer first
 RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \

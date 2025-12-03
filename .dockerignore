@@ -115,6 +115,23 @@ Dockerfile.debug
 docker-compose.yml
 docker-compose.*.yml
 
+# Security: Debug/test PHP files (NEVER deploy to production)
+public/debug.php
+public/index-debug.php
+public/env-check.php
+public/info.php
+public/check-logs.php
+public/check-users.php
+public/create-env.php
+public/deployment-test.php
+public/fix-database.php
+public/force-env.php
+public/generate-key.php
+public/manual-login.php
+public/show-key.php
+public/index-safe.php
+public/healthz.php
+
 # OS 생성 파일
 .DS_Store
 .DS_Store?

@@ -224,7 +224,6 @@ class DashboardController extends Controller
             return response()->json([
                 'success' => false,
                 'error' => '대시보드 데이터 로딩 중 오류가 발생했습니다.',
-                'debug' => $e->getMessage(),
             ], 500);
         }
     }
@@ -327,7 +326,6 @@ class DashboardController extends Controller
             return response()->json([
                 'success' => false,
                 'error' => '매장 랭킹 데이터 로딩 오류',
-                'debug' => $e->getMessage(),
             ], 500);
         }
     }
@@ -399,7 +397,7 @@ class DashboardController extends Controller
         } catch (\Exception $e) {
             Log::error('Financial summary API error', ['error' => $e->getMessage()]);
 
-            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
+            return response()->json(['success' => false, 'error' => '재무 요약 데이터 로딩 중 오류가 발생했습니다.'], 500);
         }
     }
 

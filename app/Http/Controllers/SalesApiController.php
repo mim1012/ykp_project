@@ -85,10 +85,6 @@ class SalesApiController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => '저장 중 오류가 발생했습니다.',
-                'error' => $e->getMessage(),
-                'trace' => config('app.debug') ? substr($e->getTraceAsString(), 0, 500) : null,
-                'line' => $e->getLine(),
-                'file' => basename($e->getFile()),
             ], 500);
         }
     }
@@ -139,8 +135,8 @@ class SalesApiController extends Controller
             ]);
 
             return response()->json([
-                'error' => 'Failed to load statistics',
-                'message' => $e->getMessage(),
+                'success' => false,
+                'message' => '통계 데이터를 불러오는 중 오류가 발생했습니다.',
             ], 500);
         }
     }
