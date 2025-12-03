@@ -436,6 +436,10 @@
     </div>
 
     <script>
+        // Production debug flag - disable log in production
+        window.DEBUG = {{ config('app.debug') ? 'true' : 'false' }};
+        const log = (...args) => window.DEBUG && console.log(...args);
+
         // 전역 사용자 데이터 설정
         window.userData = {
             id: {{ auth()->user()->id ?? 'null' }},
@@ -654,7 +658,7 @@
                     <td class="px-2 py-2">
                         <input type="checkbox" class="row-select" data-id="${row.id}"
                                ${selectedRowIds.has(String(row.id)) ? 'checked="checked"' : ''}
-                               onchange="console.log('Checkbox changed for ID:', '${row.id}'); toggleRowSelection('${row.id}'); updateSelectAllState();">
+                               onchange="log('Checkbox changed for ID:', '${row.id}'); toggleRowSelection('${row.id}'); updateSelectAllState();">
                     </td>
                     <!-- 2. 판매자 -->
                     <td class="px-2 py-2">
@@ -838,7 +842,7 @@
                                    class="w-24 px-1 py-1 border rounded text-xs"
                                    placeholder="메모 입력"
                                    title="${safeValue(row.memo)}">
-                            <button onclick="console.log('Button clicked, ID:', ${row.id}); openMemoPopup('${row.id}')"
+                            <button onclick="log('Button clicked, ID:', ${row.id}); openMemoPopup('${row.id}')"
                                     class="px-1 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600"
                                     title="메모 팝업">
                                 📝
@@ -857,21 +861,21 @@
         
         // DB 필드명과 1:1 매핑된 행 데이터 업데이트
         function updateRowData(id, field, value) {
-            console.log(`🔧 updateRowData called: id=${id} (type: ${typeof id}), field=${field}, value=${value}`);
+            log(`🔧 updateRowData called: id=${id} (type: ${typeof id}), field=${field}, value=${value}`);
 
             // ID 타입 변환: 문자열이면 숫자로 변환
             const numericId = typeof id === 'string' ? parseInt(id) : id;
-            console.log(`🔍 Searching for row with id=${numericId} (type: ${typeof numericId})`);
+            log(`🔍 Searching for row with id=${numericId} (type: ${typeof numericId})`);
 
             const row = salesData.find(r => {
-                console.log(`  Comparing: r.id=${r.id} (${typeof r.id}) === numericId=${numericId} (${typeof numericId}) = ${r.id === numericId}`);
+                log(`  Comparing: r.id=${r.id} (${typeof r.id}) === numericId=${numericId} (${typeof numericId}) = ${r.id === numericId}`);
                 return r.id === numericId;
             });
 
             if (row) {
-                console.log(`✅ Row found, updating ${field}: ${row[field]} → ${value}`);
+                log(`✅ Row found, updating ${field}: ${row[field]} → ${value}`);
                 row[field] = value;
-                console.log(`✅ Updated successfully: ${field} = ${row[field]}`);
+                log(`✅ Updated successfully: ${field} = ${row[field]}`);
 
                 // 개통방식 변경 시 차감액 자동 설정
                 if (field === 'activation_type') {
@@ -901,7 +905,7 @@
                 }
             } else {
                 console.error(`❌ Row NOT found! salesData length: ${salesData.length}, searching for id: ${numericId}`);
-                console.log('All IDs in salesData:', salesData.map(r => r.id));
+                log('All IDs in salesData:', salesData.map(r => r.id));
             }
         }
         
@@ -1061,17 +1065,17 @@
         function toggleRowSelection(rowId) {
             // rowId를 문자열로 받으므로 일관되게 처리
             const idStr = String(rowId);
-            console.log('toggleRowSelection called with ID:', idStr);
-            console.log('Current selectedRowIds:', Array.from(selectedRowIds));
+            log('toggleRowSelection called with ID:', idStr);
+            log('Current selectedRowIds:', Array.from(selectedRowIds));
 
             if (selectedRowIds.has(idStr)) {
                 selectedRowIds.delete(idStr);
-                console.log('Removed ID:', idStr);
+                log('Removed ID:', idStr);
             } else {
                 selectedRowIds.add(idStr);
-                console.log('Added ID:', idStr);
+                log('Added ID:', idStr);
             }
-            console.log('Updated selectedRowIds:', Array.from(selectedRowIds));
+            log('Updated selectedRowIds:', Array.from(selectedRowIds));
             updateSelectionCount();
         }
 
@@ -1124,20 +1128,20 @@
             const selectedCount = selectedRowIds.size;
             const badge = document.getElementById('delete-count-badge');
 
-            console.log('updateSelectionCount called, selectedCount:', selectedCount);
-            console.log('Badge element:', badge);
+            log('updateSelectionCount called, selectedCount:', selectedCount);
+            log('Badge element:', badge);
 
             if (selectedCount > 0) {
                 if (badge) {
                     badge.textContent = selectedCount;
                     badge.classList.remove('hidden');
-                    console.log('Badge updated with count:', selectedCount);
+                    log('Badge updated with count:', selectedCount);
                 }
                 showStatus(`${selectedCount}개 항목 선택됨`, 'info');
             } else {
                 if (badge) {
                     badge.classList.add('hidden');
-                    console.log('Badge hidden');
+                    log('Badge hidden');
                 }
             }
         }
@@ -1198,12 +1202,12 @@
 
         // PM 요구사항: 선택 삭제 기능 (가상 스크롤링 호환)
         async function bulkDelete() {
-            console.log('bulkDelete called');
-            console.log('selectedRowIds size:', selectedRowIds.size);
-            console.log('selectedRowIds contents:', Array.from(selectedRowIds));
+            log('bulkDelete called');
+            log('selectedRowIds size:', selectedRowIds.size);
+            log('selectedRowIds contents:', Array.from(selectedRowIds));
 
             if (selectedRowIds.size === 0) {
-                console.log('No rows selected, showing warning');
+                log('No rows selected, showing warning');
                 showStatus('삭제할 행을 선택해주세요.', 'warning');
                 return;
             }
@@ -1211,7 +1215,7 @@
             if (confirm(`선택한 ${selectedRowIds.size}개 행을 삭제하시겠습니까?`)) {
                 const idsToDelete = Array.from(selectedRowIds);
 
-                console.log('🔍 salesData 확인:', {
+                log('🔍 salesData 확인:', {
                     length: salesData.length,
                     firstFewRows: salesData.slice(0, 3),
                     idsToDelete: idsToDelete,
@@ -1225,7 +1229,7 @@
                 idsToDelete.forEach(id => {
                     // 문자열 ID를 숫자로 변환해서 찾기 시도
                     const row = salesData.find(r => r.id === id || r.id === Number(id) || String(r.id) === id);
-                    console.log(`🔍 행 ${id} 확인:`, {
+                    log(`🔍 행 ${id} 확인:`, {
                         found: !!row,
                         id_type: typeof id,
                         row_id: row?.id,
@@ -1245,15 +1249,15 @@
                             savedIds.push(Math.floor(dbId)); // 정수로 변환
                         } else {
                             savedIds.push(dbId);
-                            console.log(`✅ DB 저장된 행 추가: ${id} → ${dbId}`);
+                            log(`✅ DB 저장된 행 추가: ${id} → ${dbId}`);
                         }
                     } else {
                         unsavedIds.push(id);
-                        console.log(`ℹ️ 미저장 행: ${id}` + (row ? '' : ' (행을 찾을 수 없음)'));
+                        log(`ℹ️ 미저장 행: ${id}` + (row ? '' : ' (행을 찾을 수 없음)'));
                     }
                 });
 
-                console.log('📊 분류 결과:', {
+                log('📊 분류 결과:', {
                     savedIds,
                     unsavedIds,
                     totalIds: idsToDelete
@@ -1265,7 +1269,7 @@
                         const requestBody = { sale_ids: savedIds };
                         const requestBodyString = JSON.stringify(requestBody);
 
-                        console.log('📡 삭제 API 요청:', {
+                        log('📡 삭제 API 요청:', {
                             url: '/api/sales/bulk-delete',
                             savedIds: savedIds,
                             count: savedIds.length,
@@ -1285,7 +1289,7 @@
                             body: requestBodyString
                         });
 
-                        console.log('📡 응답 상태:', response.status, response.statusText);
+                        log('📡 응답 상태:', response.status, response.statusText);
 
                         if (!response.ok) {
                             const errorText = await response.text();
@@ -1298,35 +1302,35 @@
                         }
 
                         const result = await response.json();
-                        console.log('✅ 삭제 API 응답:', result);
+                        log('✅ 삭제 API 응답:', result);
 
                         if (!result.success) {
                             throw new Error(result.message || '삭제 실패');
                         }
                     } else {
-                        console.log('⚠️ 저장된 행이 없어서 API 요청 건너뜀');
+                        log('⚠️ 저장된 행이 없어서 API 요청 건너뜀');
                     }
 
-                    console.log('🎯 if/else 블록 완료, UI 업데이트 시작 예정');
-                    console.log('🎯 현재 salesData:', { length: salesData.length, idsToDelete });
+                    log('🎯 if/else 블록 완료, UI 업데이트 시작 예정');
+                    log('🎯 현재 salesData:', { length: salesData.length, idsToDelete });
 
                     // 모든 선택된 행 제거 (ID 타입 변환 포함)
                     const beforeCount = salesData.length;
-                    console.log('🎯 beforeCount:', beforeCount);
+                    log('🎯 beforeCount:', beforeCount);
 
                     // ID를 문자열로 통일해서 비교
                     const idsToDeleteStrings = idsToDelete.map(id => String(id));
                     salesData = salesData.filter(row => {
                         const rowIdString = String(row.id);
                         const shouldKeep = !idsToDeleteStrings.includes(rowIdString);
-                        console.log(`🎯 행 ${row.id} (${rowIdString}): shouldKeep=${shouldKeep}`);
+                        log(`🎯 행 ${row.id} (${rowIdString}): shouldKeep=${shouldKeep}`);
                         return shouldKeep;
                     });
 
                     const afterCount = salesData.length;
-                    console.log('🎯 afterCount:', afterCount);
+                    log('🎯 afterCount:', afterCount);
 
-                    console.log('🔄 UI 업데이트:', {
+                    log('🔄 UI 업데이트:', {
                         beforeCount,
                         afterCount,
                         removed: beforeCount - afterCount,
@@ -1341,7 +1345,7 @@
                             return !idsToDeleteStrings.includes(rowIdString);
                         });
                         const afterFilteredCount = filteredData.length;
-                        console.log('📋 filteredData도 업데이트:', {
+                        log('📋 filteredData도 업데이트:', {
                             before: beforeFilteredCount,
                             after: afterFilteredCount,
                             removed: beforeFilteredCount - afterFilteredCount
@@ -1353,13 +1357,13 @@
 
                     // 필터 상태에 따라 적절히 렌더링
                     const hasFilters = hasActiveFilters();
-                    console.log('🎨 렌더링 시작:', { hasFilters });
+                    log('🎨 렌더링 시작:', { hasFilters });
 
                     if (hasFilters) {
-                        console.log('📌 renderFilteredData() 호출');
+                        log('📌 renderFilteredData() 호출');
                         renderFilteredData();
                     } else {
-                        console.log('📌 renderTableRows() 호출');
+                        log('📌 renderTableRows() 호출');
                         renderTableRows();
                     }
 
@@ -1400,7 +1404,7 @@
             if (!row.sale_date) {
                 const today = new Date();
                 row.sale_date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-                console.log(`판매일자 자동 설정: ${row.sale_date}`);
+                log(`판매일자 자동 설정: ${row.sale_date}`);
             }
 
             // 통신사 검증 - 필수 입력
@@ -1496,7 +1500,7 @@
 
             salesData.forEach((row, index) => {
                 // 디버깅: 각 행의 상태 로깅
-                console.log(`Row ${index + 1}:`, {
+                log(`Row ${index + 1}:`, {
                     isPersisted: row.isPersisted,
                     id: row.id,
                     sale_date: row.sale_date,
@@ -1513,7 +1517,7 @@
                     });
                 } else {
                     validData.push(row);
-                    console.log(`Row ${index + 1} added to validData`);
+                    log(`Row ${index + 1} added to validData`);
                 }
             });
 
@@ -1541,7 +1545,7 @@
             // 디버깅: UPDATE vs CREATE 카운트
             const rowsWithId = validData.filter(row => row.isPersisted && row.id).length;
             const rowsWithoutId = validData.length - rowsWithId;
-            console.log(`📊 Save operation breakdown:`, {
+            log(`📊 Save operation breakdown:`, {
                 total: validData.length,
                 updates: rowsWithId,
                 creates: rowsWithoutId
@@ -1556,7 +1560,7 @@
                     const hasId = !!row.id;
                     const willIncludeId = !!(row.isPersisted && row.id);
 
-                    console.log(`💾 [저장] Row ${idx + 1}:`, {
+                    log(`💾 [저장] Row ${idx + 1}:`, {
                         has_id: hasId,
                         id_value: row.id,
                         id_type: typeof row.id,
@@ -1607,14 +1611,14 @@
             };
 
             // 디버깅: 요청 데이터 확인
-            console.log('=== BULK SAVE REQUEST ===');
-            console.log('Total valid rows:', validData.length);
-            console.log('📊 salesData 상태:', salesData.slice(0, 3).map(r => ({
+            log('=== BULK SAVE REQUEST ===');
+            log('Total valid rows:', validData.length);
+            log('📊 salesData 상태:', salesData.slice(0, 3).map(r => ({
                 id: r.id,
                 carrier: r.carrier,
                 isPersisted: r.isPersisted
             })));
-            console.log('📦 요청 데이터:', requestBody.sales.slice(0, 3).map(row => ({
+            log('📦 요청 데이터:', requestBody.sales.slice(0, 3).map(row => ({
                 id: row.id,
                 carrier: row.carrier,
                 sale_date: row.sale_date,
@@ -1639,10 +1643,10 @@
                 return response.json();
             })
             .then(data => {
-                console.log('💾 저장 응답 전체:', data);
-                console.log('💾 id_mappings 존재 여부:', !!data.id_mappings);
-                console.log('💾 id_mappings 내용:', data.id_mappings);
-                console.log('💾 id_mappings 키 개수:', data.id_mappings ? Object.keys(data.id_mappings).length : 0);
+                log('💾 저장 응답 전체:', data);
+                log('💾 id_mappings 존재 여부:', !!data.id_mappings);
+                log('💾 id_mappings 내용:', data.id_mappings);
+                log('💾 id_mappings 키 개수:', data.id_mappings ? Object.keys(data.id_mappings).length : 0);
 
                 if (data.success) {
                     showStatus('✅ ' + data.message, 'success');
@@ -1650,7 +1654,7 @@
 
                     // 임시 ID를 실제 DB ID로 교체
                     if (data.id_mappings && Object.keys(data.id_mappings).length > 0) {
-                        console.log('🔄 ID 매핑 적용 중...', data.id_mappings);
+                        log('🔄 ID 매핑 적용 중...', data.id_mappings);
 
                         // 모든 매핑을 먼저 처리
                         const updatedSelections = new Set();
@@ -1663,11 +1667,11 @@
                                 // 선택된 행이었으면 새로운 ID로 추적
                                 if (selectedRowIds.has(String(oldId))) {
                                     updatedSelections.add(String(newId));
-                                    console.log(`🔄 selectedRowIds 업데이트: ${oldId} → ${newId}`);
+                                    log(`🔄 selectedRowIds 업데이트: ${oldId} → ${newId}`);
                                 }
 
                                 row.id = newId;
-                                console.log(`✅ ID 교체: ${oldId} → ${newId}`);
+                                log(`✅ ID 교체: ${oldId} → ${newId}`);
                             } else if (selectedRowIds.has(String(row.id))) {
                                 // 매핑이 없는 행(UPDATE된 행)도 선택 상태 유지
                                 updatedSelections.add(String(row.id));
@@ -1678,7 +1682,7 @@
                         // selectedRowIds를 완전히 교체 (임시 ID 제거)
                         selectedRowIds.clear();
                         updatedSelections.forEach(id => selectedRowIds.add(id));
-                        console.log('🔄 최종 selectedRowIds:', Array.from(selectedRowIds));
+                        log('🔄 최종 selectedRowIds:', Array.from(selectedRowIds));
                     } else {
                         // ID 매핑이 없으면 (모두 UPDATE인 경우) 단순히 isPersisted만 설정
                         salesData.forEach(row => {
@@ -1855,7 +1859,7 @@
                 }
 
                 // API 응답이 성공이 아닌 경우 폴백으로 하드코딩된 목록 사용
-                console.log('API 응답 실패, 폴백 대리점 목록 사용');
+                log('API 응답 실패, 폴백 대리점 목록 사용');
                 dealersList = [
                     {code: 'SM', name: 'SM'},
                     {code: 'W', name: 'W'},
@@ -1880,7 +1884,7 @@
             } catch (error) {
                 // 대리점 로드 오류 발생
                 console.error('❌ 대리점 목록 로드 실패:', error);
-                console.log('에러 발생, 폴백 대리점 목록 사용');
+                log('에러 발생, 폴백 대리점 목록 사용');
 
                 // 에러 발생 시에도 기본 목록 반환
                 dealersList = [
@@ -1951,7 +1955,7 @@
                 return carriersList;
             } catch (error) {
                 console.error('❌ 통신사 목록 로드 실패:', error);
-                console.log('에러 발생, 폴백 통신사 목록 사용');
+                log('에러 발생, 폴백 통신사 목록 사용');
 
                 // 에러 발생 시에도 기본 목록 반환
                 carriersList = [
@@ -2001,7 +2005,7 @@
                     }
 
                     window.location.href = url;
-                    console.log('CSV 다운로드 시작...');
+                    log('CSV 다운로드 시작...');
                 });
             }
 
@@ -2029,7 +2033,7 @@
                     formData.append('file', file);
 
                     try {
-                        console.log('CSV 파일 업로드 중...');
+                        log('CSV 파일 업로드 중...');
 
                         const response = await fetch('/api/sales-export/import', {
                             method: 'POST',
@@ -2137,7 +2141,7 @@
                     salesData = salesList.map((sale, index) => {
                         // 디버깅: API에서 받은 sale 객체 확인
                         if (index === 0) {
-                            console.log('First sale object from API:', {
+                            log('First sale object from API:', {
                                 id: sale.id,
                                 id_type: typeof sale.id,
                                 has_id: 'id' in sale,
@@ -2451,11 +2455,11 @@
         // localStorage 이벤트 리스너 - 다른 탭에서 통신사가 변경되면 업데이트
         window.addEventListener('storage', function(e) {
             if (e.key === 'carriers_updated') {
-                console.log('📡 다른 탭에서 통신사 목록이 변경됨');
+                log('📡 다른 탭에서 통신사 목록이 변경됨');
                 loadCarriers();
             }
             if (e.key === 'dealers_updated') {
-                console.log('🏢 다른 탭에서 대리점 목록이 변경됨');
+                log('🏢 다른 탭에서 대리점 목록이 변경됨');
                 loadDealers();
             }
         });
@@ -2520,8 +2524,8 @@
             document.getElementById('excel-file-input').addEventListener('change', async (e) => {
                 const file = e.target.files[0];
                 if (file) {
-                    console.log('파일 정보:', file.name, file.type, file.size);
-                    console.log(`📋 대리점 목록 상태: ${dealersList.length}개 로드됨`, dealersList.map(d => d.name).join(', '));
+                    log('파일 정보:', file.name, file.type, file.size);
+                    log(`📋 대리점 목록 상태: ${dealersList.length}개 로드됨`, dealersList.map(d => d.name).join(', '));
 
                     // XLSX 파일인지 CSV 파일인지 확인
                     const isExcel = file.name.match(/\.(xlsx?|xls)$/i);
@@ -2542,11 +2546,11 @@
                                 const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, raw: true, defval: '' });
 
                                 rows = jsonData;
-                                console.log('Excel 파일 파싱 완료:', rows.length, '행');
-                                console.log('첫 번째 행:', rows[0]);
+                                log('Excel 파일 파싱 완료:', rows.length, '행');
+                                log('첫 번째 행:', rows[0]);
                                 if (rows.length > 5) {
-                                    console.log('6번째 행 (데이터):', rows[5]);
-                                    console.log('7번째 행 (데이터):', rows[6]);
+                                    log('6번째 행 (데이터):', rows[5]);
+                                    log('7번째 행 (데이터):', rows[6]);
                                 }
                             } else {
                                 // CSV 또는 텍스트 파일 처리
@@ -2583,7 +2587,7 @@
                                     if (row[0] === '판매자' || (row[0] && row[0].includes('판매자'))) {
                                         headerRow = row;
                                         dataStartRow = i + 1;
-                                        console.log(`헤더 찾음 - 행 ${i}:`, row);
+                                        log(`헤더 찾음 - 행 ${i}:`, row);
                                         break;
                                     }
                                 }
@@ -2593,7 +2597,7 @@
                             if (!headerRow) {
                                 headerRow = rows[0];
                                 dataStartRow = 1;
-                                console.log('기본 헤더 사용 - 첫 번째 행');
+                                log('기본 헤더 사용 - 첫 번째 행');
                             }
 
                             // 대용량 데이터 처리 최적화
@@ -2623,13 +2627,13 @@
 
                                     // 디버깅 로그는 처음 5개만
                                     if (addedCount < 5) {
-                                        console.log(`행 ${i} 데이터:`, cols);
-                                        console.log('컬럼 수:', cols.length);
+                                        log(`행 ${i} 데이터:`, cols);
+                                        log('컬럼 수:', cols.length);
                                     }
 
                                     if (cols.length < 10) {
                                         if (addedCount < 5) {
-                                            console.log(`행 ${i} 스킵 - 컬럼 수 부족`);
+                                            log(`행 ${i} 스킵 - 컬럼 수 부족`);
                                         }
                                         continue;
                                     }
@@ -2796,7 +2800,7 @@
 
                                         // 유효성 검증 후 반환
                                         if (isValidDate(result)) {
-                                            console.log(`📅 YYMMDD 변환 성공: ${cleanStr} → ${result} (year=${year}, century=${year >= 51 ? '19' : '20'})`);
+                                            log(`📅 YYMMDD 변환 성공: ${cleanStr} → ${result} (year=${year}, century=${year >= 51 ? '19' : '20'})`);
                                             return result;
                                         } else {
                                             console.error(`❌ 유효하지 않은 날짜: ${cleanStr} → ${result} (예: 2월 30일 같은 존재하지 않는 날짜)`);
@@ -2807,7 +2811,7 @@
                                         const result = `${cleanStr.substring(0, 4)}-${cleanStr.substring(4, 6)}-${cleanStr.substring(6, 8)}`;
 
                                         if (isValidDate(result)) {
-                                            console.log(`📅 YYYYMMDD 변환 성공: ${cleanStr} → ${result}`);
+                                            log(`📅 YYYYMMDD 변환 성공: ${cleanStr} → ${result}`);
                                             return result;
                                         } else {
                                             console.error(`❌ 유효하지 않은 날짜: ${cleanStr} → ${result}`);
@@ -2830,7 +2834,7 @@
                                             const result = `${year}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
 
                                             if (isValidDate(result)) {
-                                                console.log(`📅 구분자 변환 성공: ${str} → ${result}`);
+                                                log(`📅 구분자 변환 성공: ${str} → ${result}`);
                                                 return result;
                                             } else {
                                                 console.error(`❌ 유효하지 않은 날짜: ${str} → ${result}`);
@@ -2855,17 +2859,17 @@
                                 // 순서: 판매자(0), 대리점(1), 통신사(2), 개통방식(3), 모델명(4), 개통일(5), 휴대폰번호(6), 고객명(7), 생년월일(8)
                                 // 디버깅 로그는 처음 3개만
                                 if (addedCount < 3) {
-                                    console.log(`\n=== 행 ${i} 매핑 시작 ===`);
-                                    console.log('0: 판매자 =', getColValue(0));
-                                    console.log('1: 대리점 =', getColValue(1));
-                                    console.log('2: 통신사 =', getColValue(2));
-                                    console.log('3: 개통방식 =', getColValue(3));
-                                    console.log('4: 모델명 =', getColValue(4));
-                                    console.log('5: 개통일 =', getColValue(5));
-                                    console.log('6: 휴대폰번호 =', getColValue(6));
-                                    console.log('7: 고객명 =', getColValue(7));
-                                    console.log('8: 생년월일 =', getColValue(8));
-                                    console.log('9: 액면가 =', getColValue(9));
+                                    log(`\n=== 행 ${i} 매핑 시작 ===`);
+                                    log('0: 판매자 =', getColValue(0));
+                                    log('1: 대리점 =', getColValue(1));
+                                    log('2: 통신사 =', getColValue(2));
+                                    log('3: 개통방식 =', getColValue(3));
+                                    log('4: 모델명 =', getColValue(4));
+                                    log('5: 개통일 =', getColValue(5));
+                                    log('6: 휴대폰번호 =', getColValue(6));
+                                    log('7: 고객명 =', getColValue(7));
+                                    log('8: 생년월일 =', getColValue(8));
+                                    log('9: 액면가 =', getColValue(9));
                                 }
 
                                 // 대소문자 구분 없이 대리점 매칭 함수
@@ -2882,7 +2886,7 @@
                                     } else {
                                         // 매칭 실패 시 로그 (처음 3개 행만)
                                         if (addedCount < 3) {
-                                            console.log(`⚠️ 대리점 매칭 실패: "${inputDealer}" (dealersList에 없음, 드롭다운 "선택없음"으로 표시)`);
+                                            log(`⚠️ 대리점 매칭 실패: "${inputDealer}" (dealersList에 없음, 드롭다운 "선택없음"으로 표시)`);
                                         }
                                         return ''; // DB에 없는 값은 빈 문자열 반환 (드롭다운 "선택없음")
                                     }
@@ -2957,7 +2961,7 @@
                                     if (numbers.length === 10 && !numbers.startsWith('02')) {
                                         // 1052072940 → 01052072940
                                         numbers = '0' + numbers;
-                                        console.log(`📱 휴대폰번호 0 복구: ${phoneStr} → ${numbers}`);
+                                        log(`📱 휴대폰번호 0 복구: ${phoneStr} → ${numbers}`);
                                     }
 
                                     // 하이픈 없이 숫자만 반환
@@ -2974,7 +2978,7 @@
                                 const rawSaleDate = getColValue(5, '');
                                 let saleDate = formatDate(rawSaleDate);
                                 if (addedCount < 3) {
-                                    console.log(`개통일 변환 - 원본: ${rawSaleDate} (타입: ${typeof rawSaleDate}) → 변환: ${saleDate}`);
+                                    log(`개통일 변환 - 원본: ${rawSaleDate} (타입: ${typeof rawSaleDate}) → 변환: ${saleDate}`);
                                 }
 
                                 const phoneNumber = formatPhoneNumber(getColValue(6, '')); // 휴대폰번호 (6번 인덱스, 하이픈 자동 추가)
@@ -2986,31 +2990,31 @@
 
                                 // 2000년 이후 데이터 특별 로깅
                                 if (birthDate && birthDate.startsWith('20')) {
-                                    console.log(`🎯 2000년 이후 생년월일 발견 - 원본: ${rawBirthDate} → 변환: ${birthDate}`);
+                                    log(`🎯 2000년 이후 생년월일 발견 - 원본: ${rawBirthDate} → 변환: ${birthDate}`);
                                 }
 
                                 if (addedCount < 3) {
-                                    console.log(`생년월일 변환 - 원본: ${rawBirthDate} (타입: ${typeof rawBirthDate}) → 변환: ${birthDate}`);
+                                    log(`생년월일 변환 - 원본: ${rawBirthDate} (타입: ${typeof rawBirthDate}) → 변환: ${birthDate}`);
                                 }
 
                                 // 판매일자가 없으면 오늘 날짜 자동 설정
                                 if (!saleDate) {
                                     const today = new Date();
                                     saleDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-                                    console.log(`행 ${i}: 판매일자 자동 설정 - ${saleDate}`);
+                                    log(`행 ${i}: 판매일자 자동 설정 - ${saleDate}`);
                                 }
 
                                 // 빈 행 체크 - 중요 필드가 모두 비어있으면 스킵
                                 // 판매자 이름만 있고 다른 필드가 비어있는 경우를 필터링
                                 if (!dealer && !carrier && !modelName && !phoneNumber && !customerName) {
-                                    console.log(`행 ${i} 스킵 - 실질적인 데이터 없음 (판매자 이름만 있음)`);
+                                    log(`행 ${i} 스킵 - 실질적인 데이터 없음 (판매자 이름만 있음)`);
                                     processedRows++;
                                     continue;
                                 }
 
                                 // 최소한 하나의 핵심 필드는 있어야 함 (대리점, 통신사, 모델명, 휴대폰번호 중)
                                 if (!dealer && !carrier && !modelName && !phoneNumber) {
-                                    console.log(`행 ${i} 스킵 - 핵심 데이터 없음`);
+                                    log(`행 ${i} 스킵 - 핵심 데이터 없음`);
                                     processedRows++;
                                     continue;
                                 }
@@ -3316,10 +3320,10 @@
 
         function openMemoPopup(rowId) {
             try {
-                console.log('Opening memo popup for row ID:', rowId);
+                log('Opening memo popup for row ID:', rowId);
                 currentMemoRowId = rowId;
                 const row = salesData.find(r => r.id == rowId); // == 사용으로 타입 변환 허용
-                console.log('Found row:', row);
+                log('Found row:', row);
 
                 if (row) {
                     const memoContent = document.getElementById('memo-popup-content');
@@ -3328,13 +3332,13 @@
                     if (memoContent && memoModal) {
                         memoContent.value = row.memo || '';
                         memoModal.style.display = 'flex';
-                        console.log('Memo popup opened successfully');
+                        log('Memo popup opened successfully');
                     } else {
                         console.error('Memo popup elements not found:', { memoContent, memoModal });
                     }
                 } else {
                     console.error('Row not found for ID:', rowId);
-                    console.log('Available rows:', salesData.map(r => r.id));
+                    log('Available rows:', salesData.map(r => r.id));
                 }
             } catch (error) {
                 console.error('Error opening memo popup:', error);
@@ -3368,7 +3372,7 @@
         let currentVerbalMemoType = null; // 1 또는 2
 
         function openVerbalMemoPopup(rowId, verbalType) {
-            console.log(`Opening verbal${verbalType} memo popup for row:`, rowId);
+            log(`Opening verbal${verbalType} memo popup for row:`, rowId);
             try {
                 currentVerbalMemoRowId = typeof rowId === 'string' ? parseInt(rowId) : rowId;
                 currentVerbalMemoType = verbalType;

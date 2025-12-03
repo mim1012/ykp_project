@@ -122,6 +122,10 @@
 
     <script>
         let selectedFile = null;
+        // Production debug flag - disable log in production
+        window.DEBUG = {{ config('app.debug') ? 'true' : 'false' }};
+        const log = (...args) => window.DEBUG && console.log(...args);
+
         let createdStores = [];
 
         // 파일 선택
@@ -216,7 +220,7 @@
 
                 // Check if response is JSON
                 const contentType = response.headers.get('content-type');
-                console.log('📡 Response Content-Type:', contentType);
+                log('📡 Response Content-Type:', contentType);
 
                 if (!contentType || !contentType.includes('application/json')) {
                     const text = await response.text();
@@ -228,7 +232,7 @@
                 }
 
                 const data = await response.json();
-                console.log('✅ Response Data:', data);
+                log('✅ Response Data:', data);
 
                 if (data.success) {
                     createdStores = data.data.created_stores || [];

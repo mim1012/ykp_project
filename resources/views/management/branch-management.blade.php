@@ -128,6 +128,10 @@
     </main>
 
     <script>
+        // Production debug flag - disable log in production
+        window.DEBUG = {{ config('app.debug') ? 'true' : 'false' }};
+        const log = (...args) => window.DEBUG && console.log(...args);
+
         // 페이지 로드 시 지사 목록 바로 로드
         document.addEventListener('DOMContentLoaded', function() {
             loadBranches();
@@ -135,15 +139,15 @@
 
         // 지사 목록 로드 (간단 버전)
         function loadBranches() {
-            console.log('지사 목록 로딩 시작...');
+            log('지사 목록 로딩 시작...');
             
             fetch('/api/branches')
                 .then(response => {
-                    console.log('지사 API 응답:', response.status);
+                    log('지사 API 응답:', response.status);
                     return response.json();
                 })
                 .then(data => {
-                    console.log('지사 데이터:', data);
+                    log('지사 데이터:', data);
                     
                     if (data.success) {
                         renderBranches(data.data);
@@ -206,7 +210,7 @@
                 </tr>
             `).join('');
             
-            console.log('지사 목록 렌더링 완료:', branches.length, '개');
+            log('지사 목록 렌더링 완료:', branches.length, '개');
             
             // 실제 계정 정보 업데이트
             updateBranchAccountInfo(branches);
@@ -214,7 +218,7 @@
         
         // 실제 지사 계정 정보 조회 및 업데이트
         async function updateBranchAccountInfo(branches) {
-            console.log('🔍 실제 지사 계정 정보 업데이트 시작...');
+            log('🔍 실제 지사 계정 정보 업데이트 시작...');
             
             for (const branch of branches) {
                 try {
@@ -252,7 +256,7 @@
                             `;
                         }
                         
-                        console.log(`✅ ${branch.code} 실제 계정: ${actualAccount.email}`);
+                        log(`✅ ${branch.code} 실제 계정: ${actualAccount.email}`);
                         
                     } else {
                         // 계정이 없는 경우
@@ -271,7 +275,7 @@
                             `;
                         }
                         
-                        console.log(`⚠️ ${branch.code} 계정 없음`);
+                        log(`⚠️ ${branch.code} 계정 없음`);
                     }
                     
                 } catch (error) {
@@ -292,7 +296,7 @@
                 }
             }
             
-            console.log('✅ 지사 계정 정보 업데이트 완료');
+            log('✅ 지사 계정 정보 업데이트 완료');
         }
 
         // 통계 업데이트
@@ -401,11 +405,11 @@
         // 지사 수정 (개선된 에러 처리)
         function editBranch(branchId) {
             // 1단계: 지사 정보 로딩
-            console.log('🔄 지사 수정 시작:', branchId);
+            log('🔄 지사 수정 시작:', branchId);
 
             fetch(`/api/branches/${branchId}`)
                 .then(response => {
-                    console.log('📡 지사 정보 조회 응답:', response.status);
+                    log('📡 지사 정보 조회 응답:', response.status);
 
                     if (!response.ok) {
                         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -414,36 +418,36 @@
                     return response.json();
                 })
                 .then(data => {
-                    console.log('📊 지사 데이터:', data);
+                    log('📊 지사 데이터:', data);
 
                     if (!data.success) {
                         throw new Error(data.error || '지사 정보를 가져올 수 없습니다.');
                     }
 
                     const branch = data.data;
-                    console.log('✅ 지사 정보 로드 완료:', branch.name);
+                    log('✅ 지사 정보 로드 완료:', branch.name);
 
                     // 2단계: 수정할 정보 입력받기
                     const newName = prompt(`🏢 지사명 수정:\n현재: ${branch.name}`, branch.name);
                     if (!newName || newName.trim() === '') {
-                        console.log('❌ 지사명이 비어있음');
+                        log('❌ 지사명이 비어있음');
                         alert('지사명은 필수 입력입니다.');
                         return;
                     }
 
                     if (newName === branch.name) {
-                        console.log('ℹ️ 지사명 변경 없음');
+                        log('ℹ️ 지사명 변경 없음');
                     }
 
                     const newManager = prompt(`👤 관리자명 수정:\n현재: ${branch.manager_name || '미등록'}`, branch.manager_name || '');
                     if (newManager === null) {
-                        console.log('❌ 사용자 취소');
+                        log('❌ 사용자 취소');
                         return;
                     }
 
                     const newPhone = prompt(`📞 연락처 수정:\n현재: ${branch.phone || '미등록'}`, branch.phone || '');
                     if (newPhone === null) {
-                        console.log('❌ 사용자 취소');
+                        log('❌ 사용자 취소');
                         return;
                     }
 
@@ -457,7 +461,7 @@
                         return;
                     }
 
-                    console.log('🔄 지사 정보 업데이트 시작...');
+                    log('🔄 지사 정보 업데이트 시작...');
 
                     // 4단계: API 업데이트 요청
                     return fetch(`/api/branches/${branchId}`, {
@@ -475,7 +479,7 @@
                         })
                     })
                     .then(updateResponse => {
-                        console.log('📡 업데이트 응답:', updateResponse.status);
+                        log('📡 업데이트 응답:', updateResponse.status);
 
                         if (!updateResponse.ok) {
                             throw new Error(`HTTP ${updateResponse.status}: 서버 오류가 발생했습니다.`);
@@ -484,11 +488,11 @@
                         return updateResponse.json();
                     })
                     .then(updateData => {
-                        console.log('📊 업데이트 결과:', updateData);
+                        log('📊 업데이트 결과:', updateData);
 
                         if (updateData.success) {
                             alert(`✅ "${newName}" 지사 정보가 성공적으로 수정되었습니다!\n\n📝 변경사항:\n• 지사명: ${branch.name} → ${newName}\n• 관리자: ${branch.manager_name || '미등록'} → ${newManager || '미등록'}\n• 연락처: ${branch.phone || '미등록'} → ${newPhone || '미등록'}`);
-                            console.log('✅ 지사 수정 완료');
+                            log('✅ 지사 수정 완료');
                             loadBranches(); // 목록 새로고침
                         } else {
                             throw new Error(updateData.error || '알 수 없는 서버 오류가 발생했습니다.');

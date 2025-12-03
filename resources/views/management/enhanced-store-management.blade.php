@@ -32,7 +32,7 @@
     <main class="max-w-7xl mx-auto py-6 px-4">
         <!-- 빠른 작업 카드 -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-lg shadow-lg cursor-pointer hover:shadow-xl transition-all" onclick="console.log('카드 클릭됨'); if(typeof openStoreModal === 'function') { openStoreModal(); } else { alert('openStoreModal 함수를 찾을 수 없습니다'); }">
+            <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white p-6 rounded-lg shadow-lg cursor-pointer hover:shadow-xl transition-all" onclick="log('카드 클릭됨'); if(typeof openStoreModal === 'function') { openStoreModal(); } else { alert('openStoreModal 함수를 찾을 수 없습니다'); }">
                 <div class="flex items-center">
                     <div class="text-3xl mr-4">🏪</div>
                     <div>
@@ -361,13 +361,17 @@
     </div>
 
     <script>
+        // Production debug flag - disable log in production
+        window.DEBUG = {{ config('app.debug') ? 'true' : 'false' }};
+        const log = (...args) => window.DEBUG && console.log(...args);
+
         // 전역 변수
         let branches = [];
         let stores = [];
-        
+
         // 페이지 로드시 초기화
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('페이지 로드 완료');
+            log('페이지 로드 완료');
             
             // 전역 함수들을 window에 명시적으로 등록
             window.openStoreModal = openStoreModal;
@@ -406,7 +410,7 @@
             testButton.innerText = '🔧 테스트 모달';
             testButton.className = 'fixed bottom-4 right-4 bg-red-500 text-white px-4 py-2 rounded z-50';
             testButton.onclick = function() {
-                console.log('테스트 버튼 클릭됨');
+                log('테스트 버튼 클릭됨');
                 openStoreModal();
             };
             document.body.appendChild(testButton);
@@ -490,11 +494,11 @@
                         filterSelect.innerHTML += `<option value="${branch.id}">${branch.name}</option>`;
                     });
                     
-                    console.log('✅ 본사 계정: 전체 지사 목록 로드됨 -', branches.length, '개');
+                    log('✅ 본사 계정: 전체 지사 목록 로드됨 -', branches.length, '개');
                 }
             } else {
                 // 지사 계정: hidden input으로 처리됨 (별도 처리 불필요)
-                console.log('✅ 지사 계정: 자동 지정 모드 (hidden input 사용)');
+                log('✅ 지사 계정: 자동 지정 모드 (hidden input 사용)');
                 
                 // 필터 선택박스만 채우기
                 const filterSelect = document.getElementById('branch-filter');
@@ -522,16 +526,16 @@
                 const response = await fetch('/api/stores');
                 const result = await response.json();
                 
-                console.log('매장 데이터 응답:', result);
+                log('매장 데이터 응답:', result);
                 
                 if (result.success && result.data && result.data.length > 0) {
                     stores = result.data;
-                    console.log(`${stores.length}개 매장 로드됨`);
+                    log(`${stores.length}개 매장 로드됨`);
                     renderStoresTable(stores);
                     updateStatistics();
                 } else {
                     stores = [];
-                    console.log('매장 데이터 없음');
+                    log('매장 데이터 없음');
                     noDataEl.style.display = 'block';
                 }
             } catch (error) {
@@ -663,7 +667,7 @@
 
         // 매장 추가 모달 열기
         function openStoreModal() {
-            console.log('openStoreModal 함수 호출됨'); // 디버그 로그
+            log('openStoreModal 함수 호출됨'); // 디버그 로그
             try {
                 const modal = document.getElementById('store-modal');
                 if (!modal) {
@@ -693,7 +697,7 @@
                     }
                 }
                 
-                console.log('모달이 성공적으로 열렸습니다');
+                log('모달이 성공적으로 열렸습니다');
             } catch (error) {
                 console.error('모달 열기 중 오류:', error);
                 alert('모달 열기 중 오류가 발생했습니다: ' + error.message);
@@ -794,7 +798,7 @@
 
                 // API 엔드포인트 실패 시 fallback
                 if (!response.ok && response.status === 404) {
-                    console.log('정식 API 실패, fallback으로 api 사용');
+                    log('정식 API 실패, fallback으로 api 사용');
                     response = await fetch(`/api/stores/${storeId}/create-user`, {
                         method: 'POST',
                         headers: {

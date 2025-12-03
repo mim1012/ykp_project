@@ -127,6 +127,10 @@
     </div>
 
     <script>
+        // Production debug flag - disable log in production
+        window.DEBUG = {{ config('app.debug') ? 'true' : 'false' }};
+        const log = (...args) => window.DEBUG && console.log(...args);
+
         let allAccounts = [];
         let currentResetUserId = null;
 
@@ -143,17 +147,17 @@
 
         // 🔄 실시간 계정 동기화 리스너
         function initRealtimeAccountSync() {
-            console.log('📡 실시간 계정 동기화 리스너 초기화...');
+            log('📡 실시간 계정 동기화 리스너 초기화...');
 
             // 1. localStorage 이벤트로 다른 탭의 변경사항 감지
             window.addEventListener('storage', function(event) {
                 if (event.key === 'account_update_trigger') {
                     try {
                         const updateData = JSON.parse(event.newValue);
-                        console.log('📨 계정 업데이트 신호 수신:', updateData);
+                        log('📨 계정 업데이트 신호 수신:', updateData);
 
                         if (updateData.type === 'account_change') {
-                            console.log('🔄 다른 탭에서 계정 변경 감지 - 데이터 새로고침');
+                            log('🔄 다른 탭에서 계정 변경 감지 - 데이터 새로고침');
                             setTimeout(loadAccounts, 1000); // 1초 후 새로고침
                         }
                     } catch (e) {
@@ -164,11 +168,11 @@
 
             // 2. 주기적 데이터 동기화 (30초마다)
             setInterval(() => {
-                console.log('⏰ 주기적 계정 데이터 동기화...');
+                log('⏰ 주기적 계정 데이터 동기화...');
                 loadAccountsQuietly();
             }, 30000);
 
-            console.log('✅ 실시간 계정 동기화 리스너 초기화 완료');
+            log('✅ 실시간 계정 동기화 리스너 초기화 완료');
         }
 
         // 🔇 조용한 계정 로드 (UI 갱신 없이 백그라운드 동기화)
@@ -184,7 +188,7 @@
 
                 // 기존 데이터와 비교하여 변경사항이 있을 때만 업데이트
                 if (JSON.stringify(allAccounts) !== JSON.stringify(newAccounts)) {
-                    console.log('🔄 계정 데이터 변경 감지 - UI 업데이트');
+                    log('🔄 계정 데이터 변경 감지 - UI 업데이트');
                     allAccounts = newAccounts;
                     renderAccounts(allAccounts);
                     updateStatistics(allAccounts);
@@ -197,7 +201,7 @@
         // 모든 계정 로드 (대시보드와 동일한 API 사용)
         async function loadAccounts() {
             try {
-                console.log('📊 계정관리: 대시보드와 동일한 API 호출');
+                log('📊 계정관리: 대시보드와 동일한 API 호출');
                 const response = await fetch('/api/users'); // 대시보드와 동일한 API
                 const data = await response.json();
                 
