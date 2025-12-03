@@ -2,7 +2,7 @@
 FROM php:8.3-apache
 
 # Cache bust to force rebuild (update this value to force rebuild)
-ARG CACHE_BUST=2025-12-03-php83-fix-v6-sed-platform-check
+ARG CACHE_BUST=2025-12-03-php83-fix-v7-clean-install
 
 WORKDIR /var/www/html
 
@@ -40,13 +40,10 @@ RUN echo "OK-v3" > /var/www/html/public/health.txt \
     && echo '<?php http_response_code(200); echo "OK-v3|PHP:" . PHP_VERSION . "|INT_SIZE:" . PHP_INT_SIZE;' > /var/www/html/public/health.php
 
 # Install dependencies using composer.lock for reproducibility
-# Then fix platform_check.php to require PHP 8.3 instead of 8.4
+# composer.json has platform.php = 8.3.28, so platform_check.php will require PHP 8.3
 RUN rm -rf vendor \
     && composer clear-cache \
-    && COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader --no-scripts --ignore-platform-reqs \
-    && echo "=== Fixing platform_check.php for PHP 8.3 ===" \
-    && sed -i 's/PHP_VERSION_ID >= 80400/PHP_VERSION_ID >= 80300/g' vendor/composer/platform_check.php \
-    && sed -i 's/>= 8.4.0/>= 8.3.0/g' vendor/composer/platform_check.php \
+    && COMPOSER_ALLOW_SUPERUSER=1 composer install --no-dev --optimize-autoloader --no-scripts \
     && echo "=== Verifying platform_check.php ===" \
     && cat vendor/composer/platform_check.php | head -15
 
