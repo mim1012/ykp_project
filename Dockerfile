@@ -54,13 +54,13 @@ RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
 COPY . ./
 
 # Install composer dependencies with clean autoload
+# Note: platform config in composer.json sets PHP 8.3.28 for compatibility
 RUN COMPOSER_ALLOW_SUPERUSER=1 composer install \
     --no-dev \
     --optimize-autoloader \
     --no-interaction \
     --no-progress \
-    --no-scripts \
-    --ignore-platform-reqs
+    --no-scripts
 
 # Fix Filament autoload issue for production (run twice to ensure fix)
 RUN php fix-filament-autoload.php \
