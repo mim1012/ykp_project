@@ -96,6 +96,18 @@ class StoreStatisticsController extends Controller
             ->map(fn ($group) => $group->count())
             ->toArray();
 
+        // Model ranking TOP 5
+        $modelRanking = $sales->groupBy('model_name')
+            ->map(function ($group) {
+                return [
+                    'count' => $group->count(),
+                    'total_amount' => floatval($group->sum('settlement_amount')),
+                ];
+            })
+            ->sortByDesc('count')
+            ->take(5)
+            ->toArray();
+
         // Total sales
         $totalSales = $sales->count();
         $totalSettlement = $sales->sum('settlement_amount');
@@ -146,6 +158,7 @@ class StoreStatisticsController extends Controller
                 ],
                 'carrier_distribution' => $carrierDistribution,
                 'activation_type_distribution' => $activationTypeDistribution,
+                'model_ranking' => $modelRanking,
                 'goal_achievement' => $goalAchievement,
             ],
         ]);
@@ -186,6 +199,18 @@ class StoreStatisticsController extends Controller
         })
         ->toArray();
 
+        // Model ranking TOP 5
+        $modelRanking = $sales->groupBy('model_name')
+            ->map(function ($group) {
+                return [
+                    'count' => $group->count(),
+                    'total_amount' => floatval($group->sum('settlement_amount')),
+                ];
+            })
+            ->sortByDesc('count')
+            ->take(5)
+            ->toArray();
+
         // Total sales
         $totalSales = $sales->count();
         $totalSettlement = $sales->sum('settlement_amount');
@@ -200,12 +225,12 @@ class StoreStatisticsController extends Controller
         if ($goal) {
             $goalAchievement = [
                 'sales_target' => floatval($goal->sales_target),
-                'sales_actual' => $totalSettlement,
+                'sales_actual' => floatval($totalSettlement),
                 'sales_achievement_rate' => $goal->sales_target > 0
                     ? round(($totalSettlement / $goal->sales_target) * 100, 2)
                     : 0,
-                'activation_target' => $goal->activation_target,
-                'activation_actual' => $totalSales,
+                'activation_target' => intval($goal->activation_target),
+                'activation_actual' => intval($totalSales),
                 'activation_achievement_rate' => $goal->activation_target > 0
                     ? round(($totalSales / $goal->activation_target) * 100, 2)
                     : 0,
@@ -235,6 +260,7 @@ class StoreStatisticsController extends Controller
                 'carrier_distribution' => $carrierDistribution,
                 'activation_type_distribution' => $activationTypeDistribution,
                 'daily_breakdown' => $dailyBreakdown,
+                'model_ranking' => $modelRanking,
                 'goal_achievement' => $goalAchievement,
             ],
         ]);
@@ -275,6 +301,18 @@ class StoreStatisticsController extends Controller
         })
         ->toArray();
 
+        // Model ranking TOP 5
+        $modelRanking = $sales->groupBy('model_name')
+            ->map(function ($group) {
+                return [
+                    'count' => $group->count(),
+                    'total_amount' => floatval($group->sum('settlement_amount')),
+                ];
+            })
+            ->sortByDesc('count')
+            ->take(5)
+            ->toArray();
+
         // Total sales
         $totalSales = $sales->count();
         $totalSettlement = $sales->sum('settlement_amount');
@@ -292,17 +330,17 @@ class StoreStatisticsController extends Controller
 
             $goalAchievement = [
                 'yearly_sales_target' => floatval($totalSalesTarget),
-                'yearly_sales_actual' => $totalSettlement,
+                'yearly_sales_actual' => floatval($totalSettlement),
                 'yearly_sales_achievement_rate' => $totalSalesTarget > 0
                     ? round(($totalSettlement / $totalSalesTarget) * 100, 2)
                     : 0,
-                'yearly_activation_target' => $totalActivationTarget,
-                'yearly_activation_actual' => $totalSales,
+                'yearly_activation_target' => intval($totalActivationTarget),
+                'yearly_activation_actual' => intval($totalSales),
                 'yearly_activation_achievement_rate' => $totalActivationTarget > 0
                     ? round(($totalSales / $totalActivationTarget) * 100, 2)
                     : 0,
                 'yearly_margin_target' => floatval($totalMarginTarget),
-                'monthly_goals_count' => $goals->count(),
+                'monthly_goals_count' => intval($goals->count()),
             ];
         }
 
@@ -327,6 +365,7 @@ class StoreStatisticsController extends Controller
                 'carrier_distribution' => $carrierDistribution,
                 'activation_type_distribution' => $activationTypeDistribution,
                 'monthly_breakdown' => $monthlyBreakdown,
+                'model_ranking' => $modelRanking,
                 'goal_achievement' => $goalAchievement,
             ],
         ]);

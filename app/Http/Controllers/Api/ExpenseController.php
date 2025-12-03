@@ -149,7 +149,7 @@ class ExpenseController extends Controller
                     'data' => [
                         'period' => sprintf('%04d-%02d', $request->year, $request->month),
                         'type' => 'monthly',
-                        'count' => $summary->count ?? 0,
+                        'count' => intval($summary->count ?? 0),
                         'total' => floatval($summary->total ?? 0),
                         'average' => floatval($summary->average ?? 0),
                     ],
@@ -165,12 +165,21 @@ class ExpenseController extends Controller
                                  ->orderBy('month')
                                  ->get();
 
+                // 데이터 타입 캐스팅
+                $monthlyData = $summary->map(function ($item) {
+                    return [
+                        'month' => intval($item->month),
+                        'count' => intval($item->count),
+                        'total' => floatval($item->total ?? 0),
+                    ];
+                });
+
                 return response()->json([
                     'success' => true,
                     'data' => [
-                        'period' => $request->year,
+                        'period' => intval($request->year),
                         'type' => 'yearly',
-                        'monthly_data' => $summary,
+                        'monthly_data' => $monthlyData,
                     ],
                 ]);
             }
@@ -208,6 +217,17 @@ class ExpenseController extends Controller
                     'success' => false,
                     'message' => 'Unauthorized',
                 ], 403);
+            }
+
+            // Branch RBAC 체크 추가
+            if ($user->isBranch()) {
+                $expense->load('store');
+                if ($expense->store && $expense->store->branch_id !== $user->branch_id) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Unauthorized',
+                    ], 403);
+                }
             }
 
             return response()->json([

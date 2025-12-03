@@ -2,16 +2,17 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class ExampleTest extends TestCase
 {
     use RefreshDatabase;
-    /**
-     * Test that the application redirects to login when not authenticated.
-     */
-    public function test_the_application_redirects_to_login_when_not_authenticated(): void
+
+    #[Test]
+    public function the_application_redirects_to_login_when_not_authenticated(): void
     {
         $response = $this->get('/');
 
@@ -20,15 +21,24 @@ class ExampleTest extends TestCase
         $response->assertRedirect('/login');
     }
 
-    /**
-     * Test that authenticated users can access the application.
-     */
-    public function test_authenticated_users_can_access_application(): void
+    #[Test]
+    public function authenticated_users_can_access_dashboard(): void
     {
-        // Create a user and authenticate
-        $user = \App\Models\User::factory()->create();
+        // Create a user with proper role
+        $user = User::factory()->create([
+            'role' => 'headquarters',
+        ]);
 
         $response = $this->actingAs($user)->get('/dashboard');
+
+        // Dashboard should return 200 or redirect to dashboard view
+        $response->assertSuccessful();
+    }
+
+    #[Test]
+    public function login_page_is_accessible(): void
+    {
+        $response = $this->get('/login');
 
         $response->assertStatus(200);
     }

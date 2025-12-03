@@ -12,6 +12,13 @@ use Illuminate\Support\Facades\Log;
 
 class SaleService implements SaleServiceInterface
 {
+    private CustomerService $customerService;
+
+    public function __construct(CustomerService $customerService)
+    {
+        $this->customerService = $customerService;
+    }
+
     public function bulkCreate(CreateSaleRequest $request, User $user): array
     {
         return DB::transaction(function () use ($request, $user) {
@@ -118,7 +125,12 @@ class SaleService implements SaleServiceInterface
                 }
 
                 // 신규 필드들 처리 (존재하면 저장)
-                $newFields = ['dealer_name', 'serial_number', 'customer_name', 'customer_birth_date', 'model_name', 'phone_number', 'salesperson', 'memo'];
+                $newFields = [
+                    'dealer_name', 'serial_number', 'customer_name', 'customer_birth_date',
+                    'model_name', 'phone_number', 'salesperson', 'memo',
+                    'visit_path', 'customer_address',  // 방문경로, 주소 추가
+                    'verbal1_memo', 'verbal2_memo',    // 구두1/2 메모 추가
+                ];
                 foreach ($newFields as $field) {
                     if (isset($saleData[$field]) && $saleData[$field] !== null && $saleData[$field] !== '') {
                         $mergedData[$field] = $saleData[$field];
@@ -212,6 +224,18 @@ class SaleService implements SaleServiceInterface
                         $mergedData['created_at'] = now();
                         $mergedData['updated_at'] = now();
                         $newRecord = Sale::create($mergedData);
+
+                        // 🔄 가망고객 → 개통고객 자동 전환 (전화번호 매칭)
+                        if ($newRecord->phone_number) {
+                            $convertedCustomer = $this->customerService->autoLinkProspectToSale($newRecord);
+                            if ($convertedCustomer) {
+                                Log::info("🎯 Prospect converted to activated customer", [
+                                    'customer_id' => $convertedCustomer->id,
+                                    'sale_id' => $newRecord->id,
+                                    'phone_number' => $newRecord->phone_number,
+                                ]);
+                            }
+                        }
 
                         // 임시 ID가 있으면 실제 DB ID와 매핑
                         $originalId = $saleData['id'] ?? null;

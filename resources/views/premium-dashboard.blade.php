@@ -317,6 +317,10 @@
                 👥
                 <span class="tooltip-text">계정 관리</span>
             </div>
+            <div class="sidebar-icon tooltip" onclick="openCustomerManagement()">
+                📇
+                <span class="tooltip-text">고객 관리</span>
+            </div>
 
         @elseif(auth()->user()->role === 'branch')
             <!-- 지사 전용 메뉴 -->
@@ -328,6 +332,10 @@
                 💼
                 <span class="tooltip-text">지사 통계</span>
             </div>
+            <div class="sidebar-icon tooltip" onclick="openCustomerManagement()">
+                📇
+                <span class="tooltip-text">고객 관리</span>
+            </div>
 
         @elseif(auth()->user()->role === 'store')
             <!-- 매장 전용 메뉴 -->
@@ -338,6 +346,10 @@
             <div class="sidebar-icon tooltip" onclick="openMyStoreStatistics()">
                 💼
                 <span class="tooltip-text">내 매장 통계</span>
+            </div>
+            <div class="sidebar-icon tooltip" onclick="openCustomerManagement()">
+                📇
+                <span class="tooltip-text">고객 관리</span>
             </div>
 
         @endif
@@ -553,11 +565,17 @@
                         <div class="kpi-value">15위 / 25개</div>
                         <div class="kpi-subtitle">전체 매장 중</div>
                     </div>
-                    <div class="kpi-card" id="storeGoal" style="border-left: 4px solid #f59e0b;">
+                    <div class="kpi-card" id="storeGoal" style="border-left: 4px solid #f59e0b; cursor: pointer;" onclick="openGoalModal()">
                         <div class="kpi-header">
-                            <span class="kpi-title">🎯 매장 목표</span>
+                            <span class="kpi-title">🎯 이번 달 목표</span>
+                            <button onclick="event.stopPropagation(); openGoalModal()" class="text-xs px-2 py-1 bg-amber-100 text-amber-700 rounded hover:bg-amber-200 transition-colors">
+                                설정
+                            </button>
                         </div>
-                        <div class="kpi-value">0% 달성</div>
+                        <div class="kpi-value" id="store-goal-achievement">로딩 중...</div>
+                        <div class="w-full bg-gray-200 rounded-full h-2 my-2">
+                            <div class="bg-amber-500 h-2 rounded-full transition-all duration-500" id="store-goal-progress" style="width: 0%"></div>
+                        </div>
                         <div class="kpi-subtitle" id="store-goal-target">목표 로딩 중...</div>
                     </div>
                 @else
@@ -653,22 +671,36 @@
             <!-- 하단 섹션 -->
             <div class="bottom-grid">
                 <div class="bottom-card">
-                    <div class="chart-title">최근 활동</div>
-                    <div style="text-align: center; padding: 40px 20px; color: #6b7280;">
-                        <div style="font-size: 24px; margin-bottom: 12px;">🚧</div>
-                        <div style="font-weight: 600; margin-bottom: 8px;" id="activity-status">실시간 활동 로딩 중...</div>
-                        <div style="font-size: 14px;" id="activity-description">최근 활동을 불러오고 있습니다.</div>
+                    <div class="chart-title" style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>Q&A 게시판</span>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            @if(auth()->user()->role !== 'headquarters')
+                            <button onclick="openQnaCreateModal()" style="background: #6366f1; color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 11px; cursor: pointer;">질문하기</button>
+                            @endif
+                            <a href="/community/qna" style="font-size: 12px; color: #6366f1; text-decoration: none;">전체보기 →</a>
+                        </div>
                     </div>
-                    <div id="realtime-activities" style="padding: 0 20px; max-height: 300px; overflow-y: auto;">
-                        <!-- 실시간 활동이 여기에 표시됩니다 -->
+                    <div id="qna-empty" style="text-align: center; padding: 40px 20px; color: #6b7280;">
+                        <div style="font-size: 24px; margin-bottom: 12px;">💬</div>
+                        <div style="font-weight: 600; margin-bottom: 8px;">Q&A 로딩 중...</div>
+                        <div style="font-size: 14px;">질문과 답변을 불러오고 있습니다.</div>
+                    </div>
+                    <div id="qna-list" style="padding: 0 20px; max-height: 300px; overflow-y: auto; display: none;">
+                        <!-- Q&A 목록이 여기에 표시됩니다 -->
                     </div>
                 </div>
                 <div class="bottom-card">
-                    <div class="chart-title">공지사항</div>
-                    <div style="text-align: center; padding: 40px 20px; color: #6b7280;">
+                    <div class="chart-title" style="display: flex; justify-content: space-between; align-items: center;">
+                        <span>공지사항</span>
+                        <a href="/community/notices" style="font-size: 12px; color: #6366f1; text-decoration: none;">전체보기 →</a>
+                    </div>
+                    <div id="notice-empty" style="text-align: center; padding: 40px 20px; color: #6b7280;">
                         <div style="font-size: 24px; margin-bottom: 12px;">📢</div>
-                        <div style="font-weight: 600; margin-bottom: 8px;">공지사항 없음</div>
-                        <div style="font-size: 14px;">새로운 공지사항이 등록되면 여기에 표시됩니다.</div>
+                        <div style="font-weight: 600; margin-bottom: 8px;">공지사항 로딩 중...</div>
+                        <div style="font-size: 14px;">공지사항을 불러오고 있습니다.</div>
+                    </div>
+                    <div id="notice-list" style="padding: 0 20px; max-height: 300px; overflow-y: auto; display: none;">
+                        <!-- 공지사항 목록이 여기에 표시됩니다 -->
                     </div>
                 </div>
             </div>
@@ -732,7 +764,351 @@
         
         // 페이지 로드 시 사용자 정보 표시
         document.addEventListener('DOMContentLoaded', updateUserInfo);
-        
+
+        // Q&A 및 공지사항 로드
+        document.addEventListener('DOMContentLoaded', loadQnaAndNotices);
+
+        async function loadQnaAndNotices() {
+            await Promise.all([loadQnaList(), loadNoticeList()]);
+        }
+
+        // Q&A 목록 로드
+        async function loadQnaList() {
+            try {
+                const response = await fetch('/api/qna?per_page=5');
+                const result = await response.json();
+
+                const emptyEl = document.getElementById('qna-empty');
+                const listEl = document.getElementById('qna-list');
+
+                if (result.success && result.data && result.data.length > 0) {
+                    emptyEl.style.display = 'none';
+                    listEl.style.display = 'block';
+
+                    let html = '';
+                    result.data.forEach(item => {
+                        const statusBadge = item.status === 'answered'
+                            ? '<span style="background: #10b981; color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px;">답변완료</span>'
+                            : '<span style="background: #f59e0b; color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px;">대기중</span>';
+                        const privateIcon = item.is_private ? '🔒 ' : '';
+                        const date = new Date(item.created_at).toLocaleDateString('ko-KR');
+                        html += `
+                            <div style="padding: 12px 0; border-bottom: 1px solid #e5e7eb; cursor: pointer;" onclick="openQnaDetail(${item.id})">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                    <span style="font-weight: 500; color: #374151; font-size: 14px;">${privateIcon}${item.title}</span>
+                                    ${statusBadge}
+                                </div>
+                                <div style="font-size: 12px; color: #9ca3af;">
+                                    ${item.user?.name || '익명'} · ${date}
+                                </div>
+                            </div>
+                        `;
+                    });
+                    listEl.innerHTML = html;
+                } else {
+                    emptyEl.innerHTML = `
+                        <div style="font-size: 24px; margin-bottom: 12px;">💬</div>
+                        <div style="font-weight: 600; margin-bottom: 8px;">등록된 Q&A가 없습니다</div>
+                        <div style="font-size: 14px;">궁금한 점이 있으시면 질문해 주세요.</div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Q&A 로드 오류:', error);
+                document.getElementById('qna-empty').innerHTML = `
+                    <div style="font-size: 24px; margin-bottom: 12px;">⚠️</div>
+                    <div style="font-weight: 600; margin-bottom: 8px;">Q&A를 불러올 수 없습니다</div>
+                    <div style="font-size: 14px;">잠시 후 다시 시도해 주세요.</div>
+                `;
+            }
+        }
+
+        // 공지사항 목록 로드
+        async function loadNoticeList() {
+            try {
+                const response = await fetch('/api/notices?per_page=5');
+                const result = await response.json();
+
+                const emptyEl = document.getElementById('notice-empty');
+                const listEl = document.getElementById('notice-list');
+
+                if (result.success && result.data && result.data.length > 0) {
+                    emptyEl.style.display = 'none';
+                    listEl.style.display = 'block';
+
+                    let html = '';
+                    result.data.forEach(item => {
+                        const pinBadge = item.is_pinned
+                            ? '<span style="background: #ef4444; color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px;">중요</span>'
+                            : '';
+                        const date = new Date(item.created_at).toLocaleDateString('ko-KR');
+                        html += `
+                            <div style="padding: 12px 0; border-bottom: 1px solid #e5e7eb; cursor: pointer;" onclick="openNoticeDetail(${item.id})">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                                    <span style="font-weight: 500; color: #374151; font-size: 14px;">${item.title}</span>
+                                    ${pinBadge}
+                                </div>
+                                <div style="font-size: 12px; color: #9ca3af;">
+                                    ${item.user?.name || '관리자'} · ${date}
+                                </div>
+                            </div>
+                        `;
+                    });
+                    listEl.innerHTML = html;
+                } else {
+                    emptyEl.innerHTML = `
+                        <div style="font-size: 24px; margin-bottom: 12px;">📢</div>
+                        <div style="font-weight: 600; margin-bottom: 8px;">등록된 공지사항이 없습니다</div>
+                        <div style="font-size: 14px;">새로운 공지사항이 등록되면 여기에 표시됩니다.</div>
+                    `;
+                }
+            } catch (error) {
+                console.error('공지사항 로드 오류:', error);
+                document.getElementById('notice-empty').innerHTML = `
+                    <div style="font-size: 24px; margin-bottom: 12px;">⚠️</div>
+                    <div style="font-weight: 600; margin-bottom: 8px;">공지사항을 불러올 수 없습니다</div>
+                    <div style="font-size: 14px;">잠시 후 다시 시도해 주세요.</div>
+                `;
+            }
+        }
+
+        // Q&A 상세 모달 열기 (API로 댓글 포함 조회)
+        async function openQnaDetail(id) {
+            try {
+                document.getElementById('qnaDetailContent').innerHTML = '<div style="text-align: center; padding: 20px;">로딩 중...</div>';
+                document.getElementById('qnaDetailModal').style.display = 'flex';
+
+                const response = await fetch(`/api/qna/${id}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    const post = result.data;
+                    const date = new Date(post.created_at).toLocaleDateString('ko-KR');
+                    const statusBadge = post.status === 'answered'
+                        ? '<span style="background: #10b981; color: white; font-size: 11px; padding: 2px 8px; border-radius: 4px;">답변완료</span>'
+                        : post.status === 'closed'
+                        ? '<span style="background: #6b7280; color: white; font-size: 11px; padding: 2px 8px; border-radius: 4px;">종료</span>'
+                        : '<span style="background: #f59e0b; color: white; font-size: 11px; padding: 2px 8px; border-radius: 4px;">대기중</span>';
+                    const privateBadge = post.is_private
+                        ? '<span style="background: #ef4444; color: white; font-size: 11px; padding: 2px 8px; border-radius: 4px;">비밀글</span>'
+                        : '';
+
+                    // 답변 목록 HTML
+                    let repliesHtml = '';
+                    if (post.replies && post.replies.length > 0) {
+                        repliesHtml = '<div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid #e5e7eb;"><h4 style="font-weight: 600; margin-bottom: 12px;">답변 (' + post.replies.length + ')</h4>';
+                        post.replies.forEach(reply => {
+                            const replyDate = new Date(reply.created_at).toLocaleDateString('ko-KR');
+                            const officialBadge = reply.is_official_answer
+                                ? '<span style="background: #6366f1; color: white; font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-right: 6px;">공식답변</span>'
+                                : '';
+                            repliesHtml += `
+                                <div style="background: #f9fafb; border-radius: 8px; padding: 12px; margin-bottom: 10px;">
+                                    <div style="display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
+                                        ${officialBadge}
+                                        <span style="font-weight: 500; font-size: 13px;">${reply.author?.name || '관리자'}</span>
+                                        <span style="font-size: 12px; color: #9ca3af;">${replyDate}</span>
+                                    </div>
+                                    <div style="font-size: 14px; color: #374151; white-space: pre-wrap;">${reply.content}</div>
+                                </div>
+                            `;
+                        });
+                        repliesHtml += '</div>';
+                    } else {
+                        repliesHtml = '<div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid #e5e7eb; text-align: center; color: #9ca3af;">아직 답변이 없습니다.</div>';
+                    }
+
+                    // 댓글 작성 폼 (본사/지사만 표시)
+                    const canReply = '{{ auth()->user()->role }}' !== 'store';
+                    let replyFormHtml = '';
+                    if (canReply) {
+                        replyFormHtml = `
+                            <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
+                                <h4 style="font-weight: 600; margin-bottom: 12px;">답변 작성</h4>
+                                <textarea id="qnaReplyContent" placeholder="답변 내용을 입력하세요..."
+                                    style="width: 100%; min-height: 80px; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; resize: vertical; box-sizing: border-box;"></textarea>
+                                <div style="display: flex; justify-content: flex-end; margin-top: 8px;">
+                                    <button onclick="submitQnaReply(${post.id})"
+                                        style="background: #6366f1; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-size: 14px; cursor: pointer;">
+                                        답변 등록
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    }
+
+                    document.getElementById('qnaDetailTitle').textContent = post.title;
+                    document.getElementById('qnaDetailContent').innerHTML = `
+                        <div style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #e5e7eb;">
+                            <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+                                ${statusBadge} ${privateBadge}
+                            </div>
+                            <div style="font-size: 13px; color: #6b7280;">${post.author?.name || '익명'} · ${date} · 조회 ${post.view_count || 0}</div>
+                        </div>
+                        <div style="white-space: pre-wrap; line-height: 1.6; min-height: 60px;">${post.content || '내용이 없습니다.'}</div>
+                        ${repliesHtml}
+                        ${replyFormHtml}
+                    `;
+                } else {
+                    document.getElementById('qnaDetailContent').innerHTML = '<div style="text-align: center; color: #ef4444;">Q&A를 불러올 수 없습니다.</div>';
+                }
+            } catch (error) {
+                console.error('Q&A 상세 로드 오류:', error);
+                document.getElementById('qnaDetailContent').innerHTML = '<div style="text-align: center; color: #ef4444;">오류가 발생했습니다.</div>';
+            }
+        }
+
+        function closeQnaDetailModal() {
+            document.getElementById('qnaDetailModal').style.display = 'none';
+        }
+
+        // Q&A 댓글 제출
+        async function submitQnaReply(qnaId) {
+            const content = document.getElementById('qnaReplyContent')?.value?.trim();
+            if (!content) {
+                alert('답변 내용을 입력해주세요.');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/qna/${qnaId}/reply`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({ content })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    alert('답변이 등록되었습니다.');
+                    openQnaDetail(qnaId); // 모달 새로고침
+                    loadQnaList(); // 목록 새로고침
+                } else {
+                    alert(result.message || '답변 등록에 실패했습니다.');
+                }
+            } catch (error) {
+                console.error('Q&A 댓글 등록 오류:', error);
+                alert('답변 등록 중 오류가 발생했습니다.');
+            }
+        }
+
+        // Q&A 작성 모달 열기
+        function openQnaCreateModal() {
+            document.getElementById('qnaCreateModal').style.display = 'flex';
+            document.getElementById('qnaCreateTitle').value = '';
+            document.getElementById('qnaCreateContent').value = '';
+            document.getElementById('qnaCreatePrivate').checked = false;
+        }
+
+        function closeQnaCreateModal() {
+            document.getElementById('qnaCreateModal').style.display = 'none';
+        }
+
+        // Q&A 작성 제출
+        async function submitQnaCreate(event) {
+            event.preventDefault();
+
+            const title = document.getElementById('qnaCreateTitle').value.trim();
+            const content = document.getElementById('qnaCreateContent').value.trim();
+            const isPrivate = document.getElementById('qnaCreatePrivate').checked;
+
+            if (!title || !content) {
+                alert('제목과 내용을 모두 입력해주세요.');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/qna', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                    },
+                    body: JSON.stringify({
+                        title: title,
+                        content: content,
+                        is_private: isPrivate
+                    })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    alert('Q&A가 등록되었습니다.');
+                    closeQnaCreateModal();
+                    loadQnaList(); // 목록 새로고침
+                } else {
+                    alert(result.message || 'Q&A 등록에 실패했습니다.');
+                }
+            } catch (error) {
+                console.error('Q&A 작성 오류:', error);
+                alert('Q&A 등록 중 오류가 발생했습니다.');
+            }
+        }
+
+        // 공지사항 상세 모달 열기 (API로 이미지 포함 조회)
+        async function openNoticeDetail(id) {
+            try {
+                document.getElementById('noticeDetailContent').innerHTML = '<div style="text-align: center; padding: 20px;">로딩 중...</div>';
+                document.getElementById('noticeDetailModal').style.display = 'flex';
+
+                const response = await fetch(`/api/notices/${id}`);
+                const result = await response.json();
+
+                if (result.success) {
+                    const post = result.data;
+                    const date = new Date(post.created_at).toLocaleDateString('ko-KR');
+                    const pinBadge = post.is_pinned
+                        ? '<span style="background: #ef4444; color: white; font-size: 11px; padding: 2px 8px; border-radius: 4px;">중요</span>'
+                        : '';
+                    const targetBadge = post.target_audience === 'all'
+                        ? '<span style="background: #3b82f6; color: white; font-size: 11px; padding: 2px 8px; border-radius: 4px;">전체</span>'
+                        : post.target_audience === 'branches'
+                        ? '<span style="background: #8b5cf6; color: white; font-size: 11px; padding: 2px 8px; border-radius: 4px;">지사</span>'
+                        : '<span style="background: #10b981; color: white; font-size: 11px; padding: 2px 8px; border-radius: 4px;">매장</span>';
+
+                    // 이미지 목록 HTML
+                    let imagesHtml = '';
+                    if (post.images && post.images.length > 0) {
+                        imagesHtml = '<div style="margin-top: 16px; display: flex; flex-wrap: wrap; gap: 8px;">';
+                        post.images.forEach(img => {
+                            imagesHtml += `<img src="${img.url}" alt="${img.original_name}" style="max-width: 200px; max-height: 150px; border-radius: 8px; cursor: pointer;" onclick="window.open('${img.url}', '_blank')">`;
+                        });
+                        imagesHtml += '</div>';
+                    }
+
+                    document.getElementById('noticeDetailTitle').textContent = post.title;
+                    document.getElementById('noticeDetailContent').innerHTML = `
+                        <div style="margin-bottom: 12px; padding-bottom: 12px; border-bottom: 1px solid #e5e7eb;">
+                            <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
+                                ${pinBadge} ${targetBadge}
+                            </div>
+                            <div style="font-size: 13px; color: #6b7280;">${post.author?.name || '관리자'} · ${date} · 조회 ${post.view_count || 0}</div>
+                        </div>
+                        <div style="white-space: pre-wrap; line-height: 1.6; min-height: 60px;">${post.content || '내용이 없습니다.'}</div>
+                        ${imagesHtml}
+                    `;
+                } else {
+                    document.getElementById('noticeDetailContent').innerHTML = '<div style="text-align: center; color: #ef4444;">공지사항을 불러올 수 없습니다.</div>';
+                }
+            } catch (error) {
+                console.error('공지사항 상세 로드 오류:', error);
+                document.getElementById('noticeDetailContent').innerHTML = '<div style="text-align: center; color: #ef4444;">오류가 발생했습니다.</div>';
+            }
+        }
+
+        function closeNoticeDetailModal() {
+            document.getElementById('noticeDetailModal').style.display = 'none';
+        }
+
+        // 모달 바깥 클릭 시 닫기
+        document.getElementById('qnaDetailModal')?.addEventListener('click', function(e) {
+            if (e.target === this) closeQnaDetailModal();
+        });
+        document.getElementById('noticeDetailModal')?.addEventListener('click', function(e) {
+            if (e.target === this) closeNoticeDetailModal();
+        });
+
         // 기간 선택 변수
         let currentDays = 30; // 기본값: 최근 30일
         
@@ -1003,7 +1379,12 @@
             // 관리자 패널
             window.location.href = '/admin';
         }
-        
+
+        function openCustomerManagement() {
+            // 고객 관리
+            window.location.href = '/management/customers';
+        }
+
 
         // 실시간 데이터 로드 (안전성 강화)
         async function loadRealTimeData() {
@@ -1891,63 +2272,10 @@
             console.log('🎨 대시보드 UI 업데이트 완료');
         }
 
-        // 📝 실시간 활동 로드 함수
+        // 📝 실시간 활동 로드 함수 (Q&A로 대체됨 - 비활성화)
         async function loadRealtimeActivities() {
-            try {
-                console.log('📝 실시간 활동 로딩...');
-
-                const response = await fetch('/api/activities/recent?limit=10');
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-
-                const data = await response.json();
-
-                if (data.success && data.data && data.data.length > 0) {
-                    // 활동 데이터가 있는 경우
-                    document.getElementById('activity-status').textContent = `최근 활동 ${data.data.length}건`;
-                    document.getElementById('activity-description').textContent = '실시간으로 업데이트됩니다.';
-
-                    const activitiesHtml = data.data.map(activity => `
-                        <div style="border-bottom: 1px solid #e5e7eb; padding: 12px 0;">
-                            <div style="display: flex; justify-between; align-items: start;">
-                                <div style="flex: 1;">
-                                    <div style="font-weight: 600; color: #374151; margin-bottom: 4px;">
-                                        ${activity.title}
-                                    </div>
-                                    <div style="font-size: 13px; color: #6b7280; margin-bottom: 4px;">
-                                        ${activity.description || ''}
-                                    </div>
-                                    <div style="font-size: 12px; color: #9ca3af;">
-                                        ${activity.user_name} • ${activity.time_ago}
-                                    </div>
-                                </div>
-                                <div style="padding: 4px 8px; background: #f3f4f6; border-radius: 4px; font-size: 11px; color: #6b7280;">
-                                    ${activity.type}
-                                </div>
-                            </div>
-                        </div>
-                    `).join('');
-
-                    document.getElementById('realtime-activities').innerHTML = activitiesHtml;
-
-                    // 빈 상태 숨기기
-                    const emptyState = document.querySelector('#activity-status').parentElement;
-                    emptyState.style.display = 'none';
-
-                    console.log(`✅ 실시간 활동 ${data.data.length}건 로드 완료`);
-                } else {
-                    // 활동 데이터가 없는 경우
-                    document.getElementById('activity-status').textContent = '활동 데이터 없음';
-                    document.getElementById('activity-description').textContent = '사용자 활동이 발생하면 여기에 표시됩니다.';
-                    document.getElementById('realtime-activities').innerHTML = '';
-                    console.log('ℹ️ 실시간 활동 데이터 없음');
-                }
-            } catch (error) {
-                console.error('❌ 실시간 활동 로드 실패:', error);
-                document.getElementById('activity-status').textContent = '활동 로드 실패';
-                document.getElementById('activity-description').textContent = '활동 데이터를 불러올 수 없습니다.';
-            }
+            // 실시간 활동 섹션이 Q&A로 대체되어 더 이상 사용하지 않음
+            console.log('ℹ️ 실시간 활동 섹션이 Q&A로 대체됨');
         }
 
         // 🔄 실시간 목표 로드 함수
@@ -2758,6 +3086,73 @@
     </script>
     @endif
 
+    <!-- Q&A 작성 모달 -->
+    <div id="qnaCreateModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+        <div style="background: white; border-radius: 12px; padding: 24px; max-width: 500px; width: 90%;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; font-size: 18px; font-weight: bold;">Q&A 질문하기</h2>
+                <button onclick="closeQnaCreateModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #999;">&times;</button>
+            </div>
+            <form id="qnaCreateForm" onsubmit="submitQnaCreate(event)">
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 14px;">제목 *</label>
+                    <input type="text" id="qnaCreateTitle" required placeholder="질문 제목을 입력하세요"
+                        style="width: 100%; padding: 10px 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; box-sizing: border-box;">
+                </div>
+                <div style="margin-bottom: 16px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 500; font-size: 14px;">내용 *</label>
+                    <textarea id="qnaCreateContent" required placeholder="질문 내용을 입력하세요"
+                        style="width: 100%; min-height: 120px; padding: 12px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; resize: vertical; box-sizing: border-box;"></textarea>
+                </div>
+                <div style="margin-bottom: 20px;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                        <input type="checkbox" id="qnaCreatePrivate" style="width: 16px; height: 16px;">
+                        <span style="font-size: 14px;">🔒 비밀글로 작성</span>
+                    </label>
+                    <p style="margin: 6px 0 0 24px; font-size: 12px; color: #9ca3af;">비밀글은 본사/지사 관리자만 열람할 수 있습니다.</p>
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button type="button" onclick="closeQnaCreateModal()"
+                        style="padding: 10px 20px; border: 1px solid #d1d5db; border-radius: 8px; background: white; cursor: pointer; font-size: 14px;">
+                        취소
+                    </button>
+                    <button type="submit"
+                        style="padding: 10px 20px; border: none; border-radius: 8px; background: #6366f1; color: white; cursor: pointer; font-size: 14px;">
+                        등록
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Q&A 상세 모달 -->
+    <div id="qnaDetailModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+        <div style="background: white; border-radius: 12px; padding: 24px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 id="qnaDetailTitle" style="margin: 0; font-size: 18px; font-weight: bold;">Q&A 상세</h2>
+                <button onclick="closeQnaDetailModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #999;">&times;</button>
+            </div>
+            <div id="qnaDetailContent" style="color: #374151;"></div>
+            <div style="margin-top: 20px; text-align: right;">
+                <a id="qnaDetailLink" href="/community/qna" style="color: #3b82f6; text-decoration: none; font-size: 14px;">게시판에서 보기 →</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 공지사항 상세 모달 -->
+    <div id="noticeDetailModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
+        <div style="background: white; border-radius: 12px; padding: 24px; max-width: 600px; width: 90%; max-height: 80vh; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 id="noticeDetailTitle" style="margin: 0; font-size: 18px; font-weight: bold;">공지사항 상세</h2>
+                <button onclick="closeNoticeDetailModal()" style="background: none; border: none; font-size: 24px; cursor: pointer; color: #999;">&times;</button>
+            </div>
+            <div id="noticeDetailContent" style="color: #374151;"></div>
+            <div style="margin-top: 20px; text-align: right;">
+                <a id="noticeDetailLink" href="/community/notices" style="color: #3b82f6; text-decoration: none; font-size: 14px;">게시판에서 보기 →</a>
+            </div>
+        </div>
+    </div>
+
     <!-- 비밀번호 변경 모달 -->
     <div id="changePasswordModal" style="display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 9999; align-items: center; justify-content: center;">
         <div style="background: white; border-radius: 12px; padding: 24px; max-width: 500px; width: 90%;">
@@ -2888,6 +3283,229 @@
                 closeChangePasswordModal();
             }
         });
+
+        @if(auth()->user()->role === 'store')
+        // ===== 매장 월 목표 관리 =====
+        let currentGoalData = null;
+
+        // 목표 데이터 로드
+        async function loadStoreGoal() {
+            try {
+                const response = await fetch('/api/my-goal', {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content
+                    },
+                    credentials: 'same-origin'
+                });
+
+                if (!response.ok) throw new Error('Failed to load goal');
+
+                const result = await response.json();
+                if (result.success) {
+                    currentGoalData = result.data;
+                    updateGoalDisplay(result.data);
+                }
+            } catch (error) {
+                console.error('Goal load error:', error);
+                safeUpdateElement('store-goal-achievement', '목표 설정하기');
+                safeUpdateElement('store-goal-target', '클릭하여 목표 설정');
+            }
+        }
+
+        // 목표 표시 업데이트
+        function updateGoalDisplay(data) {
+            const goalEl = document.getElementById('store-goal-achievement');
+            const targetEl = document.getElementById('store-goal-target');
+            const progressEl = document.getElementById('store-goal-progress');
+
+            if (data.goal && data.goal.sales_target > 0) {
+                const target = parseFloat(data.goal.sales_target);
+                const current = parseFloat(data.current_sales) || 0;
+                const rate = data.achievement_rate || 0;
+
+                if (goalEl) goalEl.textContent = `${rate}% 달성`;
+                if (targetEl) {
+                    const remaining = target - current;
+                    if (remaining > 0) {
+                        targetEl.textContent = `목표 ${(target / 10000).toLocaleString()}만원 (${(remaining / 10000).toLocaleString()}만원 남음)`;
+                    } else {
+                        targetEl.textContent = `목표 ${(target / 10000).toLocaleString()}만원 달성!`;
+                    }
+                }
+                if (progressEl) progressEl.style.width = Math.min(rate, 100) + '%';
+            } else {
+                if (goalEl) goalEl.textContent = '목표 미설정';
+                if (targetEl) targetEl.textContent = '클릭하여 이번 달 목표 설정';
+                if (progressEl) progressEl.style.width = '0%';
+            }
+        }
+
+        // 목표 설정 모달 열기
+        function openGoalModal() {
+            const modal = document.getElementById('goalModal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                // 기존 목표가 있으면 입력란에 표시
+                if (currentGoalData?.goal) {
+                    document.getElementById('goal-sales-target').value = currentGoalData.goal.sales_target || '';
+                    document.getElementById('goal-activation-target').value = currentGoalData.goal.activation_target || '';
+                    document.getElementById('goal-margin-target').value = currentGoalData.goal.margin_target || '';
+                    document.getElementById('goal-notes').value = currentGoalData.goal.notes || '';
+                }
+            }
+        }
+
+        // 목표 설정 모달 닫기
+        function closeGoalModal() {
+            const modal = document.getElementById('goalModal');
+            if (modal) {
+                modal.classList.add('hidden');
+            }
+        }
+
+        // 목표 저장
+        async function saveGoal() {
+            const salesTarget = document.getElementById('goal-sales-target').value;
+            const activationTarget = document.getElementById('goal-activation-target').value;
+            const marginTarget = document.getElementById('goal-margin-target').value;
+            const notes = document.getElementById('goal-notes').value;
+
+            // 최소 하나의 목표 값이 필요
+            if ((!salesTarget || parseFloat(salesTarget) <= 0) &&
+                (!activationTarget || parseInt(activationTarget) <= 0) &&
+                (!marginTarget || parseFloat(marginTarget) <= 0)) {
+                alert('최소 하나의 목표를 입력해주세요.');
+                return;
+            }
+
+            const saveBtn = document.getElementById('goal-save-btn');
+            if (saveBtn) {
+                saveBtn.disabled = true;
+                saveBtn.textContent = '저장 중...';
+            }
+
+            try {
+                const response = await fetch('/api/my-goal', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content
+                    },
+                    credentials: 'same-origin',
+                    body: JSON.stringify({
+                        sales_target: salesTarget ? parseFloat(salesTarget) : 0,
+                        activation_target: activationTarget ? parseInt(activationTarget) : null,
+                        margin_target: marginTarget ? parseFloat(marginTarget) : null,
+                        notes: notes
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    currentGoalData = result.data;
+                    updateGoalDisplay(result.data);
+                    closeGoalModal();
+                    alert('목표가 저장되었습니다!');
+                } else {
+                    throw new Error(result.message || 'Failed to save goal');
+                }
+            } catch (error) {
+                console.error('Goal save error:', error);
+                alert('목표 저장에 실패했습니다: ' + error.message);
+            } finally {
+                if (saveBtn) {
+                    saveBtn.disabled = false;
+                    saveBtn.textContent = '저장하기';
+                }
+            }
+        }
+
+        // 페이지 로드 시 목표 데이터 로드
+        document.addEventListener('DOMContentLoaded', function() {
+            loadStoreGoal();
+        });
+
+        // 목표 모달 외부 클릭 시 닫기
+        document.getElementById('goalModal')?.addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeGoalModal();
+            }
+        });
+        @endif
     </script>
+
+    @if(auth()->user()->role === 'store')
+    <!-- 목표 설정 모달 -->
+    <div id="goalModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+            <div class="flex justify-between items-center p-4 border-b">
+                <h3 class="text-lg font-semibold text-gray-800">🎯 이번 달 목표 설정</h3>
+                <button onclick="closeGoalModal()" class="text-gray-500 hover:text-gray-700">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="p-4">
+                <div class="mb-4">
+                    <label for="goal-sales-target" class="block text-sm font-medium text-gray-700 mb-1">
+                        💰 매출 목표 (원)
+                    </label>
+                    <input type="number" id="goal-sales-target"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                           placeholder="예: 10000000 (1천만원)"
+                           min="0" step="100000">
+                    <p class="mt-1 text-xs text-gray-500">이번 달 달성하고 싶은 매출 금액을 입력하세요</p>
+                </div>
+                <div class="mb-4">
+                    <label for="goal-activation-target" class="block text-sm font-medium text-gray-700 mb-1">
+                        📱 개통 건수 목표 (건)
+                    </label>
+                    <input type="number" id="goal-activation-target"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                           placeholder="예: 50"
+                           min="0" step="1">
+                    <p class="mt-1 text-xs text-gray-500">이번 달 목표 개통 건수를 입력하세요</p>
+                </div>
+                <div class="mb-4">
+                    <label for="goal-margin-target" class="block text-sm font-medium text-gray-700 mb-1">
+                        📊 수익률 목표 (%)
+                    </label>
+                    <input type="number" id="goal-margin-target"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                           placeholder="예: 55"
+                           min="0" max="100" step="0.1">
+                    <p class="mt-1 text-xs text-gray-500">목표 수익률을 입력하세요 (0~100%)</p>
+                </div>
+                <div class="mb-4">
+                    <label for="goal-notes" class="block text-sm font-medium text-gray-700 mb-1">
+                        📝 메모 (선택)
+                    </label>
+                    <textarea id="goal-notes" rows="2"
+                              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                              placeholder="목표에 대한 메모..."></textarea>
+                </div>
+                <div class="bg-amber-50 p-3 rounded-lg mb-4">
+                    <p class="text-sm text-amber-800">
+                        <strong>💡 팁:</strong> 목표는 본인만 볼 수 있으며, 대시보드에서 실시간 달성률을 확인할 수 있습니다.
+                    </p>
+                </div>
+            </div>
+            <div class="flex justify-end gap-2 p-4 border-t bg-gray-50 rounded-b-lg">
+                <button onclick="closeGoalModal()"
+                        class="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors">
+                    취소
+                </button>
+                <button id="goal-save-btn" onclick="saveGoal()"
+                        class="px-4 py-2 text-white bg-amber-500 rounded-lg hover:bg-amber-600 transition-colors">
+                    저장하기
+                </button>
+            </div>
+        </div>
+    </div>
+    @endif
 </body>
 </html>

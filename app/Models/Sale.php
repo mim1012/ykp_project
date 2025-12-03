@@ -30,7 +30,9 @@ class Sale extends Model
         // 🔄 실제 Railway DB 컬럼명과 정확히 일치
         'base_price',        // DB column is base_price
         'verbal1',
+        'verbal1_memo',      // 구두1 메모 필드 추가
         'verbal2',
+        'verbal2_memo',      // 구두2 메모 필드 추가
         'grade_amount',
         'additional_amount',         // DB column is additional_amount
         'rebate_total',

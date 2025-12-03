@@ -51,6 +51,11 @@ class QnaPost extends Model
         return $this->morphMany(BoardView::class, 'viewable');
     }
 
+    public function images()
+    {
+        return $this->morphMany(PostImage::class, 'imageable');
+    }
+
     // Scopes
     /**
      * Scope: Filter posts visible to the given user based on RBAC

@@ -63,6 +63,22 @@ class Store extends Model
         return $this->hasMany(Expense::class);
     }
 
+    public function goals()
+    {
+        return $this->hasMany(Goal::class, 'target_id')
+            ->where('target_type', 'store');
+    }
+
+    public function currentMonthGoal()
+    {
+        return $this->hasOne(Goal::class, 'target_id')
+            ->where('target_type', 'store')
+            ->where('period_type', 'monthly')
+            ->where('period_start', '<=', now())
+            ->where('period_end', '>=', now())
+            ->where('is_active', true);
+    }
+
     // Scopes
     public function scopeFranchise($query)
     {

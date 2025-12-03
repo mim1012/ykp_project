@@ -22,7 +22,7 @@ class NoticePostController extends Controller
             $user = Auth::user();
             $perPage = $request->input('per_page', 20);
 
-            $query = NoticePost::with('author:id,name,role')
+            $query = NoticePost::with(['author:id,name,role', 'images'])
                 ->visibleTo($user)
                 ->published();
 
@@ -74,7 +74,7 @@ class NoticePostController extends Controller
     {
         try {
             $user = Auth::user();
-            $notice = NoticePost::with('author:id,name,role')->findOrFail($id);
+            $notice = NoticePost::with(['author:id,name,role', 'images'])->findOrFail($id);
 
             // Check if user is targeted
             if (! $notice->isTargetedTo($user)) {

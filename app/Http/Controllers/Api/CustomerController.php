@@ -33,6 +33,7 @@ class CustomerController extends Controller
                 'customer_type' => $request->input('customer_type'),
                 'status' => $request->input('status'),
                 'search' => $request->input('search'),
+                'store_id' => $request->input('store_id'),
                 'start_date' => $request->input('start_date'),
                 'end_date' => $request->input('end_date'),
                 'sort_by' => $request->input('sort_by', 'created_at'),
@@ -185,8 +186,15 @@ class CustomerController extends Controller
             $customer = Customer::findOrFail($id);
             $user = Auth::user();
 
-            // 권한 체크
+            // 권한 체크 - RBAC 적용
             if ($user->isStore() && $customer->store_id !== $user->store_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized',
+                ], 403);
+            }
+
+            if ($user->isBranch() && $customer->branch_id !== $user->branch_id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized',
@@ -201,6 +209,7 @@ class CustomerController extends Controller
                 'first_visit_date' => 'nullable|date',
                 'last_contact_date' => 'nullable|date',
                 'notes' => 'nullable|string',
+                'status' => 'sometimes|in:active,inactive,converted',
             ]);
 
             $updatedCustomer = $this->customerService->updateCustomer($id, $validated);
@@ -240,8 +249,15 @@ class CustomerController extends Controller
             $customer = Customer::findOrFail($id);
             $user = Auth::user();
 
-            // 권한 체크
+            // 권한 체크 - RBAC 적용
             if ($user->isStore() && $customer->store_id !== $user->store_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized',
+                ], 403);
+            }
+
+            if ($user->isBranch() && $customer->branch_id !== $user->branch_id) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Unauthorized',

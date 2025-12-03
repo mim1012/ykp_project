@@ -8,6 +8,7 @@ use App\Models\QnaReply;
 use App\Models\Store;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class QnaApiTest extends TestCase
@@ -61,7 +62,7 @@ class QnaApiTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function store_user_can_create_public_post()
     {
         $response = $this->actingAs($this->storeUser)
@@ -100,7 +101,7 @@ class QnaApiTest extends TestCase
         echo "\n✅ Test passed: Store user can create public post\n";
     }
 
-    /** @test */
+    #[Test]
     public function store_user_can_create_private_post()
     {
         $response = $this->actingAs($this->storeUser)
@@ -120,25 +121,50 @@ class QnaApiTest extends TestCase
         echo "\n✅ Test passed: Store user can create private post\n";
     }
 
-    /** @test */
-    public function branch_user_cannot_create_post()
+    #[Test]
+    public function branch_user_can_create_post()
     {
         $response = $this->actingAs($this->branchUser)
             ->postJson('/api/qna/posts', [
-                'title' => '질문',
+                'title' => '지사 질문',
+                'content' => '지사에서 작성한 질문입니다.',
+                'is_private' => false,
+            ]);
+
+        $response->assertStatus(201)
+                 ->assertJson([
+                     'success' => true,
+                     'message' => 'Q&A post created successfully',
+                 ]);
+
+        $this->assertDatabaseHas('qna_posts', [
+            'title' => '지사 질문',
+            'author_user_id' => $this->branchUser->id,
+            'branch_id' => $this->branch->id,
+        ]);
+
+        echo "\n✅ Test passed: Branch user can create post\n";
+    }
+
+    #[Test]
+    public function hq_user_cannot_create_post()
+    {
+        $response = $this->actingAs($this->hqUser)
+            ->postJson('/api/qna/posts', [
+                'title' => '본사 질문',
                 'content' => '내용',
             ]);
 
         $response->assertStatus(403)
                  ->assertJson([
                      'success' => false,
-                     'message' => 'Only store users can create Q&A posts',
+                     'message' => 'Only store or branch users can create Q&A posts',
                  ]);
 
-        echo "\n✅ Test passed: Branch user cannot create post\n";
+        echo "\n✅ Test passed: HQ user cannot create post (they answer, not ask)\n";
     }
 
-    /** @test */
+    #[Test]
     public function store_user_can_view_own_posts()
     {
         $post = QnaPost::factory()->create([
@@ -163,7 +189,7 @@ class QnaApiTest extends TestCase
         echo "\n✅ Test passed: Store user can view own posts\n";
     }
 
-    /** @test */
+    #[Test]
     public function store_user_cannot_view_other_store_private_post()
     {
         $otherStore = Store::factory()->create(['branch_id' => $this->branch->id]);
@@ -192,7 +218,7 @@ class QnaApiTest extends TestCase
         echo "\n✅ Test passed: Store user cannot view other store's private post\n";
     }
 
-    /** @test */
+    #[Test]
     public function branch_user_can_view_branch_posts()
     {
         $publicPost = QnaPost::factory()->public()->create([
@@ -219,7 +245,7 @@ class QnaApiTest extends TestCase
         echo "\n✅ Test passed: Branch user can view branch posts (public + private)\n";
     }
 
-    /** @test */
+    #[Test]
     public function hq_user_can_view_all_posts()
     {
         $otherBranch = Branch::factory()->create(['code' => 'OTHER']);
@@ -247,7 +273,7 @@ class QnaApiTest extends TestCase
         echo "\n✅ Test passed: HQ user can view all posts\n";
     }
 
-    /** @test */
+    #[Test]
     public function store_user_can_update_pending_post()
     {
         $post = QnaPost::factory()->pending()->create([
@@ -279,7 +305,7 @@ class QnaApiTest extends TestCase
         echo "\n✅ Test passed: Store user can update pending post\n";
     }
 
-    /** @test */
+    #[Test]
     public function store_user_cannot_update_answered_post()
     {
         $post = QnaPost::factory()->answered()->create([
@@ -303,7 +329,7 @@ class QnaApiTest extends TestCase
         echo "\n✅ Test passed: Store user cannot update answered post\n";
     }
 
-    /** @test */
+    #[Test]
     public function store_user_can_delete_pending_post()
     {
         $post = QnaPost::factory()->pending()->create([
@@ -327,7 +353,7 @@ class QnaApiTest extends TestCase
         echo "\n✅ Test passed: Store user can delete pending post\n";
     }
 
-    /** @test */
+    #[Test]
     public function hq_user_can_reply_to_post()
     {
         $post = QnaPost::factory()->pending()->create([
@@ -362,7 +388,7 @@ class QnaApiTest extends TestCase
         echo "\n✅ Test passed: HQ user can reply and post status changes to 'answered'\n";
     }
 
-    /** @test */
+    #[Test]
     public function branch_user_can_reply_to_branch_post()
     {
         $post = QnaPost::factory()->pending()->create([
@@ -388,7 +414,7 @@ class QnaApiTest extends TestCase
         echo "\n✅ Test passed: Branch user can reply to branch post\n";
     }
 
-    /** @test */
+    #[Test]
     public function store_user_cannot_reply_to_closed_post()
     {
         $post = QnaPost::factory()->closed()->create([
@@ -412,7 +438,7 @@ class QnaApiTest extends TestCase
         echo "\n✅ Test passed: Store user cannot reply to closed post\n";
     }
 
-    /** @test */
+    #[Test]
     public function hq_user_can_close_post()
     {
         $post = QnaPost::factory()->answered()->create([
@@ -437,7 +463,7 @@ class QnaApiTest extends TestCase
         echo "\n✅ Test passed: HQ user can close post\n";
     }
 
-    /** @test */
+    #[Test]
     public function post_author_can_close_own_post()
     {
         $post = QnaPost::factory()->answered()->create([
@@ -458,7 +484,7 @@ class QnaApiTest extends TestCase
         echo "\n✅ Test passed: Post author can close own post\n";
     }
 
-    /** @test */
+    #[Test]
     public function view_count_increments_on_read()
     {
         $post = QnaPost::factory()->public()->create([
@@ -486,7 +512,7 @@ class QnaApiTest extends TestCase
         echo "\n✅ Test passed: View count increments correctly\n";
     }
 
-    /** @test */
+    #[Test]
     public function can_filter_posts_by_status()
     {
         QnaPost::factory()->pending()->create([
@@ -516,7 +542,7 @@ class QnaApiTest extends TestCase
         echo "\n✅ Test passed: Can filter posts by status\n";
     }
 
-    /** @test */
+    #[Test]
     public function can_search_posts()
     {
         QnaPost::factory()->create([

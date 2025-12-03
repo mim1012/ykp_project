@@ -39,30 +39,33 @@ class SalesExportController extends Controller
 
             $sales = $query->get();
 
-            // CSV 헤더 생성
+            // CSV 헤더 생성 (계산 필드 제외: 리베총계, 매출, 부/소세, 세전마진, 세후마진)
             $headers = [
                 'ID',
                 '개통일자',
+                '판매자',
                 '고객명',
                 '연락처',
+                '생년월일',
+                '방문경로',
+                '주소',
                 '개통방식',
                 '통신사',
-                '요금제',
+                '모델명',
                 '거래처',
                 '액면가',
                 '구두1',
+                '구두1메모',
                 '구두2',
+                '구두2메모',
                 '그레이드',
                 '부가추가',
                 '서류상현금개통',
                 '유심비',
                 '신규/MNP할인',
                 '차감',
-                '리베총계',
-                '정산금',
                 '현금받음',
                 '페이백',
-                '마진',
                 '메모',
                 '지사명',
                 '매장명',
@@ -77,26 +80,29 @@ class SalesExportController extends Controller
                 $csvData[] = [
                     $sale->id,
                     $sale->sale_date,
-                    $sale->customer_name,
-                    $sale->phone_number,
-                    $sale->activation_type,
-                    $sale->agency,
-                    $sale->rate_plan,
-                    $sale->dealer_name,
-                    $sale->price_setting ?? 0,
+                    $sale->salesperson ?? '',
+                    $sale->customer_name ?? '',
+                    $sale->phone_number ?? '',
+                    $sale->customer_birth_date ?? '',
+                    $sale->visit_path ?? '',
+                    $sale->customer_address ?? '',
+                    $sale->activation_type ?? '',
+                    $sale->carrier ?? '',
+                    $sale->model_name ?? '',
+                    $sale->dealer_name ?? '',
+                    $sale->base_price ?? 0,
                     $sale->verbal1 ?? 0,
+                    $sale->verbal1_memo ?? '',
                     $sale->verbal2 ?? 0,
+                    $sale->verbal2_memo ?? '',
                     $sale->grade_amount ?? 0,
-                    $sale->addon_amount ?? 0,
-                    $sale->paper_cash ?? 0,
+                    $sale->additional_amount ?? 0,
+                    $sale->cash_activation ?? 0,
                     $sale->usim_fee ?? 0,
                     $sale->new_mnp_discount ?? 0,
                     $sale->deduction ?? 0,
-                    $sale->total_rebate ?? 0,
-                    $sale->settlement_amount ?? 0,
-                    $sale->cash_in ?? 0,
+                    $sale->cash_received ?? 0,
                     $sale->payback ?? 0,
-                    $sale->settlement_amount ?? 0, // 마진 = 정산금
                     $sale->memo ?? '',
                     $sale->branch->name ?? '',
                     $sale->store->name ?? '',
@@ -138,18 +144,24 @@ class SalesExportController extends Controller
     public function downloadTemplate()
     {
         try {
-            // 템플릿 헤더
+            // 템플릿 헤더 (계산 필드 제외)
             $headers = [
                 '개통일자',
+                '판매자',
                 '고객명',
                 '연락처',
+                '생년월일',
+                '방문경로',
+                '주소',
                 '개통방식',
                 '통신사',
-                '요금제',
+                '모델명',
                 '거래처',
                 '액면가',
                 '구두1',
+                '구두1메모',
                 '구두2',
+                '구두2메모',
                 '그레이드',
                 '부가추가',
                 '서류상현금개통',
@@ -164,20 +176,26 @@ class SalesExportController extends Controller
             // 샘플 데이터
             $sampleData = [
                 '2025-09-22',
+                '김판매',
                 '홍길동',
                 '010-1234-5678',
+                '971220',
+                '매장방문',
+                '서울 강남구',
                 '신규',
                 'SK',
-                '5G 요금제',
+                'iPhone15',
                 'SM',
                 '50000',
                 '10000',
+                '구두1 메모',
                 '5000',
+                '구두2 메모',
                 '3000',
                 '2000',
                 '0',
                 '6000',
-                '-800',
+                '0',
                 '0',
                 '5000',
                 '10000',
@@ -243,44 +261,51 @@ class SalesExportController extends Controller
                         continue;
                     }
 
-                    // 데이터 매핑
+                    // 데이터 매핑 (새 템플릿 순서에 맞춤)
                     $saleData = [
                         'sale_date' => $row[0] ?? Carbon::now()->format('Y-m-d'),
-                        'customer_name' => $row[1] ?? '',
-                        'phone_number' => $row[2] ?? '',
-                        'activation_type' => $row[3] ?? '신규',
-                        'agency' => $row[4] ?? 'SK',
-                        'rate_plan' => $row[5] ?? '',
-                        'dealer_name' => $row[6] ?? '',
-                        'price_setting' => floatval($row[7] ?? 0),
-                        'verbal1' => floatval($row[8] ?? 0),
-                        'verbal2' => floatval($row[9] ?? 0),
-                        'grade_amount' => floatval($row[10] ?? 0),
-                        'addon_amount' => floatval($row[11] ?? 0),
-                        'paper_cash' => floatval($row[12] ?? 0),
-                        'usim_fee' => floatval($row[13] ?? 0),
-                        'new_mnp_discount' => floatval($row[14] ?? 0),
-                        'deduction' => floatval($row[15] ?? 0),
-                        'cash_in' => floatval($row[16] ?? 0),
-                        'payback' => floatval($row[17] ?? 0),
-                        'memo' => $row[18] ?? '',
+                        'salesperson' => $row[1] ?? '',
+                        'customer_name' => $row[2] ?? '',
+                        'phone_number' => $row[3] ?? '',
+                        'customer_birth_date' => $this->parseBirthDate($row[4] ?? ''),
+                        'visit_path' => $row[5] ?? '',
+                        'customer_address' => $row[6] ?? '',
+                        'activation_type' => $row[7] ?? '신규',
+                        'carrier' => $row[8] ?? 'SK',
+                        'model_name' => $row[9] ?? '',
+                        'dealer_name' => $row[10] ?? '',
+                        'base_price' => floatval($row[11] ?? 0),
+                        'verbal1' => floatval($row[12] ?? 0),
+                        'verbal1_memo' => $row[13] ?? '',
+                        'verbal2' => floatval($row[14] ?? 0),
+                        'verbal2_memo' => $row[15] ?? '',
+                        'grade_amount' => floatval($row[16] ?? 0),
+                        'additional_amount' => floatval($row[17] ?? 0),
+                        'cash_activation' => floatval($row[18] ?? 0),
+                        'usim_fee' => floatval($row[19] ?? 0),
+                        'new_mnp_discount' => floatval($row[20] ?? 0),
+                        'deduction' => floatval($row[21] ?? 0),
+                        'cash_received' => floatval($row[22] ?? 0),
+                        'payback' => floatval($row[23] ?? 0),
+                        'memo' => $row[24] ?? '',
                         'store_id' => $user->store_id,
                         'branch_id' => $user->branch_id ?? $user->store->branch_id
                     ];
 
                     // 계산 필드 자동 계산
-                    $saleData['total_rebate'] = $saleData['price_setting'] + $saleData['verbal1']
+                    $saleData['rebate_total'] = $saleData['base_price'] + $saleData['verbal1']
                                                + $saleData['verbal2'] + $saleData['grade_amount']
-                                               + $saleData['addon_amount'];
+                                               + $saleData['additional_amount'];
 
-                    $saleData['settlement_amount'] = $saleData['total_rebate'] - $saleData['paper_cash']
+                    $saleData['settlement_amount'] = $saleData['rebate_total'] - $saleData['cash_activation']
                                                     + $saleData['usim_fee'] + $saleData['new_mnp_discount']
-                                                    + $saleData['deduction'];
+                                                    - $saleData['deduction'] + $saleData['cash_received']
+                                                    - $saleData['payback'];
 
-                    // 세금 제거 (커밋 427845b6): 마진 = 정산금
+                    // 세금 제거: 마진 = 정산금
                     $saleData['tax'] = 0;
-                    $saleData['margin_before'] = $saleData['settlement_amount'];
-                    $saleData['margin_after'] = $saleData['settlement_amount'];
+                    $saleData['margin_before_tax'] = $saleData['settlement_amount'];
+                    $saleData['margin_after_tax'] = $saleData['settlement_amount'];
 
                     // 데이터 저장
                     Sale::create($saleData);
@@ -308,5 +333,39 @@ class SalesExportController extends Controller
                 'message' => 'CSV 업로드 실패: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * 생년월일 6자리(YYMMDD) → YYYY-MM-DD 변환
+     */
+    private function parseBirthDate(?string $value): ?string
+    {
+        if (empty($value)) {
+            return null;
+        }
+
+        $str = preg_replace('/[^0-9]/', '', $value);
+
+        // 6자리인 경우 (YYMMDD)
+        if (strlen($str) === 6) {
+            $yy = (int) substr($str, 0, 2);
+            $mm = substr($str, 2, 2);
+            $dd = substr($str, 4, 2);
+            // 00~30은 2000년대, 31~99는 1900년대로 추정
+            $yyyy = $yy <= 30 ? 2000 + $yy : 1900 + $yy;
+            return sprintf('%04d-%s-%s', $yyyy, $mm, $dd);
+        }
+
+        // 8자리인 경우 (YYYYMMDD)
+        if (strlen($str) === 8) {
+            return sprintf('%s-%s-%s', substr($str, 0, 4), substr($str, 4, 2), substr($str, 6, 2));
+        }
+
+        // YYYY-MM-DD 형식인 경우 그대로 반환
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
+            return $value;
+        }
+
+        return null;
     }
 }

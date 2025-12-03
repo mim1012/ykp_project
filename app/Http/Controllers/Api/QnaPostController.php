@@ -24,7 +24,7 @@ class QnaPostController extends Controller
             $user = Auth::user();
             $perPage = $request->input('per_page', 20);
 
-            $query = QnaPost::with(['author:id,name,role', 'store:id,name', 'branch:id,name', 'replies'])
+            $query = QnaPost::with(['author:id,name,role', 'store:id,name', 'branch:id,name', 'replies', 'images'])
                 ->visibleTo($user);
 
             // Status filter
@@ -86,6 +86,7 @@ class QnaPostController extends Controller
                 'store:id,name',
                 'branch:id,name',
                 'replies.author:id,name,role',
+                'images',
             ])->findOrFail($id);
 
             // Check permission
@@ -120,7 +121,7 @@ class QnaPostController extends Controller
     }
 
     /**
-     * Create new Q&A post (Store users only)
+     * Create new Q&A post (Store and Branch users)
      * POST /api/qna/posts
      */
     public function store(Request $request): JsonResponse
@@ -128,11 +129,11 @@ class QnaPostController extends Controller
         try {
             $user = Auth::user();
 
-            // Only store users can create Q&A posts
-            if (! $user->isStore()) {
+            // Store and Branch users can create Q&A posts
+            if (! $user->isStore() && ! $user->isBranch()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Only store users can create Q&A posts',
+                    'message' => 'Only store or branch users can create Q&A posts',
                 ], 403);
             }
 
@@ -224,7 +225,7 @@ class QnaPostController extends Controller
             }
 
             $post->update($request->only(['title', 'content', 'is_private']));
-            $post->load(['author:id,name,role', 'store:id,name', 'branch:id,name', 'replies']);
+            $post->load(['author:id,name,role', 'store:id,name', 'branch:id,name', 'replies', 'images']);
 
             return response()->json([
                 'success' => true,

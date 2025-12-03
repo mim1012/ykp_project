@@ -7,6 +7,7 @@ use App\Models\NoticePost;
 use App\Models\Store;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class NoticeApiTest extends TestCase
@@ -60,7 +61,7 @@ class NoticeApiTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function hq_user_can_create_notice_for_all()
     {
         $response = $this->actingAs($this->hqUser)
@@ -85,7 +86,7 @@ class NoticeApiTest extends TestCase
         echo "\n✅ Test passed: HQ user can create notice for all\n";
     }
 
-    /** @test */
+    #[Test]
     public function branch_user_can_create_notice_for_own_branch()
     {
         $response = $this->actingAs($this->branchUser)
@@ -106,7 +107,7 @@ class NoticeApiTest extends TestCase
         echo "\n✅ Test passed: Branch user can create notice for own branch\n";
     }
 
-    /** @test */
+    #[Test]
     public function branch_user_cannot_create_notice_for_all()
     {
         $response = $this->actingAs($this->branchUser)
@@ -125,7 +126,7 @@ class NoticeApiTest extends TestCase
         echo "\n✅ Test passed: Branch user cannot create notice for all\n";
     }
 
-    /** @test */
+    #[Test]
     public function branch_user_cannot_target_other_branch()
     {
         $otherBranch = Branch::factory()->create(['code' => 'OTHER']);
@@ -147,7 +148,7 @@ class NoticeApiTest extends TestCase
         echo "\n✅ Test passed: Branch user cannot target other branch\n";
     }
 
-    /** @test */
+    #[Test]
     public function store_user_cannot_create_notice()
     {
         $response = $this->actingAs($this->storeUser)
@@ -166,7 +167,7 @@ class NoticeApiTest extends TestCase
         echo "\n✅ Test passed: Store user cannot create notice\n";
     }
 
-    /** @test */
+    #[Test]
     public function all_users_can_see_notice_for_all()
     {
         $notice = NoticePost::factory()->forAll()->create([
@@ -191,7 +192,7 @@ class NoticeApiTest extends TestCase
         echo "\n✅ Test passed: All users can see notice for all\n";
     }
 
-    /** @test */
+    #[Test]
     public function branch_user_can_see_branch_targeted_notice()
     {
         $notice = NoticePost::factory()->forBranches([$this->branch->id])->create([
@@ -207,7 +208,7 @@ class NoticeApiTest extends TestCase
         echo "\n✅ Test passed: Branch user can see branch-targeted notice\n";
     }
 
-    /** @test */
+    #[Test]
     public function store_user_can_see_store_targeted_notice()
     {
         $notice = NoticePost::factory()->forStores([$this->store->id])->create([
@@ -222,7 +223,7 @@ class NoticeApiTest extends TestCase
         echo "\n✅ Test passed: Store user can see store-targeted notice\n";
     }
 
-    /** @test */
+    #[Test]
     public function store_user_cannot_see_other_store_targeted_notice()
     {
         $otherStore = Store::factory()->create(['branch_id' => $this->branch->id]);
@@ -241,7 +242,7 @@ class NoticeApiTest extends TestCase
         echo "\n✅ Test passed: Store user cannot see other store's targeted notice\n";
     }
 
-    /** @test */
+    #[Test]
     public function pinned_notices_appear_first()
     {
         $regularNotice = NoticePost::factory()->forAll()->create([
@@ -268,7 +269,7 @@ class NoticeApiTest extends TestCase
         echo "\n✅ Test passed: Pinned notices appear first\n";
     }
 
-    /** @test */
+    #[Test]
     public function expired_notices_are_hidden_by_default()
     {
         $expiredNotice = NoticePost::factory()->forAll()->expired()->create([
@@ -290,7 +291,7 @@ class NoticeApiTest extends TestCase
         echo "\n✅ Test passed: Expired notices are hidden by default\n";
     }
 
-    /** @test */
+    #[Test]
     public function expired_notices_can_be_included()
     {
         $expiredNotice = NoticePost::factory()->forAll()->expired()->create([
@@ -309,7 +310,7 @@ class NoticeApiTest extends TestCase
         echo "\n✅ Test passed: Expired notices can be included\n";
     }
 
-    /** @test */
+    #[Test]
     public function author_can_update_notice()
     {
         $notice = NoticePost::factory()->forAll()->create([
@@ -336,7 +337,7 @@ class NoticeApiTest extends TestCase
         echo "\n✅ Test passed: Author can update notice\n";
     }
 
-    /** @test */
+    #[Test]
     public function non_author_cannot_update_notice()
     {
         $notice = NoticePost::factory()->forAll()->create([
@@ -357,7 +358,7 @@ class NoticeApiTest extends TestCase
         echo "\n✅ Test passed: Non-author cannot update notice\n";
     }
 
-    /** @test */
+    #[Test]
     public function hq_can_delete_any_notice()
     {
         $notice = NoticePost::factory()->forAll()->create([
@@ -378,7 +379,7 @@ class NoticeApiTest extends TestCase
         echo "\n✅ Test passed: HQ can delete any notice\n";
     }
 
-    /** @test */
+    #[Test]
     public function author_can_delete_own_notice()
     {
         $notice = NoticePost::factory()->forAll()->create([
@@ -394,7 +395,7 @@ class NoticeApiTest extends TestCase
         echo "\n✅ Test passed: Author can delete own notice\n";
     }
 
-    /** @test */
+    #[Test]
     public function hq_can_pin_notice()
     {
         $notice = NoticePost::factory()->forAll()->create([
@@ -417,7 +418,7 @@ class NoticeApiTest extends TestCase
         echo "\n✅ Test passed: HQ can pin notice\n";
     }
 
-    /** @test */
+    #[Test]
     public function branch_user_cannot_pin_notice()
     {
         $notice = NoticePost::factory()->forAll()->create([
@@ -437,7 +438,7 @@ class NoticeApiTest extends TestCase
         echo "\n✅ Test passed: Branch user cannot pin notice\n";
     }
 
-    /** @test */
+    #[Test]
     public function view_count_increments_on_read()
     {
         $notice = NoticePost::factory()->forAll()->create([
@@ -456,7 +457,7 @@ class NoticeApiTest extends TestCase
         echo "\n✅ Test passed: View count increments on read\n";
     }
 
-    /** @test */
+    #[Test]
     public function can_search_notices()
     {
         NoticePost::factory()->forAll()->create([

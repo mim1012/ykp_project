@@ -300,6 +300,8 @@
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">휴대폰번호</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">고객명</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">생년월일</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">방문경로</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">주소</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">액면/셋팅가</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">구두1</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">구두2</th>
@@ -307,8 +309,8 @@
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">부가추가</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">서류상현금개통</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase plus-field">유심비</th>
-                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase minus-field">신규/번이할인</th>
-                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase minus-field">차감</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase minus-field">신규/번이할인(-)</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase minus-field">차감(-)</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase total-field">리베총계</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase total-field">매출</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase plus-field">현금받음</th>
@@ -359,6 +361,31 @@
                     취소
                 </button>
                 <button onclick="saveMemoFromPopup()" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors">
+                    저장
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 구두1/구두2 메모 팝업 모달 -->
+    <div id="verbal-memo-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 items-center justify-center z-50" style="display: none;">
+        <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div class="flex justify-between items-start mb-4">
+                <h3 class="text-lg font-semibold text-gray-900" id="verbal-memo-title">구두 메모</h3>
+                <button onclick="closeVerbalMemoPopup()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            <div class="mb-4">
+                <textarea id="verbal-memo-content" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" rows="5" placeholder="구두 관련 메모를 입력하세요"></textarea>
+            </div>
+            <div class="flex justify-end space-x-2">
+                <button onclick="closeVerbalMemoPopup()" class="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition-colors">
+                    취소
+                </button>
+                <button onclick="saveVerbalMemo()" class="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600 transition-colors">
                     저장
                 </button>
             </div>
@@ -550,6 +577,40 @@
             const safeValue = (val) => (val === null || val === undefined) ? '' : String(val).replace(/"/g, '&quot;');
             const safeNumber = (val) => (val === null || val === undefined || isNaN(val)) ? 0 : Number(val);
 
+            // 생년월일 6자리 포맷 (YYMMDD)
+            const formatBirthDate6 = (val) => {
+                if (!val) return '';
+                const str = String(val).trim();
+                // YYYY-MM-DD 형식인 경우 → YYMMDD로 변환
+                if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+                    return str.slice(2, 4) + str.slice(5, 7) + str.slice(8, 10);
+                }
+                // 이미 6자리인 경우
+                if (/^\d{6}$/.test(str)) {
+                    return str;
+                }
+                // 8자리인 경우 (YYYYMMDD) → YYMMDD
+                if (/^\d{8}$/.test(str)) {
+                    return str.slice(2);
+                }
+                return str;
+            };
+
+            // 생년월일 6자리 파싱 (YYMMDD → YYYY-MM-DD)
+            const parseBirthDate6 = (val) => {
+                if (!val) return '';
+                const str = String(val).trim().replace(/[^0-9]/g, '');
+                if (str.length === 6) {
+                    const yy = parseInt(str.slice(0, 2));
+                    const mm = str.slice(2, 4);
+                    const dd = str.slice(4, 6);
+                    // 00~30은 2000년대, 31~99는 1900년대로 추정
+                    const yyyy = yy <= 30 ? 2000 + yy : 1900 + yy;
+                    return `${yyyy}-${mm}-${dd}`;
+                }
+                return val;
+            };
+
             // 날짜 값 안전 처리 (엑셀 시리얼 번호 변환 포함)
             const safeDate = (val) => {
                 if (!val) return '';
@@ -648,29 +709,65 @@
                                onchange="updateRowData('${row.id}', 'customer_name', this.value)"
                                class="field-name" placeholder="김고객">
                     </td>
-                    <!-- 11. 생년월일 -->
+                    <!-- 11. 생년월일 (6자리 YYMMDD) -->
                     <td class="px-2 py-2">
-                        <input type="date" value="${safeDate(row.customer_birth_date)}"
-                               onchange="updateRowData('${row.id}', 'customer_birth_date', this.value)"
-                               class="field-date">
+                        <input type="text" value="${formatBirthDate6(row.customer_birth_date)}"
+                               onchange="updateRowData('${row.id}', 'customer_birth_date', parseBirthDate6(this.value))"
+                               class="w-20 px-1 py-1 border rounded text-xs text-center"
+                               placeholder="971220"
+                               maxlength="6"
+                               pattern="[0-9]{6}"
+                               title="생년월일 6자리 (예: 971220)">
                     </td>
-                    <!-- 12. 액면/셋팅가 -->
+                    <!-- 12. 방문경로 -->
+                    <td class="px-2 py-2">
+                        <select onchange="updateRowData('${row.id}', 'visit_path', this.value)" class="field-activation">
+                            <option value="" ${!row.visit_path ? 'selected' : ''}>선택</option>
+                            <option value="온라인" ${row.visit_path === '온라인' ? 'selected' : ''}>온라인</option>
+                            <option value="지인소개" ${row.visit_path === '지인소개' ? 'selected' : ''}>지인소개</option>
+                            <option value="매장방문" ${row.visit_path === '매장방문' ? 'selected' : ''}>매장방문</option>
+                            <option value="전화문의" ${row.visit_path === '전화문의' ? 'selected' : ''}>전화문의</option>
+                            <option value="기타" ${row.visit_path === '기타' ? 'selected' : ''}>기타</option>
+                        </select>
+                    </td>
+                    <!-- 13. 주소 -->
+                    <td class="px-2 py-2">
+                        <input type="text" value="${safeValue(row.customer_address)}"
+                               onchange="updateRowData('${row.id}', 'customer_address', this.value)"
+                               class="w-32 px-1 py-1 border rounded text-xs"
+                               placeholder="서울 강남구">
+                    </td>
+                    <!-- 14. 액면/셋팅가 -->
                     <td class="px-2 py-2">
                         <input type="number" value="${safeNumber(row.base_price)}"
                                onchange="updateRowData('${row.id}', 'base_price', isNaN(parseFloat(this.value)) ? 0 : parseFloat(this.value))"
                                class="field-money" placeholder="300000">
                     </td>
-                    <!-- 13. 구두1 -->
+                    <!-- 15. 구두1 -->
                     <td class="px-2 py-2">
-                        <input type="number" value="${row.verbal1}" 
-                               onchange="updateRowData('${row.id}', 'verbal1', parseInt(this.value) || 0); calculateRow('${row.id}')"
-                               class="field-money" placeholder="50000">
+                        <div class="flex items-center space-x-1">
+                            <input type="number" value="${row.verbal1}"
+                                   onchange="updateRowData('${row.id}', 'verbal1', parseInt(this.value) || 0); calculateRow('${row.id}')"
+                                   class="w-20 px-1 py-1 border rounded text-xs" placeholder="50000">
+                            <button onclick="openVerbalMemoPopup('${row.id}', 1)"
+                                    class="px-1 py-0.5 ${row.verbal1_memo ? 'bg-yellow-500' : 'bg-gray-400'} text-white rounded text-xs hover:bg-yellow-600"
+                                    title="${safeValue(row.verbal1_memo) || '메모 추가'}">
+                                📝
+                            </button>
+                        </div>
                     </td>
-                    <!-- 14. 구두2 -->
+                    <!-- 16. 구두2 -->
                     <td class="px-2 py-2">
-                        <input type="number" value="${row.verbal2}" 
-                               onchange="updateRowData('${row.id}', 'verbal2', parseInt(this.value) || 0); calculateRow('${row.id}')"
-                               class="field-money" placeholder="30000">
+                        <div class="flex items-center space-x-1">
+                            <input type="number" value="${row.verbal2}"
+                                   onchange="updateRowData('${row.id}', 'verbal2', parseInt(this.value) || 0); calculateRow('${row.id}')"
+                                   class="w-20 px-1 py-1 border rounded text-xs" placeholder="30000">
+                            <button onclick="openVerbalMemoPopup('${row.id}', 2)"
+                                    class="px-1 py-0.5 ${row.verbal2_memo ? 'bg-yellow-500' : 'bg-gray-400'} text-white rounded text-xs hover:bg-yellow-600"
+                                    title="${safeValue(row.verbal2_memo) || '메모 추가'}">
+                                📝
+                            </button>
+                        </div>
                     </td>
                     <!-- 15. 그레이드 -->
                     <td class="px-2 py-2">
@@ -696,11 +793,11 @@
                                onchange="updateRowData('${row.id}', 'usim_fee', parseInt(this.value) || 0); calculateRow('${row.id}')"
                                class="field-policy plus-field" placeholder="0">
                     </td>
-                    <!-- 19. 신규,번이(-800) -->
+                    <!-- 19. 신규,번이할인 (기본값 0) -->
                     <td class="px-2 py-2">
-                        <input type="number" value="${row.new_mnp_discount}" 
+                        <input type="number" value="${row.new_mnp_discount || 0}"
                                onchange="updateRowData('${row.id}', 'new_mnp_discount', parseInt(this.value) || 0); calculateRow('${row.id}')"
-                               class="field-policy minus-field" placeholder="-800">
+                               class="field-policy minus-field" placeholder="0">
                     </td>
                     <!-- 20. 차감 -->
                     <td class="px-2 py-2">
@@ -818,9 +915,10 @@
             const rebateTotal = (row.base_price || 0) + (row.verbal1 || 0) + (row.verbal2 || 0) +
                                (row.grade_amount || 0) + (row.additional_amount || 0);
 
-            // U = T - P + Q + R + S + W - X (매출)
-            const settlementAmount = rebateTotal - (row.cash_activation || 0) + (row.usim_fee || 0) +
-                                   (row.new_mnp_discount || 0) + (row.deduction || 0) +
+            // U = T - P + Q - R - S + W - X (매출)
+            // R(신규/번이할인), S(차감)은 마이너스 항목이므로 빼기
+            const settlementAmount = rebateTotal - (row.cash_activation || 0) + (row.usim_fee || 0) -
+                                   (row.new_mnp_discount || 0) - (row.deduction || 0) +
                                    (row.cash_received || 0) - (row.payback || 0);
 
             row.rebate_total = rebateTotal;
@@ -1483,9 +1581,15 @@
                         phone_number: row.phone_number,
                         customer_name: row.customer_name,
                         customer_birth_date: row.customer_birth_date,
+                        // 신규 필드: 방문경로, 주소
+                        visit_path: row.visit_path || null,
+                        customer_address: row.customer_address || null,
+                        // 금액 필드
                         base_price: row.base_price,
                         verbal1: row.verbal1,
+                        verbal1_memo: row.verbal1_memo || null,  // 구두1 메모
                         verbal2: row.verbal2,
+                        verbal2_memo: row.verbal2_memo || null,  // 구두2 메모
                         grade_amount: row.grade_amount,
                         additional_amount: row.additional_amount,
                         cash_activation: row.cash_activation,
@@ -2911,6 +3015,11 @@
                                     continue;
                                 }
 
+                                // 컬럼 수에 따라 템플릿 버전 감지
+                                // 새 템플릿 (21컬럼): 리베총계, 매출, 부/소세, 세전마진, 세후마진 제외
+                                // 기존 템플릿 (26컬럼): 모든 컬럼 포함
+                                const isNewTemplate = cols.length <= 22;
+
                                 const newRowData = {
                                     id: nextId++, // 숫자 ID 사용 (문자열 ID는 Number() 변환 시 NaN 발생)
                                     salesperson: getColValue(0, '{{ Auth::user()->name ?? '' }}'), // 판매자
@@ -2931,20 +3040,20 @@
                                     additional_amount: parseNumber(getColValue(13)), // 부가추가
                                     cash_activation: parseNumber(getColValue(14)), // 서류상현금개통
                                     usim_fee: parseNumber(getColValue(15)), // 유심비
-                                    new_mnp_discount: parseNumber(getColValue(16)), // 신규/번이할인
-                                    deduction: parseNumber(getColValue(17)), // 차감
+                                    new_mnp_discount: parseNumber(getColValue(16)), // 신규/번이할인(-)
+                                    deduction: parseNumber(getColValue(17)), // 차감(-)
 
-                                    // 계산 필드들
-                                    total_rebate: parseNumber(getColValue(18)), // 리베총계
-                                    settlement_amount: parseNumber(getColValue(19)), // 매출
-                                    tax: parseNumber(getColValue(20)), // 부/소세
-                                    cash_received: parseNumber(getColValue(21)), // 현금받음
-                                    payback: parseNumber(getColValue(22)), // 페이백
-                                    margin_before: parseNumber(getColValue(23)), // 세전마진
-                                    margin_after: parseNumber(getColValue(24)), // 세후마진
+                                    // 계산 필드들 - 새 템플릿은 자동계산, 기존 템플릿은 파일값 사용
+                                    total_rebate: isNewTemplate ? 0 : parseNumber(getColValue(18)), // 리베총계
+                                    settlement_amount: isNewTemplate ? 0 : parseNumber(getColValue(19)), // 매출
+                                    tax: isNewTemplate ? 0 : parseNumber(getColValue(20)), // 부/소세
+                                    cash_received: parseNumber(getColValue(isNewTemplate ? 18 : 21)), // 현금받음
+                                    payback: parseNumber(getColValue(isNewTemplate ? 19 : 22)), // 페이백
+                                    margin_before: isNewTemplate ? 0 : parseNumber(getColValue(23)), // 세전마진
+                                    margin_after: isNewTemplate ? 0 : parseNumber(getColValue(24)), // 세후마진
 
                                     // 메모 필드
-                                    memo: getColValue(25, ''), // 메모 (25번)
+                                    memo: getColValue(isNewTemplate ? 20 : 25, ''), // 메모
                                     isPersisted: false
                                 };
 
@@ -2965,7 +3074,7 @@
 
                                     // 계산 (SalesCalculator.php와 동일한 공식)
                                     const T = K + L + M + N + O; // 리베총계
-                                    const U = T - P + Q + R + S; // 매출
+                                    const U = T - P + Q - R - S; // 매출 (신규/번이할인, 차감은 빼기)
                                     const V = Math.round(U * 0.1); // 세금 (10%)
                                     const Y = U - V + W + X; // 세전마진
                                     const Z = Y - V; // 세후마진 (세전마진 - 세금)
@@ -3066,19 +3175,17 @@
                 const templateData = [
                     ['판매자', '대리점', '통신사', '개통방식', '모델명', '개통일', '휴대폰번호', '고객명', '생년월일',
                      '액면/셋팅가', '구두1', '구두2', '그레이드', '부가추가', '서류상현금개통', '유심비',
-                     '신규/번이할인', '차감', '리베총계', '매출', '부/소세', '현금받음', '페이백',
-                     '세전마진', '세후마진', '메모'],
+                     '신규/번이할인(-)', '차감(-)', '현금받음', '페이백', '메모'],
                     ['홍길동', 'SM', 'SK', '신규', 'iPhone 15', todayStr, '010-1234-5678', '김고객', '1990-01-01',
                      100000, 50000, 30000, 20000, 10000, 30000, 8800,
-                     10000, 5000, '', '', '', 20000, 15000,
-                     '', '', '예시 메모']
+                     0, 0, 20000, 15000, '예시 메모']
                 ];
 
                 // XLSX 워크북 생성
                 const wb = XLSX.utils.book_new();
                 const ws = XLSX.utils.aoa_to_sheet(templateData);
 
-                // 컬럼 너비 설정
+                // 컬럼 너비 설정 (리베총계, 매출, 부/소세, 세전마진, 세후마진 제외)
                 ws['!cols'] = [
                     { wch: 10 }, // 판매자
                     { wch: 12 }, // 대리점
@@ -3096,22 +3203,17 @@
                     { wch: 12 }, // 부가추가
                     { wch: 15 }, // 서류상현금개통
                     { wch: 10 }, // 유심비
-                    { wch: 15 }, // 신규/번이할인
-                    { wch: 10 }, // 차감
-                    { wch: 12 }, // 리베총계
-                    { wch: 12 }, // 매출
-                    { wch: 10 }, // 부/소세
+                    { wch: 15 }, // 신규/번이할인(-)
+                    { wch: 10 }, // 차감(-)
                     { wch: 12 }, // 현금받음
                     { wch: 10 }, // 페이백
-                    { wch: 12 }, // 세전마진
-                    { wch: 12 }, // 세후마진
                     { wch: 20 }  // 메모
                 ];
 
                 // 숫자 컬럼 서식 설정 (콤마 없는 숫자)
                 const range = XLSX.utils.decode_range(ws['!ref']);
                 for (let R = 1; R <= range.e.r; R++) { // 헤더 제외 (R=1부터)
-                    for (let C = 9; C <= 24; C++) { // 액면가(9)부터 세후마진(24)까지
+                    for (let C = 9; C <= 19; C++) { // 액면가(9)부터 페이백(19)까지
                         const cellAddr = XLSX.utils.encode_cell({ r: R, c: C });
                         if (ws[cellAddr] && ws[cellAddr].v !== '') {
                             ws[cellAddr].t = 'n'; // 숫자 타입
@@ -3138,16 +3240,16 @@
                 return '';
             }
 
-            // CSV 헤더
+            // CSV 헤더 (기획: 리베총계, 매출, 부/소세, 세전마진, 세후마진 제외)
             const headers = [
                 '날짜', '행번호', '대리점', '통신사', '개통방식', '시리얼넘버',
                 '모델명', '용량', '전화번호', '고객명', '생년월일',
                 '액면가', '구두1', '구두2', '그레이드', '부가추가',
                 '서류상현금개통', '유심비', '신규번이할인', '차감',
-                '리베총계', '매출', '현금받음', '페이백', '마진'
+                '현금받음', '페이백', '메모'
             ];
 
-            // CSV 데이터 행
+            // CSV 데이터 행 (기획: 리베총계, 매출, 부/소세, 세전마진, 세후마진 제외)
             const rows = data.map(row => [
                 row.sale_date || '',
                 row.row_number || '',
@@ -3169,11 +3271,9 @@
                 row.usim_fee || 0,
                 row.new_mnp_discount || 0,
                 row.deduction || 0,
-                row.rebate_total || 0,
-                row.settlement_amount || 0,
                 row.cash_received || 0,
                 row.payback || 0,
-                row.margin_after_tax || 0
+                row.memo || ''
             ]);
 
             // CSV 문자열 생성
@@ -3260,6 +3360,65 @@
 
                 closeMemoPopup();
                 showStatus('메모가 저장되었습니다.', 'success');
+            }
+        }
+
+        // 구두1/구두2 메모 관련 변수 및 함수
+        let currentVerbalMemoRowId = null;
+        let currentVerbalMemoType = null; // 1 또는 2
+
+        function openVerbalMemoPopup(rowId, verbalType) {
+            console.log(`Opening verbal${verbalType} memo popup for row:`, rowId);
+            try {
+                currentVerbalMemoRowId = typeof rowId === 'string' ? parseInt(rowId) : rowId;
+                currentVerbalMemoType = verbalType;
+
+                const row = salesData.find(r => r.id === currentVerbalMemoRowId);
+                if (row) {
+                    const fieldName = `verbal${verbalType}_memo`;
+                    const memoContent = document.getElementById('verbal-memo-content');
+                    const memoTitle = document.getElementById('verbal-memo-title');
+                    const memoModal = document.getElementById('verbal-memo-modal');
+
+                    if (memoContent && memoModal && memoTitle) {
+                        memoContent.value = row[fieldName] || '';
+                        memoTitle.textContent = `구두${verbalType} 메모`;
+                        memoModal.style.display = 'flex';
+                    }
+                }
+            } catch (error) {
+                console.error('Error opening verbal memo popup:', error);
+            }
+        }
+
+        function closeVerbalMemoPopup() {
+            document.getElementById('verbal-memo-modal').style.display = 'none';
+            currentVerbalMemoRowId = null;
+            currentVerbalMemoType = null;
+        }
+
+        function saveVerbalMemo() {
+            if (currentVerbalMemoRowId && currentVerbalMemoType) {
+                const newMemo = document.getElementById('verbal-memo-content').value;
+                const fieldName = `verbal${currentVerbalMemoType}_memo`;
+                updateRowData(currentVerbalMemoRowId, fieldName, newMemo);
+
+                // 버튼 색상 업데이트 (메모가 있으면 노란색, 없으면 회색)
+                const btn = document.querySelector(`button[onclick*="openVerbalMemoPopup(${currentVerbalMemoRowId}, ${currentVerbalMemoType})"]`);
+                if (btn) {
+                    if (newMemo && newMemo.trim()) {
+                        btn.classList.remove('bg-gray-400');
+                        btn.classList.add('bg-yellow-500');
+                        btn.title = newMemo;
+                    } else {
+                        btn.classList.remove('bg-yellow-500');
+                        btn.classList.add('bg-gray-400');
+                        btn.title = '메모 추가';
+                    }
+                }
+
+                closeVerbalMemoPopup();
+                showStatus(`구두${currentVerbalMemoType} 메모가 저장되었습니다.`, 'success');
             }
         }
 

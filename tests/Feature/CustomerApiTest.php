@@ -7,6 +7,7 @@ use App\Models\Customer;
 use App\Models\Store;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 
 class CustomerApiTest extends TestCase
@@ -43,7 +44,7 @@ class CustomerApiTest extends TestCase
         ]);
     }
 
-    /** @test */
+    #[Test]
     public function store_user_can_create_prospect_customer()
     {
         $response = $this->actingAs($this->storeUser)
@@ -73,7 +74,7 @@ class CustomerApiTest extends TestCase
         echo "Response: " . $response->getContent() . "\n";
     }
 
-    /** @test */
+    #[Test]
     public function store_user_can_get_their_customers()
     {
         // Create test customers
@@ -100,7 +101,7 @@ class CustomerApiTest extends TestCase
         echo "Total customers: " . count($response->json('data')) . "\n";
     }
 
-    /** @test */
+    #[Test]
     public function store_user_can_update_customer()
     {
         $customer = Customer::factory()->create([
@@ -131,7 +132,7 @@ class CustomerApiTest extends TestCase
         echo "\n✅ Test passed: Store user can update customer\n";
     }
 
-    /** @test */
+    #[Test]
     public function store_user_can_delete_prospect_customer()
     {
         $customer = Customer::factory()->create([
@@ -156,7 +157,7 @@ class CustomerApiTest extends TestCase
         echo "\n✅ Test passed: Store user can delete prospect customer\n";
     }
 
-    /** @test */
+    #[Test]
     public function store_user_cannot_create_duplicate_customer()
     {
         // Create existing customer
@@ -182,7 +183,7 @@ class CustomerApiTest extends TestCase
         echo "\n✅ Test passed: Duplicate customer prevention works\n";
     }
 
-    /** @test */
+    #[Test]
     public function store_user_can_get_customer_statistics()
     {
         // Create test data

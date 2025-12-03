@@ -95,17 +95,16 @@ class UserPermissionTest extends TestCase
         $this->assertNotContains($this->store3->id, $accessibleStores);
     }
 
-    public function test_잘못된_역할을_가진_사용자는_빈_접근_권한을_가진다(): void
+    public function test_잘못된_역할을_가진_사용자는_DB_제약조건에_의해_거부된다(): void
     {
-        $user = User::factory()->create([
+        // DB에 role 제약조건이 있어 잘못된 역할은 생성 불가
+        $this->expectException(\Illuminate\Database\QueryException::class);
+
+        User::factory()->create([
             'role' => 'invalid_role',
             'branch_id' => $this->branch1->id,
             'store_id' => $this->store1->id,
         ]);
-
-        $this->assertFalse($user->isHeadquarters());
-        $this->assertFalse($user->isBranch());
-        $this->assertFalse($user->isStore());
     }
 
     public function test_매장이_없는_지사의_지사_관리자는_빈_접근_권한을_가진다(): void
