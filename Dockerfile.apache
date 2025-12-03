@@ -2,7 +2,7 @@
 FROM php:8.3-apache
 
 # Cache bust to force rebuild (update this value to force rebuild)
-ARG CACHE_BUST=2025-12-03-php83-fix
+ARG CACHE_BUST=2025-12-03-php83-fix-v2
 
 WORKDIR /var/www/html
 
@@ -40,9 +40,10 @@ RUN echo "OK-v3" > /var/www/html/public/health.txt \
     && echo '<?php http_response_code(200); echo "OK-v3|PHP:" . PHP_VERSION . "|INT_SIZE:" . PHP_INT_SIZE;' > /var/www/html/public/health.php
 
 # Clean install with Carbon 3.x for Laravel 12 compatibility
+# Use PHP 8.3 platform (no --ignore-platform-reqs)
 RUN rm -rf vendor composer.lock \
     && composer clear-cache \
-    && composer install --no-dev --optimize-autoloader --no-scripts --ignore-platform-reqs
+    && composer install --no-dev --optimize-autoloader --no-scripts
 
 # Create dummy Filament helper files (they're missing with --no-dev)
 RUN mkdir -p vendor/filament/notifications/src/Testing \
