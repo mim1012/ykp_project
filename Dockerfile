@@ -22,7 +22,7 @@ RUN npm run build
 FROM php:8.3-apache-bookworm
 WORKDIR /var/www/html
 
-ARG FINAL_SOLUTION=20250916_SUCCESS
+ARG FINAL_SOLUTION=20251203_PHP83_FIX
 RUN echo "✅ FINAL PHP STAGE v$FINAL_SOLUTION - NO VENDOR COPY @ $(date)" && sleep 2
 
 # Apache modules and PHP configuration for Railway
@@ -55,16 +55,19 @@ RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
 # Copy application code first
 COPY . ./
 
-# 🚨 로컬 vendor 삭제 (이 줄이 핵심)
+# Delete local vendor directory (critical for fresh installation)
 RUN rm -rf vendor
 
-# 이제 서버 PHP 8.3 기준으로 vendor 완전 재설치
+# Reinstall vendor based on server PHP 8.3 requirements
 RUN COMPOSER_ALLOW_SUPERUSER=1 composer install \
     --no-dev \
     --optimize-autoloader \
     --no-interaction \
     --no-progress \
     --no-scripts
+
+# Verify platform_check.php was generated correctly for PHP 8.3
+RUN echo "=== Verifying platform_check.php ===" && cat vendor/composer/platform_check.php | head -20
 
 
 # Fix Filament autoload issue for production (run twice to ensure fix)
