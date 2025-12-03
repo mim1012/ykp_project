@@ -1,5 +1,5 @@
 # ========== FINAL SOLUTION ==========
-ARG FINAL_SOLUTION=20250916_SUCCESS
+ARG FINAL_SOLUTION=20251203_PHP83_FIX
 
 # ========== Node Build Stage ==========
 FROM node:20-alpine AS frontend_build
