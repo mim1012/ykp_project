@@ -55,6 +55,10 @@
     </main>
 
     <script>
+        // Production debug flag - disable log in production
+        window.DEBUG = {{ config('app.debug') ? 'true' : 'false' }};
+        const log = (...args) => window.DEBUG && console.log(...args);
+
         // 페이지 로드 시 매장 목록 바로 로드
         document.addEventListener('DOMContentLoaded', function() {
             loadStoresGrouped();
@@ -62,7 +66,7 @@
 
         // 지사별 매장 목록 로드 (모든 지사 표시)
         function loadStoresGrouped() {
-            console.log('매장 목록 로딩 시작...');
+            log('매장 목록 로딩 시작...');
             
             // 지사와 매장 데이터를 동시에 로드
             Promise.all([
@@ -70,8 +74,8 @@
                 fetch('/api/stores').then(r => r.json())
             ])
             .then(([branchData, storeData]) => {
-                console.log('지사 데이터:', branchData.data?.length, '개');
-                console.log('매장 데이터:', storeData.data?.length, '개');
+                log('지사 데이터:', branchData.data?.length, '개');
+                log('매장 데이터:', storeData.data?.length, '개');
                 
                 if (branchData.success && storeData.success) {
                     renderAllBranchesWithStores(branchData.data, storeData.data);
@@ -90,7 +94,7 @@
         function renderAllBranchesWithStores(allBranches, allStores) {
             const container = document.getElementById('stores-container');
             
-            console.log('모든 지사 렌더링 시작:', allBranches.length, '개');
+            log('모든 지사 렌더링 시작:', allBranches.length, '개');
             
             let html = '<div class="space-y-6">';
             
@@ -172,7 +176,7 @@
             html += '</div>'; // space-y-6 닫기
             
             container.innerHTML = html;
-            console.log('모든 지사 렌더링 완료:', allBranches.length, '개');
+            log('모든 지사 렌더링 완료:', allBranches.length, '개');
         }
 
         // 기존 지사별 매장 렌더링 (백업용)
@@ -189,7 +193,7 @@
                 storesByBranch[branchName].push(store);
             });
             
-            console.log('지사별 그룹화:', Object.keys(storesByBranch));
+            log('지사별 그룹화:', Object.keys(storesByBranch));
             
             let html = '<div class="space-y-6">';
             
@@ -247,7 +251,7 @@
             html += '</div>'; // space-y-6 닫기
             
             container.innerHTML = html;
-            console.log('매장 렌더링 완료');
+            log('매장 렌더링 완료');
         }
 
         // 통계 업데이트

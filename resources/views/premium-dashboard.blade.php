@@ -391,7 +391,7 @@
                 <script>
                 // 🚑 강화된 로그아웃 함수 (완전한 세션 정리)
                 function logout() {
-                    console.log('🚑 완전 로그아웃 시도');
+                    log('🚑 완전 로그아웃 시도');
 
                     if (confirm('로그아웃하시겠습니까?')) {
                         // 1. 클라이언트 측 데이터 완전 정리
@@ -404,7 +404,7 @@
                                 document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
                             });
 
-                            console.log('✅ 클라이언트 데이터 정리 완료');
+                            log('✅ 클라이언트 데이터 정리 완료');
                         } catch (e) {
                             console.warn('⚠️ 클라이언트 정리 중 오류:', e);
                         }
@@ -418,7 +418,7 @@
                             }
                         })
                         .then(response => {
-                            console.log('📡 서버 로그아웃 응답:', response.status);
+                            log('📡 서버 로그아웃 응답:', response.status);
 
                             // 3. 강제 리디렉션
                             window.location.href = '/login?logout=success';
@@ -723,9 +723,13 @@
             store_name: '{{ auth()->user()->store->name ?? "" }}',
             branch_name: '{{ auth()->user()->branch->name ?? "" }}'
         };
-        
-        console.log('Feature Flags:', window.features);
-        console.log('User Data:', window.userData);
+
+        // Production debug flag - disable console.log in production
+        window.DEBUG = {{ config('app.debug') ? 'true' : 'false' }};
+        const log = (...args) => window.DEBUG && console.log(...args);
+
+        log('Feature Flags:', window.features);
+        log('User Data:', window.userData);
         
         // 사용자 정보 UI 업데이트
         function updateUserInfo() {
@@ -1132,7 +1136,7 @@
         // 차트 데이터 로드 함수
         async function loadChartData() {
             try {
-                console.log(`📈 차트 데이터 로드 시작 (최근 ${currentDays}일)`);
+                log(`📈 차트 데이터 로드 시작 (최근 ${currentDays}일)`);
                 
                 // 1. 매출 추이 데이터
                 const trendResponse = await fetch(`/api/dashboard/sales-trend?days=${currentDays}`);
@@ -1146,7 +1150,7 @@
                     salesChart.data.datasets[0].data = data;
                     salesChart.update();
                     
-                    console.log('✅ 매출 추이 차트 업데이트 완료');
+                    log('✅ 매출 추이 차트 업데이트 완료');
                 }
                 
                 // 2. 시장별 매출 데이터
@@ -1161,7 +1165,7 @@
                     marketChart.data.datasets[0].data = sales;
                     marketChart.update();
                     
-                    console.log('✅ 시장별 매출 차트 업데이트 완료');
+                    log('✅ 시장별 매출 차트 업데이트 완료');
                 }
                 
             } catch (error) {
@@ -1334,10 +1338,10 @@
             const storeName = window.userData?.store_name || '내 매장';
 
             if (storeId) {
-                console.log(`📊 ${storeName} 통계 페이지로 이동`);
+                log(`📊 ${storeName} 통계 페이지로 이동`);
                 window.location.href = `/statistics/enhanced?store=${storeId}&name=${encodeURIComponent(storeName)}&role=store`;
             } else {
-                console.log('📊 매장 통계 페이지로 이동');
+                log('📊 매장 통계 페이지로 이동');
                 window.location.href = '/statistics/my-store';
             }
         }
@@ -1348,10 +1352,10 @@
             const branchName = window.userData?.branch_name || '내 지사';
 
             if (branchId) {
-                console.log(`📊 ${branchName} 통계 페이지로 이동`);
+                log(`📊 ${branchName} 통계 페이지로 이동`);
                 window.location.href = `/statistics/enhanced?branch=${branchId}&name=${encodeURIComponent(branchName)}&role=branch`;
             } else {
-                console.log('📊 지사 통계 페이지로 이동');
+                log('📊 지사 통계 페이지로 이동');
                 window.location.href = '/statistics';
             }
         }
@@ -1389,21 +1393,21 @@
         // 실시간 데이터 로드 (안전성 강화)
         async function loadRealTimeData() {
             try {
-                console.log('🔄 실시간 데이터 로드 시작 - 사용자:', window.userData?.role);
+                log('🔄 실시간 데이터 로드 시작 - 사용자:', window.userData?.role);
                 // API는 이미 서버에서 권한별 필터링 처리
                 const apiUrl = '/api/dashboard/overview';
 
-                console.log('API 호출:', apiUrl, '권한:', window.userData.role);
+                log('API 호출:', apiUrl, '권한:', window.userData.role);
                 
                 // 대시보드 개요 데이터 로드
                 const overviewResponse = await fetch(apiUrl);
                 const overviewData = await overviewResponse.json();
 
-                console.log('📊 Dashboard API Response:', overviewData);
+                log('📊 Dashboard API Response:', overviewData);
 
                 if (overviewData.success) {
                     const data = overviewData.data;
-                    console.log('📊 Dashboard Data:', data);
+                    log('📊 Dashboard Data:', data);
 
                     // 지사 계정일 때 매장 수와 매출 업데이트
                     if (window.userData.role === 'branch') {
@@ -1416,7 +1420,7 @@
                         const monthTarget = data.monthly_target || 50000000;
                         const achievementRate = data.achievement_rate || 0;
 
-                        console.log('📊 Branch Data:', {
+                        log('📊 Branch Data:', {
                             branchStoreCount,
                             monthSales,
                             todayActivations,
@@ -1462,7 +1466,7 @@
                             }
                         }
 
-                        console.log(`✅ 지사 실시간 데이터 업데이트: ${branchStoreCount}개 매장, ₩${monthSales.toLocaleString()}, ${achievementRate}% 달성`);
+                        log(`✅ 지사 실시간 데이터 업데이트: ${branchStoreCount}개 매장, ₩${monthSales.toLocaleString()}, ${achievementRate}% 달성`);
                     }
 
                     // 매장 계정일 때 오늘 개통과 매출 업데이트
@@ -1501,7 +1505,7 @@
                             }
                         }
 
-                        console.log('✅ 매장 계정 데이터 업데이트 완료:', { todayActivations, monthSales });
+                        log('✅ 매장 계정 데이터 업데이트 완료:', { todayActivations, monthSales });
                     }
 
                     // 순위 데이터 및 TOP N 리스트 병렬 로드
@@ -1542,7 +1546,7 @@
                             growthElement.className = growthRate >= 0 ? 'kpi-trend trend-up' : 'kpi-trend trend-down';
                         }
 
-                        console.log('✅ 본사 계정 KPI 카드 업데이트 완료');
+                        log('✅ 본사 계정 KPI 카드 업데이트 완료');
                     }
                 }
                 
@@ -1574,7 +1578,7 @@
         // 실시간 시스템 상태 데이터 로드
         async function loadSystemStatus() {
             try {
-                console.log('📊 실시간 시스템 상태 로드 시작...');
+                log('📊 실시간 시스템 상태 로드 시작...');
 
                 // 🚀 실시간 API 호출 - 모든 데이터를 실시간으로 로드
                 const apiResults = {
@@ -1591,7 +1595,7 @@
                         if (data.success && Array.isArray(data.data)) {
                             // 활성 매장만 카운트 (계정관리와 동일)
                             apiResults.stores = data.data.filter(store => store.status === 'active').length;
-                            console.log('✅ 활성 매장 수 실시간 업데이트:', apiResults.stores);
+                            log('✅ 활성 매장 수 실시간 업데이트:', apiResults.stores);
                         }
                     }).catch(e => console.warn('⚠️ 매장 수 로드 실패:', e.message)),
 
@@ -1600,7 +1604,7 @@
                         if (data.success && Array.isArray(data.data)) {
                             // 활성 사용자만 카운트 (계정관리와 동일)
                             apiResults.users = data.data.filter(user => user.is_active).length;
-                            console.log('✅ 활성 사용자 수 실시간 업데이트:', apiResults.users);
+                            log('✅ 활성 사용자 수 실시간 업데이트:', apiResults.users);
                         }
                     }).catch(e => console.warn('⚠️ 사용자 수 로드 실패:', e.message)),
 
@@ -1608,7 +1612,7 @@
                     fetch('/api/branches').then(res => res.json()).then(data => {
                         if (data.success && Array.isArray(data.data)) {
                             apiResults.branches = data.data.length;
-                            console.log('✅ 지사 수 실시간 업데이트:', apiResults.branches);
+                            log('✅ 지사 수 실시간 업데이트:', apiResults.branches);
                         }
                     }).catch(e => console.warn('⚠️ 지사 수 로드 실패:', e.message)),
 
@@ -1616,7 +1620,7 @@
                     fetch('/api/dashboard/overview').then(res => res.json()).then(data => {
                         if (data.success && data.data) {
                             apiResults.sales = data.data.total_activations || apiResults.sales;
-                            console.log('✅ 개통표 수 실시간 업데이트:', apiResults.sales);
+                            log('✅ 개통표 수 실시간 업데이트:', apiResults.sales);
                         }
                     }).catch(e => console.warn('⚠️ 개통표 수 로드 실패:', e.message))
                 ];
@@ -1633,7 +1637,7 @@
                 // UI 요소 실시간 업데이트
                 updateDashboardElements(userCount, storeCount, branchCount, salesCount);
                 
-                console.log('✅ 데이터 집계 완료:', { users: userCount, stores: storeCount, sales: salesCount, branches: branchCount });
+                log('✅ 데이터 집계 완료:', { users: userCount, stores: storeCount, sales: salesCount, branches: branchCount });
                 
                 // 권한별 메시지 차별화 (실제 데이터 기반)
                 const role = window.userData?.role || 'headquarters';
@@ -1650,7 +1654,7 @@
             } catch (error) {
                 console.error('시스템 상태 로드 오류:', error);
                 // 🚑 API 오류 시 실제 데이터로 대체
-                console.log('⚠️ 시스템 API 오류 - 대체 데이터 사용');
+                log('⚠️ 시스템 API 오류 - 대체 데이터 사용');
                 return '전체 시스템 관리 중 - 실시간 데이터 연동 완료';
             }
         }
@@ -1713,7 +1717,7 @@
                         }
                     }
 
-                    console.log('순위 데이터 로드 완료:', { branch: branch, store: store });
+                    log('순위 데이터 로드 완료:', { branch: branch, store: store });
                 }
 
                 // 매장 목표 달성률 업데이트 (매장 역할만)
@@ -1765,7 +1769,7 @@
                         targetEl.textContent = `목표: ₩${monthlyGoal.toLocaleString()} / 현재: ₩${monthSales.toLocaleString()}`;
                     }
 
-                    console.log('매장 목표 업데이트:', { monthSales, achievementRate });
+                    log('매장 목표 업데이트:', { monthSales, achievementRate });
                 }
             } catch (error) {
                 console.warn('매장 목표 데이터 로드 실패:', error);
@@ -1868,7 +1872,7 @@
                             listEl.appendChild(li);
                         });
                         
-                        console.log(`TOP 매장 로드 완료: ${result.data.length}개`);
+                        log(`TOP 매장 로드 완료: ${result.data.length}개`);
                     }
                 }
             } catch (error) {
@@ -1900,9 +1904,9 @@
             
             // 차트 로드 후 실시간 데이터 적용 (즉시 실행)
             try {
-                console.log('🔄 실시간 데이터 로드 시작 - 사용자:', window.userData.role);
+                log('🔄 실시간 데이터 로드 시작 - 사용자:', window.userData.role);
                 await loadRealTimeData();
-                console.log('✅ 실시간 데이터 로드 완료');
+                log('✅ 실시간 데이터 로드 완료');
             } catch (error) {
                 console.error('❌ 실시간 데이터 초기 로드 오류:', error);
             }
@@ -1912,7 +1916,7 @@
             if (periodSelect) {
                 periodSelect.addEventListener('change', async function(e) {
                     const selectedPeriod = e.target.value;
-                    console.log(`📅 기간 변경: ${selectedPeriod}`);
+                    log(`📅 기간 변경: ${selectedPeriod}`);
                     try {
                         await loadTopStores(selectedPeriod);
                     } catch (error) {
@@ -1939,7 +1943,7 @@
 
         // 🎯 목표 설정 함수 (본사 관리자 전용)
         function openGoalSetting() {
-            console.log('🎯 목표 설정 시작');
+            log('🎯 목표 설정 시작');
 
             let goalOptions = `🎯 목표 설정 옵션\n`;
             goalOptions += `${'='.repeat(40)}\n\n`;
@@ -2055,18 +2059,18 @@
 
         // 🔄 실시간 대시보드 업데이트 리스너 (개통표 입력 시 자동 새로고침)
         function initRealtimeUpdateListeners() {
-            console.log('📡 실시간 대시보드 업데이트 리스너 초기화...');
+            log('📡 실시간 대시보드 업데이트 리스너 초기화...');
 
             // 1. localStorage 크로스 탭 이벤트 리스너
             window.addEventListener('storage', function(event) {
                 if (event.key === 'dashboard_update_trigger') {
                     try {
                         const updateData = JSON.parse(event.newValue);
-                        console.log('📨 크로스 탭 대시보드 업데이트 신호 수신:', updateData);
+                        log('📨 크로스 탭 대시보드 업데이트 신호 수신:', updateData);
 
                         if (updateData.type === 'dashboard_update') {
                             const { store_name, saved_count, user } = updateData.data;
-                            console.log(`🔄 ${store_name}에서 ${user}가 개통표 ${saved_count}건 입력 - 대시보드 새로고침`);
+                            log(`🔄 ${store_name}에서 ${user}가 개통표 ${saved_count}건 입력 - 대시보드 새로고침`);
 
                             // 실시간 활동에 추가
                             addRealtimeActivity({
@@ -2090,17 +2094,17 @@
 
             // 2. 전역 대시보드 새로고침 함수 등록 (개통표 입력 페이지에서 호출)
             window.refreshDashboard = function() {
-                console.log('🔄 대시보드 전체 데이터 새로고침 시작...');
+                log('🔄 대시보드 전체 데이터 새로고침 시작...');
                 loadRealTimeData();
                 loadSystemStatus();
                 loadRankings();
                 loadTopLists();
-                console.log('✅ 대시보드 전체 데이터 새로고침 완료');
+                log('✅ 대시보드 전체 데이터 새로고침 완료');
             };
 
             // 3. 실시간 활동 추가 함수 등록
             window.addRealtimeActivity = function(activity) {
-                console.log('📝 실시간 활동 추가:', activity);
+                log('📝 실시간 활동 추가:', activity);
 
                 // 실시간 활동 피드가 있다면 추가
                 const activityFeed = document.getElementById('realtime-activities');
@@ -2128,25 +2132,25 @@
                         activityFeed.removeChild(activities[activities.length - 1]);
                     }
 
-                    console.log('✅ 실시간 활동 피드 업데이트 완료');
+                    log('✅ 실시간 활동 피드 업데이트 완료');
                 } else {
                     console.warn('⚠️ 실시간 활동 피드 요소를 찾을 수 없음');
                 }
             };
 
-            console.log('✅ 실시간 업데이트 리스너 초기화 완료');
+            log('✅ 실시간 업데이트 리스너 초기화 완료');
         }
 
         // 🔄 대시보드 UI 요소 실시간 업데이트 함수
         function updateDashboardElements(userCount, storeCount, branchCount, salesCount) {
-            console.log('🎨 대시보드 UI 실시간 업데이트:', { userCount, storeCount, branchCount, salesCount });
+            log('🎨 대시보드 UI 실시간 업데이트:', { userCount, storeCount, branchCount, salesCount });
 
             // 안전한 요소 업데이트 함수
             const safeUpdateElement = (id, value, fallback = '데이터 없음') => {
                 const element = document.getElementById(id);
                 if (element) {
                     element.textContent = value || fallback;
-                    console.log(`✅ ${id} 업데이트: ${value || fallback}`);
+                    log(`✅ ${id} 업데이트: ${value || fallback}`);
                 } else {
                     console.warn(`⚠️ 요소 찾기 실패: ${id}`);
                 }
@@ -2269,13 +2273,13 @@
                     });
             }
 
-            console.log('🎨 대시보드 UI 업데이트 완료');
+            log('🎨 대시보드 UI 업데이트 완료');
         }
 
         // 📝 실시간 활동 로드 함수 (Q&A로 대체됨 - 비활성화)
         async function loadRealtimeActivities() {
             // 실시간 활동 섹션이 Q&A로 대체되어 더 이상 사용하지 않음
-            console.log('ℹ️ 실시간 활동 섹션이 Q&A로 대체됨');
+            log('ℹ️ 실시간 활동 섹션이 Q&A로 대체됨');
         }
 
         // 🔄 실시간 목표 로드 함수
@@ -2315,7 +2319,7 @@
                                 }
                             }
 
-                            console.log(`✅ ${goalType} 목표 로드 완료:`, goal);
+                            log(`✅ ${goalType} 목표 로드 완료:`, goal);
                         }
                     }
                 }
@@ -2859,7 +2863,7 @@
     <script>
         // 통신사 관리 함수들
         function openCarrierManagement() {
-            console.log('Opening carrier management modal');
+            log('Opening carrier management modal');
             const modal = document.getElementById('carrierManagementModal');
             if (modal) {
                 modal.style.display = 'block';
@@ -2879,7 +2883,7 @@
         }
 
         function loadCarriers() {
-            console.log('Loading carriers...');
+            log('Loading carriers...');
             fetch('/api/carriers', {
                 method: 'GET',
                 headers: {
@@ -2889,7 +2893,7 @@
             })
             .then(response => response.json())
             .then(data => {
-                console.log('Carriers loaded:', data);
+                log('Carriers loaded:', data);
                 if (data.success) {
                     const tbody = document.getElementById('carrierList');
                     if (tbody) {
@@ -3082,7 +3086,7 @@
             }
         });
 
-        console.log('Carrier management functions loaded');
+        log('Carrier management functions loaded');
     </script>
     @endif
 
