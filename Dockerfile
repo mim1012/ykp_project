@@ -53,14 +53,17 @@ RUN php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');" \
 # Copy application code first
 COPY . ./
 
-# Install composer dependencies with clean autoload
-# Note: platform config in composer.json sets PHP 8.3.28 for compatibility
+# 🚨 로컬 vendor 삭제 (이 줄이 핵심)
+RUN rm -rf vendor
+
+# 이제 서버 PHP 8.3 기준으로 vendor 완전 재설치
 RUN COMPOSER_ALLOW_SUPERUSER=1 composer install \
     --no-dev \
     --optimize-autoloader \
     --no-interaction \
     --no-progress \
     --no-scripts
+
 
 # Fix Filament autoload issue for production (run twice to ensure fix)
 RUN php fix-filament-autoload.php \
