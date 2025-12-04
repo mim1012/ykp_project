@@ -455,6 +455,22 @@
 
         <!-- 대시보드 컨텐츠 -->
         <div class="dashboard-content">
+            <!-- 3일 이상 미입력 매장 경고 (본사/지사 전용) -->
+            @if(in_array(auth()->user()->role, ['headquarters', 'branch']))
+            <div id="unmaintained-warning" class="mb-4 p-4 bg-red-50 border-l-4 border-red-500 rounded-lg hidden" style="margin: 0 20px 20px 20px;">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="font-bold text-red-800 text-sm">⚠️ 3일 이상 미입력 매장</h3>
+                        <p class="text-red-600 text-xl font-bold" id="unmaintained-count">0개</p>
+                    </div>
+                    <button onclick="showUnmaintainedModal()"
+                            class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 text-sm">
+                        상세 보기
+                    </button>
+                </div>
+            </div>
+            @endif
+
             <!-- KPI 카드 (권한별 맞춤화) -->
             <div class="kpi-grid">
                 @if(auth()->user()->role === 'headquarters')
@@ -485,10 +501,10 @@
                     </div>
                     <div class="kpi-card" id="systemGoal" style="border-left: 4px solid #3b82f6;">
                         <div class="kpi-header">
-                            <span class="kpi-title">🎯 시스템 목표</span>
+                            <span class="kpi-title">🎯 전체 실적</span>
                         </div>
                         <div class="kpi-value" id="system-goal-achievement">로딩 중...</div>
-                        <div class="kpi-subtitle" id="system-goal-target">목표 로딩 중...</div>
+                        <div class="kpi-subtitle" id="system-goal-target">실적 로딩 중...</div>
                     </div>
                 @elseif(auth()->user()->role === 'branch')
                     <!-- 지사: 소속 매장 관리 관점 -->
@@ -518,26 +534,10 @@
                     </div>
                     <div class="kpi-card" id="branchGoal" style="border-left: 4px solid #10b981;">
                         <div class="kpi-header">
-                            <span class="kpi-title">🎯 지사 목표</span>
+                            <span class="kpi-title">🎯 지사 실적</span>
                         </div>
                         <div class="kpi-value" id="branch-goal-achievement">0% 달성</div>
-                        <div class="kpi-subtitle" id="branch-goal-target">목표 로딩 중...</div>
-                    </div>
-                    <div class="kpi-card" id="branchRanking" style="border-left: 4px solid #8b5cf6;">
-                        <div class="kpi-header">
-                            <span class="kpi-title">🏆 지사 순위</span>
-                            <span class="kpi-trend trend-stable" id="branch-ranking-trend">-</span>
-                        </div>
-                        <div class="kpi-value" id="branch-ranking-position">- / -</div>
-                        <div class="kpi-subtitle">전체 지사 중</div>
-                    </div>
-                    <div class="kpi-card" id="storeRankingBranch" style="border-left: 4px solid #06b6d4;">
-                        <div class="kpi-header">
-                            <span class="kpi-title">🏪 매장 순위</span>
-                            <span class="kpi-trend trend-stable" id="store-ranking-trend">-</span>
-                        </div>
-                        <div class="kpi-value" id="store-ranking-position">- / -</div>
-                        <div class="kpi-subtitle">지사 내 매장 중</div>
+                        <div class="kpi-subtitle" id="branch-goal-target">실적 로딩 중...</div>
                     </div>
                 @elseif(auth()->user()->role === 'store')
                     <!-- 매장: 개인 성과 관점 -->
@@ -1680,11 +1680,9 @@
                     if (branch && window.userData.role !== 'headquarters') {
                         const branchRankEl = document.getElementById('branch-rank-position');
                         if (branchRankEl) {
-                            if (branch.rank) {
-                                branchRankEl.textContent = `${branch.rank} / ${branch.total}`;
-                            } else {
-                                branchRankEl.textContent = '- / -';
-                            }
+                            const rankDisplay = branch.rank ? branch.rank : '-';
+                            const totalDisplay = branch.total || '-';
+                            branchRankEl.textContent = `${rankDisplay} / ${totalDisplay}`;
                         }
                     }
 
@@ -3295,7 +3293,14 @@
         // 목표 데이터 로드
         async function loadStoreGoal() {
             try {
-                const response = await fetch('/api/my-goal', {
+                const storeId = window.userData?.store_id;
+                if (!storeId) {
+                    console.warn('Store ID not found');
+                    return;
+                }
+
+                // 목표 조회
+                const goalResponse = await fetch(`/api/goals/store/${storeId}`, {
                     headers: {
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content
@@ -3303,17 +3308,19 @@
                     credentials: 'same-origin'
                 });
 
-                if (!response.ok) throw new Error('Failed to load goal');
+                if (!goalResponse.ok) throw new Error('Failed to load goal');
 
-                const result = await response.json();
-                if (result.success) {
-                    currentGoalData = result.data;
-                    updateGoalDisplay(result.data);
+                const goalResult = await goalResponse.json();
+                if (goalResult.success) {
+                    currentGoalData = goalResult.data;
+                    updateGoalDisplay(goalResult.data);
                 }
             } catch (error) {
                 console.error('Goal load error:', error);
-                safeUpdateElement('store-goal-achievement', '목표 설정하기');
-                safeUpdateElement('store-goal-target', '클릭하여 목표 설정');
+                const goalEl = document.getElementById('store-goal-achievement');
+                const targetEl = document.getElementById('store-goal-target');
+                if (goalEl) goalEl.textContent = '목표 설정하기';
+                if (targetEl) targetEl.textContent = '클릭하여 목표 설정';
             }
         }
 
@@ -3323,10 +3330,10 @@
             const targetEl = document.getElementById('store-goal-target');
             const progressEl = document.getElementById('store-goal-progress');
 
-            if (data.goal && data.goal.sales_target > 0) {
-                const target = parseFloat(data.goal.sales_target);
-                const current = parseFloat(data.current_sales) || 0;
-                const rate = data.achievement_rate || 0;
+            if (data && data.sales_target > 0) {
+                const target = parseFloat(data.sales_target);
+                const current = 0; // 현재 매출은 별도 API에서 조회 필요
+                const rate = 0; // 달성률 계산
 
                 if (goalEl) goalEl.textContent = `${rate}% 달성`;
                 if (targetEl) {
@@ -3351,11 +3358,11 @@
             if (modal) {
                 modal.classList.remove('hidden');
                 // 기존 목표가 있으면 입력란에 표시
-                if (currentGoalData?.goal) {
-                    document.getElementById('goal-sales-target').value = currentGoalData.goal.sales_target || '';
-                    document.getElementById('goal-activation-target').value = currentGoalData.goal.activation_target || '';
-                    document.getElementById('goal-margin-target').value = currentGoalData.goal.margin_target || '';
-                    document.getElementById('goal-notes').value = currentGoalData.goal.notes || '';
+                if (currentGoalData) {
+                    document.getElementById('goal-sales-target').value = currentGoalData.sales_target || '';
+                    document.getElementById('goal-activation-target').value = currentGoalData.activation_target || '';
+                    document.getElementById('goal-margin-target').value = currentGoalData.margin_target || '';
+                    document.getElementById('goal-notes').value = currentGoalData.notes || '';
                 }
             }
         }
@@ -3390,7 +3397,13 @@
             }
 
             try {
-                const response = await fetch('/api/my-goal', {
+                const storeId = window.userData?.store_id;
+                if (!storeId) {
+                    alert('매장 정보를 찾을 수 없습니다.');
+                    return;
+                }
+
+                const response = await fetch(`/api/goals/store/${storeId}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -3400,8 +3413,7 @@
                     credentials: 'same-origin',
                     body: JSON.stringify({
                         sales_target: salesTarget ? parseFloat(salesTarget) : 0,
-                        activation_target: activationTarget ? parseInt(activationTarget) : null,
-                        margin_target: marginTarget ? parseFloat(marginTarget) : null,
+                        activation_target: activationTarget ? parseInt(activationTarget) : 0,
                         notes: notes
                     })
                 });
@@ -3439,6 +3451,7 @@
             }
         });
         @endif
+
     </script>
 
     @if(auth()->user()->role === 'store')
@@ -3510,6 +3523,93 @@
             </div>
         </div>
     </div>
+    @endif
+
+    <!-- 미입력 매장 모달 (본사/지사 전용) -->
+    @if(in_array(auth()->user()->role, ['headquarters', 'branch']))
+    <div id="unmaintainedModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl mx-4 max-h-[80vh] overflow-hidden">
+            <div class="flex justify-between items-center p-4 border-b bg-red-50">
+                <h3 class="text-lg font-semibold text-red-800">⚠️ 3일 이상 미입력 매장 목록</h3>
+                <button onclick="closeUnmaintainedModal()" class="text-gray-500 hover:text-gray-700 text-xl">&times;</button>
+            </div>
+            <div class="p-4 overflow-y-auto max-h-[60vh]">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="p-2 text-left">매장명</th>
+                            <th class="p-2 text-left">지사</th>
+                            <th class="p-2 text-left">마지막 입력일</th>
+                            <th class="p-2 text-left">미입력 일수</th>
+                        </tr>
+                    </thead>
+                    <tbody id="unmaintained-list"></tbody>
+                </table>
+                <div id="unmaintained-empty" class="hidden text-center py-8 text-gray-500">
+                    미입력 매장이 없습니다.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+    // ===== 3일 이상 미입력 매장 관리 =====
+    window.unmaintainedStores = [];
+
+    // 미입력 매장 로드
+    async function loadUnmaintainedStores() {
+        try {
+            const response = await fetch('/api/stores/unmaintained?days=3');
+            const result = await response.json();
+
+            if (result.success && result.count > 0) {
+                document.getElementById('unmaintained-warning').classList.remove('hidden');
+                document.getElementById('unmaintained-count').textContent = result.count + '개';
+                window.unmaintainedStores = result.data;
+            } else {
+                document.getElementById('unmaintained-warning').classList.add('hidden');
+            }
+        } catch (e) {
+            console.error('미입력 매장 조회 실패:', e);
+        }
+    }
+
+    // 모달 열기
+    function showUnmaintainedModal() {
+        const modal = document.getElementById('unmaintainedModal');
+        const tbody = document.getElementById('unmaintained-list');
+        const emptyDiv = document.getElementById('unmaintained-empty');
+
+        if (!window.unmaintainedStores || window.unmaintainedStores.length === 0) {
+            tbody.innerHTML = '';
+            emptyDiv.classList.remove('hidden');
+        } else {
+            emptyDiv.classList.add('hidden');
+            tbody.innerHTML = window.unmaintainedStores.map(store => `
+                <tr class="border-b hover:bg-gray-50">
+                    <td class="p-2 font-medium">${store.name}</td>
+                    <td class="p-2">${store.branch_name || '-'}</td>
+                    <td class="p-2">${store.last_sale_date || '입력 기록 없음'}</td>
+                    <td class="p-2">
+                        <span class="px-2 py-1 rounded text-white text-xs ${store.days_without_input === null || store.days_without_input >= 7 ? 'bg-red-500' : 'bg-yellow-500'}">
+                            ${store.days_without_input === null ? '∞' : store.days_without_input + '일'}
+                        </span>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        modal.classList.remove('hidden');
+    }
+
+    // 모달 닫기
+    function closeUnmaintainedModal() {
+        document.getElementById('unmaintainedModal').classList.add('hidden');
+    }
+
+    // 페이지 로드 시 미입력 매장 조회
+    document.addEventListener('DOMContentLoaded', loadUnmaintainedStores);
+    </script>
     @endif
 </body>
 </html>

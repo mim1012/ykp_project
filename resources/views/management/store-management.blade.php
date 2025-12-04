@@ -1222,6 +1222,10 @@
     </style>
 
     <script>
+        // 서버에서 전달된 매장 데이터를 즉시 설정 (권한 체크용)
+        window.loadedStores = @json($stores);
+        console.log('✅ 서버 데이터로 매장 초기화:', window.loadedStores?.length || 0, '개');
+
         // 클린코드: 상수 정의 (매직넘버 제거)
         const CONFIG = {
             TOAST_DURATION: 3000,
@@ -1273,31 +1277,42 @@
                 return ['headquarters', 'branch'].includes(this.user.role);
             }
             
-            // 지사 소속 매장 확인 (실시간 API 기반)
+            // 지사 소속 매장 확인 (서버 데이터 우선 사용)
             isStoreBelongsToBranch(storeId) {
-                // 현재 로드된 매장 데이터에서 확인
+                // 1. 서버에서 전달된 매장 데이터에서 확인 (가장 신뢰할 수 있음)
                 if (window.loadedStores && Array.isArray(window.loadedStores)) {
                     const store = window.loadedStores.find(s => s.id == storeId);
                     if (store) {
+                        console.log(`✅ 매장 ${storeId} 권한 확인 (서버 데이터): branch_id=${store.branch_id}, user.branch_id=${this.user.branch_id}`);
                         return store.branch_id === this.user.branch_id;
                     }
                 }
 
-                // 로드된 데이터가 없으면 API로 확인
+                // 2. 검색으로 로드된 매장 데이터에서 확인
+                if (typeof allStores !== 'undefined' && Array.isArray(allStores)) {
+                    const store = allStores.find(s => s.id == storeId);
+                    if (store) {
+                        console.log(`✅ 매장 ${storeId} 권한 확인 (검색 데이터): branch_id=${store.branch_id}`);
+                        return store.branch_id === this.user.branch_id;
+                    }
+                }
+
+                // 3. localStorage 캐시에서 확인
                 if (this.user.branch_id) {
-                    // 동기적으로 매장 정보 확인 (캐시된 데이터 사용)
                     try {
                         const cachedStore = localStorage.getItem(`store_${storeId}`);
                         if (cachedStore) {
                             const store = JSON.parse(cachedStore);
+                            console.log(`✅ 매장 ${storeId} 권한 확인 (캐시): branch_id=${store.branch_id}`);
                             return store.branch_id === this.user.branch_id;
                         }
                     } catch (e) {
                         console.warn('캐시된 매장 데이터 확인 실패:', e);
                     }
 
-                    // 🚨 보안 강화: 매장 정보를 확인할 수 없으면 false 반환
-                    console.warn(`⚠️ 매장 ${storeId} 소속 확인 불가 - 접근 차단`);
+                    // 서버 데이터에 해당 매장이 없으면, 지사 계정은 자신의 지사 매장만 볼 수 있으므로
+                    // 이 매장은 다른 지사 소속이거나 존재하지 않는 것
+                    console.log(`ℹ️ 매장 ${storeId}가 현재 데이터에 없음 - 다른 지사 소속일 수 있음`);
                     return false;
                 }
 
@@ -1401,12 +1416,15 @@
                 filteredStores = allStores.filter(store => store.store_type === currentStoreTypeFilter);
             }
 
-            // 검색 필터 적용
+            // 검색 필터 적용 (매장명, 코드, 주소, 점주명, 지사명)
             if (currentSearch) {
                 const searchLower = currentSearch.toLowerCase();
                 filteredStores = filteredStores.filter(store =>
                     store.name.toLowerCase().includes(searchLower) ||
-                    (store.code && store.code.toLowerCase().includes(searchLower))
+                    (store.code && store.code.toLowerCase().includes(searchLower)) ||
+                    (store.address && store.address.toLowerCase().includes(searchLower)) ||
+                    (store.owner_name && store.owner_name.toLowerCase().includes(searchLower)) ||
+                    (store.branch?.name && store.branch.name.toLowerCase().includes(searchLower))
                 );
             }
 

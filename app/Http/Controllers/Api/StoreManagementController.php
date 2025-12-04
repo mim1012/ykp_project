@@ -49,7 +49,7 @@ class StoreManagementController extends Controller
                 ]);
             }
 
-            // 검색 기능 (매장명, 점주명, 코드, 지사명 ILIKE 검색)
+            // 검색 기능 (매장명, 점주명, 코드, 지사명, 주소 ILIKE 검색)
             if ($search = $request->input('search')) {
                 Log::info('🔍 Store search executed', ['search_term' => $search]);
 
@@ -57,6 +57,7 @@ class StoreManagementController extends Controller
                     $q->where('name', 'ILIKE', "%{$search}%")
                         ->orWhere('owner_name', 'ILIKE', "%{$search}%")
                         ->orWhere('code', 'ILIKE', "%{$search}%")
+                        ->orWhere('address', 'ILIKE', "%{$search}%")
                         ->orWhereHas('branch', function ($branchQuery) use ($search) {
                             $branchQuery->where('name', 'ILIKE', "%{$search}%");
                         });

@@ -684,4 +684,63 @@ class StoreController extends Controller
 
         return $result;
     }
+
+    /**
+     * 3일 이상 미입력 매장 조회 (본사/지사 전용)
+     */
+    public function getUnmaintainedStores(Request $request): JsonResponse
+    {
+        $user = Auth::user();
+        $daysThreshold = $request->get('days', 3);
+
+        // 매장 역할은 조회 불가
+        if ($user->role === 'store') {
+            return response()->json(['success' => false, 'error' => '권한 없음'], 403);
+        }
+
+        // 각 매장의 마지막 판매 입력일 조회
+        $query = Store::selectRaw('
+            stores.*,
+            MAX(sales.created_at) as last_sale_date
+        ')
+        ->leftJoin('sales', 'stores.id', '=', 'sales.store_id')
+        ->where('stores.status', 'active')
+        ->groupBy('stores.id');
+
+        // 지사는 소속 매장만
+        if ($user->role === 'branch') {
+            $query->where('stores.branch_id', $user->branch_id);
+        }
+
+        $stores = $query->get();
+
+        // 3일 이상 미입력 필터링
+        $unmaintained = $stores->filter(function($store) use ($daysThreshold) {
+            if (!$store->last_sale_date) return true; // 입력 기록 없음
+            return now()->diffInDays($store->last_sale_date) >= $daysThreshold;
+        })->sortByDesc(function($store) {
+            return $store->last_sale_date ? now()->diffInDays($store->last_sale_date) : 9999;
+        });
+
+        // 지사 정보 로드
+        $unmaintained->load('branch');
+
+        return response()->json([
+            'success' => true,
+            'data' => $unmaintained->values()->map(fn($s) => [
+                'id' => $s->id,
+                'name' => $s->name,
+                'code' => $s->code,
+                'branch_name' => $s->branch?->name,
+                'last_sale_date' => $s->last_sale_date
+                    ? \Carbon\Carbon::parse($s->last_sale_date)->format('Y-m-d H:i')
+                    : null,
+                'days_without_input' => $s->last_sale_date
+                    ? now()->diffInDays($s->last_sale_date)
+                    : null,
+            ]),
+            'count' => $unmaintained->count(),
+            'threshold_days' => $daysThreshold,
+        ]);
+    }
 }
