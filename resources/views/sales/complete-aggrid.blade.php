@@ -309,8 +309,8 @@
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">부가추가</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase">서류상현금개통</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase plus-field">유심비</th>
-                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase minus-field">신규/번이할인(-)</th>
-                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase minus-field">차감(-)</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase minus-field">신규/번이할인(-표기)</th>
+                            <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase minus-field">차감(-표기)</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase total-field">리베총계</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase total-field">매출</th>
                             <th class="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase plus-field">현금받음</th>
@@ -490,7 +490,7 @@
                 additional_amount: 0,
                 cash_activation: 0,
                 usim_fee: 0,
-                new_mnp_discount: -800,
+                new_mnp_discount: 0,
                 deduction: 0,
                 rebate_total: 0,
                 settlement_amount: 0,
@@ -877,15 +877,14 @@
                 row[field] = value;
                 log(`✅ Updated successfully: ${field} = ${row[field]}`);
 
-                // 개통방식 변경 시 차감액 자동 설정
+                // 개통방식 변경 시 차감액 자동 설정 (초기값 0으로 변경됨)
                 if (field === 'activation_type') {
-                    if (value === '신규' || value === '번이') {
-                        row['new_mnp_discount'] = -800;
-                    } else if (value === '기변') {
+                    // 신규/번이/기변 모두 초기값 0 (사용자가 필요시 직접 입력)
+                    if (value === '신규' || value === '번이' || value === '기변') {
                         row['new_mnp_discount'] = 0;
                     }
                     // 차감액 필드 업데이트
-                    const discountInput = document.querySelector(`#data-table-body tr:has(input[value="${row.id}"]) input[placeholder="-800"]`);
+                    const discountInput = document.querySelector(`#data-table-body tr:has(input[value="${row.id}"]) input[placeholder="0"]`);
                     if (discountInput) {
                         discountInput.value = row['new_mnp_discount'];
                     }
@@ -3574,8 +3573,8 @@
 
                 if (carrierFilter && row.carrier !== carrierFilter) match = false;
                 if (dealerFilter && row.dealer_name !== dealerFilter) match = false;
-                if (salespersonFilter && !row.salesperson.toLowerCase().includes(salespersonFilter)) match = false;
-                if (customerFilter && !row.customer_name.toLowerCase().includes(customerFilter)) match = false;
+                if (salespersonFilter && !(row.salesperson || '').toLowerCase().includes(salespersonFilter)) match = false;
+                if (customerFilter && !(row.customer_name || '').toLowerCase().includes(customerFilter)) match = false;
                 if (dateFilter && row.sale_date !== dateFilter) match = false;
 
                 return match;

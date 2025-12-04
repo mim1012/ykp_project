@@ -437,9 +437,12 @@ Route::get('/api/dashboard/rankings', function () {
                 }
             }
             
+            // 전체 지사 수 (판매와 관계없이)
+            $totalBranches = \App\Models\Branch::count();
+
             $response['data']['branch'] = [
                 'rank' => $branchRank ?: null,
-                'total' => $branchRankings->count(),
+                'total' => $totalBranches,
             ];
         }
         
@@ -888,6 +891,10 @@ Route::get('/api/stores/count', function () {
         return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
     }
 });
+
+// 3일 이상 미입력 매장 조회 (본사/지사 전용)
+Route::middleware(['web', 'auth'])->get('/api/stores/unmaintained', [App\Http\Controllers\Api\StoreController::class, 'getUnmaintainedStores']);
+
 Route::get('/api/users/count', function () {
     try {
         return response()->json(['success' => true, 'count' => App\Models\User::count()]);
@@ -2906,12 +2913,15 @@ Route::middleware(['web', 'auth'])->group(function () {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
     });
-    // 목표 설정 (본사/지사 관리자만)
+    // 목표 설정 (매장 전용 - 자기 매장만)
     Route::post('/api/goals/{type}/{id?}', function ($type, $id = null) {
         $user = auth()->user();
-        // 권한 체크
-        if ($user->role === 'store') {
-            return response()->json(['success' => false, 'error' => '매장 직원은 목표를 설정할 수 없습니다.'], 403);
+        // 매장 사용자만 자기 매장 목표 설정 가능
+        if ($user->role !== 'store') {
+            return response()->json(['success' => false, 'error' => '목표 설정은 매장 전용 기능입니다.'], 403);
+        }
+        if ($type !== 'store' || $id != $user->store_id) {
+            return response()->json(['success' => false, 'error' => '자신의 매장 목표만 설정할 수 있습니다.'], 403);
         }
         request()->validate([
             'sales_target' => 'required|numeric|min:0',
