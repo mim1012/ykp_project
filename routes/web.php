@@ -863,16 +863,22 @@ Route::middleware(['web', 'auth'])->get('/api/stores', function (Illuminate\Http
     $perPage = $request->get('per_page', 500);
     $stores = $query->orderBy('name')->paginate($perPage);
 
-    return response()->json([
+    $response = [
         'success' => true,
         'data' => $stores->items(),
         'current_page' => $stores->currentPage(),
         'last_page' => $stores->lastPage(),
         'per_page' => $stores->perPage(),
         'total' => $stores->total(),
-        'debug_version' => 'v3.0-web-route',
-        'debug_search_applied' => $request->has('search') && !empty($request->search),
-    ]);
+    ];
+
+    // 디버그 정보는 로컬에서만 표시
+    if (config('app.debug')) {
+        $response['debug_version'] = 'v3.0-web-route';
+        $response['debug_search_applied'] = $request->has('search') && !empty($request->search);
+    }
+
+    return response()->json($response);
 });
 // /api/stores/add 제거 - RESTful API 사용 (/api/stores POST)
 // Legacy sales routes removed for security - use secured API endpoints instead:
