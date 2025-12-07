@@ -827,28 +827,52 @@ Route::middleware(['auth'])->get('/role-dashboard', function () {
 // 매장/지사 관리 API (모든 환경에서 사용)
 // if (config('app.env') !== 'production') { // Production에서도 사용 가능하도록 주석 처리
 Route::middleware(['web', 'auth'])->get('/api/stores', function (Illuminate\Http\Request $request) {
-    // 세션에서 사용자 정보 확인
     $user = auth()->user();
-    if (! $user) {
-        // 비로그인 상태면 모든 매장 반환 (테스트용)
-        $stores = \App\Models\Store::with('branch')->get();
-    } else {
-        // 로그인 상태면 권한별 필터링
-        if ($user->role === 'headquarters') {
-            $stores = \App\Models\Store::with('branch')->get(); // 본사: 모든 매장
-        } elseif ($user->role === 'branch') {
-            $stores = \App\Models\Store::with('branch')
-                ->where('branch_id', $user->branch_id)
-                ->get(); // 지사: 소속 매장만
+    $query = \App\Models\Store::with('branch');
+
+    // 권한별 필터링
+    if ($user) {
+        if ($user->role === 'branch') {
+            $query->where('branch_id', $user->branch_id);
         } elseif ($user->role === 'store') {
-            $stores = \App\Models\Store::with('branch')
-                ->where('id', $user->store_id)
-                ->get(); // 매장: 자기 매장만
-        } else {
-            $stores = collect(); // 기타: 빈 컬렉션
+            $query->where('id', $user->store_id);
         }
+        // headquarters는 모든 매장 조회
     }
-    return response()->json(['success' => true, 'data' => $stores]);
+
+    // 검색 기능
+    if ($request->has('search') && !empty($request->search)) {
+        $searchTerm = $request->search;
+        $query->where(function ($q) use ($searchTerm) {
+            $q->where('name', 'ILIKE', '%' . $searchTerm . '%')
+                ->orWhere('owner_name', 'ILIKE', '%' . $searchTerm . '%')
+                ->orWhere('code', 'ILIKE', '%' . $searchTerm . '%')
+                ->orWhere('address', 'ILIKE', '%' . $searchTerm . '%')
+                ->orWhereHas('branch', function ($branchQuery) use ($searchTerm) {
+                    $branchQuery->where('name', 'ILIKE', '%' . $searchTerm . '%');
+                });
+        });
+    }
+
+    // 매장 유형 필터
+    if ($request->has('store_type') && !empty($request->store_type)) {
+        $query->where('store_type', $request->store_type);
+    }
+
+    // 페이지네이션
+    $perPage = $request->get('per_page', 500);
+    $stores = $query->orderBy('name')->paginate($perPage);
+
+    return response()->json([
+        'success' => true,
+        'data' => $stores->items(),
+        'current_page' => $stores->currentPage(),
+        'last_page' => $stores->lastPage(),
+        'per_page' => $stores->perPage(),
+        'total' => $stores->total(),
+        'debug_version' => 'v3.0-web-route',
+        'debug_search_applied' => $request->has('search') && !empty($request->search),
+    ]);
 });
 // /api/stores/add 제거 - RESTful API 사용 (/api/stores POST)
 // Legacy sales routes removed for security - use secured API endpoints instead:
