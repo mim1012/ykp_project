@@ -612,11 +612,11 @@
                 <div class="flex items-center">
                     <h1 class="text-xl font-semibold text-gray-900">매장 관리</h1>
                     @if(auth()->user()->role === 'headquarters')
-                        <span class="ml-2 px-2 py-1 text-xs bg-rose-50 text-rose-700 border border-rose-200 rounded font-medium">🏢 본사 전용</span>
+                        <span class="ml-2 px-2 py-1 text-xs bg-rose-50 text-rose-700 border border-rose-200 rounded font-medium">본사 전용</span>
                     @elseif(auth()->user()->role === 'branch')
-                        <span class="ml-2 px-2 py-1 text-xs bg-primary-50 text-primary-700 border border-primary-200 rounded font-medium">🏬 지사 전용</span>
+                        <span class="ml-2 px-2 py-1 text-xs bg-primary-50 text-primary-700 border border-primary-200 rounded font-medium">지사 전용</span>
                     @elseif(auth()->user()->role === 'store')
-                        <span class="ml-2 px-2 py-1 text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 rounded font-medium">🏪 매장 전용</span>
+                        <span class="ml-2 px-2 py-1 text-xs bg-emerald-50 text-emerald-700 border border-emerald-200 rounded font-medium">매장 전용</span>
                     @endif
                 </div>
                 <div class="flex items-center space-x-4">
@@ -630,34 +630,19 @@
         <!-- 권한별 안내 -->
         <!-- 권한별 안내 -->
         @if(auth()->user()->role === 'headquarters')
-            <div class="bg-white border-l-4 border-rose-500 p-6 mb-6 rounded-r-lg shadow-sm">
-                <div class="flex items-center">
-                    <div class="text-2xl mr-4">🏢</div>
-                    <div>
-                        <h3 class="text-lg font-bold text-gray-900">본사 관리자님 환영합니다</h3>
-                        <p class="text-gray-600 text-sm mt-1">지사와 매장을 통합 관리할 수 있습니다.</p>
-                    </div>
-                </div>
+            <div class="bg-white border-l-4 border-rose-500 p-4 mb-6 rounded-r-lg shadow-sm">
+                <h3 class="text-base font-bold text-gray-900">본사 관리자님 환영합니다</h3>
+                <p class="text-gray-600 text-sm mt-1">지사와 매장을 통합 관리할 수 있습니다.</p>
             </div>
         @elseif(auth()->user()->role === 'branch')
-            <div class="bg-white border-l-4 border-primary-500 p-6 mb-6 rounded-r-lg shadow-sm">
-                <div class="flex items-center">
-                    <div class="text-2xl mr-4">🏬</div>
-                    <div>
-                        <h3 class="text-lg font-bold text-gray-900">지사 관리자님 환영합니다</h3>
-                        <p class="text-gray-600 text-sm mt-1">소속 지사 매장을 관리할 수 있습니다.</p>
-                    </div>
-                </div>
+            <div class="bg-white border-l-4 border-primary-500 p-4 mb-6 rounded-r-lg shadow-sm">
+                <h3 class="text-base font-bold text-gray-900">지사 관리자님 환영합니다</h3>
+                <p class="text-gray-600 text-sm mt-1">소속 지사 매장을 관리할 수 있습니다.</p>
             </div>
         @elseif(auth()->user()->role === 'store')
-            <div class="bg-white border-l-4 border-emerald-500 p-6 mb-6 rounded-r-lg shadow-sm">
-                <div class="flex items-center">
-                    <div class="text-2xl mr-4">🏪</div>
-                    <div>
-                        <h3 class="text-lg font-bold text-gray-900">매장 관리자님 환영합니다</h3>
-                        <p class="text-gray-600 text-sm mt-1">자기 매장의 개통표와 성과를 확인할 수 있습니다.</p>
-                    </div>
-                </div>
+            <div class="bg-white border-l-4 border-emerald-500 p-4 mb-6 rounded-r-lg shadow-sm">
+                <h3 class="text-base font-bold text-gray-900">매장 관리자님 환영합니다</h3>
+                <p class="text-gray-600 text-sm mt-1">자기 매장의 개통표와 성과를 확인할 수 있습니다.</p>
             </div>
         @endif
         
@@ -699,17 +684,17 @@
                     <!-- 매장 추가 버튼 -->
                     @if(in_array(auth()->user()->role, ['headquarters', 'branch']))
                         <button onclick="showAddStoreModal()" class="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 font-medium shadow-sm whitespace-nowrap transition-colors">
-                            ➕ 매장 추가
+                            + 매장 추가
                         </button>
                     @endif
                 </div>
 
                 <!-- 매장 목록 그리드 (동적 로딩) -->
-                <div id="stores-grid" class="bg-white rounded border min-h-[400px]">
+                <div id="stores-grid" class="bg-white rounded border min-h-[200px]">
                     <!-- 로딩 중 메시지 -->
                     <div class="p-8 text-center text-gray-500">
-                        <div class="text-4xl mb-4">🔄</div>
-                        <p class="text-lg font-medium">매장 목록 로딩 중...</p>
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto mb-4"></div>
+                        <p class="text-sm">매장 목록 로딩 중...</p>
                     </div>
                 </div>
 
@@ -1525,13 +1510,12 @@
                 }
 
                 if (!filteredStores || filteredStores.length === 0) {
-                    console.log('ℹ️ 매장 데이터 없음 - 빈 화면 표시');
+                    console.log('매장 데이터 없음 - 빈 화면 표시');
                     const filterText = currentStoreTypeFilter === 'direct' ? '직영점' :
                                        currentStoreTypeFilter === 'franchise' ? '가맹점' : '';
                     gridElement.innerHTML = `
                         <div class="p-8 text-center text-gray-500">
-                            <div class="text-4xl mb-4">🔍</div>
-                            <p class="text-lg font-medium">${filterText ? filterText + ' ' : ''}검색 결과가 없습니다</p>
+                            <p class="text-base font-medium">${filterText ? filterText + ' ' : ''}검색 결과가 없습니다</p>
                             <p class="text-sm text-gray-400 mt-2">${currentSearch ? '다른 검색어로 시도해보세요' : '새 매장을 추가해보세요'}</p>
                         </div>
                     `;
@@ -1571,55 +1555,52 @@
                     const paginatedStores = branchStores.slice(startIndex, endIndex);
 
                     html += `
-                        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                            <div class="bg-gradient-to-r from-blue-500 to-indigo-600 px-6 py-4 flex justify-between items-center">
-                                <h3 class="text-xl font-bold text-white">🏢 ${branchName}</h3>
-                                <span class="text-white text-sm bg-white/20 px-3 py-1 rounded-full">
+                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                            <div class="bg-primary-800 px-4 py-3 flex justify-between items-center">
+                                <h3 class="text-base font-semibold text-white">${branchName}</h3>
+                                <span class="text-white text-xs bg-white/20 px-2 py-1 rounded">
                                     총 ${totalStores}개 매장 | ${currentPage} / ${totalPages} 페이지
                                 </span>
                             </div>
-                            <div class="p-6">
-                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div class="divide-y divide-gray-100">
                     `;
 
                     paginatedStores.forEach(store => {
                         // 매장 유형 뱃지 생성
                         const storeTypeBadge = store.store_type === 'direct'
-                            ? '<span class="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">직영점</span>'
+                            ? '<span class="px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded">직영점</span>'
                             : store.store_type === 'franchise'
-                            ? '<span class="px-2 py-1 text-xs bg-orange-100 text-orange-800 rounded-full">가맹점</span>'
-                            : '<span class="px-2 py-1 text-xs bg-gray-100 text-gray-600 rounded-full">미분류</span>';
+                            ? '<span class="px-2 py-0.5 text-xs bg-orange-100 text-orange-700 rounded">가맹점</span>'
+                            : '<span class="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded">미분류</span>';
 
                         html += `
-                            <div class="bg-gray-50 rounded-lg p-4 hover:bg-white hover:shadow-md transition-all border">
-                                <div class="flex justify-between items-start mb-3">
-                                    <h4 class="font-bold text-lg">${store.name}</h4>
-                                    <div class="flex gap-1">
+                            <div class="px-4 py-2.5 hover:bg-gray-50 flex items-center justify-between">
+                                <div class="flex items-center gap-4 flex-1 min-w-0">
+                                    <div class="min-w-0 flex-1">
+                                        <div class="font-medium text-gray-900">${store.name}</div>
+                                        <div class="text-xs text-gray-500">${store.code} | ${store.owner_name || '점주 미등록'} | ${store.phone || '연락처 없음'}</div>
+                                    </div>
+                                    <div class="flex gap-1 flex-shrink-0">
                                         ${storeTypeBadge}
-                                        <span class="px-2 py-1 text-xs bg-green-100 text-green-800 rounded-full">운영중</span>
+                                        <span class="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded">운영중</span>
                                     </div>
                                 </div>
-                                <div class="text-sm text-gray-600 space-y-1">
-                                    <p><span class="font-medium">코드:</span> ${store.code}</p>
-                                    <p><span class="font-medium">점주:</span> ${store.owner_name || '미등록'}</p>
-                                    <p><span class="font-medium">연락처:</span> ${store.phone || '미등록'}</p>
-                                </div>
-                                <div class="mt-3 flex flex-wrap gap-2">
+                                <div class="flex gap-1 ml-4 flex-shrink-0">
                                     <button onclick="openEditModal(${store.id})"
-                                            class="px-3 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600">
-                                        ✏️ 수정
+                                            class="px-2 py-1 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded">
+                                        수정
                                     </button>
                                     <button onclick="createStoreAccount(${store.id}, '${escapeJs(store.name)}')"
-                                            class="px-3 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600">
-                                        👤 계정
+                                            class="px-2 py-1 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded">
+                                        계정
                                     </button>
                                     <button onclick="viewStoreStatsModal(${store.id})"
-                                            class="px-3 py-1 bg-purple-500 text-white text-xs rounded hover:bg-purple-600">
-                                        📊 성과
+                                            class="px-2 py-1 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded">
+                                        성과
                                     </button>
                                     <button onclick="deleteStore(${store.id})"
-                                            class="px-2 py-1 bg-red-500 text-white text-xs rounded hover:bg-red-600">
-                                        🗑️ 삭제
+                                            class="px-2 py-1 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 rounded">
+                                        삭제
                                     </button>
                                 </div>
                             </div>
@@ -1676,12 +1657,11 @@
                 if (gridElement) {
                     gridElement.innerHTML = `
                         <div class="p-8 text-center text-red-500">
-                            <div class="text-4xl mb-4">❌</div>
                             <p class="font-medium">렌더링 오류 발생</p>
                             <p class="text-sm text-gray-600 mt-2">${error.message}</p>
                             <button onclick="window.loadStores()"
-                                    class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-                                🔄 재시도
+                                    class="mt-4 px-4 py-2 bg-gray-600 text-white text-sm rounded hover:bg-gray-700">
+                                재시도
                             </button>
                         </div>
                     `;
