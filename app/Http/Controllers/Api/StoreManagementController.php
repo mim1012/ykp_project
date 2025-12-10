@@ -29,15 +29,25 @@ class StoreManagementController extends Controller
     {
         try {
             $user = auth()->user();
-            $query = Store::with('branch');
+
+            // 서브쿼리로 각 매장의 마지막 입력 시간 조회
+            $lastSaleSubquery = \DB::table('sales')
+                ->select('store_id', \DB::raw('MAX(created_at) as last_entry_at'))
+                ->groupBy('store_id');
+
+            $query = Store::with('branch')
+                ->leftJoinSub($lastSaleSubquery, 'last_sales', function ($join) {
+                    $join->on('stores.id', '=', 'last_sales.store_id');
+                })
+                ->select('stores.*', 'last_sales.last_entry_at');
 
             // 권한별 매장 필터링 (RBAC)
             if ($user->role === 'headquarters') {
                 // 본사: 모든 매장
             } elseif ($user->role === 'branch') {
-                $query->where('branch_id', $user->branch_id); // 지사: 소속 매장만
+                $query->where('stores.branch_id', $user->branch_id); // 지사: 소속 매장만
             } elseif ($user->role === 'store') {
-                $query->where('id', $user->store_id); // 매장: 자기 매장만
+                $query->where('stores.id', $user->store_id); // 매장: 자기 매장만
             } else {
                 // 기타: 빈 결과
                 return response()->json([
@@ -54,10 +64,10 @@ class StoreManagementController extends Controller
                 Log::info('🔍 Store search executed', ['search_term' => $search]);
 
                 $query->where(function ($q) use ($search) {
-                    $q->where('name', 'ILIKE', "%{$search}%")
-                        ->orWhere('owner_name', 'ILIKE', "%{$search}%")
-                        ->orWhere('code', 'ILIKE', "%{$search}%")
-                        ->orWhere('address', 'ILIKE', "%{$search}%")
+                    $q->where('stores.name', 'ILIKE', "%{$search}%")
+                        ->orWhere('stores.owner_name', 'ILIKE', "%{$search}%")
+                        ->orWhere('stores.code', 'ILIKE', "%{$search}%")
+                        ->orWhere('stores.address', 'ILIKE', "%{$search}%")
                         ->orWhereHas('branch', function ($branchQuery) use ($search) {
                             $branchQuery->where('name', 'ILIKE', "%{$search}%");
                         });
@@ -68,8 +78,8 @@ class StoreManagementController extends Controller
             $perPage = $request->get('per_page', 30);
 
             // 지사별 정렬 + 매장명 정렬
-            $stores = $query->orderBy('branch_id')
-                ->orderBy('name')
+            $stores = $query->orderBy('stores.branch_id')
+                ->orderBy('stores.name')
                 ->paginate($perPage);
 
             Log::info('📊 Store query result', [
@@ -79,14 +89,28 @@ class StoreManagementController extends Controller
                 'search_value' => $request->get('search')
             ]);
 
+            // 마지막 입력으로부터 경과 일수 계산
+            $storesData = collect($stores->items())->map(function ($store) {
+                $storeArray = $store->toArray();
+                if ($store->last_entry_at) {
+                    $lastEntry = \Carbon\Carbon::parse($store->last_entry_at);
+                    $storeArray['last_entry_at'] = $lastEntry->format('Y-m-d H:i');
+                    $storeArray['days_since_entry'] = (int) abs(now()->diffInDays($lastEntry));
+                } else {
+                    $storeArray['last_entry_at'] = null;
+                    $storeArray['days_since_entry'] = null;
+                }
+                return $storeArray;
+            });
+
             return response()->json([
                 'success' => true,
-                'data' => $stores->items(),
+                'data' => $storesData->toArray(),
                 'current_page' => $stores->currentPage(),
                 'last_page' => $stores->lastPage(),
                 'per_page' => $stores->perPage(),
                 'total' => $stores->total(),
-                'debug_version' => 'v2.0-with-search',
+                'debug_version' => 'v3.0-with-last-entry',
                 'debug_search_applied' => $request->has('search') && !empty($request->search),
             ]);
         } catch (\Exception $e) {

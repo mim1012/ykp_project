@@ -7,11 +7,41 @@ export const StoreManagement = () => {
     const [branches, setBranches] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [viewMode, setViewMode] = useState('branch'); // 'branch' | 'table'
+    const [viewMode, setViewMode] = useState('list'); // 'list' | 'table'
     const [showBulkModal, setShowBulkModal] = useState(false);
-    const [bulkType, setBulkType] = useState(null); // 'branch' | 'store'
+    const [bulkType, setBulkType] = useState(null);
 
-    // 🔄 실제 API에서 매장 데이터 로드
+    // 리스트 뷰 상태
+    const [expandedBranches, setExpandedBranches] = useState({});
+    const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all');
+
+    // 정렬 상태 (localStorage에서 복원)
+    const [sortBy, setSortBy] = useState(() => localStorage.getItem('storeSort_by') || 'name');
+    const [sortOrder, setSortOrder] = useState(() => localStorage.getItem('storeSort_order') || 'asc');
+
+    // 정렬 옵션
+    const sortOptions = [
+        { value: 'name_asc', label: '매장명 (가나다)', by: 'name', order: 'asc' },
+        { value: 'name_desc', label: '매장명 (역순)', by: 'name', order: 'desc' },
+        { value: 'sales_desc', label: '매출 (높은순)', by: 'sales', order: 'desc' },
+        { value: 'sales_asc', label: '매출 (낮은순)', by: 'sales', order: 'asc' },
+        { value: 'lastEntry_desc', label: '최근 입력순', by: 'lastEntry', order: 'desc' },
+        { value: 'lastEntry_asc', label: '오래된 입력순', by: 'lastEntry', order: 'asc' },
+        { value: 'status_active', label: '상태 (운영 우선)', by: 'status', order: 'asc' },
+        { value: 'status_inactive', label: '상태 (점검 우선)', by: 'status', order: 'desc' },
+        { value: 'code_asc', label: '코드 (오름차순)', by: 'code', order: 'asc' },
+        { value: 'code_desc', label: '코드 (내림차순)', by: 'code', order: 'desc' },
+    ];
+
+    // 모달 상태
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [showAccountModal, setShowAccountModal] = useState(false);
+    const [showStatsModal, setShowStatsModal] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [modalStore, setModalStore] = useState(null);
+
+    // API에서 매장 데이터 로드
     useEffect(() => {
         const fetchStores = async () => {
             try {
@@ -35,11 +65,13 @@ export const StoreManagement = () => {
                         code: store.code,
                         owner_name: store.owner_name,
                         phone: store.phone,
-                        address: store.address
+                        address: store.address,
+                        lastEntryAt: store.last_entry_at,
+                        daysSinceEntry: store.days_since_entry
                     }));
 
                     setStores(transformedStores);
-                    console.log(`✅ 매장 데이터 ${transformedStores.length}개 로드 완료`);
+                    // console.log(`매장 데이터 ${transformedStores.length}개 로드 완료`);
 
                     // 지사별로 그룹화
                     const grouped = transformedStores.reduce((acc, store) => {
@@ -55,11 +87,17 @@ export const StoreManagement = () => {
                     }, {});
 
                     setBranches(Object.values(grouped));
+                    // 모든 지사 펼치기
+                    const expanded = {};
+                    Object.keys(grouped).forEach(key => {
+                        expanded[key] = true;
+                    });
+                    setExpandedBranches(expanded);
                 } else {
                     throw new Error('매장 데이터 형식 오류');
                 }
             } catch (err) {
-                console.error('❌ 매장 데이터 로드 실패:', err);
+                console.error('매장 데이터 로드 실패:', err);
                 setError(err.message);
             } finally {
                 setLoading(false);
@@ -68,6 +106,149 @@ export const StoreManagement = () => {
 
         fetchStores();
     }, []);
+
+    // 지사 토글
+    const toggleBranch = (branchName) => {
+        setExpandedBranches(prev => ({
+            ...prev,
+            [branchName]: !prev[branchName]
+        }));
+    };
+
+    // 전체 펼치기/접기
+    const toggleAll = (expand) => {
+        const newState = {};
+        branches.forEach(branch => {
+            newState[branch.name] = expand;
+        });
+        setExpandedBranches(newState);
+    };
+
+    // 정렬 변경 핸들러
+    const handleSortChange = (value) => {
+        const option = sortOptions.find(opt => opt.value === value);
+        if (option) {
+            setSortBy(option.by);
+            setSortOrder(option.order);
+            localStorage.setItem('storeSort_by', option.by);
+            localStorage.setItem('storeSort_order', option.order);
+        }
+    };
+
+    // 테이블 컬럼 정렬 토글
+    const toggleColumnSort = (column) => {
+        if (sortBy === column) {
+            const newOrder = sortOrder === 'asc' ? 'desc' : 'asc';
+            setSortOrder(newOrder);
+            localStorage.setItem('storeSort_order', newOrder);
+        } else {
+            setSortBy(column);
+            setSortOrder('asc');
+            localStorage.setItem('storeSort_by', column);
+            localStorage.setItem('storeSort_order', 'asc');
+        }
+    };
+
+    // 매장 정렬 함수
+    const sortStores = (storeList) => {
+        return [...storeList].sort((a, b) => {
+            let comparison = 0;
+
+            switch (sortBy) {
+                case 'name':
+                    comparison = a.name.localeCompare(b.name, 'ko');
+                    break;
+                case 'sales':
+                    const salesA = parseInt(a.todaySales.replace(/[₩,]/g, '')) || 0;
+                    const salesB = parseInt(b.todaySales.replace(/[₩,]/g, '')) || 0;
+                    comparison = salesA - salesB;
+                    break;
+                case 'lastEntry':
+                    // 입력 기록 없는 경우 맨 뒤로 (오름차순 기준)
+                    const dateA = a.lastEntryAt ? new Date(a.lastEntryAt).getTime() : 0;
+                    const dateB = b.lastEntryAt ? new Date(b.lastEntryAt).getTime() : 0;
+                    comparison = dateA - dateB;
+                    break;
+                case 'status':
+                    const statusOrder = { active: 0, inactive: 1 };
+                    comparison = (statusOrder[a.status] || 0) - (statusOrder[b.status] || 0);
+                    break;
+                case 'code':
+                    comparison = (a.code || '').localeCompare(b.code || '', 'ko');
+                    break;
+                default:
+                    comparison = 0;
+            }
+
+            return sortOrder === 'asc' ? comparison : -comparison;
+        });
+    };
+
+    // 현재 정렬 옵션 값
+    const currentSortValue = sortOptions.find(
+        opt => opt.by === sortBy && opt.order === sortOrder
+    )?.value || 'name_asc';
+
+    // 필터링 및 정렬된 지사 데이터
+    const getFilteredBranches = () => {
+        return branches.map(branch => {
+            const filteredStores = branch.stores.filter(store => {
+                const matchesSearch = searchTerm === '' ||
+                    store.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    store.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    store.address?.toLowerCase().includes(searchTerm.toLowerCase());
+                const matchesStatus = statusFilter === 'all' || store.status === statusFilter;
+                return matchesSearch && matchesStatus;
+            });
+            return {
+                ...branch,
+                stores: sortStores(filteredStores)
+            };
+        }).filter(branch => branch.stores.length > 0);
+    };
+
+    // 액션 핸들러
+    const handleEdit = (store, e) => {
+        e?.stopPropagation();
+        setModalStore(store);
+        setShowEditModal(true);
+    };
+
+    const handleAccount = (store, e) => {
+        e?.stopPropagation();
+        setModalStore(store);
+        setShowAccountModal(true);
+    };
+
+    const handleStats = (store, e) => {
+        e?.stopPropagation();
+        setModalStore(store);
+        setShowStatsModal(true);
+    };
+
+    const handleDelete = (store, e) => {
+        e?.stopPropagation();
+        setModalStore(store);
+        setShowDeleteConfirm(true);
+    };
+
+    const confirmDelete = async () => {
+        if (!modalStore) return;
+        try {
+            const response = await fetch(`/api/stores/${modalStore.id}`, { method: 'DELETE' });
+            if (response.ok) {
+                setStores(prev => prev.filter(s => s.id !== modalStore.id));
+                setBranches(prev => prev.map(branch => ({
+                    ...branch,
+                    stores: branch.stores.filter(s => s.id !== modalStore.id)
+                })));
+                setShowDeleteConfirm(false);
+                setModalStore(null);
+            }
+        } catch (err) {
+            console.error('매장 삭제 실패:', err);
+        }
+    };
 
     // Table columns configuration
     const columns = [
@@ -103,33 +284,20 @@ export const StoreManagement = () => {
         }
     ];
 
-    // Table actions
+        // Table actions
     const actions = (store) => (
-        <div className="flex gap-2">
-            <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e) => {
-                    e.stopPropagation();
-                    setSelectedStore(store);
-                }}
-            >
-                <Icon name="eye" className="w-4 h-4" />
-                <span className="hidden sm:inline ml-1">보기</span>
-            </Button>
-            <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e) => {
-                    e.stopPropagation();
-                    // Handle edit
-                }}
-            >
-                <Icon name="edit" className="w-4 h-4" />
-                <span className="hidden sm:inline ml-1">수정</span>
-            </Button>
+        <div className="flex gap-1">
+            <Button variant="ghost" size="sm" onClick={(e) => handleEdit(store, e)}>수정</Button>
+            <Button variant="ghost" size="sm" onClick={(e) => handleAccount(store, e)}>계정</Button>
+            <Button variant="ghost" size="sm" onClick={(e) => handleStats(store, e)}>성과</Button>
+            <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={(e) => handleDelete(store, e)}>삭제</Button>
         </div>
     );
+
+    // 총 매장 수
+    const totalStores = stores.length;
+    const filteredBranches = getFilteredBranches();
+    const filteredStoreCount = filteredBranches.reduce((sum, b) => sum + b.stores.length, 0);
 
     // 로딩 상태 처리
     if (loading) {
@@ -149,7 +317,7 @@ export const StoreManagement = () => {
             <div className="space-y-6">
                 <Card>
                     <div className="p-6 text-center">
-                        <div className="text-red-500 text-4xl mb-4">⚠️</div>
+                        
                         <h3 className="text-lg font-medium text-gray-900 mb-2">매장 데이터 로드 실패</h3>
                         <p className="text-gray-600 mb-4">{error}</p>
                         <Button onClick={() => window.location.reload()}>
@@ -163,111 +331,267 @@ export const StoreManagement = () => {
     }
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-4">
             {/* 헤더 */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">매장 관리</h1>
+                <div>
+                    <h1 className="text-xl sm:text-2xl font-bold text-gray-900">매장 관리</h1>
+                    <p className="text-sm text-gray-500">총 {totalStores}개 매장</p>
+                </div>
                 <div className="flex gap-2 flex-wrap">
                     {/* 보기 모드 전환 */}
                     <div className="flex border rounded-lg overflow-hidden">
                         <button
-                            onClick={() => setViewMode('branch')}
-                            className={`px-4 py-2 text-sm font-medium ${viewMode === 'branch'
-                                    ? 'bg-primary-900 text-white shadow-sm'
+                            onClick={() => setViewMode('list')}
+                            className={`px-3 py-2 text-sm font-medium ${viewMode === 'list'
+                                    ? 'bg-primary-900 text-white'
                                     : 'bg-white text-gray-700 hover:bg-gray-50'
                                 }`}
                         >
-                            <Icon name="grid" className="w-4 h-4 mr-2 inline" />
-                            지사별
+                            리스트
                         </button>
                         <button
                             onClick={() => setViewMode('table')}
-                            className={`px-4 py-2 text-sm font-medium border-l ${viewMode === 'table'
-                                    ? 'bg-primary-900 text-white shadow-sm'
+                            className={`px-3 py-2 text-sm font-medium border-l ${viewMode === 'table'
+                                    ? 'bg-primary-900 text-white'
                                     : 'bg-white text-gray-700 hover:bg-gray-50'
                                 }`}
                         >
-                            <Icon name="list" className="w-4 h-4 mr-2 inline" />
-                            목록
+                            테이블
                         </button>
                     </div>
 
                     {/* 대량 생성 버튼들 */}
-                    <Button
-                        variant="outline"
-                        onClick={() => {
-                            setBulkType('branch');
-                            setShowBulkModal(true);
-                        }}
-                    >
-                        <Icon name="upload" className="w-4 h-4 mr-2" />
-                        지사 대량 생성
-                    </Button>
-                    <Button
-                        variant="outline"
-                        onClick={() => {
-                            setBulkType('store');
-                            setShowBulkModal(true);
-                        }}
-                    >
-                        <Icon name="upload" className="w-4 h-4 mr-2" />
-                        매장 대량 생성
-                    </Button>
-                    <Button>
-                        <Icon name="plus" className="w-4 h-4 mr-2" />
-                        매장 추가
-                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => { setBulkType('branch'); setShowBulkModal(true); }}>지사 대량 생성</Button>
+                    <Button variant="outline" size="sm" onClick={() => { setBulkType('store'); setShowBulkModal(true); }}>매장 대량 생성</Button>
+                    <Button size="sm"><Icon name="plus" className="w-4 h-4 mr-1" />매장 추가</Button>
                 </div>
             </div>
 
-            {/* 지사별 카드 뷰 */}
-            {viewMode === 'branch' && (
-                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                    {branches.map((branch) => (
-                        <Card key={branch.name} className="p-6">
-                            <div className="flex items-center justify-between mb-4">
-                                <h3 className="text-lg font-semibold text-gray-900">{branch.name}</h3>
-                                <Badge variant="info">{branch.stores.length}개 매장</Badge>
-                            </div>
-                            <div className="space-y-3">
-                                {branch.stores.map((store) => (
-                                    <div
-                                        key={store.id}
-                                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition"
-                                        onClick={() => setSelectedStore(store)}
-                                    >
-                                        <div className="flex-1">
-                                            <div className="font-medium text-gray-900">{store.name}</div>
-                                            <div className="text-sm text-gray-500">{store.code}</div>
+            {/* 검색/필터 바 (리스트 뷰에서만) */}
+            {viewMode === 'list' && (
+                <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+                    <div className="flex-1 relative">
+                        <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input
+                            type="text"
+                            placeholder="매장명, 코드, 주소 검색..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="w-full pl-9 pr-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        />
+                    </div>
+                    <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                        className="px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    >
+                        <option value="all">전체 상태</option>
+                        <option value="active">운영중</option>
+                        <option value="inactive">점검중</option>
+                    </select>
+                    <select
+                        value={currentSortValue}
+                        onChange={(e) => handleSortChange(e.target.value)}
+                        className="px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    >
+                        {sortOptions.map(option => (
+                            <option key={option.value} value={option.value}>
+                                {option.label}
+                            </option>
+                        ))}
+                    </select>
+                    <div className="flex gap-1">
+                        <Button variant="ghost" size="sm" onClick={() => toggleAll(true)}>전체 펼치기</Button>
+                        <Button variant="ghost" size="sm" onClick={() => toggleAll(false)}>전체 접기</Button>
+                    </div>
+                </div>
+            )}
+
+            {/* 검색 결과 및 정렬 상태 표시 */}
+            {viewMode === 'list' && (
+                <p className="text-sm text-gray-500">
+                    {searchTerm ? `검색 결과: ${filteredStoreCount}개 매장` : `총 ${filteredStoreCount}개 매장`}
+                    <span className="text-gray-400 ml-2">
+                        ({sortOptions.find(opt => opt.value === currentSortValue)?.label} 정렬)
+                    </span>
+                </p>
+            )}
+
+            {/* 리스트 뷰 */}
+            {viewMode === 'list' && (
+                <div className="space-y-2">
+                    {filteredBranches.map((branch) => (
+                        <div key={branch.name} className="border rounded-lg overflow-hidden">
+                            <button
+                                onClick={() => toggleBranch(branch.name)}
+                                className="w-full px-4 py-3 bg-gray-50 hover:bg-gray-100 flex items-center justify-between text-left"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <Icon name={expandedBranches[branch.name] ? 'chevron-down' : 'chevron-right'} className="w-4 h-4 text-gray-500" />
+                                    <span className="font-medium text-gray-900">{branch.name}</span>
+                                    <Badge variant="info" className="text-xs">{branch.stores.length}</Badge>
+                                </div>
+                            </button>
+                            {expandedBranches[branch.name] && (
+                                <div className="divide-y">
+                                    {branch.stores.map((store) => (
+                                        <div key={store.id} className="px-4 py-2 hover:bg-gray-50 flex items-center justify-between">
+                                            <div className="flex items-center gap-4 flex-1 min-w-0">
+                                                <div className="min-w-0 flex-1">
+                                                    <div className="font-medium text-gray-900 truncate">{store.name}</div>
+                                                    <div className="text-xs text-gray-500 truncate">{store.code} {store.address && `| ${store.address}`}</div>
+                                                </div>
+                                                <div className="flex items-center gap-2 flex-shrink-0">
+                                                    {/* 마지막 입력 시간 */}
+                                                    <span className={`text-xs ${
+                                                        !store.lastEntryAt ? 'text-red-500' :
+                                                        store.daysSinceEntry >= 3 ? 'text-orange-500' :
+                                                        'text-gray-400'
+                                                    }`}>
+                                                        {store.lastEntryAt
+                                                            ? (store.daysSinceEntry === 0
+                                                                ? '오늘'
+                                                                : store.daysSinceEntry === 1
+                                                                    ? '어제'
+                                                                    : `${store.daysSinceEntry}일 전`)
+                                                            : '미입력'}
+                                                    </span>
+                                                    <Badge variant={store.status === 'active' ? 'success' : 'warning'} className="text-xs">
+                                                        {store.status === 'active' ? '운영' : '점검'}
+                                                    </Badge>
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-1 ml-2 flex-shrink-0">
+                                                <button onClick={(e) => handleEdit(store, e)} className="px-2 py-1 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded">수정</button>
+                                                <button onClick={(e) => handleAccount(store, e)} className="px-2 py-1 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded">계정</button>
+                                                <button onClick={(e) => handleStats(store, e)} className="px-2 py-1 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded">성과</button>
+                                                <button onClick={(e) => handleDelete(store, e)} className="px-2 py-1 text-xs text-red-600 hover:text-red-700 hover:bg-red-50 rounded">삭제</button>
+                                            </div>
                                         </div>
-                                        <div className="flex items-center gap-2">
-                                            <Badge variant={store.status === 'active' ? 'success' : 'warning'} className="text-xs">
-                                                {store.status === 'active' ? '운영중' : '점검중'}
-                                            </Badge>
-                                            <Icon name="chevron-right" className="w-4 h-4 text-gray-400" />
-                                        </div>
-                                    </div>
-                                ))}
-                                {branch.stores.length === 0 && (
-                                    <div className="text-center py-8 text-gray-500">
-                                        등록된 매장이 없습니다
-                                    </div>
-                                )}
-                            </div>
-                        </Card>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     ))}
+                    {filteredBranches.length === 0 && (
+                        <div className="text-center py-8 text-gray-500">
+                            {searchTerm ? '검색 결과가 없습니다' : '등록된 매장이 없습니다'}
+                        </div>
+                    )}
                 </div>
             )}
 
             {/* 테이블 뷰 */}
             {viewMode === 'table' && (
-                <ResponsiveTable
-                    columns={columns}
-                    data={stores}
-                    actions={actions}
-                    mobileCardView={true}
-                    className="space-y-4"
-                />
+                <div className="border rounded-lg overflow-hidden">
+                    <table className="w-full">
+                        <thead className="bg-gray-50 border-b">
+                            <tr>
+                                <th
+                                    onClick={() => toggleColumnSort('name')}
+                                    className="px-4 py-3 text-left text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-100 select-none"
+                                >
+                                    <div className="flex items-center gap-1">
+                                        매장명
+                                        {sortBy === 'name' && (
+                                            <span className="text-primary-600">{sortOrder === 'asc' ? '▲' : '▼'}</span>
+                                        )}
+                                        {sortBy !== 'name' && <span className="text-gray-300">↕</span>}
+                                    </div>
+                                </th>
+                                <th className="px-4 py-3 text-left text-sm font-medium text-gray-700">
+                                    지역
+                                </th>
+                                <th
+                                    onClick={() => toggleColumnSort('status')}
+                                    className="px-4 py-3 text-left text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-100 select-none"
+                                >
+                                    <div className="flex items-center gap-1">
+                                        상태
+                                        {sortBy === 'status' && (
+                                            <span className="text-primary-600">{sortOrder === 'asc' ? '▲' : '▼'}</span>
+                                        )}
+                                        {sortBy !== 'status' && <span className="text-gray-300">↕</span>}
+                                    </div>
+                                </th>
+                                <th
+                                    onClick={() => toggleColumnSort('lastEntry')}
+                                    className="px-4 py-3 text-left text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-100 select-none"
+                                >
+                                    <div className="flex items-center gap-1">
+                                        마지막 입력
+                                        {sortBy === 'lastEntry' && (
+                                            <span className="text-primary-600">{sortOrder === 'asc' ? '▲' : '▼'}</span>
+                                        )}
+                                        {sortBy !== 'lastEntry' && <span className="text-gray-300">↕</span>}
+                                    </div>
+                                </th>
+                                <th
+                                    onClick={() => toggleColumnSort('sales')}
+                                    className="px-4 py-3 text-left text-sm font-medium text-gray-700 cursor-pointer hover:bg-gray-100 select-none"
+                                >
+                                    <div className="flex items-center gap-1">
+                                        금일 매출
+                                        {sortBy === 'sales' && (
+                                            <span className="text-primary-600">{sortOrder === 'asc' ? '▲' : '▼'}</span>
+                                        )}
+                                        {sortBy !== 'sales' && <span className="text-gray-300">↕</span>}
+                                    </div>
+                                </th>
+                                <th className="px-4 py-3 text-right text-sm font-medium text-gray-700">
+                                    액션
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y">
+                            {sortStores(stores).map((store) => (
+                                <tr key={store.id} className="hover:bg-gray-50">
+                                    <td className="px-4 py-3">
+                                        <span className="font-medium text-gray-900">{store.name}</span>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                        <span className="text-gray-600">{store.region}</span>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                        <Badge variant={store.status === 'active' ? 'success' : 'warning'}>
+                                            {store.status === 'active' ? '운영중' : '점검중'}
+                                        </Badge>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                        <span className={`text-sm ${
+                                            !store.lastEntryAt ? 'text-red-500 font-medium' :
+                                            store.daysSinceEntry >= 3 ? 'text-orange-500' :
+                                            'text-gray-600'
+                                        }`}>
+                                            {store.lastEntryAt
+                                                ? (store.daysSinceEntry === 0
+                                                    ? '오늘'
+                                                    : store.daysSinceEntry === 1
+                                                        ? '어제'
+                                                        : `${store.daysSinceEntry}일 전`)
+                                                : '미입력'}
+                                        </span>
+                                    </td>
+                                    <td className="px-4 py-3">
+                                        <span className="font-medium text-gray-900">{store.todaySales}</span>
+                                    </td>
+                                    <td className="px-4 py-3 text-right">
+                                        <div className="flex gap-1 justify-end">
+                                            <Button variant="ghost" size="sm" onClick={(e) => handleEdit(store, e)}>수정</Button>
+                                            <Button variant="ghost" size="sm" onClick={(e) => handleAccount(store, e)}>계정</Button>
+                                            <Button variant="ghost" size="sm" onClick={(e) => handleStats(store, e)}>성과</Button>
+                                            <Button variant="ghost" size="sm" className="text-red-600 hover:text-red-700" onClick={(e) => handleDelete(store, e)}>삭제</Button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                    {stores.length === 0 && (
+                        <div className="text-center py-8 text-gray-500">등록된 매장이 없습니다</div>
+                    )}
+                </div>
             )}
 
             {selectedStore && (
@@ -321,6 +645,23 @@ export const StoreManagement = () => {
                         </div>
                     </div>
                 </Card>
+            )}
+
+            {/* 삭제 확인 모달 */}
+            {showDeleteConfirm && modalStore && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                    <Card className="w-full max-w-md p-6">
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">매장 삭제</h3>
+                        <p className="text-gray-600 mb-6">
+                            "{modalStore.name}" 매장을 삭제하시겠습니까?<br />
+                            <span className="text-red-600 text-sm">이 작업은 되돌릴 수 없습니다.</span>
+                        </p>
+                        <div className="flex gap-2 justify-end">
+                            <Button variant="outline" onClick={() => { setShowDeleteConfirm(false); setModalStore(null); }}>취소</Button>
+                            <Button className="bg-red-600 hover:bg-red-700 text-white" onClick={confirmDelete}>삭제</Button>
+                        </div>
+                    </Card>
+                </div>
             )}
 
             {/* 대량 생성 모달 */}
@@ -465,7 +806,7 @@ const BulkCreateModal = ({ type, onClose, onSuccess }) => {
                     {step === 1 && (
                         <div className="space-y-6">
                             <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                                <h3 className="font-medium text-gray-900 mb-2">📋 업로드 안내</h3>
+                                <h3 className="font-medium text-gray-900 mb-2">업로드 안내</h3>
                                 <ul className="text-sm text-gray-600 space-y-1">
                                     {isBranch ? (
                                         <>
@@ -546,7 +887,7 @@ const BulkCreateModal = ({ type, onClose, onSuccess }) => {
                     {step === 2 && validationResult && (
                         <div className="space-y-6">
                             <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                                <h3 className="font-medium text-green-900 mb-2">✅ 검증 완료</h3>
+                                <h3 className="font-medium text-green-900 mb-2">검증 완료</h3>
                                 <p className="text-sm text-green-800">
                                     총 {validationResult.total_rows}개 행이 확인되었습니다.
                                 </p>
@@ -554,7 +895,7 @@ const BulkCreateModal = ({ type, onClose, onSuccess }) => {
 
                             {validationResult.validation_errors && validationResult.validation_errors.length > 0 && (
                                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                                    <h3 className="font-medium text-yellow-900 mb-2">⚠️ 오류 발견</h3>
+                                    <h3 className="font-medium text-yellow-900 mb-2">오류 발견</h3>
                                     <div className="max-h-60 overflow-y-auto space-y-2">
                                         {validationResult.validation_errors.map((err, idx) => (
                                             <div key={idx} className="text-sm text-yellow-800 bg-yellow-100 p-2 rounded">
@@ -604,7 +945,7 @@ const BulkCreateModal = ({ type, onClose, onSuccess }) => {
                     {step === 4 && createResult && (
                         <div className="space-y-6">
                             <div className="text-center py-6">
-                                <div className="text-6xl mb-4">🎉</div>
+                                
                                 <h3 className="text-2xl font-bold text-gray-900 mb-2">생성 완료!</h3>
                                 {createResult.status === 'queued' ? (
                                     <p className="text-gray-600">
