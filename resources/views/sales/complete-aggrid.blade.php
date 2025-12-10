@@ -456,6 +456,21 @@
         // CSRF 토큰 설정
         window.csrfToken = '{{ csrf_token() }}';
 
+        // 생년월일 6자리 파싱 (YYMMDD → YYYY-MM-DD) - 전역 함수로 정의
+        window.parseBirthDate6 = function(val) {
+            if (!val) return '';
+            const str = String(val).trim().replace(/[^0-9]/g, '');
+            if (str.length === 6) {
+                const yy = parseInt(str.slice(0, 2));
+                const mm = str.slice(2, 4);
+                const dd = str.slice(4, 6);
+                // 00~30은 2000년대, 31~99는 1900년대로 추정
+                const yyyy = yy <= 30 ? 2000 + yy : 1900 + yy;
+                return `${yyyy}-${mm}-${dd}`;
+            }
+            return val;
+        };
+
         // PM 요구사항: 27개 필드 완전 매핑된 데이터 구조
         let salesData = [];
         // 임시 ID는 큰 값부터 시작해서 실제 DB ID와 충돌 방지
@@ -716,7 +731,7 @@
                     <!-- 11. 생년월일 (6자리 YYMMDD) -->
                     <td class="px-2 py-2">
                         <input type="text" value="${formatBirthDate6(row.customer_birth_date)}"
-                               onchange="updateRowData('${row.id}', 'customer_birth_date', parseBirthDate6(this.value))"
+                               onchange="updateRowData('${row.id}', 'customer_birth_date', window.parseBirthDate6(this.value))"
                                class="w-20 px-1 py-1 border rounded text-xs text-center"
                                placeholder="971220"
                                maxlength="6"
@@ -2222,7 +2237,9 @@
                             cash_received: parseFloat(sale.cash_received || 0),
                             payback: parseFloat(sale.payback || 0),
                             margin_after_tax: parseFloat(sale.margin_after_tax || 0),
-                            memo: sale.memo || ''
+                            memo: sale.memo || '',
+                            visit_path: sale.visit_path || '',
+                            customer_address: sale.customer_address || ''
                         };
                     });
 

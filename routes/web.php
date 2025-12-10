@@ -828,14 +828,24 @@ Route::middleware(['auth'])->get('/role-dashboard', function () {
 // if (config('app.env') !== 'production') { // Production에서도 사용 가능하도록 주석 처리
 Route::middleware(['web', 'auth'])->get('/api/stores', function (Illuminate\Http\Request $request) {
     $user = auth()->user();
-    $query = \App\Models\Store::with('branch');
+
+    // 서브쿼리로 각 매장의 마지막 입력 시간 조회
+    $lastSaleSubquery = \DB::table('sales')
+        ->select('store_id', \DB::raw('MAX(created_at) as last_entry_at'))
+        ->groupBy('store_id');
+
+    $query = \App\Models\Store::with('branch')
+        ->leftJoinSub($lastSaleSubquery, 'last_sales', function ($join) {
+            $join->on('stores.id', '=', 'last_sales.store_id');
+        })
+        ->select('stores.*', 'last_sales.last_entry_at');
 
     // 권한별 필터링
     if ($user) {
         if ($user->role === 'branch') {
-            $query->where('branch_id', $user->branch_id);
+            $query->where('stores.branch_id', $user->branch_id);
         } elseif ($user->role === 'store') {
-            $query->where('id', $user->store_id);
+            $query->where('stores.id', $user->store_id);
         }
         // headquarters는 모든 매장 조회
     }
@@ -844,10 +854,10 @@ Route::middleware(['web', 'auth'])->get('/api/stores', function (Illuminate\Http
     if ($request->has('search') && !empty($request->search)) {
         $searchTerm = $request->search;
         $query->where(function ($q) use ($searchTerm) {
-            $q->where('name', 'ILIKE', '%' . $searchTerm . '%')
-                ->orWhere('owner_name', 'ILIKE', '%' . $searchTerm . '%')
-                ->orWhere('code', 'ILIKE', '%' . $searchTerm . '%')
-                ->orWhere('address', 'ILIKE', '%' . $searchTerm . '%')
+            $q->where('stores.name', 'ILIKE', '%' . $searchTerm . '%')
+                ->orWhere('stores.owner_name', 'ILIKE', '%' . $searchTerm . '%')
+                ->orWhere('stores.code', 'ILIKE', '%' . $searchTerm . '%')
+                ->orWhere('stores.address', 'ILIKE', '%' . $searchTerm . '%')
                 ->orWhereHas('branch', function ($branchQuery) use ($searchTerm) {
                     $branchQuery->where('name', 'ILIKE', '%' . $searchTerm . '%');
                 });
@@ -856,16 +866,30 @@ Route::middleware(['web', 'auth'])->get('/api/stores', function (Illuminate\Http
 
     // 매장 유형 필터
     if ($request->has('store_type') && !empty($request->store_type)) {
-        $query->where('store_type', $request->store_type);
+        $query->where('stores.store_type', $request->store_type);
     }
 
     // 페이지네이션
     $perPage = $request->get('per_page', 500);
-    $stores = $query->orderBy('name')->paginate($perPage);
+    $stores = $query->orderBy('stores.name')->paginate($perPage);
+
+    // 마지막 입력으로부터 경과 일수 계산
+    $storesData = collect($stores->items())->map(function ($store) {
+        $storeArray = $store->toArray();
+        if ($store->last_entry_at) {
+            $lastEntry = \Carbon\Carbon::parse($store->last_entry_at);
+            $storeArray['last_entry_at'] = $lastEntry->format('Y-m-d H:i');
+            $storeArray['days_since_entry'] = (int) abs(now()->diffInDays($lastEntry));
+        } else {
+            $storeArray['last_entry_at'] = null;
+            $storeArray['days_since_entry'] = null;
+        }
+        return $storeArray;
+    });
 
     $response = [
         'success' => true,
-        'data' => $stores->items(),
+        'data' => $storesData->toArray(),
         'current_page' => $stores->currentPage(),
         'last_page' => $stores->lastPage(),
         'per_page' => $stores->perPage(),
@@ -874,7 +898,7 @@ Route::middleware(['web', 'auth'])->get('/api/stores', function (Illuminate\Http
 
     // 디버그 정보는 로컬에서만 표시
     if (config('app.debug')) {
-        $response['debug_version'] = 'v3.0-web-route';
+        $response['debug_version'] = 'v4.0-with-last-entry';
         $response['debug_search_applied'] = $request->has('search') && !empty($request->search);
     }
 

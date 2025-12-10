@@ -681,6 +681,20 @@
                         </button>
                     </div>
 
+                    <!-- 정렬 드롭다운 -->
+                    <div class="flex items-center gap-2">
+                        <label for="sort-select" class="text-sm text-gray-600 whitespace-nowrap">정렬:</label>
+                        <select id="sort-select" onchange="handleSortChange(this.value)"
+                                class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                            <option value="name_asc">매장명 (가나다)</option>
+                            <option value="name_desc">매장명 (역순)</option>
+                            <option value="lastEntry_desc">최근 입력순</option>
+                            <option value="lastEntry_asc">오래된 입력순</option>
+                            <option value="code_asc">매장코드 (오름차순)</option>
+                            <option value="code_desc">매장코드 (내림차순)</option>
+                        </select>
+                    </div>
+
                     <!-- 매장 추가 버튼 -->
                     @if(in_array(auth()->user()->role, ['headquarters', 'branch']))
                         <button onclick="showAddStoreModal()" class="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 font-medium shadow-sm whitespace-nowrap transition-colors">
@@ -1366,7 +1380,51 @@
         let branchPages = {}; // 각 지사별 현재 페이지 { branchId: pageNumber }
         let currentSearch = '';
         let currentStoreTypeFilter = 'all'; // 매장 유형 필터: 'all', 'direct', 'franchise'
+        let currentSortBy = localStorage.getItem('storeSort_by') || 'name'; // 정렬 기준
+        let currentSortOrder = localStorage.getItem('storeSort_order') || 'asc'; // 정렬 순서
         const STORES_PER_BRANCH_PAGE = 9; // 지사당 한 페이지에 표시할 매장 수 (3x3 그리드)
+
+        // 정렬 함수
+        function sortStores(stores) {
+            return [...stores].sort((a, b) => {
+                let comparison = 0;
+                switch (currentSortBy) {
+                    case 'name':
+                        comparison = (a.name || '').localeCompare(b.name || '', 'ko');
+                        break;
+                    case 'code':
+                        comparison = (a.code || '').localeCompare(b.code || '', 'ko');
+                        break;
+                    case 'lastEntry':
+                        const dateA = a.last_entry_at ? new Date(a.last_entry_at).getTime() : 0;
+                        const dateB = b.last_entry_at ? new Date(b.last_entry_at).getTime() : 0;
+                        comparison = dateA - dateB;
+                        break;
+                    default:
+                        comparison = 0;
+                }
+                return currentSortOrder === 'asc' ? comparison : -comparison;
+            });
+        }
+
+        // 정렬 변경 핸들러
+        window.handleSortChange = function(value) {
+            const [sortBy, sortOrder] = value.split('_');
+            currentSortBy = sortBy;
+            currentSortOrder = sortOrder;
+            localStorage.setItem('storeSort_by', sortBy);
+            localStorage.setItem('storeSort_order', sortOrder);
+            branchPages = {}; // 페이지 초기화
+            renderFilteredStores();
+        };
+
+        // 페이지 로드 시 정렬 드롭다운 초기값 설정
+        document.addEventListener('DOMContentLoaded', function() {
+            const sortSelect = document.getElementById('sort-select');
+            if (sortSelect) {
+                sortSelect.value = currentSortBy + '_' + currentSortOrder;
+            }
+        });
 
         // 매장 유형 필터 함수
         window.filterByStoreType = function(storeType) {
@@ -1412,6 +1470,9 @@
                     (store.branch?.name && store.branch.name.toLowerCase().includes(searchLower))
                 );
             }
+
+            // 정렬 적용
+            filteredStores = sortStores(filteredStores);
 
             // 지사별 그룹화 및 렌더링
             renderStoresByBranch(filteredStores, gridElement);
@@ -1573,6 +1634,19 @@
                             ? '<span class="px-2 py-0.5 text-xs bg-orange-100 text-orange-700 rounded">가맹점</span>'
                             : '<span class="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded">미분류</span>';
 
+                        // 마지막 입력일 뱃지 생성
+                        let lastEntryBadge = '';
+                        if (store.last_entry_at) {
+                            const days = store.days_since_entry || 0;
+                            if (days >= 3) {
+                                lastEntryBadge = `<span class="px-2 py-0.5 text-xs bg-orange-100 text-orange-700 rounded" title="${store.last_entry_at}">${days}일 전</span>`;
+                            } else {
+                                lastEntryBadge = `<span class="px-2 py-0.5 text-xs bg-gray-100 text-gray-600 rounded" title="${store.last_entry_at}">${days === 0 ? '오늘' : days + '일 전'}</span>`;
+                            }
+                        } else {
+                            lastEntryBadge = '<span class="px-2 py-0.5 text-xs bg-red-100 text-red-700 rounded">미입력</span>';
+                        }
+
                         html += `
                             <div class="px-4 py-2.5 hover:bg-gray-50 flex items-center justify-between">
                                 <div class="flex items-center gap-4 flex-1 min-w-0">
@@ -1580,8 +1654,9 @@
                                         <div class="font-medium text-gray-900">${store.name}</div>
                                         <div class="text-xs text-gray-500">${store.code} | ${store.owner_name || '점주 미등록'} | ${store.phone || '연락처 없음'}</div>
                                     </div>
-                                    <div class="flex gap-1 flex-shrink-0">
+                                    <div class="flex gap-1 flex-shrink-0 items-center">
                                         ${storeTypeBadge}
+                                        ${lastEntryBadge}
                                         <span class="px-2 py-0.5 text-xs bg-green-100 text-green-700 rounded">운영중</span>
                                     </div>
                                 </div>

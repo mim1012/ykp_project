@@ -16,20 +16,29 @@ use Illuminate\Support\Facades\Log;
 class StoreController extends Controller
 {
     /**
-     * 매장 목록 조회 (페이지네이션 + 검색)
-     * Updated: 2025-11-12 - Force rebuild
+     * 매장 목록 조회 (페이지네이션 + 검색 + 마지막 입력일)
+     * Updated: 2025-12-10 - Added last_entry_at field
      */
     public function index(Request $request): JsonResponse
     {
         $user = Auth::user();
 
-        $query = Store::with(['branch']);
+        // 서브쿼리로 각 매장의 마지막 입력 시간 조회
+        $lastSaleSubquery = DB::table('sales')
+            ->select('store_id', DB::raw('MAX(created_at) as last_entry_at'))
+            ->groupBy('store_id');
+
+        $query = Store::with(['branch'])
+            ->leftJoinSub($lastSaleSubquery, 'last_sales', function ($join) {
+                $join->on('stores.id', '=', 'last_sales.store_id');
+            })
+            ->select('stores.*', 'last_sales.last_entry_at');
 
         // 권한별 필터링
         if ($user->role === 'branch') {
-            $query->where('branch_id', $user->branch_id);
+            $query->where('stores.branch_id', $user->branch_id);
         } elseif ($user->role === 'store') {
-            $query->where('id', $user->store_id);
+            $query->where('stores.id', $user->store_id);
         }
 
         // 검색 기능 (토큰 기반 - 매장명, 지사명, 점주명, 코드)
@@ -39,11 +48,11 @@ class StoreController extends Controller
 
             $query->where(function ($q) use ($searchTerm) {
                 // 매장명 검색
-                $q->where('name', 'ILIKE', '%' . $searchTerm . '%')
+                $q->where('stores.name', 'ILIKE', '%' . $searchTerm . '%')
                     // 점주명 검색
-                    ->orWhere('owner_name', 'ILIKE', '%' . $searchTerm . '%')
+                    ->orWhere('stores.owner_name', 'ILIKE', '%' . $searchTerm . '%')
                     // 매장 코드 검색
-                    ->orWhere('code', 'ILIKE', '%' . $searchTerm . '%')
+                    ->orWhere('stores.code', 'ILIKE', '%' . $searchTerm . '%')
                     // 지사명 검색 (relation)
                     ->orWhereHas('branch', function ($branchQuery) use ($searchTerm) {
                         $branchQuery->where('name', 'ILIKE', '%' . $searchTerm . '%');
@@ -53,7 +62,7 @@ class StoreController extends Controller
 
         // 페이지네이션 (기본 20개씩)
         $perPage = $request->get('per_page', 20);
-        $stores = $query->orderBy('name')->paginate($perPage);
+        $stores = $query->orderBy('stores.name')->paginate($perPage);
 
         Log::info('📊 Store query result', [
             'total' => $stores->total(),
@@ -62,14 +71,28 @@ class StoreController extends Controller
             'search_value' => $request->get('search')
         ]);
 
+        // 마지막 입력으로부터 경과 일수 계산
+        $storesData = collect($stores->items())->map(function ($store) {
+            $storeArray = $store->toArray();
+            if ($store->last_entry_at) {
+                $lastEntry = \Carbon\Carbon::parse($store->last_entry_at);
+                $storeArray['last_entry_at'] = $lastEntry->format('Y-m-d H:i');
+                $storeArray['days_since_entry'] = (int) abs(now()->diffInDays($lastEntry));
+            } else {
+                $storeArray['last_entry_at'] = null;
+                $storeArray['days_since_entry'] = null;
+            }
+            return $storeArray;
+        });
+
         return response()->json([
             'success' => true,
-            'data' => $stores->items(),
+            'data' => $storesData->toArray(),
             'current_page' => $stores->currentPage(),
             'last_page' => $stores->lastPage(),
             'per_page' => $stores->perPage(),
             'total' => $stores->total(),
-            'debug_version' => 'v2.0-with-search',
+            'debug_version' => 'v3.0-with-last-entry',
             'debug_search_applied' => $request->has('search') && !empty($request->search),
         ]);
     }
