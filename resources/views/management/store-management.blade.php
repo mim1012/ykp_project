@@ -793,10 +793,9 @@
                 <input type="hidden" id="edit-store-id">
 
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">매장명</label>
-                    <input type="text" id="edit-store-name" disabled
-                           class="w-full border border-gray-300 rounded-md px-3 py-2 bg-gray-100 cursor-not-allowed">
-                    <p class="text-xs text-gray-500 mt-1">매장명은 변경할 수 없습니다</p>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">매장명 <span class="text-red-500">*</span></label>
+                    <input type="text" id="edit-store-name"
+                           class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500">
                 </div>
 
                 <div>
@@ -1197,6 +1196,44 @@
                     <h4 class="text-lg font-medium mb-4">🏆 모델별 판매 TOP 5</h4>
                     <div id="stats-model-ranking" class="space-y-3">
                         <!-- 동적 로드 -->
+                    </div>
+                </div>
+
+                <!-- 개통표 내역 -->
+                <div class="bg-white border rounded-lg p-4 mt-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h4 class="text-lg font-medium">📋 개통표 내역</h4>
+                        <button onclick="downloadSalesExcel()"
+                                class="px-4 py-2 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 flex items-center gap-2">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            Excel 다운로드
+                        </button>
+                    </div>
+                    <div class="text-sm text-gray-500 mb-3" id="stats-sales-count">총 0건</div>
+                    <div class="overflow-x-auto max-h-96 overflow-y-auto border rounded">
+                        <table class="min-w-full divide-y divide-gray-200 text-sm">
+                            <thead class="bg-gray-50 sticky top-0">
+                                <tr>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">개통일자</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">입력일시</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">통신사</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">개통유형</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">모델명</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">고객명</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">전화번호</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">판매자</th>
+                                    <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase whitespace-nowrap">정산금액</th>
+                                </tr>
+                            </thead>
+                            <tbody id="stats-sales-table-body" class="bg-white divide-y divide-gray-200">
+                                <!-- 동적 로드 -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="stats-sales-empty" class="hidden text-center py-8 text-gray-500">
+                        해당 기간에 개통표 데이터가 없습니다.
                     </div>
                 </div>
             </div>
@@ -1895,10 +1932,15 @@
             console.log('💾 매장 정보 저장 시작');
 
             const storeId = document.getElementById('edit-store-id').value;
+            const storeName = document.getElementById('edit-store-name').value.trim();
             const ownerName = document.getElementById('edit-store-owner').value.trim();
             const phone = document.getElementById('edit-store-phone').value.trim();
 
             // 유효성 검사
+            if (!storeName) {
+                alert('매장명을 입력해주세요');
+                return;
+            }
             if (!ownerName) {
                 alert('점주명을 입력해주세요');
                 return;
@@ -1922,6 +1964,7 @@
             const storeEmail = document.getElementById('edit-store-email').value.trim() || null;
 
             const updateData = {
+                name: storeName,
                 owner_name: ownerName,
                 phone: phone,
                 // 분류 필드
@@ -3234,6 +3277,9 @@
 
             // 모델별 판매 TOP 5
             renderModelRanking(data.model_ranking || {});
+
+            // 개통표 내역 테이블
+            renderSalesList(data.sales_list || []);
         }
 
         // 통신사별 분포 렌더링 (프로그레스 바 포함)
@@ -3331,7 +3377,71 @@
             });
             container.innerHTML = html;
         }
-        
+
+        // 개통표 내역 테이블 렌더링
+        function renderSalesList(salesList) {
+            const tableBody = document.getElementById('stats-sales-table-body');
+            const countEl = document.getElementById('stats-sales-count');
+            const emptyEl = document.getElementById('stats-sales-empty');
+
+            countEl.textContent = `총 ${salesList.length}건`;
+
+            if (salesList.length === 0) {
+                tableBody.innerHTML = '';
+                emptyEl.classList.remove('hidden');
+                tableBody.parentElement.classList.add('hidden');
+                return;
+            }
+
+            emptyEl.classList.add('hidden');
+            tableBody.parentElement.classList.remove('hidden');
+
+            let html = '';
+            salesList.forEach(sale => {
+                html += `
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-3 py-2 whitespace-nowrap">${sale.sale_date || '-'}</td>
+                        <td class="px-3 py-2 whitespace-nowrap text-gray-500">${sale.created_at || '-'}</td>
+                        <td class="px-3 py-2 whitespace-nowrap">${sale.carrier || '-'}</td>
+                        <td class="px-3 py-2 whitespace-nowrap">${sale.activation_type || '-'}</td>
+                        <td class="px-3 py-2 whitespace-nowrap">${sale.model_name || '-'}</td>
+                        <td class="px-3 py-2 whitespace-nowrap">${sale.customer_name || '-'}</td>
+                        <td class="px-3 py-2 whitespace-nowrap">${sale.phone_number || '-'}</td>
+                        <td class="px-3 py-2 whitespace-nowrap">${sale.salesperson || '-'}</td>
+                        <td class="px-3 py-2 whitespace-nowrap text-right font-medium">₩${Number(sale.settlement_amount || 0).toLocaleString()}</td>
+                    </tr>
+                `;
+            });
+            tableBody.innerHTML = html;
+        }
+
+        // Excel 다운로드
+        function downloadSalesExcel() {
+            if (!currentStatsStoreId) {
+                showToast('매장을 선택해주세요.', 'error');
+                return;
+            }
+
+            const year = document.getElementById('stats-year').value;
+            const month = document.getElementById('stats-month').value;
+            const date = document.getElementById('stats-date').value;
+
+            let url = `/api/stores/${currentStatsStoreId}/sales/export?period=${currentStatsPeriod}`;
+
+            if (currentStatsPeriod === 'daily') {
+                url += `&date=${date}`;
+            } else if (currentStatsPeriod === 'monthly') {
+                url += `&year=${year}&month=${month}`;
+            } else {
+                url += `&year=${year}`;
+            }
+
+            showToast('Excel 파일 다운로드를 시작합니다...', 'info');
+
+            // 파일 다운로드
+            window.location.href = url;
+        }
+
         // 최근 거래 내역 표시
         function displayRecentTransactions(transactions) {
             const container = document.getElementById('recent-transactions');

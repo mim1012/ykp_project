@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Exports\StoreSalesExport;
 use App\Http\Controllers\Controller;
 use App\Models\Goal;
 use App\Models\Sale;
@@ -11,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Maatwebsite\Excel\Facades\Excel;
 
 class StoreStatisticsController extends Controller
 {
@@ -138,6 +140,31 @@ class StoreStatisticsController extends Controller
             ];
         }
 
+        // 개통표 목록 (전체 필드)
+        $salesList = $sales->map(function ($sale) {
+            return [
+                'id' => $sale->id,
+                'sale_date' => $sale->sale_date,
+                'created_at' => $sale->created_at?->format('Y-m-d H:i:s'),
+                'carrier' => $sale->carrier,
+                'activation_type' => $sale->activation_type,
+                'model_name' => $sale->model_name,
+                'customer_name' => $sale->customer_name,
+                'customer_birth_date' => $sale->customer_birth_date,
+                'phone_number' => $sale->phone_number,
+                'salesperson' => $sale->salesperson,
+                'dealer_name' => $sale->dealer_name,
+                'dealer_code' => $sale->dealer_code,
+                'serial_number' => $sale->serial_number,
+                'agency' => $sale->agency,
+                'visit_path' => $sale->visit_path,
+                'base_price' => floatval($sale->base_price),
+                'settlement_amount' => floatval($sale->settlement_amount),
+                'margin_after_tax' => floatval($sale->margin_after_tax),
+                'memo' => $sale->memo,
+            ];
+        })->values()->toArray();
+
         return response()->json([
             'success' => true,
             'data' => [
@@ -160,6 +187,7 @@ class StoreStatisticsController extends Controller
                 'activation_type_distribution' => $activationTypeDistribution,
                 'model_ranking' => $modelRanking,
                 'goal_achievement' => $goalAchievement,
+                'sales_list' => $salesList,
             ],
         ]);
     }
@@ -238,6 +266,31 @@ class StoreStatisticsController extends Controller
             ];
         }
 
+        // 개통표 목록 (전체 필드)
+        $salesList = $sales->map(function ($sale) {
+            return [
+                'id' => $sale->id,
+                'sale_date' => $sale->sale_date,
+                'created_at' => $sale->created_at?->format('Y-m-d H:i:s'),
+                'carrier' => $sale->carrier,
+                'activation_type' => $sale->activation_type,
+                'model_name' => $sale->model_name,
+                'customer_name' => $sale->customer_name,
+                'customer_birth_date' => $sale->customer_birth_date,
+                'phone_number' => $sale->phone_number,
+                'salesperson' => $sale->salesperson,
+                'dealer_name' => $sale->dealer_name,
+                'dealer_code' => $sale->dealer_code,
+                'serial_number' => $sale->serial_number,
+                'agency' => $sale->agency,
+                'visit_path' => $sale->visit_path,
+                'base_price' => floatval($sale->base_price),
+                'settlement_amount' => floatval($sale->settlement_amount),
+                'margin_after_tax' => floatval($sale->margin_after_tax),
+                'memo' => $sale->memo,
+            ];
+        })->values()->toArray();
+
         return response()->json([
             'success' => true,
             'data' => [
@@ -262,6 +315,7 @@ class StoreStatisticsController extends Controller
                 'daily_breakdown' => $dailyBreakdown,
                 'model_ranking' => $modelRanking,
                 'goal_achievement' => $goalAchievement,
+                'sales_list' => $salesList,
             ],
         ]);
     }
@@ -344,6 +398,31 @@ class StoreStatisticsController extends Controller
             ];
         }
 
+        // 개통표 목록 (전체 필드)
+        $salesList = $sales->map(function ($sale) {
+            return [
+                'id' => $sale->id,
+                'sale_date' => $sale->sale_date,
+                'created_at' => $sale->created_at?->format('Y-m-d H:i:s'),
+                'carrier' => $sale->carrier,
+                'activation_type' => $sale->activation_type,
+                'model_name' => $sale->model_name,
+                'customer_name' => $sale->customer_name,
+                'customer_birth_date' => $sale->customer_birth_date,
+                'phone_number' => $sale->phone_number,
+                'salesperson' => $sale->salesperson,
+                'dealer_name' => $sale->dealer_name,
+                'dealer_code' => $sale->dealer_code,
+                'serial_number' => $sale->serial_number,
+                'agency' => $sale->agency,
+                'visit_path' => $sale->visit_path,
+                'base_price' => floatval($sale->base_price),
+                'settlement_amount' => floatval($sale->settlement_amount),
+                'margin_after_tax' => floatval($sale->margin_after_tax),
+                'memo' => $sale->memo,
+            ];
+        })->values()->toArray();
+
         return response()->json([
             'success' => true,
             'data' => [
@@ -367,7 +446,104 @@ class StoreStatisticsController extends Controller
                 'monthly_breakdown' => $monthlyBreakdown,
                 'model_ranking' => $modelRanking,
                 'goal_achievement' => $goalAchievement,
+                'sales_list' => $salesList,
             ],
         ]);
+    }
+
+    /**
+     * Export sales data as Excel
+     * GET /api/stores/{id}/sales/export?period=monthly&year=2025&month=12
+     */
+    public function exportSales(Request $request, $id)
+    {
+        try {
+            $user = Auth::user();
+            $store = Store::with('branch')->findOrFail($id);
+
+            // RBAC: Check permissions
+            if ($user->isStore() && $store->id !== $user->store_id) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+            }
+
+            if ($user->isBranch() && $store->branch_id !== $user->branch_id) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+            }
+
+            $period = $request->input('period', 'monthly');
+            $year = $request->input('year', now()->year);
+            $month = $request->input('month', now()->month);
+            $date = $request->input('date', now()->format('Y-m-d'));
+
+            // Build query based on period
+            $query = Sale::where('store_id', $store->id);
+
+            switch ($period) {
+                case 'daily':
+                    $query->whereDate('sale_date', $date);
+                    $periodLabel = $date;
+                    break;
+                case 'monthly':
+                    $startDate = sprintf('%04d-%02d-01', $year, $month);
+                    $endDate = date('Y-m-t', strtotime($startDate));
+                    $query->whereDate('sale_date', '>=', $startDate)
+                          ->whereDate('sale_date', '<=', $endDate);
+                    $periodLabel = "{$year}년 {$month}월";
+                    break;
+                case 'yearly':
+                    $query->whereYear('sale_date', $year);
+                    $periodLabel = "{$year}년";
+                    break;
+                default:
+                    $periodLabel = '';
+            }
+
+            $sales = $query->orderBy('sale_date', 'desc')
+                          ->orderBy('created_at', 'desc')
+                          ->get();
+
+            // Transform to array for export
+            $salesData = $sales->map(function ($sale) {
+                return [
+                    'sale_date' => $sale->sale_date,
+                    'created_at' => $sale->created_at?->format('Y-m-d H:i:s'),
+                    'carrier' => $sale->carrier,
+                    'activation_type' => $sale->activation_type,
+                    'model_name' => $sale->model_name,
+                    'customer_name' => $sale->customer_name,
+                    'customer_birth_date' => $sale->customer_birth_date,
+                    'phone_number' => $sale->phone_number,
+                    'salesperson' => $sale->salesperson,
+                    'dealer_name' => $sale->dealer_name,
+                    'dealer_code' => $sale->dealer_code,
+                    'serial_number' => $sale->serial_number,
+                    'agency' => $sale->agency,
+                    'visit_path' => $sale->visit_path,
+                    'base_price' => $sale->base_price,
+                    'settlement_amount' => $sale->settlement_amount,
+                    'margin_after_tax' => $sale->margin_after_tax,
+                    'memo' => $sale->memo,
+                ];
+            })->toArray();
+
+            $filename = "{$store->name}_개통표_{$periodLabel}.xlsx";
+
+            return Excel::download(
+                new StoreSalesExport($salesData, $store->name, $periodLabel),
+                $filename
+            );
+
+        } catch (\Exception $e) {
+            Log::error('Failed to export sales', [
+                'store_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Export failed',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
 }
