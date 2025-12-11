@@ -11,8 +11,9 @@ echo "📡 PORT: ${PORT}"
 # Apache 포트 설정 덮어쓰기
 echo "Listen 0.0.0.0:${PORT}" > /etc/apache2/ports.conf
 
-# vhost 파일의 80을 실제 PORT로 교체
-sed -i "s/*:80/*:${PORT}/" /etc/apache2/sites-available/001-app.conf
+# vhost 파일의 포트를 실제 PORT로 교체 (정확한 패턴 매칭)
+# *:숫자+> 패턴을 PORT로 교체 (재시작 시 중복 방지)
+sed -i -E "s/\*:[0-9]+>/*:${PORT}>/" /etc/apache2/sites-available/001-app.conf
 
 # Sites 활성화
 a2dissite 000-default >/dev/null 2>&1 || true
