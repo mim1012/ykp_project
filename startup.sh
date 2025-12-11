@@ -8,6 +8,12 @@ echo "========================"
 export PORT=${PORT:-8080}
 echo "📡 PORT: ${PORT}"
 
+# Fix MPM error - ensure only one MPM is loaded
+echo "🔧 Fixing MPM configuration..."
+a2dismod mpm_event 2>/dev/null || true
+a2dismod mpm_worker 2>/dev/null || true
+a2enmod mpm_prefork 2>/dev/null || true
+
 # Apache 포트 설정 덮어쓰기
 echo "Listen 0.0.0.0:${PORT}" > /etc/apache2/ports.conf
 
