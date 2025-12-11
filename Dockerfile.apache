@@ -2,7 +2,7 @@
 FROM php:8.3-apache
 
 # Cache bust to force rebuild (update this value to force rebuild)
-ARG CACHE_BUST=2025-12-03-php83-fix-v8-add-gd
+ARG CACHE_BUST=2025-12-12-fix-startup-sed
 
 WORKDIR /var/www/html
 
