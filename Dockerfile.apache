@@ -2,7 +2,7 @@
 FROM php:8.3-apache
 
 # Cache bust to force rebuild (update this value to force rebuild)
-ARG CACHE_BUST=2025-12-12-fix-mpm-v2
+ARG CACHE_BUST=2025-12-12-fix-mpm-runtime
 
 WORKDIR /var/www/html
 
