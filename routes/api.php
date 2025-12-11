@@ -868,6 +868,8 @@ Route::middleware(['web', 'auth', 'rbac'])->prefix('customers')->group(function 
 Route::middleware(['web', 'auth'])->group(function () {
     Route::get('/stores/{id}/statistics', [App\Http\Controllers\Api\StoreStatisticsController::class, 'index'])
         ->name('api.stores.statistics');
+    Route::get('/stores/{id}/sales/export', [App\Http\Controllers\Api\StoreStatisticsController::class, 'exportSales'])
+        ->name('api.stores.sales.export');
 });
 
 /*
