@@ -20,6 +20,12 @@ export const StoreManagement = () => {
     const [sortBy, setSortBy] = useState(() => localStorage.getItem('storeSort_by') || 'name');
     const [sortOrder, setSortOrder] = useState(() => localStorage.getItem('storeSort_order') || 'asc');
 
+    // 페이지네이션 상태
+    const [currentPage, setCurrentPage] = useState(1);
+    const [lastPage, setLastPage] = useState(1);
+    const [totalStores, setTotalStores] = useState(0);
+    const [perPage, setPerPage] = useState(20);
+
     // 정렬 옵션
     const sortOptions = [
         { value: 'name_asc', label: '매장명 (가나다)', by: 'name', order: 'asc' },
@@ -42,11 +48,16 @@ export const StoreManagement = () => {
     const [modalStore, setModalStore] = useState(null);
 
     // API에서 매장 데이터 로드
-    useEffect(() => {
-        const fetchStores = async () => {
-            try {
-                setLoading(true);
-                const response = await fetch('/api/stores');
+    const fetchStores = async (sortByParam = sortBy, sortOrderParam = sortOrder, page = currentPage) => {
+        try {
+            setLoading(true);
+            const params = new URLSearchParams({
+                sort_by: sortByParam,
+                sort_order: sortOrderParam,
+                page: page.toString(),
+                per_page: perPage.toString(),
+            });
+            const response = await fetch(`/api/stores?${params}`);
 
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -71,7 +82,11 @@ export const StoreManagement = () => {
                     }));
 
                     setStores(transformedStores);
-                    // console.log(`매장 데이터 ${transformedStores.length}개 로드 완료`);
+
+                    // 페이지네이션 정보 저장
+                    setCurrentPage(data.current_page || 1);
+                    setLastPage(data.last_page || 1);
+                    setTotalStores(data.total || transformedStores.length);
 
                     // 지사별로 그룹화
                     const grouped = transformedStores.reduce((acc, store) => {
@@ -86,7 +101,11 @@ export const StoreManagement = () => {
                         return acc;
                     }, {});
 
-                    setBranches(Object.values(grouped));
+                    // 지사명 가나다순 정렬
+                    const sortedBranches = Object.values(grouped).sort((a, b) =>
+                        a.name.localeCompare(b.name, 'ko')
+                    );
+                    setBranches(sortedBranches);
                     // 모든 지사 펼치기
                     const expanded = {};
                     Object.keys(grouped).forEach(key => {
@@ -99,11 +118,13 @@ export const StoreManagement = () => {
             } catch (err) {
                 console.error('매장 데이터 로드 실패:', err);
                 setError(err.message);
-            } finally {
-                setLoading(false);
-            }
-        };
+        } finally {
+            setLoading(false);
+        }
+    };
 
+    // 초기 로드
+    useEffect(() => {
         fetchStores();
     }, []);
 
@@ -132,21 +153,36 @@ export const StoreManagement = () => {
             setSortOrder(option.order);
             localStorage.setItem('storeSort_by', option.by);
             localStorage.setItem('storeSort_order', option.order);
+            // 정렬 변경 시 1페이지로 리셋
+            setCurrentPage(1);
+            fetchStores(option.by, option.order, 1);
+        }
+    };
+
+    // 페이지 변경 핸들러
+    const handlePageChange = (page) => {
+        if (page >= 1 && page <= lastPage) {
+            setCurrentPage(page);
+            fetchStores(sortBy, sortOrder, page);
         }
     };
 
     // 테이블 컬럼 정렬 토글
     const toggleColumnSort = (column) => {
+        let newSortBy = column;
+        let newSortOrder = 'asc';
+
         if (sortBy === column) {
-            const newOrder = sortOrder === 'asc' ? 'desc' : 'asc';
-            setSortOrder(newOrder);
-            localStorage.setItem('storeSort_order', newOrder);
-        } else {
-            setSortBy(column);
-            setSortOrder('asc');
-            localStorage.setItem('storeSort_by', column);
-            localStorage.setItem('storeSort_order', 'asc');
+            newSortOrder = sortOrder === 'asc' ? 'desc' : 'asc';
         }
+
+        setSortBy(newSortBy);
+        setSortOrder(newSortOrder);
+        localStorage.setItem('storeSort_by', newSortBy);
+        localStorage.setItem('storeSort_order', newSortOrder);
+        // 정렬 변경 시 1페이지로 리셋
+        setCurrentPage(1);
+        fetchStores(newSortBy, newSortOrder, 1);
     };
 
     // 매장 정렬 함수

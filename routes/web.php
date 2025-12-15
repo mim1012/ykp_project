@@ -869,9 +869,40 @@ Route::middleware(['web', 'auth'])->get('/api/stores', function (Illuminate\Http
         $query->where('stores.store_type', $request->store_type);
     }
 
+    // 정렬 처리
+    $sortBy = $request->get('sort_by', 'name');
+    $sortOrder = $request->get('sort_order', 'asc');
+
+    // 허용된 정렬 필드
+    $allowedSortFields = [
+        'name' => 'stores.name',
+        'code' => 'stores.code',
+        'status' => 'stores.status',
+        'sales' => 'stores.today_sales',
+        'lastEntry' => 'last_sales.last_entry_at',
+    ];
+
+    $sortColumn = $allowedSortFields[$sortBy] ?? 'stores.name';
+    $sortDirection = $sortOrder === 'desc' ? 'desc' : 'asc';
+
+    // lastEntry 정렬 시 NULL 값 처리 (미입력은 맨 뒤로)
+    if ($sortBy === 'lastEntry') {
+        if ($sortDirection === 'desc') {
+            // 최근 입력순: NULL이 맨 뒤
+            $query->orderByRaw('last_sales.last_entry_at IS NULL ASC')
+                  ->orderBy('last_sales.last_entry_at', 'desc');
+        } else {
+            // 오래된 입력순: NULL이 맨 뒤
+            $query->orderByRaw('last_sales.last_entry_at IS NULL ASC')
+                  ->orderBy('last_sales.last_entry_at', 'asc');
+        }
+    } else {
+        $query->orderBy($sortColumn, $sortDirection);
+    }
+
     // 페이지네이션
     $perPage = $request->get('per_page', 500);
-    $stores = $query->orderBy('stores.name')->paginate($perPage);
+    $stores = $query->paginate($perPage);
 
     // 마지막 입력으로부터 경과 일수 계산
     $storesData = collect($stores->items())->map(function ($store) {
