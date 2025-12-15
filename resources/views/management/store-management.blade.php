@@ -1280,6 +1280,32 @@
             }
         };
 
+        // 날짜 포맷팅 유틸리티 함수
+        function formatDateOnly(dateStr) {
+            if (!dateStr) return '-';
+            // ISO 형식에서 날짜 부분만 추출 (YYYY-MM-DD)
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime())) return dateStr;
+            return date.toLocaleDateString('ko-KR', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            }).replace(/\. /g, '-').replace('.', '');
+        }
+
+        function formatDateTime(dateStr) {
+            if (!dateStr) return '-';
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime())) return dateStr;
+            return date.toLocaleDateString('ko-KR', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
         // 클린코드: 권한 관리 클래스 (DRY + OCP 원칙)
         class PermissionManager {
             constructor(userData) {
@@ -3400,8 +3426,8 @@
             salesList.forEach(sale => {
                 html += `
                     <tr class="hover:bg-gray-50">
-                        <td class="px-3 py-2 whitespace-nowrap">${sale.sale_date || '-'}</td>
-                        <td class="px-3 py-2 whitespace-nowrap text-gray-500">${sale.created_at || '-'}</td>
+                        <td class="px-3 py-2 whitespace-nowrap">${formatDateOnly(sale.sale_date)}</td>
+                        <td class="px-3 py-2 whitespace-nowrap text-gray-500">${formatDateTime(sale.created_at)}</td>
                         <td class="px-3 py-2 whitespace-nowrap">${sale.carrier || '-'}</td>
                         <td class="px-3 py-2 whitespace-nowrap">${sale.activation_type || '-'}</td>
                         <td class="px-3 py-2 whitespace-nowrap">${sale.model_name || '-'}</td>
@@ -3458,7 +3484,7 @@
                     <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
                         <div>
                             <div class="font-medium text-gray-900">${sale.model_name || '모델명 없음'}</div>
-                            <div class="text-sm text-gray-500">${sale.sale_date} • ${sale.carrier || 'SK'}</div>
+                            <div class="text-sm text-gray-500">${formatDateOnly(sale.sale_date)} • ${sale.carrier || 'SK'}</div>
                         </div>
                         <div class="text-lg font-bold text-green-600">₩${amount}</div>
                     </div>
