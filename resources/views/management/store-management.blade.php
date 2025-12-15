@@ -1622,6 +1622,8 @@
                     if (currentStoreTypeFilter !== 'all') {
                         filteredStores = allStores.filter(store => store.store_type === currentStoreTypeFilter);
                     }
+                    // 🔧 페이지 변경 시에도 정렬 유지
+                    filteredStores = sortStores(filteredStores);
                 }
 
                 console.log('🎨 renderStoresByBranch 시작 - 필터된 매장:', filteredStores.length);
