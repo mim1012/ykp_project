@@ -133,6 +133,42 @@
 
     <!-- 메인 컨텐츠 -->
     <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        <!-- 조회 필터 -->
+        <div class="expense-form" style="margin-bottom: 20px;">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4">조회 필터</h2>
+            <div class="expense-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+                <!-- 기간 필터 -->
+                <div class="form-group">
+                    <label class="form-label">시작일</label>
+                    <input type="date" id="filterStartDate" class="form-input" onchange="onDateChange()">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">종료일</label>
+                    <input type="date" id="filterEndDate" class="form-input" onchange="onDateChange()">
+                </div>
+
+                @if(($viewScope ?? 'store') === 'all')
+                <!-- 본사용: 지사/매장 검색 -->
+                <div class="form-group">
+                    <label class="form-label">지사 선택</label>
+                    <select id="filterBranch" class="form-input" onchange="onBranchChange()">
+                        <option value="">전체 지사</option>
+                    </select>
+                </div>
+                <div class="form-group" style="position: relative;">
+                    <label class="form-label">매장 검색</label>
+                    <input type="text" id="storeSearchInput" class="form-input" placeholder="매장명 입력..." autocomplete="off" oninput="onStoreSearch(this.value)">
+                    <input type="hidden" id="filterStoreId" value="">
+                    <div id="storeSearchResults" style="display:none; position:absolute; top:100%; left:0; right:0; background:white; border:1px solid #d1d5db; border-radius:6px; max-height:200px; overflow-y:auto; z-index:100; box-shadow:0 4px 6px rgba(0,0,0,0.1);"></div>
+                </div>
+                @endif
+
+                <div class="form-group" style="justify-content: flex-end; align-self: flex-end;">
+                    <button type="button" onclick="resetFilter()" class="btn" style="background: #f3f4f6; color: #374151;">필터 초기화</button>
+                </div>
+            </div>
+        </div>
+
         <!-- 요약 카드 -->
         <div class="summary-cards">
             <div class="summary-card">
@@ -153,7 +189,8 @@
             </div>
         </div>
 
-        <!-- 지출 입력 폼 -->
+        <!-- 지출 입력 폼 (매장 권한만 등록 가능) -->
+        @if(($viewScope ?? 'store') === 'store')
         <div class="expense-form">
             <h2 class="text-lg font-semibold text-gray-900 mb-4">새 지출 등록</h2>
             <form id="expenseForm">
@@ -161,12 +198,6 @@
                     <div class="form-group">
                         <label class="form-label">지출일</label>
                         <input type="date" name="expense_date" class="form-input" required>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">대리점</label>
-                        <select name="dealer_code" class="form-input" required>
-                            <option value="">선택해주세요</option>
-                        </select>
                     </div>
                     <div class="form-group">
                         <label class="form-label">지출 카테고리</label>
@@ -214,6 +245,7 @@
                 </div>
             </form>
         </div>
+        @endif
 
         <!-- 지출 내역 목록 -->
         <div class="expense-list">
@@ -227,37 +259,216 @@
     </main>
 
     <script>
-        // 페이지 로드 시 초기화
-        document.addEventListener('DOMContentLoaded', function() {
-            loadDealers();
+        // 권한 정보 (서버에서 전달)
+        const VIEW_SCOPE = '{{ $viewScope ?? "store" }}';
+        const USER_ROLE = '{{ $userRole ?? "store" }}';
+        const BRANCH_ID = '{{ $branchId ?? "" }}';
+        const STORE_ID = '{{ $storeId ?? "" }}';
+
+        // 필터 상태
+        let selectedBranchId = '';
+        let selectedStoreId = '';
+        let filterStartDate = '';
+        let filterEndDate = '';
+        let allBranches = [];
+        let allStores = [];
+
+        // 권한에 따른 API 파라미터 생성
+        function getScopeParams() {
+            const params = new URLSearchParams();
+
+            // 기간 필터
+            if (filterStartDate && filterEndDate) {
+                params.append('start_date', filterStartDate);
+                params.append('end_date', filterEndDate);
+            }
+
+            // 본사의 경우: 선택한 필터 적용
+            if (VIEW_SCOPE === 'all') {
+                if (selectedStoreId) {
+                    params.append('store_id', selectedStoreId);
+                } else if (selectedBranchId) {
+                    params.append('branch_id', selectedBranchId);
+                }
+                // 둘 다 없으면 전체 조회
+            } else if (VIEW_SCOPE === 'branch' && BRANCH_ID) {
+                params.append('branch_id', BRANCH_ID);
+            } else if (VIEW_SCOPE === 'store' && STORE_ID) {
+                params.append('store_id', STORE_ID);
+            }
+
+            return params.toString() ? '&' + params.toString() : '';
+        }
+
+        // 기간 변경 이벤트
+        function onDateChange() {
+            filterStartDate = document.getElementById('filterStartDate')?.value || '';
+            filterEndDate = document.getElementById('filterEndDate')?.value || '';
             loadExpenses();
             loadSummary();
-            
-            // 오늘 날짜 기본값 설정
-            document.querySelector('input[name="expense_date"]').value = new Date().toISOString().split('T')[0];
+        }
+
+        // 매장 검색 (자동완성)
+        let searchTimeout = null;
+        function onStoreSearch(query) {
+            clearTimeout(searchTimeout);
+            const resultsDiv = document.getElementById('storeSearchResults');
+
+            if (!query || query.length < 1) {
+                resultsDiv.style.display = 'none';
+                return;
+            }
+
+            searchTimeout = setTimeout(() => {
+                let filteredStores = allStores;
+
+                // 지사 선택된 경우 해당 지사만
+                if (selectedBranchId) {
+                    filteredStores = allStores.filter(s => s.branch_id == selectedBranchId);
+                }
+
+                // 검색어로 필터
+                const results = filteredStores.filter(s =>
+                    s.name.toLowerCase().includes(query.toLowerCase()) ||
+                    s.code.toLowerCase().includes(query.toLowerCase())
+                ).slice(0, 20); // 최대 20개만
+
+                if (results.length === 0) {
+                    resultsDiv.innerHTML = '<div style="padding:10px;color:#6b7280;">검색 결과 없음</div>';
+                } else {
+                    resultsDiv.innerHTML = results.map(s => `
+                        <div style="padding:10px;cursor:pointer;border-bottom:1px solid #f3f4f6;"
+                             onmouseover="this.style.background='#f3f4f6'"
+                             onmouseout="this.style.background='white'"
+                             onclick="selectStore(${s.id}, '${s.name}')">
+                            <div style="font-weight:600;">${s.name}</div>
+                            <div style="font-size:12px;color:#6b7280;">${s.code} · ${s.branch?.name || ''}</div>
+                        </div>
+                    `).join('');
+                }
+                resultsDiv.style.display = 'block';
+            }, 200);
+        }
+
+        // 매장 선택
+        function selectStore(storeId, storeName) {
+            selectedStoreId = storeId;
+            document.getElementById('storeSearchInput').value = storeName;
+            document.getElementById('filterStoreId').value = storeId;
+            document.getElementById('storeSearchResults').style.display = 'none';
+            loadExpenses();
+            loadSummary();
+        }
+
+        // 검색창 외부 클릭 시 결과 숨김
+        document.addEventListener('click', function(e) {
+            const resultsDiv = document.getElementById('storeSearchResults');
+            const searchInput = document.getElementById('storeSearchInput');
+            if (resultsDiv && searchInput && !searchInput.contains(e.target) && !resultsDiv.contains(e.target)) {
+                resultsDiv.style.display = 'none';
+            }
         });
 
-        // 대리점 목록 로드
-        async function loadDealers() {
+        // 페이지 로드 시 초기화
+        document.addEventListener('DOMContentLoaded', async function() {
+            loadExpenses();
+            loadSummary();
+
+            // 본사인 경우 지사/매장 목록 로드
+            if (VIEW_SCOPE === 'all') {
+                await loadBranches();
+                await loadStores();
+            }
+
+            // 오늘 날짜 기본값 설정
+            const expenseDateInput = document.querySelector('input[name="expense_date"]');
+            if (expenseDateInput) {
+                expenseDateInput.value = new Date().toISOString().split('T')[0];
+            }
+        });
+
+        // 지사 목록 로드 (본사용)
+        async function loadBranches() {
             try {
-                const response = await fetch('/api/dev/calculation/profiles');
+                const response = await fetch('/api/dev/stores/branches');
                 const data = await response.json();
-                
-                const select = document.querySelector('select[name="dealer_code"]');
-                select.innerHTML = '<option value="">선택해주세요</option>';
-                
-                data.data.forEach(dealer => {
-                    select.innerHTML += `<option value="${dealer.dealer_code}">${dealer.dealer_name}</option>`;
+                allBranches = data.data || data;
+
+                const select = document.getElementById('filterBranch');
+                if (!select) return;
+
+                select.innerHTML = '<option value="">전체 지사</option>';
+                allBranches.forEach(branch => {
+                    select.innerHTML += `<option value="${branch.id}">${branch.name}</option>`;
                 });
             } catch (error) {
-                console.error('대리점 목록 로드 오류:', error);
+                console.error('지사 목록 로드 오류:', error);
             }
+        }
+
+        // 매장 목록 로드 (본사용 - 검색용 데이터)
+        async function loadStores() {
+            try {
+                const response = await fetch('/api/dev/stores');
+                const data = await response.json();
+                allStores = data.data || data;
+                console.log('매장 목록 로드 완료:', allStores.length + '개');
+            } catch (error) {
+                console.error('매장 목록 로드 오류:', error);
+            }
+        }
+
+        // 지사 변경 이벤트
+        function onBranchChange() {
+            const select = document.getElementById('filterBranch');
+            selectedBranchId = select.value;
+            selectedStoreId = '';  // 매장 선택 초기화
+
+            // 매장 검색 초기화
+            const storeSearchInput = document.getElementById('storeSearchInput');
+            const filterStoreIdInput = document.getElementById('filterStoreId');
+            const storeSearchResults = document.getElementById('storeSearchResults');
+            if (storeSearchInput) storeSearchInput.value = '';
+            if (filterStoreIdInput) filterStoreIdInput.value = '';
+            if (storeSearchResults) storeSearchResults.style.display = 'none';
+
+            loadExpenses();
+            loadSummary();
+        }
+
+        // 필터 초기화
+        function resetFilter() {
+            selectedBranchId = '';
+            selectedStoreId = '';
+            filterStartDate = '';
+            filterEndDate = '';
+
+            // 지사 드롭다운 초기화
+            const branchSelect = document.getElementById('filterBranch');
+            if (branchSelect) branchSelect.value = '';
+
+            // 날짜 필터 초기화
+            const startDateInput = document.getElementById('filterStartDate');
+            const endDateInput = document.getElementById('filterEndDate');
+            if (startDateInput) startDateInput.value = '';
+            if (endDateInput) endDateInput.value = '';
+
+            // 매장 검색 초기화
+            const storeSearchInput = document.getElementById('storeSearchInput');
+            const filterStoreIdInput = document.getElementById('filterStoreId');
+            const storeSearchResults = document.getElementById('storeSearchResults');
+            if (storeSearchInput) storeSearchInput.value = '';
+            if (filterStoreIdInput) filterStoreIdInput.value = '';
+            if (storeSearchResults) storeSearchResults.style.display = 'none';
+
+            loadExpenses();
+            loadSummary();
         }
 
         // 지출 내역 로드
         async function loadExpenses() {
             try {
-                const response = await fetch('/api/dev/daily-expenses?limit=10');
+                const response = await fetch('/api/dev/daily-expenses?limit=10' + getScopeParams());
                 const data = await response.json();
                 
                 const container = document.getElementById('expensesList');
@@ -269,15 +480,18 @@
                 }
                 
                 data.data.forEach(expense => {
+                    const storeName = expense.store?.name || '-';
+                    const branchName = expense.store?.branch?.name || '-';
                     container.innerHTML += `
                         <div class="expense-item">
                             <div class="expense-info">
                                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
                                     <span class="expense-category">${expense.category}</span>
                                     <span style="font-size: 14px; color: #6b7280;">${expense.expense_date}</span>
+                                    <span style="font-size: 12px; background: #f3f4f6; padding: 2px 6px; border-radius: 4px;">${storeName}</span>
                                 </div>
                                 <div style="font-weight: 600; margin-bottom: 2px;">${expense.description || '내용 없음'}</div>
-                                <div style="font-size: 12px; color: #9ca3af;">${expense.dealer_code} • ${expense.payment_method || '미기재'}</div>
+                                <div style="font-size: 12px; color: #9ca3af;">${expense.dealer_code} • ${expense.payment_method || '미기재'} • ${branchName}</div>
                             </div>
                             <div class="expense-amount">-${Number(expense.amount).toLocaleString()}원</div>
                         </div>
@@ -293,14 +507,15 @@
             try {
                 const today = new Date().toISOString().split('T')[0];
                 const yearMonth = new Date().toISOString().slice(0, 7);
-                
+                const scopeParams = getScopeParams();
+
                 // 오늘 지출
-                const todayResponse = await fetch(`/api/daily-expenses?start_date=${today}&end_date=${today}`);
+                const todayResponse = await fetch(`/api/daily-expenses?start_date=${today}&end_date=${today}${scopeParams}`);
                 const todayData = await todayResponse.json();
                 const todayTotal = todayData.data.reduce((sum, item) => sum + parseFloat(item.amount), 0);
-                
+
                 // 월별 현황
-                const monthResponse = await fetch(`/api/daily-expenses/summary/monthly?year_month=${yearMonth}`);
+                const monthResponse = await fetch(`/api/daily-expenses/summary/monthly?year_month=${yearMonth}${scopeParams}`);
                 const monthData = await monthResponse.json();
                 
                 // UI 업데이트
@@ -314,42 +529,59 @@
             }
         }
 
-        // 폼 제출
-        document.getElementById('expenseForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(this);
-            const data = Object.fromEntries(formData.entries());
-            
-            try {
-                const response = await fetch('/api/daily-expenses', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(data)
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    alert('✅ 지출이 등록되었습니다!');
-                    this.reset();
-                    document.querySelector('input[name="expense_date"]').value = new Date().toISOString().split('T')[0];
-                    loadExpenses();
-                    loadSummary();
-                } else {
-                    alert('❌ 등록 실패: ' + (result.message || '알 수 없는 오류'));
+        // 폼 제출 (매장 권한에서만 사용)
+        const expenseForm = document.getElementById('expenseForm');
+        if (expenseForm) {
+            expenseForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+
+                const formData = new FormData(this);
+                const data = Object.fromEntries(formData.entries());
+
+                // 매장 ID 자동 설정
+                if (STORE_ID) {
+                    data.store_id = STORE_ID;
                 }
-            } catch (error) {
-                alert('❌ 네트워크 오류: ' + error.message);
-            }
-        });
+
+                try {
+                    const response = await fetch('/api/daily-expenses', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(data)
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        alert('지출이 등록되었습니다!');
+                        this.reset();
+                        const expenseDateInput = document.querySelector('input[name="expense_date"]');
+                        if (expenseDateInput) {
+                            expenseDateInput.value = new Date().toISOString().split('T')[0];
+                        }
+                        loadExpenses();
+                        loadSummary();
+                    } else {
+                        alert('등록 실패: ' + (result.message || '알 수 없는 오류'));
+                    }
+                } catch (error) {
+                    alert('네트워크 오류: ' + error.message);
+                }
+            });
+        }
 
         // 폼 초기화
         function resetForm() {
-            document.getElementById('expenseForm').reset();
-            document.querySelector('input[name="expense_date"]').value = new Date().toISOString().split('T')[0];
+            const form = document.getElementById('expenseForm');
+            if (form) {
+                form.reset();
+                const expenseDateInput = document.querySelector('input[name="expense_date"]');
+                if (expenseDateInput) {
+                    expenseDateInput.value = new Date().toISOString().split('T')[0];
+                }
+            }
         }
     </script>
 </body>

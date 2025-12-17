@@ -244,6 +244,23 @@
     </main>
 
     <script>
+        // 권한 정보 (서버에서 전달)
+        const VIEW_SCOPE = '{{ $viewScope ?? "store" }}';
+        const USER_ROLE = '{{ $userRole ?? "store" }}';
+        const BRANCH_ID = '{{ $branchId ?? "" }}';
+        const STORE_ID = '{{ $storeId ?? "" }}';
+
+        // 권한에 따른 API 파라미터 생성
+        function getScopeParams() {
+            const params = new URLSearchParams();
+            if (VIEW_SCOPE === 'branch' && BRANCH_ID) {
+                params.append('branch_id', BRANCH_ID);
+            } else if (VIEW_SCOPE === 'store' && STORE_ID) {
+                params.append('store_id', STORE_ID);
+            }
+            return params.toString() ? '&' + params.toString() : '';
+        }
+
         // 페이지 로드 시 초기화
         document.addEventListener('DOMContentLoaded', function() {
             loadDealers();
@@ -296,7 +313,7 @@
         async function loadFixedExpenses() {
             try {
                 const yearMonth = document.getElementById('monthFilter').value || new Date().toISOString().slice(0, 7);
-                const response = await fetch(`/api/dev/fixed-expenses?year_month=${yearMonth}&limit=50`);
+                const response = await fetch(`/api/dev/fixed-expenses?year_month=${yearMonth}&limit=50${getScopeParams()}`);
                 const data = await response.json();
                 
                 const container = document.getElementById('fixedExpensesList');
@@ -346,7 +363,7 @@
         // 지급 예정 내역 로드
         async function loadUpcomingPayments() {
             try {
-                const response = await fetch('/api/dev/fixed-expenses/upcoming/payments?days=30');
+                const response = await fetch('/api/dev/fixed-expenses/upcoming/payments?days=30' + getScopeParams());
                 const data = await response.json();
                 
                 const container = document.getElementById('upcomingPaymentsList');
@@ -390,9 +407,10 @@
         async function loadSummary() {
             try {
                 const yearMonth = new Date().toISOString().slice(0, 7);
-                
+                const scopeParams = getScopeParams();
+
                 // 이번 달 고정지출
-                const monthResponse = await fetch(`/api/dev/fixed-expenses?year_month=${yearMonth}&limit=100`);
+                const monthResponse = await fetch(`/api/dev/fixed-expenses?year_month=${yearMonth}&limit=100${scopeParams}`);
                 const monthData = await monthResponse.json();
                 
                 const totalAmount = monthData.data.reduce((sum, item) => sum + parseFloat(item.amount), 0);
@@ -400,7 +418,7 @@
                 const paidCount = monthData.data.filter(item => item.payment_status === 'paid').length;
                 
                 // 지급 예정 금액
-                const upcomingResponse = await fetch('/api/dev/fixed-expenses/upcoming/payments?days=30');
+                const upcomingResponse = await fetch('/api/dev/fixed-expenses/upcoming/payments?days=30' + scopeParams);
                 const upcomingData = await upcomingResponse.json();
                 const upcomingAmount = upcomingData.data.total_amount;
                 

@@ -797,12 +797,42 @@ Route::get('/settlement', function () {
     return redirect('http://localhost:5173')->with('message', 'YKP 정산 시스템으로 이동합니다.');
 })->name('settlement.index');
 // 일일지출 관리 페이지
-Route::get('/daily-expenses', function () {
-    return view('expenses.daily-expenses');
+Route::middleware(['web', 'auth'])->get('/daily-expenses', function (Illuminate\Http\Request $request) {
+    $user = $request->user();
+
+    if (!$user) {
+        return redirect('/login');
+    }
+
+    $viewScope = match($user->role) {
+        'headquarters' => 'all',           // 본사: 전체 보기
+        'branch' => 'branch',              // 지사: 소속 매장만
+        'store' => 'store',                // 매장: 본인만
+        default => 'store',
+    };
+    return view('expenses.daily-expenses', [
+        'viewScope' => $viewScope,
+        'userRole' => $user->role,
+        'branchId' => $user->branch_id ?? '',
+        'storeId' => $user->store_id ?? '',
+    ]);
 })->name('expenses.daily');
+
 // 고정지출 관리 페이지
-Route::get('/fixed-expenses', function () {
-    return view('expenses.fixed-expenses');
+Route::middleware(['web', 'auth'])->get('/fixed-expenses', function () {
+    $user = auth()->user();
+    $viewScope = match($user->role) {
+        'headquarters' => 'all',           // 본사: 전체 보기
+        'branch' => 'branch',              // 지사: 소속 매장만
+        'store' => 'store',                // 매장: 본인만
+        default => 'store',
+    };
+    return view('expenses.fixed-expenses', [
+        'viewScope' => $viewScope,
+        'userRole' => $user->role,
+        'branchId' => $user->branch_id,
+        'storeId' => $user->store_id,
+    ]);
 })->name('expenses.fixed');
 // 직원급여 관리 페이지 (엑셀 방식)
 Route::get('/payroll', function () {
