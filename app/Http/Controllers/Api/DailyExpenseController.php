@@ -15,9 +15,19 @@ class DailyExpenseController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = DailyExpense::with('dealerProfile');
+        $query = DailyExpense::with(['dealerProfile', 'store', 'store.branch']);
 
-        // 필터링
+        // 권한별 필터링 (store_id, branch_id)
+        if ($request->has('store_id')) {
+            $query->where('store_id', $request->store_id);
+        } elseif ($request->has('branch_id')) {
+            // 지사 소속 모든 매장의 지출 조회
+            $query->whereHas('store', function ($q) use ($request) {
+                $q->where('branch_id', $request->branch_id);
+            });
+        }
+
+        // 기존 필터링
         if ($request->has('dealer_code')) {
             $query->where('dealer_code', $request->dealer_code);
         }
@@ -61,7 +71,8 @@ class DailyExpenseController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'expense_date' => 'required|date',
-            'dealer_code' => 'required|string|max:20',
+            'dealer_code' => 'nullable|string|max:20',
+            'store_id' => 'nullable|integer|exists:stores,id',
             'category' => 'required|string|max:50',
             'description' => 'nullable|string|max:200',
             'amount' => 'required|numeric|min:0',
@@ -180,6 +191,15 @@ class DailyExpenseController extends Controller
         $query = DailyExpense::whereYear('expense_date', substr($yearMonth, 0, 4))
             ->whereMonth('expense_date', substr($yearMonth, 5, 2));
 
+        // 권한별 필터링 (store_id, branch_id)
+        if ($request->has('store_id')) {
+            $query->where('store_id', $request->store_id);
+        } elseif ($request->has('branch_id')) {
+            $query->whereHas('store', function ($q) use ($request) {
+                $q->where('branch_id', $request->branch_id);
+            });
+        }
+
         if ($dealerCode) {
             $query->where('dealer_code', $dealerCode);
         }
@@ -187,7 +207,7 @@ class DailyExpenseController extends Controller
         $totalAmount = $query->sum('amount');
         $expenseCount = $query->count();
 
-        $categoryBreakdown = $query->selectRaw('category, SUM(amount) as total, COUNT(*) as count')
+        $categoryBreakdown = (clone $query)->selectRaw('category, SUM(amount) as total, COUNT(*) as count')
             ->groupBy('category')
             ->get();
 

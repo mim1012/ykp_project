@@ -321,6 +321,10 @@
                 📇
                 <span class="tooltip-text">고객 관리</span>
             </div>
+            <div class="sidebar-icon tooltip" onclick="openExpenseManagement()">
+                💰
+                <span class="tooltip-text">지출 관리</span>
+            </div>
 
         @elseif(auth()->user()->role === 'branch')
             <!-- 지사 전용 메뉴 -->
@@ -336,6 +340,10 @@
                 📇
                 <span class="tooltip-text">고객 관리</span>
             </div>
+            <div class="sidebar-icon tooltip" onclick="openExpenseManagement()">
+                💰
+                <span class="tooltip-text">지출 관리</span>
+            </div>
 
         @elseif(auth()->user()->role === 'store')
             <!-- 매장 전용 메뉴 -->
@@ -350,6 +358,10 @@
             <div class="sidebar-icon tooltip" onclick="openCustomerManagement()">
                 📇
                 <span class="tooltip-text">고객 관리</span>
+            </div>
+            <div class="sidebar-icon tooltip" onclick="openExpenseManagement()">
+                💰
+                <span class="tooltip-text">지출 관리</span>
             </div>
 
         @endif
@@ -1306,7 +1318,12 @@
             // 본사 전용 계정 관리 페이지
             window.location.href = '/admin/accounts';
         }
-        
+
+        function openExpenseManagement() {
+            // 지출 관리 페이지 (일일지출로 이동)
+            window.location.href = '/daily-expenses';
+        }
+
         function openDailyExpenses() {
             // 일일지출 관리 페이지
             window.location.href = '/daily-expenses';

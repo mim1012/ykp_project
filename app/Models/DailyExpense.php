@@ -13,6 +13,7 @@ class DailyExpense extends Model
     protected $fillable = [
         'expense_date',
         'dealer_code',
+        'store_id',
         'category',
         'description',
         'amount',
@@ -29,6 +30,11 @@ class DailyExpense extends Model
     public function dealerProfile(): BelongsTo
     {
         return $this->belongsTo(DealerProfile::class, 'dealer_code', 'dealer_code');
+    }
+
+    public function store(): BelongsTo
+    {
+        return $this->belongsTo(Store::class);
     }
 
     public function scopeByDealer($query, string $dealerCode)
