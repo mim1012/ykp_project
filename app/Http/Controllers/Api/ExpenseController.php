@@ -44,6 +44,25 @@ class ExpenseController extends Controller
                       ->whereMonth('expense_date', $request->month);
             }
 
+            // 월 필터 (YYYY-MM 형식)
+            if ($request->has('month') && !$request->has('year')) {
+                $monthParts = explode('-', $request->month);
+                if (count($monthParts) === 2) {
+                    $query->whereYear('expense_date', $monthParts[0])
+                          ->whereMonth('expense_date', $monthParts[1]);
+                }
+            }
+
+            // 매장 필터
+            if ($request->has('store_id') && $request->store_id) {
+                $query->where('store_id', $request->store_id);
+            }
+
+            // 검색 (지출내용)
+            if ($request->has('search') && $request->search) {
+                $query->where('description', 'like', '%' . $request->search . '%');
+            }
+
             // 정렬
             $query->orderBy('expense_date', 'desc');
 

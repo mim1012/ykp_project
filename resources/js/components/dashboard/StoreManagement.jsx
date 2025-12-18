@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Button, Badge, Icon, ResponsiveTable } from '../ui';
+import { StoreStatisticsModal } from './StoreStatisticsModal';
 
 export const StoreManagement = () => {
     const [selectedStore, setSelectedStore] = useState(null);
@@ -225,22 +226,30 @@ export const StoreManagement = () => {
         opt => opt.by === sortBy && opt.order === sortOrder
     )?.value || 'name_asc';
 
-    // 필터링 및 정렬된 지사 데이터
+    // 필터링 로직 (공통)
+    const filterStore = (store) => {
+        const matchesSearch = searchTerm === '' ||
+            store.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            store.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            store.address?.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesStatus = statusFilter === 'all' || store.status === statusFilter;
+        return matchesSearch && matchesStatus;
+    };
+
+    // 필터링 및 정렬된 지사 데이터 (리스트 뷰용)
     const getFilteredBranches = () => {
         return branches.map(branch => {
-            const filteredStores = branch.stores.filter(store => {
-                const matchesSearch = searchTerm === '' ||
-                    store.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    store.code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    store.address?.toLowerCase().includes(searchTerm.toLowerCase());
-                const matchesStatus = statusFilter === 'all' || store.status === statusFilter;
-                return matchesSearch && matchesStatus;
-            });
+            const filteredStores = branch.stores.filter(filterStore);
             return {
                 ...branch,
                 stores: sortStores(filteredStores)
             };
         }).filter(branch => branch.stores.length > 0);
+    };
+
+    // 필터링된 매장 데이터 (테이블 뷰용)
+    const getFilteredStores = () => {
+        return sortStores(stores.filter(filterStore));
     };
 
     // 액션 핸들러
@@ -330,8 +339,7 @@ export const StoreManagement = () => {
         </div>
     );
 
-    // 총 매장 수
-    const totalStores = stores.length;
+    // 필터링된 지사 및 매장 수
     const filteredBranches = getFilteredBranches();
     const filteredStoreCount = filteredBranches.reduce((sum, b) => sum + b.stores.length, 0);
 
@@ -404,55 +412,59 @@ export const StoreManagement = () => {
                 </div>
             </div>
 
-            {/* 검색/필터 바 (리스트 뷰에서만) */}
-            {viewMode === 'list' && (
-                <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
-                    <div className="flex-1 relative">
-                        <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <input
-                            type="text"
-                            placeholder="매장명, 코드, 주소 검색..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-9 pr-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                        />
-                    </div>
-                    <select
-                        value={statusFilter}
-                        onChange={(e) => setStatusFilter(e.target.value)}
-                        className="px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    >
-                        <option value="all">전체 상태</option>
-                        <option value="active">운영중</option>
-                        <option value="inactive">점검중</option>
-                    </select>
-                    <select
-                        value={currentSortValue}
-                        onChange={(e) => handleSortChange(e.target.value)}
-                        className="px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    >
-                        {sortOptions.map(option => (
-                            <option key={option.value} value={option.value}>
-                                {option.label}
-                            </option>
-                        ))}
-                    </select>
-                    <div className="flex gap-1">
-                        <Button variant="ghost" size="sm" onClick={() => toggleAll(true)}>전체 펼치기</Button>
-                        <Button variant="ghost" size="sm" onClick={() => toggleAll(false)}>전체 접기</Button>
-                    </div>
+            {/* 검색/필터 바 */}
+            <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+                <div className="flex-1 relative">
+                    <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input
+                        type="text"
+                        placeholder="매장명, 코드, 주소 검색..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-9 pr-4 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    />
                 </div>
-            )}
+                <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                >
+                    <option value="all">전체 상태</option>
+                    <option value="active">운영중</option>
+                    <option value="inactive">점검중</option>
+                </select>
+                {viewMode === 'list' && (
+                    <>
+                        <select
+                            value={currentSortValue}
+                            onChange={(e) => handleSortChange(e.target.value)}
+                            className="px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        >
+                            {sortOptions.map(option => (
+                                <option key={option.value} value={option.value}>
+                                    {option.label}
+                                </option>
+                            ))}
+                        </select>
+                        <div className="flex gap-1">
+                            <Button variant="ghost" size="sm" onClick={() => toggleAll(true)}>전체 펼치기</Button>
+                            <Button variant="ghost" size="sm" onClick={() => toggleAll(false)}>전체 접기</Button>
+                        </div>
+                    </>
+                )}
+            </div>
 
-            {/* 검색 결과 및 정렬 상태 표시 */}
-            {viewMode === 'list' && (
-                <p className="text-sm text-gray-500">
-                    {searchTerm ? `검색 결과: ${filteredStoreCount}개 매장` : `총 ${filteredStoreCount}개 매장`}
+            {/* 검색 결과 표시 */}
+            <p className="text-sm text-gray-500">
+                {searchTerm || statusFilter !== 'all'
+                    ? `검색 결과: ${viewMode === 'list' ? filteredStoreCount : getFilteredStores().length}개 매장`
+                    : `총 ${viewMode === 'list' ? filteredStoreCount : getFilteredStores().length}개 매장`}
+                {viewMode === 'list' && (
                     <span className="text-gray-400 ml-2">
                         ({sortOptions.find(opt => opt.value === currentSortValue)?.label} 정렬)
                     </span>
-                </p>
-            )}
+                )}
+            </p>
 
             {/* 리스트 뷰 */}
             {viewMode === 'list' && (
@@ -581,7 +593,7 @@ export const StoreManagement = () => {
                             </tr>
                         </thead>
                         <tbody className="divide-y">
-                            {sortStores(stores).map((store) => (
+                            {getFilteredStores().map((store) => (
                                 <tr key={store.id} className="hover:bg-gray-50">
                                     <td className="px-4 py-3">
                                         <span className="font-medium text-gray-900">{store.name}</span>
@@ -712,6 +724,17 @@ export const StoreManagement = () => {
                         setShowBulkModal(false);
                         setBulkType(null);
                         window.location.reload(); // 데이터 새로고침
+                    }}
+                />
+            )}
+
+            {/* 성과 통계 모달 */}
+            {showStatsModal && modalStore && (
+                <StoreStatisticsModal
+                    store={modalStore}
+                    onClose={() => {
+                        setShowStatsModal(false);
+                        setModalStore(null);
                     }}
                 />
             )}

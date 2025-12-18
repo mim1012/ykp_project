@@ -42,12 +42,13 @@ class StoreSalesExport implements FromCollection, WithHeadings, WithStyles, With
                 $sale['customer_birth_date'] ?? '',          // 생년월일
                 $sale['phone_number'] ?? '',                 // 전화번호
                 $sale['salesperson'] ?? '',                  // 판매자
-                $sale['dealer_name'] ?? '',                  // 딜러명
+                $sale['dealer_name'] ?? '',                  // 대리점 (기존 딜러명)
                 $sale['dealer_code'] ?? '',                  // 딜러코드
                 $sale['serial_number'] ?? '',                // 시리얼번호
-                $sale['agency'] ?? '',                       // 대리점
+                $sale['agency'] ?? '',                       // 소속대리점
                 $sale['visit_path'] ?? '',                   // 방문경로
                 number_format($sale['base_price'] ?? 0),     // 출고가
+                number_format($sale['rebate_total'] ?? 0),   // 리베총계
                 number_format($sale['settlement_amount'] ?? 0), // 정산금액
                 number_format($sale['margin_after_tax'] ?? 0),  // 마진
                 $sale['memo'] ?? '',                         // 메모
@@ -72,12 +73,13 @@ class StoreSalesExport implements FromCollection, WithHeadings, WithStyles, With
             '생년월일',
             '전화번호',
             '판매자',
-            '딜러명',
+            '대리점',
             '딜러코드',
             '시리얼번호',
-            '대리점',
+            '소속대리점',
             '방문경로',
             '출고가',
+            '리베총계',
             '정산금액',
             '마진',
             '메모',
@@ -106,7 +108,7 @@ class StoreSalesExport implements FromCollection, WithHeadings, WithStyles, With
                 ],
             ],
             // 전체 데이터 중앙 정렬
-            'A:R' => [
+            'A:S' => [
                 'alignment' => [
                     'horizontal' => Alignment::HORIZONTAL_CENTER,
                     'vertical' => Alignment::VERTICAL_CENTER,
@@ -130,15 +132,16 @@ class StoreSalesExport implements FromCollection, WithHeadings, WithStyles, With
             'G' => 12,  // 생년월일
             'H' => 14,  // 전화번호
             'I' => 10,  // 판매자
-            'J' => 12,  // 딜러명
+            'J' => 12,  // 대리점
             'K' => 12,  // 딜러코드
             'L' => 18,  // 시리얼번호
-            'M' => 12,  // 대리점
+            'M' => 12,  // 소속대리점
             'N' => 10,  // 방문경로
             'O' => 12,  // 출고가
-            'P' => 12,  // 정산금액
-            'Q' => 12,  // 마진
-            'R' => 20,  // 메모
+            'P' => 12,  // 리베총계
+            'Q' => 12,  // 정산금액
+            'R' => 12,  // 마진
+            'S' => 20,  // 메모
         ];
     }
 

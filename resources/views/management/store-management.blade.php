@@ -1224,7 +1224,10 @@
                                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">고객명</th>
                                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">전화번호</th>
                                     <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">판매자</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">대리점</th>
+                                    <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase whitespace-nowrap">리베총계</th>
                                     <th class="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase whitespace-nowrap">정산금액</th>
+                                    <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase whitespace-nowrap">메모</th>
                                 </tr>
                             </thead>
                             <tbody id="stats-sales-table-body" class="bg-white divide-y divide-gray-200">
@@ -3436,7 +3439,10 @@
                         <td class="px-3 py-2 whitespace-nowrap">${sale.customer_name || '-'}</td>
                         <td class="px-3 py-2 whitespace-nowrap">${sale.phone_number || '-'}</td>
                         <td class="px-3 py-2 whitespace-nowrap">${sale.salesperson || '-'}</td>
+                        <td class="px-3 py-2 whitespace-nowrap">${sale.dealer_name || '-'}</td>
+                        <td class="px-3 py-2 whitespace-nowrap text-right font-medium text-yellow-700">₩${Number(sale.rebate_total || 0).toLocaleString()}</td>
                         <td class="px-3 py-2 whitespace-nowrap text-right font-medium">₩${Number(sale.settlement_amount || 0).toLocaleString()}</td>
+                        <td class="px-3 py-2 max-w-[150px] truncate text-gray-600" title="${sale.memo || ''}">${sale.memo || '-'}</td>
                     </tr>
                 `;
             });

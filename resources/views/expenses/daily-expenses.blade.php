@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>일일지출 관리 - YKP ERP</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css" rel="stylesheet">
@@ -161,6 +162,18 @@
                     <input type="hidden" id="filterStoreId" value="">
                     <div id="storeSearchResults" style="display:none; position:absolute; top:100%; left:0; right:0; background:white; border:1px solid #d1d5db; border-radius:6px; max-height:200px; overflow-y:auto; z-index:100; box-shadow:0 4px 6px rgba(0,0,0,0.1);"></div>
                 </div>
+                @elseif(($viewScope ?? 'store') === 'branch')
+                <!-- 지사용: 소속 매장 선택 -->
+                <div class="form-group">
+                    <label class="form-label">매장 선택</label>
+                    <select id="filterBranchStore" class="form-input" onchange="onBranchStoreChange()">
+                        <option value="">전체 매장</option>
+                    </select>
+                </div>
+                <div class="form-group" style="position: relative;">
+                    <label class="form-label">지출내용 검색</label>
+                    <input type="text" id="searchDescription" class="form-input" placeholder="지출내용 검색..." autocomplete="off" oninput="onSearchDescription(this.value)">
+                </div>
                 @endif
 
                 <div class="form-group" style="justify-content: flex-end; align-self: flex-end;">
@@ -200,43 +213,13 @@
                         <input type="date" name="expense_date" class="form-input" required>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">지출 카테고리</label>
-                        <select name="category" class="form-input" required>
-                            <option value="">선택해주세요</option>
-                            <option value="상담비">상담비</option>
-                            <option value="메일접수비">메일접수비</option>
-                            <option value="기타">기타 운영비</option>
-                            <option value="교통비">교통비</option>
-                            <option value="식대">식대</option>
-                        </select>
+                        <label class="form-label">지출내용</label>
+                        <input type="text" name="description" class="form-input" placeholder="지출 내용을 입력해주세요" required>
                     </div>
                     <div class="form-group">
-                        <label class="form-label">지출 금액</label>
+                        <label class="form-label">금액</label>
                         <input type="number" name="amount" class="form-input" placeholder="예: 50000" required>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">결제 방법</label>
-                        <select name="payment_method" class="form-input">
-                            <option value="">선택해주세요</option>
-                            <option value="현금">현금</option>
-                            <option value="카드">카드</option>
-                            <option value="계좌이체">계좌이체</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label class="form-label">승인자</label>
-                        <input type="text" name="approved_by" class="form-input" placeholder="예: 김점장">
-                    </div>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">지출 내용</label>
-                    <textarea name="description" class="form-input" rows="2" placeholder="상세 내용을 입력해주세요"></textarea>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">영수증 번호</label>
-                    <input type="text" name="receipt_number" class="form-input" placeholder="예: RCP-2024-001">
                 </div>
 
                 <div class="flex gap-4 mt-6">
@@ -270,8 +253,10 @@
         let selectedStoreId = '';
         let filterStartDate = '';
         let filterEndDate = '';
+        let searchDescription = '';
         let allBranches = [];
         let allStores = [];
+        let branchStores = []; // 지사 소속 매장 목록
 
         // 권한에 따른 API 파라미터 생성
         function getScopeParams() {
@@ -283,6 +268,11 @@
                 params.append('end_date', filterEndDate);
             }
 
+            // 지출내용 검색
+            if (searchDescription) {
+                params.append('search', searchDescription);
+            }
+
             // 본사의 경우: 선택한 필터 적용
             if (VIEW_SCOPE === 'all') {
                 if (selectedStoreId) {
@@ -292,7 +282,12 @@
                 }
                 // 둘 다 없으면 전체 조회
             } else if (VIEW_SCOPE === 'branch' && BRANCH_ID) {
-                params.append('branch_id', BRANCH_ID);
+                // 지사: 매장 선택 시 해당 매장만, 아니면 지사 전체
+                if (selectedStoreId) {
+                    params.append('store_id', selectedStoreId);
+                } else {
+                    params.append('branch_id', BRANCH_ID);
+                }
             } else if (VIEW_SCOPE === 'store' && STORE_ID) {
                 params.append('store_id', STORE_ID);
             }
@@ -380,6 +375,11 @@
                 await loadStores();
             }
 
+            // 지사인 경우 소속 매장 목록 로드
+            if (VIEW_SCOPE === 'branch') {
+                await loadBranchStores();
+            }
+
             // 오늘 날짜 기본값 설정
             const expenseDateInput = document.querySelector('input[name="expense_date"]');
             if (expenseDateInput) {
@@ -418,6 +418,44 @@
             }
         }
 
+        // 지사 소속 매장 목록 로드 (지사용)
+        async function loadBranchStores() {
+            try {
+                const response = await fetch('/api/stores?per_page=100');
+                const data = await response.json();
+                branchStores = data.data || [];
+                console.log('지사 소속 매장 로드 완료:', branchStores.length + '개');
+
+                const select = document.getElementById('filterBranchStore');
+                if (!select) return;
+
+                select.innerHTML = '<option value="">전체 매장</option>';
+                branchStores.forEach(store => {
+                    select.innerHTML += `<option value="${store.id}">${store.name} (${store.code})</option>`;
+                });
+            } catch (error) {
+                console.error('지사 소속 매장 로드 오류:', error);
+            }
+        }
+
+        // 지사용 매장 선택 변경 이벤트
+        function onBranchStoreChange() {
+            const select = document.getElementById('filterBranchStore');
+            selectedStoreId = select ? select.value : '';
+            loadExpenses();
+            loadSummary();
+        }
+
+        // 지출내용 검색 이벤트
+        let searchDescTimeout = null;
+        function onSearchDescription(query) {
+            clearTimeout(searchDescTimeout);
+            searchDescTimeout = setTimeout(() => {
+                searchDescription = query;
+                loadExpenses();
+            }, 300);
+        }
+
         // 지사 변경 이벤트
         function onBranchChange() {
             const select = document.getElementById('filterBranch');
@@ -442,8 +480,9 @@
             selectedStoreId = '';
             filterStartDate = '';
             filterEndDate = '';
+            searchDescription = '';
 
-            // 지사 드롭다운 초기화
+            // 지사 드롭다운 초기화 (본사용)
             const branchSelect = document.getElementById('filterBranch');
             if (branchSelect) branchSelect.value = '';
 
@@ -453,13 +492,19 @@
             if (startDateInput) startDateInput.value = '';
             if (endDateInput) endDateInput.value = '';
 
-            // 매장 검색 초기화
+            // 매장 검색 초기화 (본사용)
             const storeSearchInput = document.getElementById('storeSearchInput');
             const filterStoreIdInput = document.getElementById('filterStoreId');
             const storeSearchResults = document.getElementById('storeSearchResults');
             if (storeSearchInput) storeSearchInput.value = '';
             if (filterStoreIdInput) filterStoreIdInput.value = '';
             if (storeSearchResults) storeSearchResults.style.display = 'none';
+
+            // 지사용 필터 초기화
+            const branchStoreSelect = document.getElementById('filterBranchStore');
+            if (branchStoreSelect) branchStoreSelect.value = '';
+            const searchDescInput = document.getElementById('searchDescription');
+            if (searchDescInput) searchDescInput.value = '';
 
             loadExpenses();
             loadSummary();
@@ -482,16 +527,17 @@
                 data.data.forEach(expense => {
                     const storeName = expense.store?.name || '-';
                     const branchName = expense.store?.branch?.name || '-';
+                    // 날짜 포맷팅 (YYYY-MM-DD)
+                    const expenseDate = expense.expense_date ? expense.expense_date.split('T')[0] : '-';
                     container.innerHTML += `
                         <div class="expense-item">
                             <div class="expense-info">
                                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
-                                    <span class="expense-category">${expense.category}</span>
-                                    <span style="font-size: 14px; color: #6b7280;">${expense.expense_date}</span>
+                                    <span style="font-size: 14px; color: #6b7280;">${expenseDate}</span>
                                     <span style="font-size: 12px; background: #f3f4f6; padding: 2px 6px; border-radius: 4px;">${storeName}</span>
+                                    <span style="font-size: 12px; color: #9ca3af;">${branchName}</span>
                                 </div>
                                 <div style="font-weight: 600; margin-bottom: 2px;">${expense.description || '내용 없음'}</div>
-                                <div style="font-size: 12px; color: #9ca3af;">${expense.dealer_code} • ${expense.payment_method || '미기재'} • ${branchName}</div>
                             </div>
                             <div class="expense-amount">-${Number(expense.amount).toLocaleString()}원</div>
                         </div>
@@ -548,6 +594,8 @@
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
                         },
                         body: JSON.stringify(data)
                     });

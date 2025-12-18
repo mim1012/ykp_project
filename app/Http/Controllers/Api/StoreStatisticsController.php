@@ -144,7 +144,7 @@ class StoreStatisticsController extends Controller
         $salesList = $sales->map(function ($sale) {
             return [
                 'id' => $sale->id,
-                'sale_date' => $sale->sale_date,
+                'sale_date' => $sale->sale_date ? \Carbon\Carbon::parse($sale->sale_date)->format('Y-m-d') : null,
                 'created_at' => $sale->created_at?->format('Y-m-d H:i:s'),
                 'carrier' => $sale->carrier,
                 'activation_type' => $sale->activation_type,
@@ -159,11 +159,15 @@ class StoreStatisticsController extends Controller
                 'agency' => $sale->agency,
                 'visit_path' => $sale->visit_path,
                 'base_price' => floatval($sale->base_price),
+                'rebate_total' => floatval($sale->rebate_total),
                 'settlement_amount' => floatval($sale->settlement_amount),
                 'margin_after_tax' => floatval($sale->margin_after_tax),
                 'memo' => $sale->memo,
             ];
         })->values()->toArray();
+
+        // 총 리베총계
+        $totalRebate = $sales->sum('rebate_total');
 
         return response()->json([
             'success' => true,
@@ -178,6 +182,7 @@ class StoreStatisticsController extends Controller
                 ],
                 'summary' => [
                     'total_sales' => $totalSales,
+                    'total_rebate' => floatval($totalRebate),
                     'total_settlement_amount' => floatval($totalSettlement),
                     'average_settlement_per_sale' => $totalSales > 0
                         ? round($totalSettlement / $totalSales, 2)
@@ -270,7 +275,7 @@ class StoreStatisticsController extends Controller
         $salesList = $sales->map(function ($sale) {
             return [
                 'id' => $sale->id,
-                'sale_date' => $sale->sale_date,
+                'sale_date' => $sale->sale_date ? \Carbon\Carbon::parse($sale->sale_date)->format('Y-m-d') : null,
                 'created_at' => $sale->created_at?->format('Y-m-d H:i:s'),
                 'carrier' => $sale->carrier,
                 'activation_type' => $sale->activation_type,
@@ -285,11 +290,15 @@ class StoreStatisticsController extends Controller
                 'agency' => $sale->agency,
                 'visit_path' => $sale->visit_path,
                 'base_price' => floatval($sale->base_price),
+                'rebate_total' => floatval($sale->rebate_total),
                 'settlement_amount' => floatval($sale->settlement_amount),
                 'margin_after_tax' => floatval($sale->margin_after_tax),
                 'memo' => $sale->memo,
             ];
         })->values()->toArray();
+
+        // 총 리베총계
+        $totalRebate = $sales->sum('rebate_total');
 
         return response()->json([
             'success' => true,
@@ -305,6 +314,7 @@ class StoreStatisticsController extends Controller
                 ],
                 'summary' => [
                     'total_sales' => $totalSales,
+                    'total_rebate' => floatval($totalRebate),
                     'total_settlement_amount' => floatval($totalSettlement),
                     'average_settlement_per_sale' => $totalSales > 0
                         ? round($totalSettlement / $totalSales, 2)
@@ -402,7 +412,7 @@ class StoreStatisticsController extends Controller
         $salesList = $sales->map(function ($sale) {
             return [
                 'id' => $sale->id,
-                'sale_date' => $sale->sale_date,
+                'sale_date' => $sale->sale_date ? \Carbon\Carbon::parse($sale->sale_date)->format('Y-m-d') : null,
                 'created_at' => $sale->created_at?->format('Y-m-d H:i:s'),
                 'carrier' => $sale->carrier,
                 'activation_type' => $sale->activation_type,
@@ -417,11 +427,15 @@ class StoreStatisticsController extends Controller
                 'agency' => $sale->agency,
                 'visit_path' => $sale->visit_path,
                 'base_price' => floatval($sale->base_price),
+                'rebate_total' => floatval($sale->rebate_total),
                 'settlement_amount' => floatval($sale->settlement_amount),
                 'margin_after_tax' => floatval($sale->margin_after_tax),
                 'memo' => $sale->memo,
             ];
         })->values()->toArray();
+
+        // 총 리베총계
+        $totalRebate = $sales->sum('rebate_total');
 
         return response()->json([
             'success' => true,
@@ -436,6 +450,7 @@ class StoreStatisticsController extends Controller
                 ],
                 'summary' => [
                     'total_sales' => $totalSales,
+                    'total_rebate' => floatval($totalRebate),
                     'total_settlement_amount' => floatval($totalSettlement),
                     'average_settlement_per_sale' => $totalSales > 0
                         ? round($totalSettlement / $totalSales, 2)
@@ -505,7 +520,7 @@ class StoreStatisticsController extends Controller
             // Transform to array for export
             $salesData = $sales->map(function ($sale) {
                 return [
-                    'sale_date' => $sale->sale_date,
+                    'sale_date' => $sale->sale_date ? \Carbon\Carbon::parse($sale->sale_date)->format('Y-m-d') : null,
                     'created_at' => $sale->created_at?->format('Y-m-d H:i:s'),
                     'carrier' => $sale->carrier,
                     'activation_type' => $sale->activation_type,
@@ -520,6 +535,7 @@ class StoreStatisticsController extends Controller
                     'agency' => $sale->agency,
                     'visit_path' => $sale->visit_path,
                     'base_price' => $sale->base_price,
+                    'rebate_total' => $sale->rebate_total,
                     'settlement_amount' => $sale->settlement_amount,
                     'margin_after_tax' => $sale->margin_after_tax,
                     'memo' => $sale->memo,
