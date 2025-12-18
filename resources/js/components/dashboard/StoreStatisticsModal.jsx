@@ -136,11 +136,17 @@ export const StoreStatisticsModal = ({ store, onClose }) => {
                     ) : (
                         <div className="space-y-6">
                             {/* Summary Cards */}
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                 <Card className="p-4">
                                     <p className="text-sm text-gray-600 mb-1">총 판매 건수</p>
                                     <p className="text-2xl font-bold text-gray-900">
                                         {stats.summary?.total_sales || 0}건
+                                    </p>
+                                </Card>
+                                <Card className="p-4">
+                                    <p className="text-sm text-gray-600 mb-1">총 리베총계</p>
+                                    <p className="text-2xl font-bold text-yellow-600">
+                                        ₩{(stats.summary?.total_rebate || 0).toLocaleString()}
                                     </p>
                                 </Card>
                                 <Card className="p-4">
@@ -249,38 +255,62 @@ export const StoreStatisticsModal = ({ store, onClose }) => {
                                 </Card>
                             )}
 
-                            {/* Daily/Monthly Breakdown */}
-                            {(stats.daily_breakdown || stats.monthly_breakdown) && (
+                            {/* 개별 건별 개통표 */}
+                            {stats.sales_list && stats.sales_list.length > 0 && (
                                 <Card className="p-6">
                                     <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                                        {period === 'monthly' ? '일별 상세' : '월별 상세'}
+                                        개통 내역 ({stats.sales_list.length}건)
                                     </h3>
                                     <div className="overflow-x-auto">
                                         <table className="min-w-full divide-y divide-gray-200">
                                             <thead className="bg-gray-50">
                                                 <tr>
-                                                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                                                        {period === 'monthly' ? '날짜' : '월'}
+                                                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                                                        개통일
                                                     </th>
-                                                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">
-                                                        판매건수
+                                                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                                                        고객명
                                                     </th>
-                                                    <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">
+                                                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                                                        통신사
+                                                    </th>
+                                                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                                                        개통유형
+                                                    </th>
+                                                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">
+                                                        리베총계
+                                                    </th>
+                                                    <th className="px-3 py-2 text-right text-xs font-medium text-gray-500 uppercase">
                                                         정산금액
+                                                    </th>
+                                                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                                                        메모
                                                     </th>
                                                 </tr>
                                             </thead>
                                             <tbody className="bg-white divide-y divide-gray-200">
-                                                {(stats.daily_breakdown || stats.monthly_breakdown || []).map((item, idx) => (
-                                                    <tr key={idx} className="hover:bg-gray-50">
-                                                        <td className="px-4 py-2 text-sm text-gray-900">
-                                                            {item.date || `${item.month}월`}
+                                                {stats.sales_list.map((sale) => (
+                                                    <tr key={sale.id} className="hover:bg-gray-50">
+                                                        <td className="px-3 py-2 text-sm text-gray-900 whitespace-nowrap">
+                                                            {sale.sale_date}
                                                         </td>
-                                                        <td className="px-4 py-2 text-sm text-right text-gray-700">
-                                                            {item.sales_count}건
+                                                        <td className="px-3 py-2 text-sm text-gray-900">
+                                                            {sale.customer_name || '-'}
                                                         </td>
-                                                        <td className="px-4 py-2 text-sm text-right font-medium text-gray-900">
-                                                            ₩{(item.settlement_amount || 0).toLocaleString()}
+                                                        <td className="px-3 py-2 text-sm text-gray-700">
+                                                            {sale.carrier || '-'}
+                                                        </td>
+                                                        <td className="px-3 py-2 text-sm text-gray-700">
+                                                            {sale.activation_type || '-'}
+                                                        </td>
+                                                        <td className="px-3 py-2 text-sm text-right font-medium text-yellow-700">
+                                                            ₩{(sale.rebate_total || 0).toLocaleString()}
+                                                        </td>
+                                                        <td className="px-3 py-2 text-sm text-right font-medium text-gray-900">
+                                                            ₩{(sale.settlement_amount || 0).toLocaleString()}
+                                                        </td>
+                                                        <td className="px-3 py-2 text-sm text-gray-600 max-w-[200px] truncate" title={sale.memo || ''}>
+                                                            {sale.memo || '-'}
                                                         </td>
                                                     </tr>
                                                 ))}

@@ -4,15 +4,37 @@ import { Card, Button, Badge, Icon, LoadingSpinner } from '../ui';
 
 export const ExpenseManagement = () => {
     const [selectedMonth, setSelectedMonth] = useState(new Date().toISOString().slice(0, 7)); // YYYY-MM
+    const [selectedStore, setSelectedStore] = useState(''); // 매장 필터
+    const [searchTerm, setSearchTerm] = useState(''); // 검색어
     const [showAddModal, setShowAddModal] = useState(false);
     const [editingExpense, setEditingExpense] = useState(null);
     const queryClient = useQueryClient();
 
+    // 현재 사용자 정보
+    const userData = window.userData || {};
+    const isStore = userData.role === 'store';
+
+    // 소속 매장 목록 가져오기 (지사/본사용)
+    const { data: stores } = useQuery({
+        queryKey: ['stores-for-filter'],
+        queryFn: async () => {
+            const response = await fetch('/api/stores?per_page=100');
+            if (!response.ok) throw new Error('Failed to fetch stores');
+            const result = await response.json();
+            return result.data || [];
+        },
+        enabled: !isStore // 매장 권한이 아닐 때만 호출
+    });
+
     // Fetch expenses for selected month
     const { data: expenses, isLoading, error } = useQuery({
-        queryKey: ['expenses', selectedMonth],
+        queryKey: ['expenses', selectedMonth, selectedStore, searchTerm],
         queryFn: async () => {
-            const response = await fetch(`/api/expenses?month=${selectedMonth}`);
+            const params = new URLSearchParams({ month: selectedMonth });
+            if (selectedStore) params.append('store_id', selectedStore);
+            if (searchTerm) params.append('search', searchTerm);
+
+            const response = await fetch(`/api/expenses?${params.toString()}`);
             if (!response.ok) throw new Error('Failed to fetch expenses');
             const result = await response.json();
             return result.data || [];
@@ -137,31 +159,71 @@ export const ExpenseManagement = () => {
 
             {/* Expense List */}
             <Card>
-                <div className="p-6 border-b border-gray-200">
+                <div className="p-6 border-b border-gray-200 space-y-4">
                     <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
-                            <h3 className="text-lg font-semibold text-gray-900">지출 내역</h3>
-                            <select
-                                value={selectedMonth}
-                                onChange={(e) => setSelectedMonth(e.target.value)}
-                                className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        <h3 className="text-lg font-semibold text-gray-900">지출 내역</h3>
+                        {isStore && (
+                            <Button
+                                variant="primary"
+                                size="sm"
+                                onClick={() => setShowAddModal(true)}
                             >
-                                {getMonthOptions().map(option => (
-                                    <option key={option.value} value={option.value}>
-                                        {option.label}
+                                <Icon name="plus" className="w-4 h-4 mr-1" />
+                                지출 추가
+                            </Button>
+                        )}
+                    </div>
+
+                    {/* 검색/필터 바 */}
+                    <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+                        {/* 월 선택 */}
+                        <select
+                            value={selectedMonth}
+                            onChange={(e) => setSelectedMonth(e.target.value)}
+                            className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        >
+                            {getMonthOptions().map(option => (
+                                <option key={option.value} value={option.value}>
+                                    {option.label}
+                                </option>
+                            ))}
+                        </select>
+
+                        {/* 매장 필터 (지사/본사용) */}
+                        {!isStore && stores && stores.length > 0 && (
+                            <select
+                                value={selectedStore}
+                                onChange={(e) => setSelectedStore(e.target.value)}
+                                className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            >
+                                <option value="">전체 매장</option>
+                                {stores.map(store => (
+                                    <option key={store.id} value={store.id}>
+                                        {store.name}
                                     </option>
                                 ))}
                             </select>
+                        )}
+
+                        {/* 검색 */}
+                        <div className="flex-1 relative">
+                            <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <input
+                                type="text"
+                                placeholder="지출내용 검색..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full pl-9 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
                         </div>
-                        <Button
-                            variant="primary"
-                            size="sm"
-                            onClick={() => setShowAddModal(true)}
-                        >
-                            <Icon name="plus" className="w-4 h-4 mr-1" />
-                            지출 추가
-                        </Button>
                     </div>
+
+                    {/* 검색 결과 수 표시 */}
+                    <p className="text-sm text-gray-500">
+                        {searchTerm || selectedStore
+                            ? `검색 결과: ${expenses?.length || 0}건`
+                            : `총 ${expenses?.length || 0}건`}
+                    </p>
                 </div>
 
                 <div className="overflow-x-auto">
@@ -172,6 +234,11 @@ export const ExpenseManagement = () => {
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         날짜
                                     </th>
+                                    {!isStore && (
+                                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            매장
+                                        </th>
+                                    )}
                                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         카테고리
                                     </th>
@@ -181,9 +248,11 @@ export const ExpenseManagement = () => {
                                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         금액
                                     </th>
-                                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        작업
-                                    </th>
+                                    {isStore && (
+                                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            작업
+                                        </th>
+                                    )}
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
@@ -192,6 +261,11 @@ export const ExpenseManagement = () => {
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                             {new Date(expense.expense_date).toLocaleDateString('ko-KR')}
                                         </td>
+                                        {!isStore && (
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                {expense.store?.name || '-'}
+                                            </td>
+                                        )}
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <Badge variant="info">
                                                 {expense.category || '기타'}
@@ -207,31 +281,33 @@ export const ExpenseManagement = () => {
                                                 -₩{expense.amount.toLocaleString()}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <div className="flex items-center justify-end space-x-2">
-                                                <Button
-                                                    variant="secondary"
-                                                    size="xs"
-                                                    onClick={() => setEditingExpense(expense)}
-                                                >
-                                                    수정
-                                                </Button>
-                                                <Button
-                                                    variant="danger"
-                                                    size="xs"
-                                                    onClick={() => handleDelete(expense.id)}
-                                                    disabled={deleteExpenseMutation.isPending}
-                                                >
-                                                    삭제
-                                                </Button>
-                                            </div>
-                                        </td>
+                                        {isStore && (
+                                            <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                <div className="flex items-center justify-end space-x-2">
+                                                    <Button
+                                                        variant="secondary"
+                                                        size="xs"
+                                                        onClick={() => setEditingExpense(expense)}
+                                                    >
+                                                        수정
+                                                    </Button>
+                                                    <Button
+                                                        variant="danger"
+                                                        size="xs"
+                                                        onClick={() => handleDelete(expense.id)}
+                                                        disabled={deleteExpenseMutation.isPending}
+                                                    >
+                                                        삭제
+                                                    </Button>
+                                                </div>
+                                            </td>
+                                        )}
                                     </tr>
                                 ))}
                             </tbody>
                             <tfoot className="bg-gray-50">
                                 <tr>
-                                    <td colSpan="3" className="px-6 py-4 text-right text-sm font-semibold text-gray-900">
+                                    <td colSpan={isStore ? 3 : 4} className="px-6 py-4 text-right text-sm font-semibold text-gray-900">
                                         합계:
                                     </td>
                                     <td className="px-6 py-4 text-right">
@@ -239,7 +315,7 @@ export const ExpenseManagement = () => {
                                             -₩{(summary?.total_amount || 0).toLocaleString()}
                                         </span>
                                     </td>
-                                    <td></td>
+                                    {isStore && <td></td>}
                                 </tr>
                             </tfoot>
                         </table>
@@ -247,14 +323,16 @@ export const ExpenseManagement = () => {
                         <div className="text-center py-12">
                             <Icon name="credit-card" className="w-12 h-12 mx-auto text-gray-400 mb-3" />
                             <p className="text-gray-500">등록된 지출 내역이 없습니다.</p>
-                            <Button
-                                variant="primary"
-                                size="sm"
-                                className="mt-4"
-                                onClick={() => setShowAddModal(true)}
-                            >
-                                첫 지출 추가하기
-                            </Button>
+                            {isStore && (
+                                <Button
+                                    variant="primary"
+                                    size="sm"
+                                    className="mt-4"
+                                    onClick={() => setShowAddModal(true)}
+                                >
+                                    첫 지출 추가하기
+                                </Button>
+                            )}
                         </div>
                     )}
                 </div>

@@ -12,14 +12,9 @@ class DailyExpense extends Model
 
     protected $fillable = [
         'expense_date',
-        'dealer_code',
         'store_id',
-        'category',
         'description',
         'amount',
-        'payment_method',
-        'receipt_number',
-        'approved_by',
     ];
 
     protected $casts = [
@@ -27,24 +22,9 @@ class DailyExpense extends Model
         'amount' => 'decimal:2',
     ];
 
-    public function dealerProfile(): BelongsTo
-    {
-        return $this->belongsTo(DealerProfile::class, 'dealer_code', 'dealer_code');
-    }
-
     public function store(): BelongsTo
     {
         return $this->belongsTo(Store::class);
-    }
-
-    public function scopeByDealer($query, string $dealerCode)
-    {
-        return $query->where('dealer_code', $dealerCode);
-    }
-
-    public function scopeByCategory($query, string $category)
-    {
-        return $query->where('category', $category);
     }
 
     public function scopeByDateRange($query, $startDate, $endDate)
