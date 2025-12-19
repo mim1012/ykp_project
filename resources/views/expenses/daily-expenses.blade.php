@@ -513,7 +513,7 @@
         // 지출 내역 로드
         async function loadExpenses() {
             try {
-                const response = await fetch('/api/dev/daily-expenses?limit=10' + getScopeParams());
+                const response = await fetch('/api/daily-expenses?limit=10' + getScopeParams());
                 const data = await response.json();
                 
                 const container = document.getElementById('expensesList');
