@@ -11,14 +11,10 @@ use Illuminate\Support\Facades\Validator;
 
 class DealerProfileController extends Controller
 {
-    /**
-     * 대리점 목록 조회
-     */
     public function index(Request $request)
     {
         try {
             // 권한 체크: 모든 사용자가 대리점 목록 조회 가능 (읽기 전용)
-            // 본사, 지사, 매장 모두 조회 가능
 
             $dealers = DealerProfile::query()
                 ->when($request->status, function ($query, $status) {
@@ -27,39 +23,18 @@ class DealerProfileController extends Controller
                 ->orderBy('dealer_name', 'asc')
                 ->get();
 
-            return response()->json([
-                'success' => true,
-                'data' => $dealers
-            ]);
+            return $this->jsonSuccess($dealers);
         } catch (\Exception $e) {
-            Log::error('대리점 목록 조회 오류', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'user_id' => Auth::id()
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => '대리점 목록을 불러오는 중 오류가 발생했습니다.',
-                'debug' => config('app.debug') ? $e->getMessage() : null
-            ], 500);
+            return $this->handleException($e, '대리점 목록을 불러오는 중 오류가 발생했습니다.');
         }
     }
 
-    /**
-     * 대리점 추가
-     */
     public function store(Request $request)
     {
         try {
             // 권한 체크: 본사, 지사만 접근 가능
             if (!in_array(Auth::user()->role, ['headquarters', 'branch'])) {
-                return response()->json([
-                    'success' => false,
-                    'message' => '권한이 없습니다.'
-                ], 403);
+                return $this->jsonError('권한이 없습니다.', 403);
             }
 
             $validator = Validator::make($request->all(), [
@@ -102,46 +77,24 @@ class DealerProfileController extends Controller
                 'user_id' => Auth::id()
             ]);
 
-            return response()->json([
-                'success' => true,
-                'message' => '대리점이 추가되었습니다.',
-                'data' => $dealer
-            ], 201);
+            return $this->jsonSuccess($dealer, '대리점이 추가되었습니다.', 201);
         } catch (\Exception $e) {
-            Log::error('대리점 추가 오류', [
-                'error' => $e->getMessage(),
-                'user_id' => Auth::id(),
-                'request' => $request->all()
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => '대리점 추가 중 오류가 발생했습니다.'
-            ], 500);
+            return $this->handleException($e, '대리점 추가 중 오류가 발생했습니다.');
         }
     }
 
-    /**
-     * 대리점 수정
-     */
     public function update(Request $request, $id)
     {
         try {
             // 권한 체크: 본사, 지사만 접근 가능
             if (!in_array(Auth::user()->role, ['headquarters', 'branch'])) {
-                return response()->json([
-                    'success' => false,
-                    'message' => '권한이 없습니다.'
-                ], 403);
+                return $this->jsonError('권한이 없습니다.', 403);
             }
 
             $dealer = DealerProfile::find($id);
 
             if (!$dealer) {
-                return response()->json([
-                    'success' => false,
-                    'message' => '대리점을 찾을 수 없습니다.'
-                ], 404);
+                return $this->jsonError('대리점을 찾을 수 없습니다.', 404);
             }
 
             $validator = Validator::make($request->all(), [
@@ -186,47 +139,24 @@ class DealerProfileController extends Controller
                 'user_id' => Auth::id()
             ]);
 
-            return response()->json([
-                'success' => true,
-                'message' => '대리점 정보가 수정되었습니다.',
-                'data' => $dealer
-            ]);
+            return $this->jsonSuccess($dealer, '대리점 정보가 수정되었습니다.');
         } catch (\Exception $e) {
-            Log::error('대리점 수정 오류', [
-                'error' => $e->getMessage(),
-                'dealer_id' => $id,
-                'user_id' => Auth::id(),
-                'request' => $request->all()
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => '대리점 수정 중 오류가 발생했습니다.'
-            ], 500);
+            return $this->handleException($e, '대리점 수정 중 오류가 발생했습니다.');
         }
     }
 
-    /**
-     * 대리점 삭제
-     */
     public function destroy($id)
     {
         try {
             // 권한 체크: 본사만 삭제 가능
             if (Auth::user()->role !== 'headquarters') {
-                return response()->json([
-                    'success' => false,
-                    'message' => '본사 관리자만 삭제할 수 있습니다.'
-                ], 403);
+                return $this->jsonError('본사 관리자만 삭제할 수 있습니다.', 403);
             }
 
             $dealer = DealerProfile::find($id);
 
             if (!$dealer) {
-                return response()->json([
-                    'success' => false,
-                    'message' => '대리점을 찾을 수 없습니다.'
-                ], 404);
+                return $this->jsonError('대리점을 찾을 수 없습니다.', 404);
             }
 
             // 관련 판매 데이터가 있는지 확인
@@ -243,11 +173,7 @@ class DealerProfileController extends Controller
                     'user_id' => Auth::id()
                 ]);
 
-                return response()->json([
-                    'success' => true,
-                    'message' => '판매 데이터가 존재하여 비활성화 처리되었습니다.',
-                    'data' => $dealer
-                ]);
+                return $this->jsonSuccess($dealer, '판매 데이터가 존재하여 비활성화 처리되었습니다.');
             } else {
                 // 하드 삭제
                 $dealerCode = $dealer->dealer_code;
@@ -258,22 +184,10 @@ class DealerProfileController extends Controller
                     'user_id' => Auth::id()
                 ]);
 
-                return response()->json([
-                    'success' => true,
-                    'message' => '대리점이 삭제되었습니다.'
-                ]);
+                return $this->jsonSuccess(null, '대리점이 삭제되었습니다.');
             }
         } catch (\Exception $e) {
-            Log::error('대리점 삭제 오류', [
-                'error' => $e->getMessage(),
-                'dealer_id' => $id,
-                'user_id' => Auth::id()
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => '대리점 삭제 중 오류가 발생했습니다.'
-            ], 500);
+            return $this->handleException($e, '대리점 삭제 중 오류가 발생했습니다.');
         }
     }
 }

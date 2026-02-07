@@ -1,70 +1,70 @@
 *.log
+*.log.*
 .DS_Store
 
-# 🚨 SECURITY CRITICAL - Environment files
+# Environment files
 .env
 .env.*
 !.env.example
 !.env.*.example
-.env.backup
-.env.production
-.env.local
-.env.laragon
-.env.railway
-.env.supabase
 
-# Build artifacts and reports
-/playwright-report/
-/test-results/
-/coverage/
-*.log.*
+# Dependencies
+/node_modules
+/vendor
+
+# Build artifacts
 /public/build
 /public/hot
 /public/storage
 
-# Development files
-.phpactor.json
-.phpunit.result.cache
+# Testing
+/playwright-report/
+/test-results/
+/coverage/
+/.playwright/
+/.phpunit.result.cache
+/.phpunit.cache
+
+# IDE
 /.fleet
 /.idea
 /.nova
-/.phpunit.cache
 /.vscode
 /.zed
-/auth.json
-/node_modules
-/storage/*.key
-/storage/pail
-/vendor  # Laravel vendor directory excluded
-
-# Temporary files
-*.tmp
-*.temp
-/tmp/
-nul
-
-# Windows system files (CRITICAL SECURITY)
-/System Volume Information/
-C:/Windows/
-/etc/hosts
-desktop.ini
-
-# Playwright and testing
-/.playwright/
-/playwright/.auth/
-/.playwright-mcp/
-
-# IDE and OS
+.phpactor.json
 Homestead.json
 Homestead.yaml
-Thumbs.db
 
-# Cache and generated files
+# OS
+Thumbs.db
+desktop.ini
+nul
+
+# Storage
+/storage/*.key
+/storage/pail
 /bootstrap/cache/*
 !/bootstrap/cache/.gitkeep
 /storage/framework/cache/*
 !/storage/framework/cache/.gitkeep
 
-# Claude Code settings with sensitive data
-.claude/settings.local.json
+# AI tools
+CLAUDE.md
+.claude/
+.codex/
+_bmad/
+_bmad-output/
+
+# Backup files
+*.backup
+*.bak
+*.old
+
+# Database
+/database/database.sqlite
 postgresql-data/
+
+# Temporary
+*.tmp
+*.temp
+/tmp/
