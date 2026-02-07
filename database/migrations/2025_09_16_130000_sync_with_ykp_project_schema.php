@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration
 {
     /**
-     * ykp-project (Supabase) 스키마를 ykp-staging (Railway)에 동기화
+     * 프로젝트 스키마 동기화
      */
     public function up(): void
     {

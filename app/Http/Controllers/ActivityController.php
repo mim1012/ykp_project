@@ -16,7 +16,6 @@ class ActivityController extends Controller
     public function recent(Request $request): JsonResponse
     {
         try {
-            // 테이블 존재 여부 확인 (Railway 마이그레이션 문제 방지)
             if (! $this->checkTableExists('activity_logs')) {
                 return response()->json([
                     'success' => true,
@@ -86,7 +85,6 @@ class ActivityController extends Controller
      */
     public function log(Request $request): JsonResponse
     {
-        // 테이블 존재 여부 확인 (Railway 마이그레이션 문제 방지)
         if (! $this->checkTableExists('activity_logs')) {
             return response()->json([
                 'success' => true,
@@ -148,7 +146,7 @@ class ActivityController extends Controller
     }
 
     /**
-     * 테이블 존재 여부 확인 (Railway 마이그레이션 안전성)
+     * 테이블 존재 여부 확인
      */
     private function checkTableExists(string $tableName): bool
     {

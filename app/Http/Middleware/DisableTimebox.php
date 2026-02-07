@@ -12,7 +12,7 @@ class DisableTimebox
 {
     public function handle(Request $request, Closure $next)
     {
-        // Timebox 기능 비활성화 (Railway 환경 최적화)
+        // Timebox 기능 비활성화
         if (config('app.env') === 'production') {
             config(['auth.timebox.enabled' => false]);
         }

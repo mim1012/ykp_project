@@ -22,7 +22,6 @@ return Application::configure(basePath: dirname(__DIR__))
             'auth' => \App\Http\Middleware\Authenticate::class,
         ]);
 
-        // 프록시 신뢰 미들웨어 추가 (Railway 환경용)
         $middleware->trustProxies(at: '*');
 
         // 전역 미들웨어 등록

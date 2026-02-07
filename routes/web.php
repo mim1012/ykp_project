@@ -219,16 +219,6 @@ Route::get('/api/dashboard/store-ranking', function () {
 // Financial Summary API는 DashboardController에서 처리 (하드코딩 제거)
 // Route::get('/api/dashboard/financial-summary') -> api.php의 DashboardController::financialSummary 사용
 // 🚨 Dealer Performance API는 Line 911에서 실제 DB 조회로 구현됨 (중복 제거)
-// Railway 테스트용 임시 통계 페이지 (인증 없음)
-Route::get('/test-statistics', function () {
-    $fake_user = (object) [
-        'id' => 1,
-        'name' => '본사 관리자',
-        'email' => 'admin@ykp.com',
-        'role' => 'headquarters',
-    ];
-    return view('statistics.headquarters-statistics')->with(['user' => $fake_user]);
-})->name('test.statistics');
 // 기존 고급 대시보드 복구 (임시)
 Route::get('/premium-dash', function () {
     return view('premium-dashboard');

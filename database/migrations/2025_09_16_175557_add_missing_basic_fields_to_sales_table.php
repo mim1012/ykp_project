@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('sales', function (Blueprint $table) {
-            // Railway DB에 누락된 기본 필드들 추가 (SQLSTATE[42703] 에러 해결)
+            // 누락된 기본 필드 추가
             if (! Schema::hasColumn('sales', 'salesperson')) {
                 $table->string('salesperson')->nullable();
             }

@@ -109,24 +109,6 @@ jobs:
           name: playwright-report
           path: playwright-report/
 
-  deploy-staging:
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/staging'
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Railway CLI
-        run: npm install -g @railway/cli
-
-      - name: Deploy to Railway Staging
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-        run: |
-          railway up --service ykp-dashboard-staging
-
   deploy-production:
     needs: test
     runs-on: ubuntu-latest

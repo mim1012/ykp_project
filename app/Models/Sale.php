@@ -27,8 +27,7 @@ class Sale extends Model
         'activation_type',
         'model_name',
         'serial_number', // PM 요구사항: 일련번호 추가
-        // 🔄 실제 Railway DB 컬럼명과 정확히 일치
-        'base_price',        // DB column is base_price
+        'base_price',
         'verbal1',
         'verbal1_memo',      // 구두1 메모 필드 추가
         'verbal2',

@@ -233,7 +233,7 @@
             }
         }
 
-        // Railway PostgreSQL 동시성 충돌 해결을 위한 순차 API 호출 함수
+        // 순차 API 호출 함수
         async function callApiSequentially(apiConfig, retryCount = 2) {
             for (let attempt = 1; attempt <= retryCount + 1; attempt++) {
                 try {
@@ -717,7 +717,7 @@
 
         async function loadHeadquartersStatistics() {
             try {
-                console.log('🚀 Railway PostgreSQL 최적화 순차 로딩 시작...');
+                console.log('순차 로딩 시작...');
                 const period = document.getElementById('hq-ranking-period').value;
                 const limit = parseInt(document.getElementById('hq-ranking-limit').value || '10', 10);
                 
@@ -731,7 +731,7 @@
                 const endDate = document.getElementById('hq-end-date').value || endDefault;
                 const ym = endDate.slice(0,7);
 
-                // 🎯 API 호출 순서 정의 (Railway PostgreSQL 충돌 방지)
+                // API 호출 순서 정의
                 const apiSequence = [
                     { name: 'profile', url: '/api/profile' },
                     { name: 'overview', url: '/api/dashboard/overview' },
@@ -747,7 +747,7 @@
                 const apiResults = {};
                 
                 for (const apiConfig of apiSequence) {
-                    // Railway PostgreSQL 안정화를 위한 100ms 간격
+                    // API 호출 간 100ms 간격
                     if (apiSequence.indexOf(apiConfig) > 0) {
                         await new Promise(resolve => setTimeout(resolve, 100));
                     }
@@ -771,7 +771,7 @@
                 const carrierPerf = apiResults.carrier;
 
                 // 🎉 최종 로딩 완료 (지사별 성과 차트는 updateUISection에서 이미 업데이트됨)
-                console.log('🚀 Railway PostgreSQL 최적화 로딩 완료! 모든 섹션이 순차적으로 업데이트되었습니다.');
+                console.log('로딩 완료');
 
             } catch (error) {
                 console.error('❌ 본사 통계 로딩 실패:', error);

@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Railway 환경에서 테이블이 없을 때만 생성
+        // 테이블이 없을 때만 생성
         if (! Schema::hasTable('goals')) {
             Schema::create('goals', function (Blueprint $table) {
                 $table->id();
@@ -39,7 +39,7 @@ return new class extends Migration
                 $table->index(['is_active', 'target_type']);
             });
 
-            \Log::info('goals table created successfully on Railway');
+            \Log::info('goals table created successfully');
         } else {
             \Log::info('goals table already exists, skipping creation');
         }
