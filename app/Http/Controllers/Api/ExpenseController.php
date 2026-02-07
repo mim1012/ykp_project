@@ -7,30 +7,21 @@ use App\Models\Expense;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 
 class ExpenseController extends Controller
 {
-    /**
-     * Get expenses list
-     * GET /api/expenses
-     */
     public function index(Request $request): JsonResponse
     {
         try {
             $user = Auth::user();
             $query = Expense::with(['store', 'createdBy']);
 
-            // RBAC 필터링
             if ($user->isStore()) {
                 $query->where('store_id', $user->store_id);
             } elseif ($user->isBranch()) {
-                $query->whereHas('store', function ($q) use ($user) {
-                    $q->where('branch_id', $user->branch_id);
-                });
+                $query->whereHas('store', fn ($q) => $q->where('branch_id', $user->branch_id));
             }
 
-            // 날짜 범위 필터
             if ($request->has('start_date')) {
                 $query->where('expense_date', '>=', $request->start_date);
             }
@@ -38,14 +29,10 @@ class ExpenseController extends Controller
                 $query->where('expense_date', '<=', $request->end_date);
             }
 
-            // 월별 필터
             if ($request->has('year') && $request->has('month')) {
                 $query->whereYear('expense_date', $request->year)
                       ->whereMonth('expense_date', $request->month);
-            }
-
-            // 월 필터 (YYYY-MM 형식)
-            if ($request->has('month') && !$request->has('year')) {
+            } elseif ($request->has('month')) {
                 $monthParts = explode('-', $request->month);
                 if (count($monthParts) === 2) {
                     $query->whereYear('expense_date', $monthParts[0])
@@ -53,48 +40,23 @@ class ExpenseController extends Controller
                 }
             }
 
-            // 매장 필터
-            if ($request->has('store_id') && $request->store_id) {
+            if ($request->filled('store_id')) {
                 $query->where('store_id', $request->store_id);
             }
 
-            // 검색 (지출내용)
-            if ($request->has('search') && $request->search) {
+            if ($request->filled('search')) {
                 $query->where('description', 'like', '%' . $request->search . '%');
             }
 
-            // 정렬
-            $query->orderBy('expense_date', 'desc');
+            $expenses = $query->orderBy('expense_date', 'desc')
+                              ->paginate($request->input('per_page', 30));
 
-            $expenses = $query->paginate($request->input('per_page', 30));
-
-            return response()->json([
-                'success' => true,
-                'data' => $expenses->items(),
-                'meta' => [
-                    'current_page' => $expenses->currentPage(),
-                    'last_page' => $expenses->lastPage(),
-                    'per_page' => $expenses->perPage(),
-                    'total' => $expenses->total(),
-                ],
-            ]);
+            return $this->jsonPaginated($expenses);
         } catch (\Exception $e) {
-            Log::error('Failed to get expenses list', [
-                'error' => $e->getMessage(),
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to get expenses list',
-                'error' => $e->getMessage(),
-            ], 500);
+            return $this->handleException($e, '지출 목록 조회 실패');
         }
     }
 
-    /**
-     * Create a new expense
-     * POST /api/expenses
-     */
     public function store(Request $request): JsonResponse
     {
         try {
@@ -106,12 +68,8 @@ class ExpenseController extends Controller
 
             $user = Auth::user();
 
-            // 매장 사용자만 생성 가능
             if (!$user->isStore()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Only store users can create expenses',
-                ], 403);
+                return $this->jsonError('매장 사용자만 지출을 등록할 수 있습니다.', 403);
             }
 
             $validated['store_id'] = $user->store_id;
@@ -119,172 +77,95 @@ class ExpenseController extends Controller
 
             $expense = Expense::create($validated);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Expense created successfully',
-                'data' => $expense->load(['store', 'createdBy']),
-            ], 201);
+            return $this->jsonSuccess($expense->load(['store', 'createdBy']), '지출이 등록되었습니다.', 201);
         } catch (\Exception $e) {
-            Log::error('Failed to create expense', [
-                'error' => $e->getMessage(),
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to create expense',
-                'error' => $e->getMessage(),
-            ], 500);
+            return $this->handleException($e, '지출 등록 실패');
         }
     }
 
-    /**
-     * Get expense summary (monthly/yearly)
-     * GET /api/expenses/summary
-     */
     public function summary(Request $request): JsonResponse
     {
         try {
             $user = Auth::user();
             $query = Expense::query();
 
-            // RBAC 필터링
             if ($user->isStore()) {
                 $query->where('store_id', $user->store_id);
             } elseif ($user->isBranch()) {
-                $query->whereHas('store', function ($q) use ($user) {
-                    $q->where('branch_id', $user->branch_id);
-                });
+                $query->whereHas('store', fn ($q) => $q->where('branch_id', $user->branch_id));
             }
 
-            // 월별 또는 연도별 합계
             if ($request->has('year') && $request->has('month')) {
                 $summary = $query->whereYear('expense_date', $request->year)
                                  ->whereMonth('expense_date', $request->month)
                                  ->selectRaw('COUNT(*) as count, SUM(amount) as total, AVG(amount) as average')
                                  ->first();
 
-                return response()->json([
-                    'success' => true,
-                    'data' => [
-                        'period' => sprintf('%04d-%02d', $request->year, $request->month),
-                        'type' => 'monthly',
-                        'count' => intval($summary->count ?? 0),
-                        'total' => floatval($summary->total ?? 0),
-                        'average' => floatval($summary->average ?? 0),
-                    ],
-                ]);
-            } elseif ($request->has('year')) {
-                $summary = $query->whereYear('expense_date', $request->year)
-                                 ->selectRaw('
-                                     EXTRACT(MONTH FROM expense_date) as month,
-                                     COUNT(*) as count,
-                                     SUM(amount) as total
-                                 ')
-                                 ->groupByRaw('EXTRACT(MONTH FROM expense_date)')
-                                 ->orderBy('month')
-                                 ->get();
-
-                // 데이터 타입 캐스팅
-                $monthlyData = $summary->map(function ($item) {
-                    return [
-                        'month' => intval($item->month),
-                        'count' => intval($item->count),
-                        'total' => floatval($item->total ?? 0),
-                    ];
-                });
-
-                return response()->json([
-                    'success' => true,
-                    'data' => [
-                        'period' => intval($request->year),
-                        'type' => 'yearly',
-                        'monthly_data' => $monthlyData,
-                    ],
+                return $this->jsonSuccess([
+                    'period' => sprintf('%04d-%02d', $request->year, $request->month),
+                    'type' => 'monthly',
+                    'count' => intval($summary->count ?? 0),
+                    'total' => floatval($summary->total ?? 0),
+                    'average' => floatval($summary->average ?? 0),
                 ]);
             }
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Please provide year and/or month parameters',
-            ], 400);
-        } catch (\Exception $e) {
-            Log::error('Failed to get expense summary', [
-                'error' => $e->getMessage(),
-            ]);
+            if ($request->has('year')) {
+                $monthlyData = $query->whereYear('expense_date', $request->year)
+                    ->selectRaw('EXTRACT(MONTH FROM expense_date) as month, COUNT(*) as count, SUM(amount) as total')
+                    ->groupByRaw('EXTRACT(MONTH FROM expense_date)')
+                    ->orderBy('month')
+                    ->get()
+                    ->map(fn ($item) => [
+                        'month' => intval($item->month),
+                        'count' => intval($item->count),
+                        'total' => floatval($item->total ?? 0),
+                    ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to get summary',
-                'error' => $e->getMessage(),
-            ], 500);
+                return $this->jsonSuccess([
+                    'period' => intval($request->year),
+                    'type' => 'yearly',
+                    'monthly_data' => $monthlyData,
+                ]);
+            }
+
+            return $this->jsonError('year 또는 month 파라미터가 필요합니다.', 400);
+        } catch (\Exception $e) {
+            return $this->handleException($e, '지출 요약 조회 실패');
         }
     }
 
-    /**
-     * Get expense detail
-     * GET /api/expenses/{id}
-     */
     public function show($id): JsonResponse
     {
         try {
             $user = Auth::user();
             $expense = Expense::with(['store', 'createdBy'])->findOrFail($id);
 
-            // 권한 체크
             if ($user->isStore() && $expense->store_id !== $user->store_id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized',
-                ], 403);
+                return $this->jsonError('권한이 없습니다.', 403);
             }
 
-            // Branch RBAC 체크 추가
             if ($user->isBranch()) {
                 $expense->load('store');
                 if ($expense->store && $expense->store->branch_id !== $user->branch_id) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Unauthorized',
-                    ], 403);
+                    return $this->jsonError('권한이 없습니다.', 403);
                 }
             }
 
-            return response()->json([
-                'success' => true,
-                'data' => $expense,
-            ]);
+            return $this->jsonSuccess($expense);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to get expense detail',
-                'error' => $e->getMessage(),
-            ], 500);
+            return $this->handleException($e, '지출 상세 조회 실패');
         }
     }
 
-    /**
-     * Update expense
-     * PUT /api/expenses/{id}
-     */
     public function update(Request $request, $id): JsonResponse
     {
         try {
             $expense = Expense::findOrFail($id);
             $user = Auth::user();
 
-            // 권한 체크: 매장은 자기 것만, 지사/본사는 조회만
-            if ($user->isStore()) {
-                if ($expense->store_id !== $user->store_id) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Unauthorized',
-                    ], 403);
-                }
-            } else {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Only store users can update expenses',
-                ], 403);
+            if (!$user->isStore() || $expense->store_id !== $user->store_id) {
+                return $this->jsonError('권한이 없습니다.', 403);
             }
 
             $validated = $request->validate([
@@ -295,57 +176,27 @@ class ExpenseController extends Controller
 
             $expense->update($validated);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Expense updated successfully',
-                'data' => $expense->fresh(['store', 'createdBy']),
-            ]);
+            return $this->jsonSuccess($expense->fresh(['store', 'createdBy']), '지출이 수정되었습니다.');
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to update expense',
-                'error' => $e->getMessage(),
-            ], 500);
+            return $this->handleException($e, '지출 수정 실패');
         }
     }
 
-    /**
-     * Delete expense
-     * DELETE /api/expenses/{id}
-     */
     public function destroy($id): JsonResponse
     {
         try {
             $expense = Expense::findOrFail($id);
             $user = Auth::user();
 
-            // 권한 체크: 매장만 삭제 가능
-            if ($user->isStore()) {
-                if ($expense->store_id !== $user->store_id) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Unauthorized',
-                    ], 403);
-                }
-            } else {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Only store users can delete expenses',
-                ], 403);
+            if (!$user->isStore() || $expense->store_id !== $user->store_id) {
+                return $this->jsonError('권한이 없습니다.', 403);
             }
 
             $expense->delete();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Expense deleted successfully',
-            ]);
+            return $this->jsonSuccess(null, '지출이 삭제되었습니다.');
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to delete expense',
-                'error' => $e->getMessage(),
-            ], 500);
+            return $this->handleException($e, '지출 삭제 실패');
         }
     }
 }

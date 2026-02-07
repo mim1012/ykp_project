@@ -9,15 +9,10 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class GoalController extends Controller
 {
-    /**
-     * Get current month goal for the authenticated store user
-     * GET /api/my-goal
-     */
     public function show(): JsonResponse
     {
         try {
@@ -25,16 +20,12 @@ class GoalController extends Controller
 
             // Only store users can access their goals
             if (! $user->isStore() || ! $user->store_id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Only store users can access goals',
-                ], 403);
+                return $this->jsonError('Only store users can access goals', 403);
             }
 
             $startOfMonth = now()->startOfMonth();
             $endOfMonth = now()->endOfMonth();
 
-            // Get current month goal
             $goal = Goal::where('target_type', 'store')
                 ->where('target_id', $user->store_id)
                 ->where('period_type', 'monthly')
@@ -76,38 +67,22 @@ class GoalController extends Controller
                 }
             }
 
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'goal' => $goal,
-                    'current_sales' => $currentSales,
-                    'current_activations' => $currentActivations,
-                    'current_margin_rate' => $currentMarginRate,
-                    'achievement_rate' => $salesAchievementRate,
-                    'activation_achievement_rate' => $activationAchievementRate,
-                    'margin_achievement_rate' => $marginAchievementRate,
-                    'month' => $startOfMonth->format('Y-m'),
-                    'days_remaining' => now()->diffInDays($endOfMonth),
-                ],
+            return $this->jsonSuccess([
+                'goal' => $goal,
+                'current_sales' => $currentSales,
+                'current_activations' => $currentActivations,
+                'current_margin_rate' => $currentMarginRate,
+                'achievement_rate' => $salesAchievementRate,
+                'activation_achievement_rate' => $activationAchievementRate,
+                'margin_achievement_rate' => $marginAchievementRate,
+                'month' => $startOfMonth->format('Y-m'),
+                'days_remaining' => now()->diffInDays($endOfMonth),
             ]);
         } catch (\Exception $e) {
-            Log::error('Failed to get goal', [
-                'error' => $e->getMessage(),
-                'user_id' => $user->id ?? null,
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to get goal',
-                'error' => $e->getMessage(),
-            ], 500);
+            return $this->handleException($e, 'Failed to get goal');
         }
     }
 
-    /**
-     * Create or update current month goal (upsert)
-     * POST /api/my-goal
-     */
     public function store(Request $request): JsonResponse
     {
         try {
@@ -115,10 +90,7 @@ class GoalController extends Controller
 
             // Only store users can set their goals
             if (! $user->isStore() || ! $user->store_id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Only store users can set goals',
-                ], 403);
+                return $this->jsonError('Only store users can set goals', 403);
             }
 
             $validator = Validator::make($request->all(), [
@@ -186,31 +158,19 @@ class GoalController extends Controller
             $marginAchievementRate = $goal->margin_target > 0
                 ? round(($currentMarginRate / $goal->margin_target) * 100, 1) : 0;
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Goal saved successfully',
-                'data' => [
-                    'goal' => $goal,
-                    'current_sales' => $currentSales,
-                    'current_activations' => $currentActivations,
-                    'current_margin_rate' => $currentMarginRate,
-                    'achievement_rate' => $salesAchievementRate,
-                    'activation_achievement_rate' => $activationAchievementRate,
-                    'margin_achievement_rate' => $marginAchievementRate,
-                ],
-            ], 201);
+            return $this->jsonSuccess([
+                'goal' => $goal,
+                'current_sales' => $currentSales,
+                'current_activations' => $currentActivations,
+                'current_margin_rate' => $currentMarginRate,
+                'achievement_rate' => $salesAchievementRate,
+                'activation_achievement_rate' => $activationAchievementRate,
+                'margin_achievement_rate' => $marginAchievementRate,
+            ], 'Goal saved successfully', 201);
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Failed to save goal', [
-                'error' => $e->getMessage(),
-                'user_id' => $user->id ?? null,
-            ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to save goal',
-                'error' => $e->getMessage(),
-            ], 500);
+            return $this->handleException($e, 'Failed to save goal');
         }
     }
 }

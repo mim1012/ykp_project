@@ -8,7 +8,6 @@ use App\Models\Customer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 
 class CustomerController extends Controller
@@ -20,10 +19,6 @@ class CustomerController extends Controller
         $this->customerService = $customerService;
     }
 
-    /**
-     * Get customers list
-     * GET /api/customers
-     */
     public function index(Request $request): JsonResponse
     {
         try {
@@ -43,34 +38,12 @@ class CustomerController extends Controller
 
             $customers = $this->customerService->getCustomers($user, $filters);
 
-            return response()->json([
-                'success' => true,
-                'data' => $customers->items(),
-                'meta' => [
-                    'current_page' => $customers->currentPage(),
-                    'last_page' => $customers->lastPage(),
-                    'per_page' => $customers->perPage(),
-                    'total' => $customers->total(),
-                ],
-            ]);
+            return $this->jsonPaginated($customers);
         } catch (\Exception $e) {
-            Log::error('Failed to get customers list', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to get customers list',
-                'error' => $e->getMessage(),
-            ], 500);
+            return $this->handleException($e, 'Failed to get customers list');
         }
     }
 
-    /**
-     * Create a new prospect customer
-     * POST /api/customers
-     */
     public function store(Request $request): JsonResponse
     {
         try {
@@ -87,10 +60,7 @@ class CustomerController extends Controller
 
             // 매장 사용자만 생성 가능
             if (!$user->isStore()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Only store users can create customers',
-                ], 403);
+                return $this->jsonError('Only store users can create customers', 403);
             }
 
             // 중복 체크
@@ -108,11 +78,7 @@ class CustomerController extends Controller
 
             $customer = $this->customerService->createProspect($validated, $user);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Prospect customer created successfully',
-                'data' => $customer->load(['store', 'branch']),
-            ], 201);
+            return $this->jsonSuccess($customer->load(['store', 'branch']), 'Prospect customer created successfully', 201);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'success' => false,
@@ -120,23 +86,10 @@ class CustomerController extends Controller
                 'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
-            Log::error('Failed to create customer', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to create customer',
-                'error' => $e->getMessage(),
-            ], 500);
+            return $this->handleException($e, 'Failed to create customer');
         }
     }
 
-    /**
-     * Get customer detail
-     * GET /api/customers/{id}
-     */
     public function show($id): JsonResponse
     {
         try {
@@ -145,41 +98,19 @@ class CustomerController extends Controller
 
             // 권한 체크
             if ($user->isStore() && $customer->store_id !== $user->store_id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized',
-                ], 403);
+                return $this->jsonError('Unauthorized', 403);
             }
 
             if ($user->isBranch() && $customer->branch_id !== $user->branch_id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized',
-                ], 403);
+                return $this->jsonError('Unauthorized', 403);
             }
 
-            return response()->json([
-                'success' => true,
-                'data' => $customer,
-            ]);
+            return $this->jsonSuccess($customer);
         } catch (\Exception $e) {
-            Log::error('Failed to get customer detail', [
-                'customer_id' => $id,
-                'error' => $e->getMessage(),
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to get customer detail',
-                'error' => $e->getMessage(),
-            ], 500);
+            return $this->handleException($e, 'Failed to get customer detail');
         }
     }
 
-    /**
-     * Update customer
-     * PUT /api/customers/{id}
-     */
     public function update(Request $request, $id): JsonResponse
     {
         try {
@@ -188,17 +119,11 @@ class CustomerController extends Controller
 
             // 권한 체크 - RBAC 적용
             if ($user->isStore() && $customer->store_id !== $user->store_id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized',
-                ], 403);
+                return $this->jsonError('Unauthorized', 403);
             }
 
             if ($user->isBranch() && $customer->branch_id !== $user->branch_id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized',
-                ], 403);
+                return $this->jsonError('Unauthorized', 403);
             }
 
             $validated = $request->validate([
@@ -214,11 +139,7 @@ class CustomerController extends Controller
 
             $updatedCustomer = $this->customerService->updateCustomer($id, $validated);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Customer updated successfully',
-                'data' => $updatedCustomer->load(['store', 'branch', 'activatedSale']),
-            ]);
+            return $this->jsonSuccess($updatedCustomer->load(['store', 'branch', 'activatedSale']), 'Customer updated successfully');
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'success' => false,
@@ -226,23 +147,10 @@ class CustomerController extends Controller
                 'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
-            Log::error('Failed to update customer', [
-                'customer_id' => $id,
-                'error' => $e->getMessage(),
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to update customer',
-                'error' => $e->getMessage(),
-            ], 500);
+            return $this->handleException($e, 'Failed to update customer');
         }
     }
 
-    /**
-     * Delete customer
-     * DELETE /api/customers/{id}
-     */
     public function destroy($id): JsonResponse
     {
         try {
@@ -251,57 +159,30 @@ class CustomerController extends Controller
 
             // 권한 체크 - RBAC 적용
             if ($user->isStore() && $customer->store_id !== $user->store_id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized',
-                ], 403);
+                return $this->jsonError('Unauthorized', 403);
             }
 
             if ($user->isBranch() && $customer->branch_id !== $user->branch_id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized',
-                ], 403);
+                return $this->jsonError('Unauthorized', 403);
             }
 
             $this->customerService->deleteCustomer($id);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Customer deleted successfully',
-            ]);
+            return $this->jsonSuccess(null, 'Customer deleted successfully');
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 400);
+            return $this->jsonError($e->getMessage(), 400);
         }
     }
 
-    /**
-     * Get customer statistics
-     * GET /api/customers/statistics
-     */
     public function statistics(): JsonResponse
     {
         try {
             $user = Auth::user();
             $stats = $this->customerService->getStatistics($user);
 
-            return response()->json([
-                'success' => true,
-                'data' => $stats,
-            ]);
+            return $this->jsonSuccess($stats);
         } catch (\Exception $e) {
-            Log::error('Failed to get customer statistics', [
-                'error' => $e->getMessage(),
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to get statistics',
-                'error' => $e->getMessage(),
-            ], 500);
+            return $this->handleException($e, 'Failed to get customer statistics');
         }
     }
 }

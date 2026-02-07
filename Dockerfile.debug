@@ -1,8 +1,0 @@
-FROM php:8.2-fpm-bookworm
-RUN cat /etc/os-release
-RUN set -eux; apt-get update
-RUN set -eux; apt-get install -y --no-install-recommends \
-    git unzip curl ca-certificates \
-    libicu-dev g++ libzip-dev zlib1g-dev libpq-dev
-RUN set -eux; docker-php-ext-configure intl; docker-php-ext-configure zip
-RUN set -eux; docker-php-ext-install -j"$(nproc)" intl zip pdo_mysql pdo_pgsql

@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YKP ERP - Premium Enterprise Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=Cormorant+Garamond:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --color-navy-950: #0a1128;
+            --color-navy-900: #0d1b2a;
+            --color-navy-800: #1b263b;
+            --color-navy-700: #2d3e57;
+            --color-navy-600: #415a77;
+            --color-navy-500: #778da9;
+            --color-blue-400: #3b82f6;
+            --color-gold-400: #fbbf24;
+            --color-gold-500: #f59e0b;
+            --color-emerald-400: #34d399;
+            --color-rose-400: #fb7185;
+            --color-white: #ffffff;
+            --color-gray-50: #f9fafb;
+            --color-gray-100: #f3f4f6;
+            --color-gray-200: #e5e7eb;
+            --color-gray-300: #d1d5db;
+
+            --font-display: 'Cormorant Garamond', serif;
+            --font-body: 'IBM Plex Sans', sans-serif;
+
+            --shadow-sm: 0 1px 2px 0 rgba(10, 17, 40, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(10, 17, 40, 0.1), 0 2px 4px -1px rgba(10, 17, 40, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(10, 17, 40, 0.1), 0 4px 6px -2px rgba(10, 17, 40, 0.05);
+            --shadow-xl: 0 20px 25px -5px rgba(10, 17, 40, 0.1), 0 10px 10px -5px rgba(10, 17, 40, 0.04);
+            --shadow-premium: 0 25px 50px -12px rgba(10, 17, 40, 0.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background: linear-gradient(135deg, var(--color-gray-50) 0%, var(--color-gray-100) 100%);
+            color: var(--color-navy-900);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* Navigation */
+        .nav-premium {
+            background: var(--color-white);
+            border-bottom: 1px solid var(--color-gray-200);
+            padding: 0 2rem;
+            box-shadow: var(--shadow-sm);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(8px);
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 70px;
+        }
+
+        .logo {
+            font-family: var(--font-display);
+            font-size: 1.75rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--color-navy-900) 0%, var(--color-navy-700) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.02em;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: var(--color-navy-700);
+            font-weight: 500;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .nav-links a:hover {
+            color: var(--color-navy-900);
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--color-gold-500);
+            transition: width 0.3s ease;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        .user-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem 1rem;
+            background: var(--color-gray-50);
+            border-radius: 100px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--color-gold-400) 0%, var(--color-gold-500) 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.75rem;
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Header Section */
+        .page-header {
+            margin-bottom: 2.5rem;
+            animation: fadeSlideDown 0.6s ease-out;
+        }
+
+        .page-title {
+            font-family: var(--font-display);
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--color-navy-900);
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .page-subtitle {
+            color: var(--color-navy-600);
+            font-size: 1rem;
+            font-weight: 400;
+        }
+
+        /* KPI Cards Grid */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .kpi-card {
+            background: var(--color-white);
+            border-radius: 16px;
+            padding: 1.75rem;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--color-gray-200);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            animation: fadeSlideUp 0.6s ease-out backwards;
+        }
+
+        .kpi-card:nth-child(1) { animation-delay: 0.1s; }
+        .kpi-card:nth-child(2) { animation-delay: 0.2s; }
+        .kpi-card:nth-child(3) { animation-delay: 0.3s; }
+        .kpi-card:nth-child(4) { animation-delay: 0.4s; }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: linear-gradient(180deg, var(--accent-color) 0%, transparent 100%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .kpi-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-premium);
+        }
+
+        .kpi-card:hover::before {
+            opacity: 1;
+        }
+
+        .kpi-card.emerald { --accent-color: var(--color-emerald-400); }
+        .kpi-card.blue { --accent-color: var(--color-blue-400); }
+        .kpi-card.gold { --accent-color: var(--color-gold-500); }
+        .kpi-card.navy { --accent-color: var(--color-navy-600); }
+
+        .kpi-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1.25rem;
+        }
+
+        .kpi-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            background: linear-gradient(135deg, var(--accent-color), var(--accent-color));
+            opacity: 0.1;
+        }
+
+        .kpi-trend {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            padding: 0.25rem 0.6rem;
+            border-radius: 100px;
+        }
+
+        .kpi-trend.up {
+            background: rgba(52, 211, 153, 0.1);
+            color: #059669;
+        }
+
+        .kpi-trend.down {
+            background: rgba(251, 113, 133, 0.1);
+            color: #e11d48;
+        }
+
+        .kpi-label {
+            font-size: 0.85rem;
+            color: var(--color-navy-600);
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .kpi-value {
+            font-family: var(--font-display);
+            font-size: 2.25rem;
+            font-weight: 700;
+            color: var(--color-navy-900);
+            line-height: 1;
+            margin-bottom: 0.5rem;
+        }
+
+        .kpi-description {
+            font-size: 0.8rem;
+            color: var(--color-navy-500);
+        }
+
+        /* Premium Table Section */
+        .section-card {
+            background: var(--color-white);
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--color-gray-200);
+            overflow: hidden;
+            animation: fadeSlideUp 0.6s ease-out 0.5s backwards;
+        }
+
+        .section-header {
+            padding: 1.75rem 2rem;
+            border-bottom: 1px solid var(--color-gray-200);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(to right, var(--color-gray-50), var(--color-white));
+        }
+
+        .section-title {
+            font-family: var(--font-display);
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--color-navy-900);
+        }
+
+        .btn-premium {
+            padding: 0.65rem 1.5rem;
+            background: linear-gradient(135deg, var(--color-navy-900) 0%, var(--color-navy-700) 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-premium:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-xl);
+        }
+
+        /* Table */
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: var(--color-gray-50);
+        }
+
+        th {
+            padding: 1rem 1.5rem;
+            text-align: left;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--color-navy-700);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border-bottom: 2px solid var(--color-gray-200);
+        }
+
+        td {
+            padding: 1.25rem 1.5rem;
+            font-size: 0.9rem;
+            color: var(--color-navy-800);
+            border-bottom: 1px solid var(--color-gray-200);
+        }
+
+        tbody tr {
+            transition: background 0.2s;
+        }
+
+        tbody tr:hover {
+            background: var(--color-gray-50);
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.35rem 0.75rem;
+            border-radius: 100px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .status-badge.success {
+            background: rgba(52, 211, 153, 0.1);
+            color: #059669;
+        }
+
+        .status-badge.pending {
+            background: rgba(251, 191, 36, 0.1);
+            color: #d97706;
+        }
+
+        .amount-positive {
+            color: #059669;
+            font-weight: 600;
+        }
+
+        .amount-negative {
+            color: #e11d48;
+            font-weight: 600;
+        }
+
+        /* Animations */
+        @keyframes fadeSlideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Secure Badge */
+        .secure-indicator {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: rgba(10, 17, 40, 0.9);
+            color: white;
+            padding: 0.75rem 1.25rem;
+            border-radius: 100px;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: var(--shadow-xl);
+            backdrop-filter: blur(8px);
+            animation: fadeSlideUp 0.6s ease-out 1s backwards;
+        }
+
+        .secure-icon {
+            color: var(--color-emerald-400);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+
+            .page-title {
+                font-size: 2rem;
+            }
+
+            .kpi-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Premium Navigation -->
+    <nav class="nav-premium">
+        <div class="nav-container">
+            <div class="logo">YKP ERP</div>
+            <ul class="nav-links">
+                <li><a href="#">대시보드</a></li>
+                <li><a href="#">판매관리</a></li>
+                <li><a href="#">정산</a></li>
+                <li><a href="#">통계</a></li>
+                <li><a href="#">설정</a></li>
+            </ul>
+            <div class="user-badge">
+                <div class="user-avatar">본</div>
+                <span>본사 관리자</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-title">프리미엄 대시보드</h1>
+            <p class="page-subtitle">실시간 판매 데이터 및 성과 분석</p>
+        </div>
+
+        <!-- KPI Cards -->
+        <div class="kpi-grid">
+            <div class="kpi-card emerald">
+                <div class="kpi-header">
+                    <div class="kpi-icon">📊</div>
+                    <div class="kpi-trend up">↑ 12.5%</div>
+                </div>
+                <div class="kpi-label">총 매출</div>
+                <div class="kpi-value">₩1,245M</div>
+                <div class="kpi-description">전월 대비 증가</div>
+            </div>
+
+            <div class="kpi-card blue">
+                <div class="kpi-header">
+                    <div class="kpi-icon">💰</div>
+                    <div class="kpi-trend up">↑ 8.2%</div>
+                </div>
+                <div class="kpi-label">정산 금액</div>
+                <div class="kpi-value">₩982M</div>
+                <div class="kpi-description">이번 달 누적</div>
+            </div>
+
+            <div class="kpi-card gold">
+                <div class="kpi-header">
+                    <div class="kpi-icon">📈</div>
+                    <div class="kpi-trend up">↑ 5.7%</div>
+                </div>
+                <div class="kpi-label">순마진</div>
+                <div class="kpi-value">₩263M</div>
+                <div class="kpi-description">세후 마진 기준</div>
+            </div>
+
+            <div class="kpi-card navy">
+                <div class="kpi-header">
+                    <div class="kpi-icon">🏪</div>
+                    <div class="kpi-trend down">↓ 2.1%</div>
+                </div>
+                <div class="kpi-label">활성 매장</div>
+                <div class="kpi-value">847</div>
+                <div class="kpi-description">전국 매장 수</div>
+            </div>
+        </div>
+
+        <!-- Premium Table Section -->
+        <div class="section-card">
+            <div class="section-header">
+                <h2 class="section-title">최근 판매 내역</h2>
+                <button class="btn-premium">엑셀 내보내기</button>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>일자</th>
+                            <th>매장명</th>
+                            <th>고객명</th>
+                            <th>상품명</th>
+                            <th>정산금액</th>
+                            <th>마진</th>
+                            <th>상태</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>2026-01-02</td>
+                            <td>강남역점</td>
+                            <td>김**</td>
+                            <td>갤럭시 S24</td>
+                            <td class="amount-positive">₩1,250,000</td>
+                            <td class="amount-positive">₩85,000</td>
+                            <td><span class="status-badge success">완료</span></td>
+                        </tr>
+                        <tr>
+                            <td>2026-01-02</td>
+                            <td>홍대점</td>
+                            <td>이**</td>
+                            <td>아이폰 15 Pro</td>
+                            <td class="amount-positive">₩1,550,000</td>
+                            <td class="amount-positive">₩120,000</td>
+                            <td><span class="status-badge success">완료</span></td>
+                        </tr>
+                        <tr>
+                            <td>2026-01-01</td>
+                            <td>신논현점</td>
+                            <td>박**</td>
+                            <td>갤럭시 Z Fold 5</td>
+                            <td class="amount-positive">₩2,100,000</td>
+                            <td class="amount-positive">₩150,000</td>
+                            <td><span class="status-badge pending">처리중</span></td>
+                        </tr>
+                        <tr>
+                            <td>2026-01-01</td>
+                            <td>판교점</td>
+                            <td>최**</td>
+                            <td>아이폰 15</td>
+                            <td class="amount-positive">₩1,200,000</td>
+                            <td class="amount-positive">₩95,000</td>
+                            <td><span class="status-badge success">완료</span></td>
+                        </tr>
+                        <tr>
+                            <td>2025-12-31</td>
+                            <td>서초점</td>
+                            <td>정**</td>
+                            <td>갤럭시 S23 FE</td>
+                            <td class="amount-positive">₩850,000</td>
+                            <td class="amount-positive">₩65,000</td>
+                            <td><span class="status-badge success">완료</span></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Secure Indicator -->
+    <div class="secure-indicator">
+        <span class="secure-icon">🔒</span>
+        <span>암호화된 보안 연결</span>
+    </div>
+</body>
+</html>

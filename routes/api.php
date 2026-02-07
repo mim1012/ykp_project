@@ -10,25 +10,14 @@ use App\Http\Controllers\UserManagementController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-/*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
-| All API routes require authentication and CSRF protection for security
-*/
+// API Routes
 
 // Authentication check route
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user();
 });
 
-/*
-|--------------------------------------------------------------------------
-| Protected API Routes
-|--------------------------------------------------------------------------
-*/
-
-// 실시간 통계 API (간단한 카운트) - 대시보드용 (인증 없음)
+// 실시간 통계 API (간단한 카운트) - 대시보드용
 Route::get('/users/count', function () {
     try {
         return response()->json(['success' => true, 'count' => \App\Models\User::count()]);
@@ -53,84 +42,6 @@ Route::get('/sales/count', function () {
     }
 })->name('api.sales.count');
 
-// 매장 관리 API (개발용 - 안전한 라우트)
-Route::prefix('dev/stores')->group(function () {
-    Route::get('/', function () {
-        try {
-            $stores = App\Models\Store::with('branch')->get();
-
-            return response()->json(['success' => true, 'data' => $stores]);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
-        }
-    });
-
-    Route::post('/', function (Illuminate\Http\Request $request) {
-        // 매장명과 지사 정보로 간단하게 추가
-        $request->validate([
-            'name' => 'required|string|max:255',
-            'branch_id' => 'required|exists:branches,id',
-            'owner_name' => 'nullable|string|max:255',
-            'phone' => 'nullable|string|max:20',
-        ]);
-
-        // 자동 코드 생성
-        $branch = App\Models\Branch::find($request->branch_id);
-        $storeCount = App\Models\Store::where('branch_id', $request->branch_id)->count();
-        $autoCode = $branch->code.'-'.str_pad($storeCount + 1, 3, '0', STR_PAD_LEFT);
-
-        $store = App\Models\Store::create([
-            'name' => $request->name,
-            'code' => $autoCode, // 자동 생성
-            'branch_id' => $request->branch_id,
-            'owner_name' => $request->owner_name,
-            'phone' => $request->phone,
-            'address' => '',
-            'status' => 'active',
-            'opened_at' => now(),
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => '매장이 추가되었습니다.',
-            'data' => $store->load('branch'),
-        ], 201);
-    });
-    Route::get('/branches', function () {
-        // Simplified query to avoid PostgreSQL prepared statement issues
-        $branches = App\Models\Branch::select('id', 'name', 'code', 'status')->get();
-
-        // Manually add store count to avoid withCount() issues
-        foreach ($branches as $branch) {
-            $branch->stores_count = App\Models\Store::where('branch_id', $branch->id)->count();
-        }
-
-        return response()->json(['success' => true, 'data' => $branches]);
-    });
-    Route::post('/sales/save', function (Illuminate\Http\Request $request) {
-        try {
-            $salesData = $request->input('sales', []);
-            $savedCount = 0;
-
-            foreach ($salesData as $sale) {
-                App\Models\Sale::create($sale);
-                $savedCount++;
-            }
-
-            return response()->json([
-                'success' => true,
-                'message' => $savedCount.'건이 저장되었습니다.',
-                'saved_count' => $savedCount,
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => '저장 오류: '.$e->getMessage(),
-            ], 500);
-        }
-    });
-});
-
 // 매장 관리 API (운영용 - 세션 기반 인증)
 Route::middleware(['web', 'auth'])->prefix('stores')->group(function () {
     Route::get('/', [App\Http\Controllers\Api\StoreController::class, 'index'])->name('api.stores.index');
@@ -152,116 +63,20 @@ Route::middleware(['web', 'auth', 'rbac'])->prefix('sales')->group(function () {
     Route::get('/', [SalesApiController::class, 'index'])->name('api.sales.index');
     Route::get('/statistics', [SalesApiController::class, 'statistics'])->name('api.sales.statistics');
 
-    // Write operations (POST) - Additional CSRF protection for web requests
+    // Write operations (POST)
     Route::post('/bulk', [SalesApiController::class, 'bulkSave'])
-        ->middleware('throttle:30,1') // Rate limiting: 30 requests per minute
+        ->middleware('throttle:30,1')
         ->name('api.sales.bulk');
 
     // AgGrid 전용 bulk save 엔드포인트
     Route::post('/bulk-save', [SalesApiController::class, 'bulkSave'])
-        ->middleware('throttle:60,1') // Rate limiting: 60 requests per minute
+        ->middleware('throttle:60,1')
         ->name('api.sales.bulk-save');
 
     // Bulk delete endpoint for sales data
     Route::post('/bulk-delete', [SalesApiController::class, 'bulkDelete'])
-        ->middleware('throttle:30,1') // Rate limiting: 30 requests per minute
+        ->middleware('throttle:30,1')
         ->name('api.sales.bulk-delete');
-
-    // 개발용 간단한 저장 엔드포인트 (인증 제외)
-    Route::post('/save', function (Illuminate\Http\Request $request) {
-        try {
-            $salesData = $request->input('sales', []);
-            $savedCount = 0;
-            $errors = [];
-
-            \Log::info('Sales save attempt', [
-                'data_count' => count($salesData),
-                'first_row' => $salesData[0] ?? null,
-                'user_id' => auth()->id(),
-            ]);
-
-            $user = auth()->user();
-
-            foreach ($salesData as $index => $sale) {
-                // 사용자 정보 또는 기본값 사용
-                if (empty($sale['store_id'])) {
-                    if ($user && $user->store_id) {
-                        $sale['store_id'] = $user->store_id;
-                    } else {
-                        // 🚨 하드코딩 제거: 매장 정보 없으면 에러
-                        throw new Exception('매장 정보가 없는 사용자는 개통표를 저장할 수 없습니다.');
-                    }
-                }
-                if (empty($sale['branch_id'])) {
-                    if ($user && $user->branch_id) {
-                        $sale['branch_id'] = $user->branch_id;
-                    } else {
-                        // store_id로부터 branch_id 가져오기
-                        $store = App\Models\Store::find($sale['store_id']);
-                        if (! $store) {
-                            throw new Exception('유효하지 않은 매장 정보입니다.');
-                        }
-                        $sale['branch_id'] = $store->branch_id;
-                    }
-                }
-
-                // 빈 문자열을 null로 변환
-                foreach ($sale as $key => $value) {
-                    if ($value === '') {
-                        $sale[$key] = null;
-                    }
-                }
-
-                try {
-                    \Log::info('Attempting to save row '.($index + 1), [
-                        'sale_data' => $sale,
-                        'missing_fields' => array_keys(array_filter($sale, fn ($v) => is_null($v))),
-                    ]);
-
-                    $createdSale = App\Models\Sale::create($sale);
-                    $savedCount++;
-
-                    \Log::info('Row '.($index + 1).' saved successfully', ['sale_id' => $createdSale->id]);
-                } catch (\Exception $e) {
-                    $errorMsg = '행 '.($index + 1).': '.$e->getMessage();
-                    $errors[] = $errorMsg;
-
-                    \Log::error('Sale save error for row '.($index + 1), [
-                        'error' => $e->getMessage(),
-                        'data' => $sale,
-                        'trace' => $e->getTraceAsString(),
-                    ]);
-                }
-            }
-
-            if ($savedCount > 0) {
-                $message = $savedCount.'건이 저장되었습니다.';
-                if (! empty($errors)) {
-                    $message .= ' (일부 오류: '.count($errors).'건)';
-                }
-
-                return response()->json([
-                    'success' => true,
-                    'message' => $message,
-                    'saved_count' => $savedCount,
-                    'errors' => $errors,
-                ]);
-            } else {
-                return response()->json([
-                    'success' => false,
-                    'message' => '데이터를 저장할 수 없습니다.',
-                    'errors' => $errors,
-                ], 400);
-            }
-        } catch (\Exception $e) {
-            \Log::error('Sales save error: '.$e->getMessage());
-
-            return response()->json([
-                'success' => false,
-                'message' => '저장 오류: '.$e->getMessage(),
-            ], 500);
-        }
-    })->withoutMiddleware(['auth', 'rbac'])->name('api.sales.save');
 });
 
 // Report API - Requires authentication and RBAC
@@ -274,38 +89,15 @@ Route::middleware(['web', 'auth', 'rbac'])->prefix('report')->group(function () 
         ->name('api.report.pdf');
 });
 
-/*
-|--------------------------------------------------------------------------
-| Web API Routes (with CSRF protection)
-|--------------------------------------------------------------------------
-| These routes are called from the dashboard and require CSRF tokens
-*/
-
-// Dashboard stats API (단순 상태 확인용)
-Route::get('/api/dashboard/stats', function (Request $request) {
-    try {
-        return response()->json(['success' => true, 'data' => ['status' => 'active']]);
-    } catch (\Exception $e) {
-        return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
-    }
-})->name('api.dashboard.stats');
-
-/*
-|--------------------------------------------------------------------------
-| Calculation API (실시간 계산)
-|--------------------------------------------------------------------------
-| 실시간 마진 계산을 위한 API 엔드포인트
-| 프로파일 기반 고도화 기능 포함
-*/
-
+// Calculation API (실시간 계산)
 Route::prefix('calculation')->group(function () {
     // 기존 API (호환성 유지)
     Route::post('/row', [CalculationController::class, 'calculateRow'])
-        ->middleware('throttle:120,1') // 1분당 120번 요청 제한
+        ->middleware('throttle:120,1')
         ->name('api.calculation.row');
 
     Route::post('/batch', [CalculationController::class, 'calculateBatch'])
-        ->middleware('throttle:10,1') // 1분당 10번 요청 제한
+        ->middleware('throttle:10,1')
         ->name('api.calculation.batch');
 
     Route::post('/validate-formula', [CalculationController::class, 'validateFormula'])
@@ -314,11 +106,11 @@ Route::prefix('calculation')->group(function () {
 
     // 프로파일 기반 API (고도화)
     Route::post('/profile/row', [CalculationController::class, 'calculateRowWithProfile'])
-        ->middleware('throttle:200,1') // 고성능으로 더 많이 허용
+        ->middleware('throttle:200,1')
         ->name('api.calculation.profile.row');
 
     Route::post('/profile/batch', [CalculationController::class, 'calculateBatchWithProfile'])
-        ->middleware('throttle:5,1') // 배치는 더 엄격한 제한
+        ->middleware('throttle:5,1')
         ->name('api.calculation.profile.batch');
 
     // 프로파일 관리
@@ -337,46 +129,30 @@ Route::prefix('calculation')->group(function () {
 
     // 성능 및 모니터링
     Route::post('/benchmark', [CalculationController::class, 'benchmark'])
-        ->middleware('throttle:5,1') // 벤치마크는 자주 사용 안 함
+        ->middleware('throttle:5,1')
         ->name('api.calculation.benchmark');
 });
 
-/*
-|--------------------------------------------------------------------------
-| 비동기 배치 처리 API
-|--------------------------------------------------------------------------
-| 대량 데이터 처리를 위한 비동기 Job 처리
-*/
-
+// 비동기 배치 처리 API
 Route::prefix('batch-jobs')->group(function () {
-    // 비동기 배치 처리 시작
     Route::post('/start', [CalculationController::class, 'startBatchJob'])
-        ->middleware('throttle:3,1') // 아주 엄격한 제한
+        ->middleware('throttle:3,1')
         ->name('api.batch.start');
 
-    // Job 상태 조회
     Route::get('/{jobId}/status', [CalculationController::class, 'getBatchJobStatus'])
         ->middleware('throttle:60,1')
         ->name('api.batch.status');
 
-    // Job 결과 조회
     Route::get('/{jobId}/result', [CalculationController::class, 'getBatchJobResult'])
         ->middleware('throttle:30,1')
         ->name('api.batch.result');
 
-    // Job 취소
     Route::delete('/{jobId}', [CalculationController::class, 'cancelBatchJob'])
         ->middleware('throttle:10,1')
         ->name('api.batch.cancel');
 });
 
-/*
-|--------------------------------------------------------------------------
-| 일일지출 관리 API
-|--------------------------------------------------------------------------
-| 대리점별 일일지출 내역 관리 (상담비, 메일접수비, 기타 운영비)
-*/
-
+// 일일지출 관리 API
 Route::middleware(['web', 'auth'])->prefix('daily-expenses')->group(function () {
     Route::get('/', [App\Http\Controllers\Api\DailyExpenseController::class, 'index'])->name('api.daily-expenses.index');
     Route::post('/', [App\Http\Controllers\Api\DailyExpenseController::class, 'store'])->name('api.daily-expenses.store');
@@ -388,13 +164,7 @@ Route::middleware(['web', 'auth'])->prefix('daily-expenses')->group(function () 
     Route::get('/summary/monthly', [App\Http\Controllers\Api\DailyExpenseController::class, 'monthlySummary'])->name('api.daily-expenses.monthly-summary');
 });
 
-/*
-|--------------------------------------------------------------------------
-| 고정지출 관리 API
-|--------------------------------------------------------------------------
-| 월별 고정비용 관리 (임대료, 인건비, 통신비 등)
-*/
-
+// 고정지출 관리 API
 Route::middleware(['web', 'auth'])->prefix('fixed-expenses')->group(function () {
     Route::get('/', [App\Http\Controllers\Api\FixedExpenseController::class, 'index'])->name('api.fixed-expenses.index');
     Route::post('/', [App\Http\Controllers\Api\FixedExpenseController::class, 'store'])->name('api.fixed-expenses.store');
@@ -409,13 +179,7 @@ Route::middleware(['web', 'auth'])->prefix('fixed-expenses')->group(function () 
     Route::get('/upcoming/payments', [App\Http\Controllers\Api\FixedExpenseController::class, 'upcomingPayments'])->name('api.fixed-expenses.upcoming');
 });
 
-/*
-|--------------------------------------------------------------------------
-| 환수금액 관리 API
-|--------------------------------------------------------------------------
-| 고객 환불 및 통신사 환수 관리
-*/
-
+// 환수금액 관리 API
 Route::middleware(['web', 'auth'])->prefix('refunds')->group(function () {
     Route::get('/', [App\Http\Controllers\Api\RefundController::class, 'index'])->name('api.refunds.index');
     Route::post('/', [App\Http\Controllers\Api\RefundController::class, 'store'])->name('api.refunds.store');
@@ -427,13 +191,7 @@ Route::middleware(['web', 'auth'])->prefix('refunds')->group(function () {
     Route::get('/analysis/summary', [App\Http\Controllers\Api\RefundController::class, 'analysis'])->name('api.refunds.analysis');
 });
 
-/*
-|--------------------------------------------------------------------------
-| 직원급여 관리 API (엑셀 점장급여 방식)
-|--------------------------------------------------------------------------
-| 월별 급여 관리 - 수기입력 + 인센티브 자동계산
-*/
-
+// 직원급여 관리 API (엑셀 점장급여 방식)
 Route::middleware(['web', 'auth'])->prefix('payroll')->group(function () {
     Route::get('/', [App\Http\Controllers\Api\PayrollController::class, 'index'])->name('api.payroll.index');
     Route::post('/', [App\Http\Controllers\Api\PayrollController::class, 'store'])->name('api.payroll.store');
@@ -448,16 +206,8 @@ Route::middleware(['web', 'auth'])->prefix('payroll')->group(function () {
     Route::get('/summary/monthly', [App\Http\Controllers\Api\PayrollController::class, 'monthlySummary'])->name('api.payroll.monthly-summary');
 });
 
-/*
-|--------------------------------------------------------------------------
-| 통합 대시보드 API
-|--------------------------------------------------------------------------
-| 메인 대시보드용 실시간 데이터 제공
-*/
-
-// 웹 대시보드용 API (세션 기반 인증)
+// 통합 대시보드 API (세션 기반 인증)
 Route::middleware(['web', 'auth'])->prefix('dashboard')->group(function () {
-    // DashboardController를 사용한 권한별 필터링 적용
     Route::get('/overview', [App\Http\Controllers\Api\DashboardController::class, 'overview']);
     Route::get('/store-ranking', [App\Http\Controllers\Api\DashboardController::class, 'storeRanking']);
     Route::get('/financial-summary', [App\Http\Controllers\Api\DashboardController::class, 'financialSummary']);
@@ -472,219 +222,26 @@ Route::middleware(['web', 'auth'])->prefix('statistics')->group(function () {
     Route::get('/kpi', [App\Http\Controllers\Api\DashboardController::class, 'kpi']);
 });
 
-// 기존 익명함수 라우트들 (이후 제거 예정)
-Route::prefix('dashboard-old')->group(function () {
-    // 대시보드 개요 (통계 페이지 메인) - 통일된 응답 구조
-    Route::get('/overview', function () {
-        try {
-            // 전체/활성 구분된 통계
-            $totalStores = \App\Models\Store::count();
-            $activeStores = \App\Models\Store::where('status', 'active')->count();
-            $totalBranches = \App\Models\Branch::count();
-            $activeBranches = \App\Models\Branch::where('status', 'active')->count();
-            $totalUsers = \App\Models\User::count();
-
-            // DatabaseHelper를 사용한 실시간 데이터 조회
-            $currentYear = now()->year;
-            $currentMonth = now()->month;
-
-            $salesActiveStores = DatabaseHelper::executeWithRetry(function () use ($currentYear, $currentMonth) {
-                return \App\Models\Sale::whereYear('sale_date', $currentYear)
-                    ->whereMonth('sale_date', $currentMonth)
-                    ->distinct('store_id')->count();
-            });
-
-            $thisMonthSales = DatabaseHelper::safeAggregate(
-                'sales',
-                'sum',
-                'settlement_amount',
-                ['sale_date' => [
-                    now()->startOfMonth()->toDateTimeString(),
-                    now()->endOfMonth()->toDateTimeString(),
-                ]]
-            );
-            // 🔄 실제 목표 API에서 가져오기 (하드코딩 제거)
-            $goal = App\Models\Goal::where('target_type', 'system')
-                ->where('period_type', 'monthly')
-                ->where('is_active', '=', config('database.default') === 'pgsql' ? \DB::raw('true') : true)
-                ->whereBetween('period_start', [now()->startOfMonth()->format('Y-m-d'), now()->endOfMonth()->format('Y-m-d')])
-                ->first();
-
-            $monthlyTarget = $goal ? $goal->sales_target : config('sales.default_targets.system.monthly_sales');
-            $achievementRate = $thisMonthSales > 0 ? round(($thisMonthSales / $monthlyTarget) * 100, 1) : 0;
-
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'stores' => [
-                        'total' => $totalStores,
-                        'active' => $activeStores,
-                        'with_sales' => $salesActiveStores,
-                    ],
-                    'branches' => [
-                        'total' => $totalBranches,
-                        'active' => $activeBranches,
-                    ],
-                    'users' => [
-                        'total' => $totalUsers,
-                        'headquarters' => \App\Models\User::where('role', 'headquarters')->count(),
-                        'branch_managers' => \App\Models\User::where('role', 'branch')->count(),
-                        'store_staff' => \App\Models\User::where('role', 'store')->count(),
-                    ],
-                    'this_month_sales' => floatval($thisMonthSales),
-                    'achievement_rate' => $achievementRate,
-                    'meta' => [
-                        'generated_at' => now()->toISOString(),
-                        'period' => now()->format('Y-m'),
-                    ],
-                ],
-            ]);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
-        }
-    })->name('api.dashboard.overview');
-
-    // 매장 랭킹
-    Route::get('/store-ranking', function (Illuminate\Http\Request $request) {
-        try {
-            $limit = min($request->get('limit', 10), 50);
-            $rankings = \App\Models\Sale::with(['store', 'store.branch'])
-                ->whereMonth('sale_date', now()->month)
-                ->select('store_id')
-                ->selectRaw('SUM(settlement_amount) as total_sales')
-                ->selectRaw('COUNT(*) as activation_count')
-                ->groupBy('store_id')
-                ->orderBy('total_sales', 'desc')
-                ->limit($limit)
-                ->get();
-
-            $rankedStores = [];
-            foreach ($rankings as $index => $ranking) {
-                $store = \App\Models\Store::with('branch')->find($ranking->store_id);
-                if ($store) {
-                    $rankedStores[] = [
-                        'rank' => $index + 1,
-                        'store_name' => $store->name,
-                        'branch_name' => $store->branch->name ?? '미지정',
-                        'total_sales' => floatval($ranking->total_sales),
-                        'activation_count' => $ranking->activation_count,
-                    ];
-                }
-            }
-
-            return response()->json(['success' => true, 'data' => $rankedStores]);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
-        }
-    })->name('api.dashboard.store-ranking');
-
-    // 재무 요약은 위의 DashboardController::financialSummary 사용
-    // 중복 라우트 제거 (458번 라인에서 이미 정의됨)
-
-    // 대리점 성과
-    Route::get('/dealer-performance', function (Illuminate\Http\Request $request) {
-        try {
-            $yearMonth = $request->get('year_month', now()->format('Y-m'));
-            [$year, $month] = explode('-', $yearMonth);
-
-            // DatabaseHelper를 사용한 실시간 통신사 성과 데이터 조회
-            $performances = DatabaseHelper::executeWithRetry(function () use ($year, $month) {
-                return \App\Models\Sale::whereYear('sale_date', $year)
-                    ->whereMonth('sale_date', $month)
-                    ->selectRaw("COALESCE(carrier, '미지정') as carrier")
-                    ->selectRaw('COUNT(*) as count')
-                    ->selectRaw('SUM(settlement_amount) as total_amount')
-                    ->groupByRaw("COALESCE(carrier, '미지정')")
-                    ->get();
-            });
-
-            // 통신사별 데이터를 carrier_breakdown 형식으로 변환
-            $totalCount = $performances->sum('count');
-            $carrierBreakdown = [];
-
-            foreach ($performances as $performance) {
-                $percentage = $totalCount > 0 ? round(($performance->count / $totalCount) * 100) : 0;
-                $carrierBreakdown[] = [
-                    'carrier' => $performance->carrier,
-                    'count' => (int) $performance->count,
-                    'total_sales' => number_format($performance->total_amount, 2),
-                    'percentage' => $percentage,
-                ];
-            }
-
-            $responseData = [
-                'carrier_breakdown' => $carrierBreakdown,
-                'year_month' => $yearMonth,
-            ];
-
-            return response()->json(['success' => true, 'data' => $responseData]);
-        } catch (\Exception $e) {
-            return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
-        }
-    })->name('api.dashboard.dealer-performance');
-});
-
-/*
-|--------------------------------------------------------------------------
-| 개발/테스트용 임시 경로 (인증 우회)
-|--------------------------------------------------------------------------
-| 프론트엔드 개발 및 테스트용 - 운영 시 제거 필요
-*/
-
-if (config('app.env') !== 'production') {
-    Route::prefix('dev')->group(function () {
-        Route::get('/dashboard/overview', [App\Http\Controllers\Api\DashboardController::class, 'overview'])->name('dev.dashboard.overview');
-        Route::get('/dashboard/store-ranking', [App\Http\Controllers\Api\DashboardController::class, 'storeRanking'])->name('dev.dashboard.store-ranking');
-        Route::get('/dashboard/daily-sales-report', [App\Http\Controllers\Api\DashboardController::class, 'dailySalesReport'])->name('dev.dashboard.daily-sales-report');
-        Route::get('/calculation/profiles', [App\Http\Controllers\Api\CalculationController::class, 'getProfiles'])->name('dev.calculation.profiles');
-        Route::get('/daily-expenses', [App\Http\Controllers\Api\DailyExpenseController::class, 'index'])->name('dev.daily-expenses.index');
-        Route::get('/fixed-expenses', [App\Http\Controllers\Api\FixedExpenseController::class, 'index'])->name('dev.fixed-expenses.index');
-        Route::get('/payroll', [App\Http\Controllers\Api\PayrollController::class, 'index'])->name('dev.payroll.index');
-        Route::get('/payroll/summary/monthly', [App\Http\Controllers\Api\PayrollController::class, 'monthlySummary'])->name('dev.payroll.monthly-summary');
-    });
-}
-
-/*
-|--------------------------------------------------------------------------
-| User Profile & Password Management
-|--------------------------------------------------------------------------
-| 모든 사용자가 자신의 비밀번호를 변경할 수 있습니다.
-*/
-
+// User Profile & Password Management
 Route::middleware(['web', 'auth'])->group(function () {
     Route::post('/users/change-password', [AuthController::class, 'changePassword'])
         ->name('api.users.change-password');
 });
 
-/*
-|--------------------------------------------------------------------------
-| User Management API (본사 전용)
-|--------------------------------------------------------------------------
-| 본사만 지사/매장 사용자 계정을 생성, 수정, 삭제할 수 있습니다.
-*/
-
+// User Management API (본사 전용)
 Route::middleware(['web', 'auth', 'rbac'])->prefix('users')->group(function () {
-    // 사용자 목록 조회
     Route::get('/', [UserManagementController::class, 'index'])->name('api.users.index');
-
-    // 사용자 생성
     Route::post('/', [UserManagementController::class, 'store'])->name('api.users.store');
-
-    // 사용자 정보 수정
     Route::put('/{user}', [UserManagementController::class, 'update'])->name('api.users.update');
-
-    // 사용자 삭제
     Route::delete('/{user}', [UserManagementController::class, 'destroy'])->name('api.users.destroy');
 
     // 지사 목록 (통계 페이지용 - 단순화)
     Route::get('/branches', function () {
         try {
-            // DatabaseHelper를 사용한 실시간 지사 데이터 조회
             $branches = DatabaseHelper::executeWithRetry(function () {
                 return \App\Models\Branch::select('id', 'name', 'code', 'status')->get();
             });
 
-            // 각 지사의 매장 수를 안전하게 조회
             $branchData = [];
             foreach ($branches as $branch) {
                 $storeCount = DatabaseHelper::executeWithRetry(function () use ($branch) {
@@ -695,7 +252,7 @@ Route::middleware(['web', 'auth', 'rbac'])->prefix('users')->group(function () {
                     'id' => $branch->id,
                     'name' => $branch->name,
                     'code' => $branch->code,
-                    'users_count' => 0, // 사용자 관계는 현재 사용하지 않음
+                    'users_count' => 0,
                     'stores_count' => $storeCount,
                 ];
             }
@@ -707,7 +264,7 @@ Route::middleware(['web', 'auth', 'rbac'])->prefix('users')->group(function () {
     })->name('api.users.branches');
 });
 
-// Profile API (긴급 실배포용 - 인증 제거 버전)
+// Profile API
 Route::get('/api/profile', function () {
     $user = \Illuminate\Support\Facades\Auth::user();
 
@@ -738,25 +295,13 @@ Route::get('/api/profile', function () {
     ]);
 })->name('api.profile');
 
-/*
-|--------------------------------------------------------------------------
-| 활동 로그 API (Activity Logging)
-|--------------------------------------------------------------------------
-| 실시간 사용자 활동 기록 및 조회
-*/
-
+// 활동 로그 API
 Route::middleware(['web', 'auth'])->prefix('activities')->group(function () {
     Route::get('/recent', [App\Http\Controllers\ActivityController::class, 'recent'])->name('api.activities.recent');
     Route::post('/log', [App\Http\Controllers\ActivityController::class, 'log'])->name('api.activities.log');
 });
 
-/*
-|--------------------------------------------------------------------------
-| 대리점 관리 API (Dealer Profile Management)
-|--------------------------------------------------------------------------
-| 본사 및 지사 권한으로 대리점 프로필 관리
-*/
-
+// 대리점 관리 API (Dealer Profile Management)
 Route::middleware(['web', 'auth'])->prefix('dealers')->group(function () {
     Route::get('/', [App\Http\Controllers\Api\DealerProfileController::class, 'index'])->name('api.dealers.index');
     Route::post('/', [App\Http\Controllers\Api\DealerProfileController::class, 'store'])->name('api.dealers.store');
@@ -764,26 +309,14 @@ Route::middleware(['web', 'auth'])->prefix('dealers')->group(function () {
     Route::delete('/{id}', [App\Http\Controllers\Api\DealerProfileController::class, 'destroy'])->name('api.dealers.destroy');
 });
 
-/*
-|--------------------------------------------------------------------------
-| 판매 데이터 내보내기/가져오기 API
-|--------------------------------------------------------------------------
-| CSV/엑셀 파일 업로드/다운로드 기능
-*/
-
+// 판매 데이터 내보내기/가져오기 API
 Route::middleware(['web', 'auth'])->prefix('sales-export')->group(function () {
     Route::get('/csv', [App\Http\Controllers\Api\SalesExportController::class, 'exportCsv'])->name('api.sales.export.csv');
     Route::get('/template', [App\Http\Controllers\Api\SalesExportController::class, 'downloadTemplate'])->name('api.sales.export.template');
     Route::post('/import', [App\Http\Controllers\Api\SalesExportController::class, 'importCsv'])->name('api.sales.import.csv');
 });
 
-/*
-|--------------------------------------------------------------------------
-| 통신사 관리 API (Carrier Management)
-|--------------------------------------------------------------------------
-| 본사 권한으로 통신사 추가/수정/삭제 관리
-*/
-
+// 통신사 관리 API (Carrier Management)
 Route::middleware(['web', 'auth'])->prefix('carriers')->group(function () {
     Route::get('/', [App\Http\Controllers\Api\CarrierController::class, 'index'])->name('api.carriers.index');
     Route::post('/', [App\Http\Controllers\Api\CarrierController::class, 'store'])->name('api.carriers.store');
@@ -791,13 +324,7 @@ Route::middleware(['web', 'auth'])->prefix('carriers')->group(function () {
     Route::delete('/{id}', [App\Http\Controllers\Api\CarrierController::class, 'destroy'])->name('api.carriers.destroy');
 });
 
-/*
-|--------------------------------------------------------------------------
-| 월마감정산 API (가장 핵심적인 기능)
-|--------------------------------------------------------------------------
-| 엑셀 "월마감정산" 시트의 모든 로직을 API로 구현
-*/
-
+// 월마감정산 API
 Route::prefix('monthly-settlements')->name('api.monthly-settlements.')->group(function () {
     Route::get('/', [App\Http\Controllers\Api\MonthlySettlementController::class, 'index']);
     Route::post('/generate', [App\Http\Controllers\Api\MonthlySettlementController::class, 'generate']);
@@ -814,41 +341,25 @@ Route::prefix('monthly-settlements')->name('api.monthly-settlements.')->group(fu
 Route::middleware(['web', 'auth'])->get('/reports/store-statistics', [App\Http\Controllers\Api\ReportController::class, 'exportStoreStatistics'])
     ->name('api.reports.store-statistics');
 
-/*
-|--------------------------------------------------------------------------
-| 매장 관리 API (Store Management)
-|--------------------------------------------------------------------------
-| 매장 목록 조회 (페이지네이션 + 검색) 및 매장 정보 수정 (점주명, 지사 배정)
-*/
-
+// 매장 관리 API (Store Management)
 Route::middleware(['web', 'auth'])->group(function () {
-    // 매장 목록 (페이지네이션 + 검색)
     Route::get('/stores', [App\Http\Controllers\Api\StoreManagementController::class, 'index'])
         ->name('api.stores-management.index');
 
-    // 매장 정보 수정 (점주명, 지사 배정)
     Route::patch('/stores/{id}', [App\Http\Controllers\Api\StoreManagementController::class, 'update'])
         ->name('api.stores-management.update');
 
-    // 매장 분류 및 사업자 정보 수정 (지사/본사만)
     Route::put('/stores/{id}/classification', [App\Http\Controllers\Api\StoreManagementController::class, 'updateClassification'])
         ->name('api.stores-management.update-classification');
 
     Route::put('/stores/{id}/business-info', [App\Http\Controllers\Api\StoreManagementController::class, 'updateBusinessInfo'])
         ->name('api.stores-management.update-business-info');
 
-    // 지사 목록 (드롭다운용)
     Route::get('/branches/list', [App\Http\Controllers\Api\BranchController::class, 'list'])
         ->name('api.branches.list');
 });
 
-/*
-|--------------------------------------------------------------------------
-| 고객 관리 API (Customer Management - CRM)
-|--------------------------------------------------------------------------
-| 가망고객 수동 등록 + 개통 시 전화번호로 자동 연결
-*/
-
+// 고객 관리 API (Customer Management - CRM)
 Route::middleware(['web', 'auth', 'rbac'])->prefix('customers')->group(function () {
     Route::get('/', [App\Http\Controllers\Api\CustomerController::class, 'index'])->name('api.customers.index');
     Route::post('/', [App\Http\Controllers\Api\CustomerController::class, 'store'])->name('api.customers.store');
@@ -858,13 +369,7 @@ Route::middleware(['web', 'auth', 'rbac'])->prefix('customers')->group(function 
     Route::delete('/{id}', [App\Http\Controllers\Api\CustomerController::class, 'destroy'])->name('api.customers.destroy');
 });
 
-/*
-|--------------------------------------------------------------------------
-| 매장 통계 API (Store Statistics)
-|--------------------------------------------------------------------------
-| 일별/월별/년도별 통계, 통신사 분포, 개통유형 분포, 목표 달성률
-*/
-
+// 매장 통계 API (Store Statistics)
 Route::middleware(['web', 'auth'])->group(function () {
     Route::get('/stores/{id}/statistics', [App\Http\Controllers\Api\StoreStatisticsController::class, 'index'])
         ->name('api.stores.statistics');
@@ -872,14 +377,7 @@ Route::middleware(['web', 'auth'])->group(function () {
         ->name('api.stores.sales.export');
 });
 
-/*
-|--------------------------------------------------------------------------
-| Q&A 게시판 API (Q&A Board)
-|--------------------------------------------------------------------------
-| 매장이 질문 작성 (공개/비밀글), 지사/본사가 답변
-| 비밀글은 작성자+지사+본사만 조회 가능
-*/
-
+// Q&A 게시판 API
 Route::middleware(['web', 'auth'])->prefix('qna')->group(function () {
     Route::get('/posts', [App\Http\Controllers\Api\QnaPostController::class, 'index'])
         ->name('api.qna.posts.index');
@@ -897,14 +395,7 @@ Route::middleware(['web', 'auth'])->prefix('qna')->group(function () {
         ->name('api.qna.posts.close');
 });
 
-/*
-|--------------------------------------------------------------------------
-| 공지사항 API (Notice Board)
-|--------------------------------------------------------------------------
-| 본사/지사가 작성, 대상 필터링 (전체/지사/매장/특정)
-| 고정/우선순위/게시기간 관리
-*/
-
+// 공지사항 API (Notice Board)
 Route::middleware(['web', 'auth'])->prefix('notices')->group(function () {
     Route::get('/', [App\Http\Controllers\Api\NoticePostController::class, 'index'])
         ->name('api.notices.index');
@@ -920,13 +411,7 @@ Route::middleware(['web', 'auth'])->prefix('notices')->group(function () {
         ->name('api.notices.toggle-pin');
 });
 
-/*
-|--------------------------------------------------------------------------
-| 지출 내역 API (Expense Management)
-|--------------------------------------------------------------------------
-| 간단한 표 형태 (날짜/내용/금액), 매장 전용
-*/
-
+// 지출 내역 API (Expense Management)
 Route::middleware(['web', 'auth', 'rbac'])->prefix('expenses')->group(function () {
     Route::get('/', [App\Http\Controllers\Api\ExpenseController::class, 'index'])->name('api.expenses.index');
     Route::post('/', [App\Http\Controllers\Api\ExpenseController::class, 'store'])->name('api.expenses.store');
@@ -936,48 +421,16 @@ Route::middleware(['web', 'auth', 'rbac'])->prefix('expenses')->group(function (
     Route::delete('/{id}', [App\Http\Controllers\Api\ExpenseController::class, 'destroy'])->name('api.expenses.destroy');
 });
 
-/*
-|--------------------------------------------------------------------------
-| Q&A 게시판 API (Q&A Board)
-|--------------------------------------------------------------------------
-| 비밀글 기능, 답변 상태 관리
-*/
-
-Route::middleware(['web', 'auth'])->prefix('qna')->group(function () {
-    Route::get('/', [App\Http\Controllers\Api\QnaPostController::class, 'index'])->name('api.qna.index');
-    Route::post('/', [App\Http\Controllers\Api\QnaPostController::class, 'store'])->name('api.qna.store');
-    Route::get('/{id}', [App\Http\Controllers\Api\QnaPostController::class, 'show'])->name('api.qna.show');
-    Route::put('/{id}', [App\Http\Controllers\Api\QnaPostController::class, 'update'])->name('api.qna.update');
-    Route::delete('/{id}', [App\Http\Controllers\Api\QnaPostController::class, 'destroy'])->name('api.qna.destroy');
-    Route::post('/{id}/reply', [App\Http\Controllers\Api\QnaPostController::class, 'addReply'])->name('api.qna.reply');
-    Route::post('/{id}/close', [App\Http\Controllers\Api\QnaPostController::class, 'close'])->name('api.qna.close');
-});
-
-/*
-|--------------------------------------------------------------------------
-| 이미지 업로드 API (Image Upload)
-|--------------------------------------------------------------------------
-| Q&A/공지사항 게시글 이미지 업로드 및 삭제
-*/
-
+// 이미지 업로드 API
 Route::middleware(['web', 'auth'])->prefix('images')->group(function () {
     Route::post('/upload', [App\Http\Controllers\Api\ImageController::class, 'upload'])->name('api.images.upload');
     Route::delete('/{id}', [App\Http\Controllers\Api\ImageController::class, 'destroy'])->name('api.images.destroy');
 });
 
-/*
-|--------------------------------------------------------------------------
-| 매장 월 목표 API (Store Monthly Goal)
-|--------------------------------------------------------------------------
-| 매장 사용자만 자기 목표를 설정/조회 가능
-| 본사/지사는 접근 불가 (프라이버시 보호, 동기부여 목적)
-*/
-
+// 매장 월 목표 API
 Route::middleware(['web', 'auth'])->group(function () {
     Route::get('/my-goal', [App\Http\Controllers\Api\GoalController::class, 'show'])
         ->name('api.my-goal.show');
     Route::post('/my-goal', [App\Http\Controllers\Api\GoalController::class, 'store'])
         ->name('api.my-goal.store');
 });
-
-

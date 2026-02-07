@@ -1,19 +1,4 @@
-/**
- * 중앙화된 API 클라이언트
- *
- * 모든 API 요청을 통합 관리하여:
- * - 일관된 에러 처리
- * - 자동 CSRF 토큰 포함
- * - 401 에러 시 자동 로그인 페이지 리다이렉트
- * - 요청 취소 기능
- * - 타임아웃 설정
- *
- * 사용 예시:
- * import api from '@/services/api';
- * const data = await api.get('/dashboard/overview');
- * const result = await api.post('/sales/bulk-save', { sales: [...] });
- */
-
+// Centralized API client with CSRF, timeout, and error handling
 class ApiClient {
     constructor() {
         this.baseURL = '/api';
@@ -21,18 +6,12 @@ class ApiClient {
         this.pendingRequests = new Map();
     }
 
-    /**
-     * CSRF 토큰 가져오기
-     */
     getCsrfToken() {
         return window.csrfToken ||
                document.querySelector('meta[name="csrf-token"]')?.content ||
                '';
     }
 
-    /**
-     * 기본 헤더 생성
-     */
     getDefaultHeaders() {
         return {
             'Content-Type': 'application/json',
@@ -42,9 +21,6 @@ class ApiClient {
         };
     }
 
-    /**
-     * 에러 처리
-     */
     async handleError(response, url) {
         // 401 Unauthorized - 세션 만료
         if (response.status === 401) {
@@ -68,13 +44,11 @@ class ApiClient {
             throw new ApiError(message, 429, { retryAfter });
         }
 
-        // 500 Internal Server Error
         if (response.status >= 500) {
             console.error(`Server error on ${url}:`, response.status);
             throw new ApiError('서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.', response.status);
         }
 
-        // 기타 에러
         let errorMessage = `요청 실패: ${response.status}`;
         try {
             const errorData = await response.json();
@@ -86,9 +60,6 @@ class ApiClient {
         throw new ApiError(errorMessage, response.status);
     }
 
-    /**
-     * 타임아웃 처리
-     */
     createTimeoutSignal(timeoutMs = this.timeout) {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
@@ -99,45 +70,34 @@ class ApiClient {
         };
     }
 
-    /**
-     * 기본 요청 메서드
-     */
     async request(url, options = {}) {
         const fullUrl = url.startsWith('http') ? url : `${this.baseURL}${url}`;
         const requestId = `${options.method || 'GET'}_${fullUrl}_${Date.now()}`;
-
-        // 타임아웃 설정
         const { signal, cleanup } = this.createTimeoutSignal(options.timeout);
 
         try {
-            // 기본 헤더와 사용자 헤더 병합
             const headers = {
                 ...this.getDefaultHeaders(),
                 ...options.headers
             };
 
-            // fetch 옵션 구성
             const fetchOptions = {
                 ...options,
                 headers,
                 signal,
-                credentials: 'same-origin' // 쿠키 포함
+                credentials: 'same-origin'
             };
 
-            // 요청 시작
             this.pendingRequests.set(requestId, { controller: signal, url: fullUrl });
 
             const response = await fetch(fullUrl, fetchOptions);
 
-            // 요청 완료 - pending 목록에서 제거
             this.pendingRequests.delete(requestId);
 
-            // 에러 처리
             if (!response.ok) {
                 await this.handleError(response, fullUrl);
             }
 
-            // 성공 응답 처리
             const contentType = response.headers.get('content-type');
             if (contentType && contentType.includes('application/json')) {
                 return await response.json();
@@ -148,22 +108,18 @@ class ApiClient {
         } catch (error) {
             this.pendingRequests.delete(requestId);
 
-            // AbortError (타임아웃 또는 수동 취소)
             if (error.name === 'AbortError') {
                 throw new ApiError('요청 시간이 초과되었습니다.', 408);
             }
 
-            // NetworkError
             if (error.message === 'Failed to fetch' || error.message.includes('network')) {
                 throw new ApiError('네트워크 연결을 확인해주세요.', 0);
             }
 
-            // 이미 ApiError인 경우 그대로 throw
             if (error instanceof ApiError) {
                 throw error;
             }
 
-            // 기타 예상치 못한 에러
             console.error('Unexpected API error:', error);
             throw new ApiError('예상치 못한 오류가 발생했습니다.', 0);
 
@@ -172,11 +128,7 @@ class ApiClient {
         }
     }
 
-    /**
-     * GET 요청
-     */
     async get(url, params = {}, options = {}) {
-        // URL 파라미터 추가
         const queryString = new URLSearchParams(params).toString();
         const fullUrl = queryString ? `${url}?${queryString}` : url;
 
@@ -186,9 +138,6 @@ class ApiClient {
         });
     }
 
-    /**
-     * POST 요청
-     */
     async post(url, data = {}, options = {}) {
         return this.request(url, {
             ...options,
@@ -197,9 +146,6 @@ class ApiClient {
         });
     }
 
-    /**
-     * PUT 요청
-     */
     async put(url, data = {}, options = {}) {
         return this.request(url, {
             ...options,
@@ -208,9 +154,6 @@ class ApiClient {
         });
     }
 
-    /**
-     * DELETE 요청
-     */
     async delete(url, options = {}) {
         return this.request(url, {
             ...options,
@@ -218,9 +161,6 @@ class ApiClient {
         });
     }
 
-    /**
-     * PATCH 요청
-     */
     async patch(url, data = {}, options = {}) {
         return this.request(url, {
             ...options,
@@ -229,9 +169,6 @@ class ApiClient {
         });
     }
 
-    /**
-     * 모든 진행 중인 요청 취소
-     */
     cancelAllRequests() {
         this.pendingRequests.forEach((request, id) => {
             console.log(`Cancelling request: ${id}`);
@@ -240,9 +177,6 @@ class ApiClient {
         this.pendingRequests.clear();
     }
 
-    /**
-     * 특정 URL의 요청 취소
-     */
     cancelRequest(url) {
         const entries = Array.from(this.pendingRequests.entries());
         const match = entries.find(([id, req]) => req.url.includes(url));
@@ -256,9 +190,6 @@ class ApiClient {
     }
 }
 
-/**
- * 커스텀 API 에러 클래스
- */
 class ApiError extends Error {
     constructor(message, status, data = {}) {
         super(message);
@@ -267,9 +198,6 @@ class ApiError extends Error {
         this.data = data;
     }
 
-    /**
-     * 사용자 친화적 에러 메시지
-     */
     getUserMessage() {
         switch (this.status) {
             case 0:
@@ -297,19 +225,13 @@ class ApiError extends Error {
         }
     }
 
-    /**
-     * 재시도 가능 여부
-     */
     isRetryable() {
         return this.status === 408 || this.status === 429 || this.status >= 500;
     }
 }
 
-// 싱글톤 인스턴스 생성
 const api = new ApiClient();
 
-// 기본 export
 export default api;
 
-// Named exports
 export { ApiClient, ApiError };

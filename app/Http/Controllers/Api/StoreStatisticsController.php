@@ -11,13 +11,11 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Maatwebsite\Excel\Facades\Excel;
 
 class StoreStatisticsController extends Controller
 {
     /**
-     * Get store statistics for a specific period
      * GET /api/stores/{id}/statistics?period=daily&date=2025-11-20
      * GET /api/stores/{id}/statistics?period=monthly&year=2025&month=11
      * GET /api/stores/{id}/statistics?period=yearly&year=2025
@@ -28,19 +26,12 @@ class StoreStatisticsController extends Controller
             $user = Auth::user();
             $store = Store::with('branch')->findOrFail($id);
 
-            // RBAC: Check permissions
             if ($user->isStore() && $store->id !== $user->store_id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized',
-                ], 403);
+                return $this->jsonError('Unauthorized', 403);
             }
 
             if ($user->isBranch() && $store->branch_id !== $user->branch_id) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized',
-                ], 403);
+                return $this->jsonError('Unauthorized', 403);
             }
 
             $period = $request->input('period', 'monthly');
@@ -60,59 +51,22 @@ class StoreStatisticsController extends Controller
                     return $this->getYearlyStatistics($store, $year);
 
                 default:
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Invalid period. Use: daily, monthly, or yearly',
-                    ], 400);
+                    return $this->jsonError('Invalid period. Use: daily, monthly, or yearly', 400);
             }
         } catch (\Exception $e) {
-            Log::error('Failed to get store statistics', [
-                'store_id' => $id,
-                'error' => $e->getMessage(),
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to get statistics',
-                'error' => $e->getMessage(),
-            ], 500);
+            return $this->handleException($e, 'Failed to get store statistics');
         }
     }
 
-    /**
-     * Get daily statistics for a store
-     */
     protected function getDailyStatistics(Store $store, string $date): JsonResponse
     {
         $sales = Sale::where('store_id', $store->id)
             ->whereDate('sale_date', $date)
             ->get();
 
-        // Carrier distribution
-        $carrierDistribution = $sales->groupBy('carrier')
-            ->map(fn ($group) => $group->count())
-            ->toArray();
-
-        // Activation type distribution
-        $activationTypeDistribution = $sales->groupBy('activation_type')
-            ->map(fn ($group) => $group->count())
-            ->toArray();
-
-        // Model ranking TOP 5
-        $modelRanking = $sales->groupBy('model_name')
-            ->map(function ($group) {
-                return [
-                    'count' => $group->count(),
-                    'total_amount' => floatval($group->sum('settlement_amount')),
-                ];
-            })
-            ->sortByDesc('count')
-            ->take(5)
-            ->toArray();
-
-        // Total sales
         $totalSales = $sales->count();
         $totalSettlement = $sales->sum('settlement_amount');
+        $totalRebate = $sales->sum('rebate_total');
 
         // Goal achievement (daily goal)
         $goal = Goal::where('store_id', $store->id)
@@ -140,66 +94,31 @@ class StoreStatisticsController extends Controller
             ];
         }
 
-        // 개통표 목록 (전체 필드)
-        $salesList = $sales->map(function ($sale) {
-            return [
-                'id' => $sale->id,
-                'sale_date' => $sale->sale_date ? \Carbon\Carbon::parse($sale->sale_date)->format('Y-m-d') : null,
-                'created_at' => $sale->created_at?->format('Y-m-d H:i:s'),
-                'carrier' => $sale->carrier,
-                'activation_type' => $sale->activation_type,
-                'model_name' => $sale->model_name,
-                'customer_name' => $sale->customer_name,
-                'customer_birth_date' => $sale->customer_birth_date,
-                'phone_number' => $sale->phone_number,
-                'salesperson' => $sale->salesperson,
-                'dealer_name' => $sale->dealer_name,
-                'dealer_code' => $sale->dealer_code,
-                'serial_number' => $sale->serial_number,
-                'agency' => $sale->agency,
-                'visit_path' => $sale->visit_path,
-                'base_price' => floatval($sale->base_price),
-                'rebate_total' => floatval($sale->rebate_total),
-                'settlement_amount' => floatval($sale->settlement_amount),
-                'margin_after_tax' => floatval($sale->margin_after_tax),
-                'memo' => $sale->memo,
-            ];
-        })->values()->toArray();
-
-        // 총 리베총계
-        $totalRebate = $sales->sum('rebate_total');
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'period' => 'daily',
-                'date' => $date,
-                'store' => [
-                    'id' => $store->id,
-                    'name' => $store->name,
-                    'code' => $store->code,
-                    'branch_name' => $store->branch->name ?? null,
-                ],
-                'summary' => [
-                    'total_sales' => $totalSales,
-                    'total_rebate' => floatval($totalRebate),
-                    'total_settlement_amount' => floatval($totalSettlement),
-                    'average_settlement_per_sale' => $totalSales > 0
-                        ? round($totalSettlement / $totalSales, 2)
-                        : 0,
-                ],
-                'carrier_distribution' => $carrierDistribution,
-                'activation_type_distribution' => $activationTypeDistribution,
-                'model_ranking' => $modelRanking,
-                'goal_achievement' => $goalAchievement,
-                'sales_list' => $salesList,
+        return $this->jsonSuccess([
+            'period' => 'daily',
+            'date' => $date,
+            'store' => [
+                'id' => $store->id,
+                'name' => $store->name,
+                'code' => $store->code,
+                'branch_name' => $store->branch->name ?? null,
             ],
+            'summary' => [
+                'total_sales' => $totalSales,
+                'total_rebate' => floatval($totalRebate),
+                'total_settlement_amount' => floatval($totalSettlement),
+                'average_settlement_per_sale' => $totalSales > 0
+                    ? round($totalSettlement / $totalSales, 2)
+                    : 0,
+            ],
+            'carrier_distribution' => $this->getCarrierDistribution($sales),
+            'activation_type_distribution' => $this->getActivationTypeDistribution($sales),
+            'model_ranking' => $this->getModelRanking($sales),
+            'goal_achievement' => $goalAchievement,
+            'sales_list' => $this->mapSalesForResponse($sales),
         ]);
     }
 
-    /**
-     * Get monthly statistics for a store
-     */
     protected function getMonthlyStatistics(Store $store, int $year, int $month): JsonResponse
     {
         $startDate = sprintf('%04d-%02d-01', $year, $month);
@@ -209,16 +128,6 @@ class StoreStatisticsController extends Controller
             ->whereDate('sale_date', '>=', $startDate)
             ->whereDate('sale_date', '<=', $endDate)
             ->get();
-
-        // Carrier distribution
-        $carrierDistribution = $sales->groupBy('carrier')
-            ->map(fn ($group) => $group->count())
-            ->toArray();
-
-        // Activation type distribution
-        $activationTypeDistribution = $sales->groupBy('activation_type')
-            ->map(fn ($group) => $group->count())
-            ->toArray();
 
         // Daily breakdown
         $dailyBreakdown = $sales->groupBy(function ($sale) {
@@ -232,21 +141,9 @@ class StoreStatisticsController extends Controller
         })
         ->toArray();
 
-        // Model ranking TOP 5
-        $modelRanking = $sales->groupBy('model_name')
-            ->map(function ($group) {
-                return [
-                    'count' => $group->count(),
-                    'total_amount' => floatval($group->sum('settlement_amount')),
-                ];
-            })
-            ->sortByDesc('count')
-            ->take(5)
-            ->toArray();
-
-        // Total sales
         $totalSales = $sales->count();
         $totalSettlement = $sales->sum('settlement_amount');
+        $totalRebate = $sales->sum('rebate_total');
 
         // Goal achievement
         $goal = Goal::where('store_id', $store->id)
@@ -271,68 +168,33 @@ class StoreStatisticsController extends Controller
             ];
         }
 
-        // 개통표 목록 (전체 필드)
-        $salesList = $sales->map(function ($sale) {
-            return [
-                'id' => $sale->id,
-                'sale_date' => $sale->sale_date ? \Carbon\Carbon::parse($sale->sale_date)->format('Y-m-d') : null,
-                'created_at' => $sale->created_at?->format('Y-m-d H:i:s'),
-                'carrier' => $sale->carrier,
-                'activation_type' => $sale->activation_type,
-                'model_name' => $sale->model_name,
-                'customer_name' => $sale->customer_name,
-                'customer_birth_date' => $sale->customer_birth_date,
-                'phone_number' => $sale->phone_number,
-                'salesperson' => $sale->salesperson,
-                'dealer_name' => $sale->dealer_name,
-                'dealer_code' => $sale->dealer_code,
-                'serial_number' => $sale->serial_number,
-                'agency' => $sale->agency,
-                'visit_path' => $sale->visit_path,
-                'base_price' => floatval($sale->base_price),
-                'rebate_total' => floatval($sale->rebate_total),
-                'settlement_amount' => floatval($sale->settlement_amount),
-                'margin_after_tax' => floatval($sale->margin_after_tax),
-                'memo' => $sale->memo,
-            ];
-        })->values()->toArray();
-
-        // 총 리베총계
-        $totalRebate = $sales->sum('rebate_total');
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'period' => 'monthly',
-                'year' => $year,
-                'month' => $month,
-                'store' => [
-                    'id' => $store->id,
-                    'name' => $store->name,
-                    'code' => $store->code,
-                    'branch_name' => $store->branch->name ?? null,
-                ],
-                'summary' => [
-                    'total_sales' => $totalSales,
-                    'total_rebate' => floatval($totalRebate),
-                    'total_settlement_amount' => floatval($totalSettlement),
-                    'average_settlement_per_sale' => $totalSales > 0
-                        ? round($totalSettlement / $totalSales, 2)
-                        : 0,
-                ],
-                'carrier_distribution' => $carrierDistribution,
-                'activation_type_distribution' => $activationTypeDistribution,
-                'daily_breakdown' => $dailyBreakdown,
-                'model_ranking' => $modelRanking,
-                'goal_achievement' => $goalAchievement,
-                'sales_list' => $salesList,
+        return $this->jsonSuccess([
+            'period' => 'monthly',
+            'year' => $year,
+            'month' => $month,
+            'store' => [
+                'id' => $store->id,
+                'name' => $store->name,
+                'code' => $store->code,
+                'branch_name' => $store->branch->name ?? null,
             ],
+            'summary' => [
+                'total_sales' => $totalSales,
+                'total_rebate' => floatval($totalRebate),
+                'total_settlement_amount' => floatval($totalSettlement),
+                'average_settlement_per_sale' => $totalSales > 0
+                    ? round($totalSettlement / $totalSales, 2)
+                    : 0,
+            ],
+            'carrier_distribution' => $this->getCarrierDistribution($sales),
+            'activation_type_distribution' => $this->getActivationTypeDistribution($sales),
+            'daily_breakdown' => $dailyBreakdown,
+            'model_ranking' => $this->getModelRanking($sales),
+            'goal_achievement' => $goalAchievement,
+            'sales_list' => $this->mapSalesForResponse($sales),
         ]);
     }
 
-    /**
-     * Get yearly statistics for a store
-     */
     protected function getYearlyStatistics(Store $store, int $year): JsonResponse
     {
         $startDate = sprintf('%04d-01-01', $year);
@@ -342,16 +204,6 @@ class StoreStatisticsController extends Controller
             ->whereDate('sale_date', '>=', $startDate)
             ->whereDate('sale_date', '<=', $endDate)
             ->get();
-
-        // Carrier distribution
-        $carrierDistribution = $sales->groupBy('carrier')
-            ->map(fn ($group) => $group->count())
-            ->toArray();
-
-        // Activation type distribution
-        $activationTypeDistribution = $sales->groupBy('activation_type')
-            ->map(fn ($group) => $group->count())
-            ->toArray();
 
         // Monthly breakdown
         $monthlyBreakdown = $sales->groupBy(function ($sale) {
@@ -365,21 +217,9 @@ class StoreStatisticsController extends Controller
         })
         ->toArray();
 
-        // Model ranking TOP 5
-        $modelRanking = $sales->groupBy('model_name')
-            ->map(function ($group) {
-                return [
-                    'count' => $group->count(),
-                    'total_amount' => floatval($group->sum('settlement_amount')),
-                ];
-            })
-            ->sortByDesc('count')
-            ->take(5)
-            ->toArray();
-
-        // Total sales
         $totalSales = $sales->count();
         $totalSettlement = $sales->sum('settlement_amount');
+        $totalRebate = $sales->sum('rebate_total');
 
         // Goal achievement (sum of all monthly goals)
         $goals = Goal::where('store_id', $store->id)
@@ -408,66 +248,33 @@ class StoreStatisticsController extends Controller
             ];
         }
 
-        // 개통표 목록 (전체 필드)
-        $salesList = $sales->map(function ($sale) {
-            return [
-                'id' => $sale->id,
-                'sale_date' => $sale->sale_date ? \Carbon\Carbon::parse($sale->sale_date)->format('Y-m-d') : null,
-                'created_at' => $sale->created_at?->format('Y-m-d H:i:s'),
-                'carrier' => $sale->carrier,
-                'activation_type' => $sale->activation_type,
-                'model_name' => $sale->model_name,
-                'customer_name' => $sale->customer_name,
-                'customer_birth_date' => $sale->customer_birth_date,
-                'phone_number' => $sale->phone_number,
-                'salesperson' => $sale->salesperson,
-                'dealer_name' => $sale->dealer_name,
-                'dealer_code' => $sale->dealer_code,
-                'serial_number' => $sale->serial_number,
-                'agency' => $sale->agency,
-                'visit_path' => $sale->visit_path,
-                'base_price' => floatval($sale->base_price),
-                'rebate_total' => floatval($sale->rebate_total),
-                'settlement_amount' => floatval($sale->settlement_amount),
-                'margin_after_tax' => floatval($sale->margin_after_tax),
-                'memo' => $sale->memo,
-            ];
-        })->values()->toArray();
-
-        // 총 리베총계
-        $totalRebate = $sales->sum('rebate_total');
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'period' => 'yearly',
-                'year' => $year,
-                'store' => [
-                    'id' => $store->id,
-                    'name' => $store->name,
-                    'code' => $store->code,
-                    'branch_name' => $store->branch->name ?? null,
-                ],
-                'summary' => [
-                    'total_sales' => $totalSales,
-                    'total_rebate' => floatval($totalRebate),
-                    'total_settlement_amount' => floatval($totalSettlement),
-                    'average_settlement_per_sale' => $totalSales > 0
-                        ? round($totalSettlement / $totalSales, 2)
-                        : 0,
-                ],
-                'carrier_distribution' => $carrierDistribution,
-                'activation_type_distribution' => $activationTypeDistribution,
-                'monthly_breakdown' => $monthlyBreakdown,
-                'model_ranking' => $modelRanking,
-                'goal_achievement' => $goalAchievement,
-                'sales_list' => $salesList,
+        return $this->jsonSuccess([
+            'period' => 'yearly',
+            'year' => $year,
+            'store' => [
+                'id' => $store->id,
+                'name' => $store->name,
+                'code' => $store->code,
+                'branch_name' => $store->branch->name ?? null,
             ],
+            'summary' => [
+                'total_sales' => $totalSales,
+                'total_rebate' => floatval($totalRebate),
+                'total_settlement_amount' => floatval($totalSettlement),
+                'average_settlement_per_sale' => $totalSales > 0
+                    ? round($totalSettlement / $totalSales, 2)
+                    : 0,
+            ],
+            'carrier_distribution' => $this->getCarrierDistribution($sales),
+            'activation_type_distribution' => $this->getActivationTypeDistribution($sales),
+            'monthly_breakdown' => $monthlyBreakdown,
+            'model_ranking' => $this->getModelRanking($sales),
+            'goal_achievement' => $goalAchievement,
+            'sales_list' => $this->mapSalesForResponse($sales),
         ]);
     }
 
     /**
-     * Export sales data as Excel
      * GET /api/stores/{id}/sales/export?period=monthly&year=2025&month=12
      */
     public function exportSales(Request $request, $id)
@@ -476,13 +283,12 @@ class StoreStatisticsController extends Controller
             $user = Auth::user();
             $store = Store::with('branch')->findOrFail($id);
 
-            // RBAC: Check permissions
             if ($user->isStore() && $store->id !== $user->store_id) {
-                return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+                return $this->jsonError('Unauthorized', 403);
             }
 
             if ($user->isBranch() && $store->branch_id !== $user->branch_id) {
-                return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+                return $this->jsonError('Unauthorized', 403);
             }
 
             $period = $request->input('period', 'monthly');
@@ -490,7 +296,6 @@ class StoreStatisticsController extends Controller
             $month = $request->input('month', now()->month);
             $date = $request->input('date', now()->format('Y-m-d'));
 
-            // Build query based on period
             $query = Sale::where('store_id', $store->id);
 
             switch ($period) {
@@ -517,7 +322,7 @@ class StoreStatisticsController extends Controller
                           ->orderBy('created_at', 'desc')
                           ->get();
 
-            // Transform to array for export
+            // Transform to array for export (slightly different from statistics mapping: no 'id', no floatval casts)
             $salesData = $sales->map(function ($sale) {
                 return [
                     'sale_date' => $sale->sale_date ? \Carbon\Carbon::parse($sale->sale_date)->format('Y-m-d') : null,
@@ -550,16 +355,63 @@ class StoreStatisticsController extends Controller
             );
 
         } catch (\Exception $e) {
-            Log::error('Failed to export sales', [
-                'store_id' => $id,
-                'error' => $e->getMessage(),
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Export failed',
-                'error' => $e->getMessage(),
-            ], 500);
+            return $this->handleException($e, 'Failed to export sales');
         }
+    }
+
+    private function mapSalesForResponse($sales): array
+    {
+        return $sales->map(function ($sale) {
+            return [
+                'id' => $sale->id,
+                'sale_date' => $sale->sale_date ? \Carbon\Carbon::parse($sale->sale_date)->format('Y-m-d') : null,
+                'created_at' => $sale->created_at?->format('Y-m-d H:i:s'),
+                'carrier' => $sale->carrier,
+                'activation_type' => $sale->activation_type,
+                'model_name' => $sale->model_name,
+                'customer_name' => $sale->customer_name,
+                'customer_birth_date' => $sale->customer_birth_date,
+                'phone_number' => $sale->phone_number,
+                'salesperson' => $sale->salesperson,
+                'dealer_name' => $sale->dealer_name,
+                'dealer_code' => $sale->dealer_code,
+                'serial_number' => $sale->serial_number,
+                'agency' => $sale->agency,
+                'visit_path' => $sale->visit_path,
+                'base_price' => floatval($sale->base_price),
+                'rebate_total' => floatval($sale->rebate_total),
+                'settlement_amount' => floatval($sale->settlement_amount),
+                'margin_after_tax' => floatval($sale->margin_after_tax),
+                'memo' => $sale->memo,
+            ];
+        })->values()->toArray();
+    }
+
+    private function getCarrierDistribution($sales): array
+    {
+        return $sales->groupBy('carrier')
+            ->map(fn ($group) => $group->count())
+            ->toArray();
+    }
+
+    private function getActivationTypeDistribution($sales): array
+    {
+        return $sales->groupBy('activation_type')
+            ->map(fn ($group) => $group->count())
+            ->toArray();
+    }
+
+    private function getModelRanking($sales): array
+    {
+        return $sales->groupBy('model_name')
+            ->map(function ($group) {
+                return [
+                    'count' => $group->count(),
+                    'total_amount' => floatval($group->sum('settlement_amount')),
+                ];
+            })
+            ->sortByDesc('count')
+            ->take(5)
+            ->toArray();
     }
 }

@@ -20,7 +20,6 @@ export const ChangePasswordModal = ({ isOpen, onClose }) => {
         hasSymbol: false
     });
 
-    // 비밀번호 강도 검증
     const checkPasswordStrength = (password) => {
         setPasswordStrength({
             hasMinLength: password.length >= 8,
@@ -30,29 +29,24 @@ export const ChangePasswordModal = ({ isOpen, onClose }) => {
         });
     };
 
-    // 입력값 변경 핸들러
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({ ...prev, [name]: value }));
 
-        // 새 비밀번호 입력 시 강도 체크
         if (name === 'password') {
             checkPasswordStrength(value);
         }
 
-        // 에러 메시지 초기화
         if (errors[name]) {
             setErrors(prev => ({ ...prev, [name]: null }));
         }
     };
 
-    // 폼 제출 핸들러
     const handleSubmit = async (e) => {
         e.preventDefault();
         setErrors({});
         setSuccessMessage('');
 
-        // 클라이언트 측 검증
         const newErrors = {};
         if (!formData.current_password) {
             newErrors.current_password = '현재 비밀번호를 입력해주세요.';
@@ -83,7 +77,6 @@ export const ChangePasswordModal = ({ isOpen, onClose }) => {
                 // 2초 후 모달 닫기
                 setTimeout(() => {
                     onClose();
-                    // 폼 초기화
                     setFormData({
                         current_password: '',
                         password: '',
@@ -98,7 +91,6 @@ export const ChangePasswordModal = ({ isOpen, onClose }) => {
                 }, 2000);
             }
         } catch (error) {
-            // 서버 에러 처리
             if (error.status === 422 && error.data?.errors) {
                 setErrors(error.data.errors);
             } else {
@@ -109,7 +101,6 @@ export const ChangePasswordModal = ({ isOpen, onClose }) => {
         }
     };
 
-    // 모달 닫기 핸들러
     const handleClose = () => {
         if (!isLoading) {
             setFormData({

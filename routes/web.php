@@ -5,37 +5,15 @@ use App\Services\PerformanceService;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
-/*
-|--------------------------------------------------------------------------
-| Health Check Route (Must be first - no middleware)
-|--------------------------------------------------------------------------
-*/
+// Health Check
 Route::get('/health', function () {
-    // Simple health check - if Laravel is responding, it's healthy
     return response()->json([
         'status' => 'healthy',
         'timestamp' => now()->toIso8601String(),
     ], 200);
 });
 
-// Temporary debug endpoint - REMOVE AFTER DEPLOYMENT VERIFICATION
-Route::get('/debug-env', function () {
-    return response()->json([
-        'DB_CONNECTION' => env('DB_CONNECTION'),
-        'DB_HOST' => env('DB_HOST'),
-        'DB_PORT' => env('DB_PORT'),
-        'DB_DATABASE' => env('DB_DATABASE'),
-        'config_db_host' => config('database.connections.pgsql.host'),
-        'config_default' => config('database.default'),
-        'APP_ENV' => env('APP_ENV'),
-    ]);
-});
-/*
-|--------------------------------------------------------------------------
-| Authentication Routes
-|--------------------------------------------------------------------------
-*/
-// Authentication routes (accessible to guests only)
+// Authentication
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [AuthController::class, 'login'])->name('login.post');
@@ -60,305 +38,7 @@ Route::get('/', function () {
 Route::get('/features', function () {
     return view('features-showcase');
 })->name('features.showcase');
-// 연동 테스트용 (인증 없이 접근)
-Route::get('/test-integration', function () {
-    return view('github-dashboard')->with([
-        'user' => (object) [
-            'id' => 1,
-            'name' => '테스트 사용자',
-            'email' => 'test@ykp.com',
-            'role' => 'headquarters',
-        ],
-    ]);
-})->name('test.integration');
-// 배포 상태 디버그 (임시)
-// 🚨 SECURITY: Debug route with authentication
-Route::middleware(['auth'])->get('/debug/users', function () {
-    // 본사 관리자만 접근 가능
-    if (auth()->user()->role !== 'headquarters') {
-        abort(403, '본사 관리자만 접근 가능합니다.');
-    }
-    $users = \App\Models\User::whereIn('role', ['headquarters', 'branch'])
-        ->orderBy('role')
-        ->orderBy('email')
-        ->get(['email', 'name', 'role', 'created_at']);
-    return response()->json([
-        'db_connection' => [
-            'host' => config('database.connections.'.config('database.default').'.host'),
-            'database' => config('database.connections.'.config('database.default').'.database'),
-            'username' => config('database.connections.'.config('database.default').'.username'),
-            'port' => config('database.connections.'.config('database.default').'.port'),
-            'default_connection' => config('database.default'),
-        ],
-        'tables_exist' => [
-            'users' => \Schema::hasTable('users'),
-            'branches' => \Schema::hasTable('branches'),
-            'stores' => \Schema::hasTable('stores'),
-            'sales' => \Schema::hasTable('sales'),
-        ],
-        'counts' => [
-            'total_users' => \App\Models\User::count(),
-            'headquarters' => \App\Models\User::where('role', 'headquarters')->count(),
-            'branch' => \App\Models\User::where('role', 'branch')->count(),
-            'store' => \App\Models\User::where('role', 'store')->count(),
-            'branches' => \App\Models\Branch::count(),
-            'stores' => \App\Models\Store::count(),
-            'sales' => \App\Models\Sale::count(),
-        ],
-        'sample_users' => $users->take(10),
-        'env_check' => [
-            'app_env' => config('app.env'),
-            'app_debug' => config('app.debug'),
-            'db_connection_active' => \DB::connection()->getPdo() ? true : false,
-        ],
-        'deploy_log_exists' => file_exists(storage_path('logs/deploy-migration.log')),
-        'deploy_log_size' => file_exists(storage_path('logs/deploy-migration.log')) ? filesize(storage_path('logs/deploy-migration.log')) : 0,
-    ]);
-})->name('debug.users');
-// 긴급 DB 초기화 (Railway 전용)
-// 🚨 CRITICAL SECURITY: Emergency route with strict authentication
-Route::middleware(['auth'])->get('/emergency/init-db', function () {
-    // 본사 관리자만 접근 가능
-    if (auth()->user()->role !== 'headquarters') {
-        abort(403, '본사 관리자만 접근 가능합니다.');
-    }
-    // 추가 보안: IP 화이트리스트 또는 특별 토큰 체크
-    if (! in_array(request()->ip(), ['127.0.0.1', 'localhost']) && ! request()->has('emergency_token')) {
-        abort(403, '승인되지 않은 접근입니다.');
-    }
-    try {
-        // 1. 마이그레이션 실행
-        \Artisan::call('migrate', ['--force' => true]);
-        $migrate_output = \Artisan::output();
-        // 2. 시드 데이터 실행
-        \Artisan::call('db:seed', ['--force' => true]);
-        $seed_output = \Artisan::output();
-        // 3. 기본 계정들 생성 (시드가 실패했을 경우 대비)
-        $created_users = [];
-        $test_accounts = [
-            ['email' => 'admin@ykp.com', 'name' => '본사 관리자', 'role' => 'headquarters'],
-            ['email' => 'hq@ykp.com', 'name' => '본사 관리자', 'role' => 'headquarters'],
-            ['email' => 'test@ykp.com', 'name' => '테스트 사용자', 'role' => 'headquarters'],
-            ['email' => 'branch@ykp.com', 'name' => '지사 관리자', 'role' => 'branch'],
-            ['email' => 'store@ykp.com', 'name' => '매장 직원', 'role' => 'store'],
-        ];
-        foreach ($test_accounts as $account) {
-            $user = \App\Models\User::firstOrCreate(
-                ['email' => $account['email']],
-                [
-                    'name' => $account['name'],
-                    'role' => $account['role'],
-                    'password' => \Hash::make('123456'),
-                    'branch_id' => $account['role'] === 'branch' ? 1 : null,
-                    'store_id' => $account['role'] === 'store' ? 1 : null,
-                ]
-            );
-            $created_users[] = $user->email;
-        }
-        return response()->json([
-            'status' => 'success',
-            'message' => 'DB 초기화 완료',
-            'migrate_output' => $migrate_output,
-            'seed_output' => $seed_output,
-            'created_users' => $created_users,
-            'final_counts' => [
-                'users' => \App\Models\User::count(),
-                'branches' => \App\Models\Branch::count(),
-                'stores' => \App\Models\Store::count(),
-            ],
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'status' => 'error',
-            'message' => $e->getMessage(),
-            'trace' => $e->getTraceAsString(),
-        ], 500);
-    }
-})->name('emergency.init');
-// 🚨 CRITICAL SECURITY: Password reset with strict authentication
-Route::middleware(['auth'])->get('/fix/passwords', function () {
-    // 본사 관리자만 접근 가능
-    if (auth()->user()->role !== 'headquarters') {
-        abort(403, '본사 관리자만 접근 가능합니다.');
-    }
-    // 특별 토큰 체크 (추가 보안)
-    if (! request()->has('emergency_token') || request('emergency_token') !== 'YKP_EMERGENCY_2025') {
-        abort(403, '긴급 토큰이 필요합니다.');
-    }
-    try {
-        $updated_users = [];
-        $password_hash = \Hash::make('123456');
-        // 모든 사용자의 비밀번호를 123456으로 강제 설정
-        $users = \App\Models\User::all();
-        foreach ($users as $user) {
-            $user->password = $password_hash;
-            $user->save();
-            $updated_users[] = [
-                'email' => $user->email,
-                'role' => $user->role,
-                'name' => $user->name,
-            ];
-        }
-        // 만약 사용자가 없다면 직접 생성
-        if (count($updated_users) === 0) {
-            $test_accounts = [
-                ['email' => 'admin@ykp.com', 'name' => '본사 관리자', 'role' => 'headquarters'],
-                ['email' => 'hq@ykp.com', 'name' => '본사 관리자', 'role' => 'headquarters'],
-                ['email' => 'test@ykp.com', 'name' => '테스트 사용자', 'role' => 'headquarters'],
-                ['email' => 'branch@ykp.com', 'name' => '지사 관리자', 'role' => 'branch', 'branch_id' => 1],
-                ['email' => 'store@ykp.com', 'name' => '매장 직원', 'role' => 'store', 'store_id' => 1],
-            ];
-            foreach ($test_accounts as $account) {
-                $user = \App\Models\User::create([
-                    'email' => $account['email'],
-                    'name' => $account['name'],
-                    'role' => $account['role'],
-                    'password' => $password_hash,
-                    'branch_id' => $account['branch_id'] ?? null,
-                    'store_id' => $account['store_id'] ?? null,
-                    'is_active' => true,
-                ]);
-                $updated_users[] = [
-                    'email' => $user->email,
-                    'role' => $user->role,
-                    'name' => $user->name,
-                    'action' => 'created',
-                ];
-            }
-        }
-        return response()->json([
-            'status' => 'success',
-            'message' => '비밀번호 초기화 완료',
-            'updated_users' => $updated_users,
-            'total_count' => count($updated_users),
-            'password' => '123456',
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'status' => 'error',
-            'message' => $e->getMessage(),
-            'trace' => $e->getTraceAsString(),
-        ], 500);
-    }
-})->name('fix.passwords');
-// DB 정리 - 테스트용 최소 계정만 남기기
-Route::get('/cleanup/minimal', function () {
-    try {
-        $results = [];
-        // 1. 매출 데이터 모두 삭제
-        $deleted_sales = \App\Models\Sale::count();
-        \App\Models\Sale::truncate();
-        $results['deleted_sales'] = $deleted_sales;
-        // 2. 사용자 계정 정리 먼저 (Foreign Key 제약 해결)
-        $keep_emails = [
-            'admin@ykp.com',
-            'hq@ykp.com',
-            'test@ykp.com',
-            'branch@ykp.com',
-            'store@ykp.com',
-        ];
-        $deleted_users = \App\Models\User::whereNotIn('email', $keep_emails)->count();
-        \App\Models\User::whereNotIn('email', $keep_emails)->delete();
-        $results['deleted_users'] = $deleted_users;
-        // 3. 남은 사용자들의 Foreign Key 연결 해제
-        \App\Models\User::where('store_id', '>', 1)->update(['store_id' => 1]);
-        \App\Models\User::where('branch_id', '>', 1)->update(['branch_id' => 1]);
-        // 4. 매장 데이터 삭제 (테스트용 1개만 남김)
-        $deleted_stores = \App\Models\Store::where('id', '>', 1)->count();
-        \App\Models\Store::where('id', '>', 1)->delete();
-        $results['deleted_stores'] = $deleted_stores;
-        // 5. 지사 데이터 삭제 (테스트용 1개만 남김)
-        $deleted_branches = \App\Models\Branch::where('id', '>', 1)->count();
-        \App\Models\Branch::where('id', '>', 1)->delete();
-        $results['deleted_branches'] = $deleted_branches;
-        // 5. 남은 테스트용 지사/매장 정보 업데이트
-        $test_branch = \App\Models\Branch::first();
-        if ($test_branch) {
-            $test_branch->update([
-                'name' => '테스트지점',
-                'code' => 'TEST001',
-                'manager_name' => '테스트관리자',
-            ]);
-        }
-        $test_store = \App\Models\Store::first();
-        if ($test_store) {
-            $test_store->update([
-                'name' => '테스트매장',
-                'code' => 'TEST-001',
-                'branch_id' => 1,
-            ]);
-        }
-        // 6. 사용자 계정 연결 정보 업데이트
-        \App\Models\User::where('email', 'branch@ykp.com')->update(['branch_id' => 1]);
-        \App\Models\User::where('email', 'store@ykp.com')->update(['store_id' => 1, 'branch_id' => 1]);
-        // 7. 최종 현황
-        $final_counts = [
-            'users' => \App\Models\User::count(),
-            'branches' => \App\Models\Branch::count(),
-            'stores' => \App\Models\Store::count(),
-            'sales' => \App\Models\Sale::count(),
-        ];
-        $remaining_users = \App\Models\User::select('email', 'name', 'role')->get();
-        return response()->json([
-            'status' => 'success',
-            'message' => '데이터 정리 완료 - 테스트용 최소 계정만 남김',
-            'deleted' => $results,
-            'final_counts' => $final_counts,
-            'remaining_users' => $remaining_users,
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'status' => 'error',
-            'message' => $e->getMessage(),
-            'trace' => $e->getTraceAsString(),
-        ], 500);
-    }
-})->name('cleanup.minimal');
-// 캐시 클리어 및 API 테스트
-Route::get('/test/api-status', function () {
-    try {
-        // 캐시 클리어
-        \Artisan::call('config:clear');
-        \Artisan::call('route:clear');
-        \Artisan::call('cache:clear');
-        // API 테스트
-        $tests = [];
-        // 1. Dashboard overview 테스트
-        $stores = \App\Models\Store::count();
-        $sales = \App\Models\Sale::count();
-        $branches = \App\Models\Branch::count();
-        $tests['api_data'] = [
-            'stores' => $stores,
-            'sales' => $sales,
-            'branches' => $branches,
-            'total_sales' => \App\Models\Sale::sum('settlement_amount'),
-        ];
-        // 2. 라우트 확인
-        $routes = collect(\Route::getRoutes())->filter(function ($route) {
-            return str_contains($route->uri, 'api/dashboard') || str_contains($route->uri, 'api/profile');
-        })->map(function ($route) {
-            return [
-                'uri' => $route->uri,
-                'methods' => $route->methods,
-                'name' => $route->getName(),
-            ];
-        })->values();
-        $tests['available_routes'] = $routes;
-        return response()->json([
-            'status' => 'success',
-            'cache_cleared' => true,
-            'tests' => $tests,
-            'timestamp' => now(),
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'status' => 'error',
-            'message' => $e->getMessage(),
-            'trace' => $e->getTraceAsString(),
-        ], 500);
-    }
-})->name('test.api-status');
-// 긴급 Profile API (웹 라우트로 임시 추가)
+// Profile API
 Route::get('/api/profile', function () {
     $user = \Illuminate\Support\Facades\Auth::user();
     if (! $user) {
@@ -386,7 +66,7 @@ Route::get('/api/profile', function () {
         ],
     ]);
 })->name('web.api.profile');
-// 긴급 Users Branches API 추가
+// Users Branches API
 Route::get('/api/users/branches', function () {
     try {
         // PostgreSQL 호환을 위해 withCount() 대신 수동 카운팅
@@ -553,12 +233,7 @@ Route::get('/test-statistics', function () {
 Route::get('/premium-dash', function () {
     return view('premium-dashboard');
 })->name('premium.dashboard');
-/*
-|--------------------------------------------------------------------------
-| Protected Dashboard Routes
-|--------------------------------------------------------------------------
-*/
-// All dashboard routes require authentication and RBAC
+// Protected Dashboard Routes
 Route::middleware(['auth', 'rbac'])->group(function () {
     // Dashboard home (인증된 사용자용) - 사이드바 포함 버전 사용
     Route::get('/dashboard', function () {
@@ -957,11 +632,7 @@ Route::middleware(['web', 'auth'])->get('/api/stores', function (Illuminate\Http
         'total' => $stores->total(),
     ];
 
-    // 디버그 정보는 로컬에서만 표시
-    if (config('app.debug')) {
-        $response['debug_version'] = 'v4.0-with-last-entry';
-        $response['debug_search_applied'] = $request->has('search') && !empty($request->search);
-    }
+
 
     return response()->json($response);
 });
@@ -974,29 +645,6 @@ Route::middleware(['web', 'auth'])->get('/api/stores', function (Illuminate\Http
 Route::get('/api/sales/count', function () {
     // This route is still allowed as it only returns a count, not actual data
     return response()->json(['count' => \App\Models\Sale::count()]);
-});
-// 디버깅: DB 상태 확인
-// 🚨 SECURITY: DB debug route with authentication
-Route::middleware(['auth'])->get('/debug-db-state', function () {
-    // 본사 관리자만 접근 가능
-    if (auth()->user()->role !== 'headquarters') {
-        abort(403, '본사 관리자만 접근 가능합니다.');
-    }
-    try {
-        return response()->json([
-            'branches' => \App\Models\Branch::select('id', 'name')->get(),
-            'stores' => \App\Models\Store::select('id', 'name', 'branch_id')->get(),
-            'sales_count' => \App\Models\Sale::count(),
-            'user' => auth()->user() ? [
-                'id' => auth()->user()->id,
-                'role' => auth()->user()->role,
-                'store_id' => auth()->user()->store_id,
-                'branch_id' => auth()->user()->branch_id,
-            ] : null,
-        ]);
-    } catch (\Exception $e) {
-        return response()->json(['error' => $e->getMessage()], 500);
-    }
 });
 // 누락된 API 엔드포인트들 추가 (404, 405 오류 해결)
 Route::get('/api/stores/count', function () {
@@ -1221,78 +869,6 @@ Route::middleware(['web'])->get('/api/dashboard/dealer-performance', function (I
 // 대시보드 개요 API - DashboardController 사용으로 일관성 보장
 Route::get('/api/dashboard/overview', [App\Http\Controllers\Api\DashboardController::class, 'overview'])
     ->name('web.api.dashboard.overview');
-// 매출 데이터 매장별 분산 (1회성 작업)
-Route::get('/api/distribute-sales', function () {
-    try {
-        $totalSales = App\Models\Sale::count();
-        $perStore = ceil($totalSales / 3); // 3개 매장에 균등 분배
-        // 서울 1호점 (Store 1) - 기존 데이터 유지
-        $store1Count = App\Models\Sale::where('store_id', 1)->count();
-        // 서울 2호점 (Store 2)에 일부 할당
-        App\Models\Sale::where('store_id', 1)
-            ->skip($perStore)
-            ->take($perStore)
-            ->update(['store_id' => 2, 'branch_id' => 1]);
-        // 경기 1호점 (Store 3)에 일부 할당
-        App\Models\Sale::where('store_id', 1)
-            ->skip($perStore * 2)
-            ->update(['store_id' => 3, 'branch_id' => 2]);
-        $distribution = [
-            'store_1' => App\Models\Sale::where('store_id', 1)->count(),
-            'store_2' => App\Models\Sale::where('store_id', 2)->count(),
-            'store_3' => App\Models\Sale::where('store_id', 3)->count(),
-        ];
-        return response()->json([
-            'success' => true,
-            'message' => '매출 데이터가 매장별로 분산되었습니다.',
-            'distribution' => $distribution,
-            'total_redistributed' => array_sum($distribution),
-        ]);
-    } catch (Exception $e) {
-        return response()->json(['success' => false, 'error' => $e->getMessage()]);
-    }
-});
-// 간단한 대시보드 데이터 테스트
-Route::get('/api/dashboard-debug', function () {
-    try {
-        $today = now()->toDateString();
-        // PostgreSQL 호환 날짜 쿼리
-        $todayStart = now()->startOfDay();
-        $todayEnd = now()->endOfDay();
-        $todaySales = App\Models\Sale::whereBetween('sale_date', [
-            $todayStart->toDateTimeString(),
-            $todayEnd->toDateTimeString(),
-        ])->sum('settlement_amount');
-        $monthSales = DatabaseHelper::executeWithRetry(function () {
-            $startOfMonth = now()->startOfMonth();
-            $endOfMonth = now()->endOfMonth();
-            return App\Models\Sale::whereBetween('sale_date', [
-                $startOfMonth->toDateTimeString(),
-                $endOfMonth->toDateTimeString(),
-            ])->sum('settlement_amount');
-        });
-        $totalSales = App\Models\Sale::sum('settlement_amount');
-        $totalCount = App\Models\Sale::count();
-        // 최근 데이터 샘플 (store_id 포함)
-        $recentSales = App\Models\Sale::orderBy('created_at', 'desc')
-            ->take(3)
-            ->get(['sale_date', 'settlement_amount', 'carrier', 'model_name', 'store_id', 'branch_id']);
-        return response()->json([
-            'success' => true,
-            'debug_info' => [
-                'today_sales' => $todaySales,
-                'month_sales' => $monthSales,
-                'total_sales' => $totalSales,
-                'total_count' => $totalCount,
-                'today_date' => $today,
-                'current_month' => now()->format('Y-m'),
-                'recent_samples' => $recentSales,
-            ],
-        ]);
-    } catch (Exception $e) {
-        return response()->json(['success' => false, 'error' => $e->getMessage()]);
-    }
-});
 Route::middleware(['web', 'auth'])->get('/api/users', function () {
     $users = App\Models\User::with(['store', 'branch'])->get();
     return response()->json(['success' => true, 'data' => $users]);
@@ -1609,13 +1185,7 @@ if (config('app.env') !== 'production') {
             ],
         ]);
     })->name('dashboard.test.noauth');
-    // } // Production에서도 API 사용 가능하도록 주석 처리
-    /*
-    |--------------------------------------------------------------------------
-    | Production API Routes (정식 버전)
-    |--------------------------------------------------------------------------
-    */
-    // 지사 관리 API (정식)
+    // 지사 관리 API
     Route::middleware(['web', 'auth'])->prefix('api')->group(function () {
         Route::apiResource('branches', App\Http\Controllers\Api\BranchController::class);
         Route::apiResource('stores', App\Http\Controllers\Api\StoreManagementController::class);
@@ -1658,13 +1228,7 @@ if (config('app.env') !== 'production') {
             return response()->json(['success' => true, 'data' => $branches]);
         });
     });
-    /*
-    |--------------------------------------------------------------------------
-    | Legacy API Routes (api) - 호환성 유지용
-    |--------------------------------------------------------------------------
-    */
-    // 중복 StoreController 라우팅 제거됨 (기존 클로저 함수 사용)
-} // if (config('app.env') !== 'production') 블록 닫기
+}
 // 매장/지사 관리 API (모든 환경에서 사용) - 프로덕션에서도 필요
 // 지사별 시트 엑셀 업로드를 통한 매장 대량 생성 (1회성) - 프로덕션에서도 사용 가능
 Route::middleware(['web', 'auth'])->prefix('api')->group(function () {
@@ -1898,33 +1462,6 @@ Route::post('/api/stores/{id}/disable-accounts', function ($id) {
 Route::get('/management/stores/enhanced', function () {
     return redirect('/management/stores');
 })->name('stores.enhanced.redirect');
-// 매장 계정 상태 확인 및 자동 수정 API
-Route::get('/debug/store-account/{storeId}', function ($storeId) {
-    try {
-        $store = App\Models\Store::findOrFail($storeId);
-        // 기존 계정 찾기
-        $existingUser = App\Models\User::where('store_id', $storeId)->first();
-        $result = [
-            'store' => $store,
-            'account_exists' => (bool) $existingUser,
-            'account_active' => $existingUser?->is_active ?? false,
-            'suggested_email' => strtolower($store->code).'@ykp.com',
-            'needs_creation' => ! $existingUser,
-        ];
-        if ($existingUser) {
-            $result['existing_account'] = [
-                'id' => $existingUser->id,
-                'name' => $existingUser->name,
-                'email' => $existingUser->email,
-                'is_active' => $existingUser->is_active,
-                'role' => $existingUser->role,
-            ];
-        }
-        return response()->json(['success' => true, 'data' => $result]);
-    } catch (Exception $e) {
-        return response()->json(['success' => false, 'error' => $e->getMessage()], 404);
-    }
-});
 // 매장 계정 자동 생성/수정 API
 Route::post('/api/stores/{id}/ensure-account', function ($id) {
     try {
@@ -2170,35 +1707,6 @@ Route::middleware(['auth'])->get('/admin/accounts', function () {
 })->name('admin.accounts');
 // API route to get current user info (for AJAX requests)
 Route::middleware('auth')->get('/api/user', [AuthController::class, 'user'])->name('api.user');
-// 🚑 긴급 정산 테스트 API (인증 없이 접근 가능)
-Route::get('/api/monthly-settlements/generate-sample', function () {
-    try {
-        // 샘플 정산 데이터 생성
-        $settlement = \App\Models\MonthlySettlement::create([
-            'year_month' => '2025-09',
-            'dealer_code' => '이앤티',
-            'settlement_status' => 'draft',
-            'total_sales_amount' => 415000,
-            'total_sales_count' => 2,
-            'average_margin_rate' => 100.0,
-            'total_vat_amount' => 37727,
-            'gross_profit' => 415000,
-            'net_profit' => 415000,
-            'profit_rate' => 100.0,
-            'calculated_at' => now(),
-        ]);
-        return response()->json([
-            'success' => true,
-            'message' => '샘플 정산 데이터 생성 완료',
-            'data' => $settlement,
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'error' => $e->getMessage(),
-        ], 500);
-    }
-});
 // 🔒 세션 안정성 강화 API
 Route::middleware(['web'])->group(function () {
     // CSRF 토큰 갱신
@@ -3120,8 +2628,4 @@ Route::middleware(['web', 'auth'])->group(function () {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
         }
     });
-});
-// Test route for store creation with modal
-Route::middleware(['auth'])->get('/test-store-modal', function () {
-    return view('test-store-modal');
 });
