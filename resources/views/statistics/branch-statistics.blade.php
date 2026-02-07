@@ -162,7 +162,7 @@
     <script>
         async function loadBranchStatistics() {
             try {
-                console.log('🏬 지사 통계 데이터 로딩...');
+                console.log('지사 통계 데이터 로딩...');
 
                 const period = document.getElementById('branch-ranking-period')?.value || 'monthly';
                 const limit = parseInt(document.getElementById('branch-ranking-limit')?.value || '10', 10);
@@ -240,7 +240,7 @@
                         plugins: {
                             title: {
                                 display: true,
-                                text: `🏪 소속 매장별 매출 성과 (${period === 'monthly' ? '월간' : period === 'weekly' ? '주간' : '일간'})`,
+                                text: `소속 매장별 매출 성과 (${period === 'monthly' ? '월간' : period === 'weekly' ? '주간' : '일간'})`,
                                 font: { size: 14, weight: 'bold' }
                             },
                             legend: {
@@ -302,7 +302,7 @@
                         plugins: {
                             title: {
                                 display: true,
-                                text: `📈 일별 매출액 추이 (최근 ${days || 30}일)`,
+                                text: `일별 매출액 추이 (최근 ${days || 30}일)`,
                                 font: { size: 14, weight: 'bold' }
                             },
                             legend: {
@@ -354,13 +354,13 @@
                     tbody.appendChild(tr);
                 });
 
-                console.log('✅ 지사 통계 로딩 완료');
+                console.log('지사 통계 로딩 완료');
 
                 // 재무 요약 업데이트
                 updateFinancialSummary(fin);
 
             } catch (error) {
-                console.error('❌ 지사 통계 로딩 실패:', error);
+                console.error('지사 통계 로딩 실패:', error);
             }
         }
 
@@ -410,7 +410,7 @@
                 if (result.success && result.data) {
                     const storeCount = result.data.length;
                     document.getElementById('branch-stores').textContent = `${storeCount}개 매장`;
-                    console.log(`🏪 ${branchId}번 지사 매장 수: ${storeCount}개`);
+                    console.log(`${branchId}번 지사 매장 수: ${storeCount}개`);
                 } else {
                     document.getElementById('branch-stores').textContent = '0개 매장';
                 }
@@ -448,7 +448,7 @@
             }
         }
 
-        // 💵 재무 요약 업데이트 함수
+        // 재무 요약 업데이트 함수
         function updateFinancialSummary(finData) {
             try {
                 // API 응답에서 실제 데이터 사용

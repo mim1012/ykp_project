@@ -152,7 +152,7 @@
             
             setTimeout(() => {
                 if (settlementWindow.closed) {
-                    alert('❌ YKP 정산 시스템이 실행되지 않고 있습니다.\n\n다음 명령어로 정산 시스템을 먼저 실행해주세요:\n\ncd ykp-settlement\nnpm run dev');
+                    alert('YKP 정산 시스템이 실행되지 않고 있습니다.\n\n다음 명령어로 정산 시스템을 먼저 실행해주세요:\n\ncd ykp-settlement\nnpm run dev');
                 }
             }, 1000);
         }

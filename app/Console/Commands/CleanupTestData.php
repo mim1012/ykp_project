@@ -16,7 +16,7 @@ class CleanupTestData extends Command
 
     public function handle()
     {
-        $this->info('🧹 테스트 데이터 정리 시작');
+        $this->info('테스트 데이터 정리 시작');
 
         // 테스트 지사 식별 패턴
         $testPatterns = ['테스트', 'test', 'Test', 'TEST', 'E2E', 'BB01', 'GG001'];
@@ -29,7 +29,7 @@ class CleanupTestData extends Command
         })->get();
 
         if ($testBranches->isEmpty()) {
-            $this->info('✅ 정리할 테스트 지사가 없습니다.');
+            $this->info('정리할 테스트 지사가 없습니다.');
 
             return;
         }
@@ -49,7 +49,7 @@ class CleanupTestData extends Command
                     $storesCount,
                     $salesCount,
                     $usersCount,
-                    $canDelete ? '✅' : '❌',
+                    $canDelete ? 'Y' : 'N',
                 ];
             })
         );
@@ -71,16 +71,16 @@ class CleanupTestData extends Command
             if ($storesCount == 0 && $salesCount == 0 && $usersCount == 0) {
                 // 종속 데이터 없음 - 바로 삭제
                 $branch->delete();
-                $this->info("✅ 삭제 완료: {$branch->name} ({$branch->code})");
+                $this->info("삭제 완료: {$branch->name} ({$branch->code})");
                 $deletedCount++;
             } elseif ($this->option('cascade')) {
-                // 🔥 CASCADE 삭제 실행
-                $this->warn("🚨 CASCADE 삭제 시작: {$branch->name}");
+                // CASCADE 삭제 실행
+                $this->warn("CASCADE 삭제 시작: {$branch->name}");
 
                 // 1단계: Sales 데이터 삭제 (가장 하위)
                 if ($salesCount > 0) {
                     $deletedSales = Sale::where('branch_id', $branch->id)->delete();
-                    $this->info("   📊 매출 데이터 삭제: {$deletedSales}건");
+                    $this->info("   매출 데이터 삭제: {$deletedSales}건");
                 }
 
                 // 2단계: Users 데이터 처리 (branch_id, store_id 해제)
@@ -91,28 +91,28 @@ class CleanupTestData extends Command
                             'store_id' => null,
                             'is_active' => false,
                         ]);
-                    $this->info("   👤 사용자 계정 해제: {$affectedUsers}개");
+                    $this->info("   사용자 계정 해제: {$affectedUsers}개");
                 }
 
                 // 3단계: Stores 삭제
                 if ($storesCount > 0) {
                     $storeNames = Store::where('branch_id', $branch->id)->pluck('name')->toArray();
                     $deletedStores = Store::where('branch_id', $branch->id)->delete();
-                    $this->info("   🏪 매장 삭제: {$deletedStores}개 (".implode(', ', $storeNames).')');
+                    $this->info("   매장 삭제: {$deletedStores}개 (".implode(', ', $storeNames).')');
                 }
 
                 // 4단계: Branch 삭제 (최상위)
                 $branch->delete();
-                $this->info("   🏢 지사 삭제 완료: {$branch->name}");
+                $this->info("   지사 삭제 완료: {$branch->name}");
 
                 $deletedCount++;
             } else {
-                $this->warn("⚠️ 스킵: {$branch->name} - 종속 데이터 존재 (--cascade 옵션 사용 시 삭제 가능)");
-                $this->line("   📊 매장: {$storesCount}개, 매출: {$salesCount}건, 사용자: {$usersCount}개");
+                $this->warn("스킵: {$branch->name} - 종속 데이터 존재 (--cascade 옵션 사용 시 삭제 가능)");
+                $this->line("   매장: {$storesCount}개, 매출: {$salesCount}건, 사용자: {$usersCount}개");
                 $skippedCount++;
             }
         }
 
-        $this->info("🎉 정리 완료! 삭제: {$deletedCount}개, 스킵: {$skippedCount}개");
+        $this->info("정리 완료! 삭제: {$deletedCount}개, 스킵: {$skippedCount}개");
     }
 }

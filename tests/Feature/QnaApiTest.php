@@ -98,7 +98,7 @@ class QnaApiTest extends TestCase
             'status' => 'pending',
         ]);
 
-        echo "\n✅ Test passed: Store user can create public post\n";
+        echo "\nTest passed: Store user can create public post\n";
     }
 
     #[Test]
@@ -118,7 +118,7 @@ class QnaApiTest extends TestCase
             'is_private' => true,
         ]);
 
-        echo "\n✅ Test passed: Store user can create private post\n";
+        echo "\nTest passed: Store user can create private post\n";
     }
 
     #[Test]
@@ -143,7 +143,7 @@ class QnaApiTest extends TestCase
             'branch_id' => $this->branch->id,
         ]);
 
-        echo "\n✅ Test passed: Branch user can create post\n";
+        echo "\nTest passed: Branch user can create post\n";
     }
 
     #[Test]
@@ -161,7 +161,7 @@ class QnaApiTest extends TestCase
                      'message' => 'Only store or branch users can create Q&A posts',
                  ]);
 
-        echo "\n✅ Test passed: HQ user cannot create post (they answer, not ask)\n";
+        echo "\nTest passed: HQ user cannot create post (they answer, not ask)\n";
     }
 
     #[Test]
@@ -186,7 +186,7 @@ class QnaApiTest extends TestCase
         $data = $response->json('data');
         $this->assertGreaterThan(0, count($data));
 
-        echo "\n✅ Test passed: Store user can view own posts\n";
+        echo "\nTest passed: Store user can view own posts\n";
     }
 
     #[Test]
@@ -215,7 +215,7 @@ class QnaApiTest extends TestCase
                      'message' => 'Unauthorized to view this post',
                  ]);
 
-        echo "\n✅ Test passed: Store user cannot view other store's private post\n";
+        echo "\nTest passed: Store user cannot view other store's private post\n";
     }
 
     #[Test]
@@ -242,7 +242,7 @@ class QnaApiTest extends TestCase
         $data = $response->json('data');
         $this->assertGreaterThanOrEqual(2, count($data));
 
-        echo "\n✅ Test passed: Branch user can view branch posts (public + private)\n";
+        echo "\nTest passed: Branch user can view branch posts (public + private)\n";
     }
 
     #[Test]
@@ -270,7 +270,7 @@ class QnaApiTest extends TestCase
         $data = $response->json('data');
         $this->assertGreaterThan(0, count($data));
 
-        echo "\n✅ Test passed: HQ user can view all posts\n";
+        echo "\nTest passed: HQ user can view all posts\n";
     }
 
     #[Test]
@@ -302,7 +302,7 @@ class QnaApiTest extends TestCase
             'content' => '수정된 내용',
         ]);
 
-        echo "\n✅ Test passed: Store user can update pending post\n";
+        echo "\nTest passed: Store user can update pending post\n";
     }
 
     #[Test]
@@ -326,7 +326,7 @@ class QnaApiTest extends TestCase
                      'message' => 'Cannot update answered or closed posts',
                  ]);
 
-        echo "\n✅ Test passed: Store user cannot update answered post\n";
+        echo "\nTest passed: Store user cannot update answered post\n";
     }
 
     #[Test]
@@ -350,7 +350,7 @@ class QnaApiTest extends TestCase
 
         $this->assertDatabaseMissing('qna_posts', ['id' => $post->id]);
 
-        echo "\n✅ Test passed: Store user can delete pending post\n";
+        echo "\nTest passed: Store user can delete pending post\n";
     }
 
     #[Test]
@@ -385,7 +385,7 @@ class QnaApiTest extends TestCase
         $post->refresh();
         $this->assertEquals('answered', $post->status);
 
-        echo "\n✅ Test passed: HQ user can reply and post status changes to 'answered'\n";
+        echo "\nTest passed: HQ user can reply and post status changes to 'answered'\n";
     }
 
     #[Test]
@@ -411,7 +411,7 @@ class QnaApiTest extends TestCase
             'is_official_answer' => false, // Branch reply is not official
         ]);
 
-        echo "\n✅ Test passed: Branch user can reply to branch post\n";
+        echo "\nTest passed: Branch user can reply to branch post\n";
     }
 
     #[Test]
@@ -435,7 +435,7 @@ class QnaApiTest extends TestCase
                      'message' => 'Unauthorized to reply to this post',
                  ]);
 
-        echo "\n✅ Test passed: Store user cannot reply to closed post\n";
+        echo "\nTest passed: Store user cannot reply to closed post\n";
     }
 
     #[Test]
@@ -460,7 +460,7 @@ class QnaApiTest extends TestCase
         $post->refresh();
         $this->assertEquals('closed', $post->status);
 
-        echo "\n✅ Test passed: HQ user can close post\n";
+        echo "\nTest passed: HQ user can close post\n";
     }
 
     #[Test]
@@ -481,7 +481,7 @@ class QnaApiTest extends TestCase
         $post->refresh();
         $this->assertEquals('closed', $post->status);
 
-        echo "\n✅ Test passed: Post author can close own post\n";
+        echo "\nTest passed: Post author can close own post\n";
     }
 
     #[Test]
@@ -509,7 +509,7 @@ class QnaApiTest extends TestCase
         $post->refresh();
         $this->assertEquals(1, $post->view_count); // Still 1
 
-        echo "\n✅ Test passed: View count increments correctly\n";
+        echo "\nTest passed: View count increments correctly\n";
     }
 
     #[Test]
@@ -539,7 +539,7 @@ class QnaApiTest extends TestCase
             $this->assertEquals('pending', $post['status']);
         }
 
-        echo "\n✅ Test passed: Can filter posts by status\n";
+        echo "\nTest passed: Can filter posts by status\n";
     }
 
     #[Test]
@@ -577,6 +577,6 @@ class QnaApiTest extends TestCase
             );
         }
 
-        echo "\n✅ Test passed: Can search posts by keyword\n";
+        echo "\nTest passed: Can search posts by keyword\n";
     }
 }

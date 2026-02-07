@@ -84,7 +84,7 @@ class StoreStatisticsApiTest extends TestCase
             ->getJson("/api/stores/{$this->store->id}/statistics?period=daily&date=" . now()->format('Y-m-d'));
 
         if ($response->status() !== 200) {
-            echo "\n❌ Response status: " . $response->status() . "\n";
+            echo "\nResponse status: " . $response->status() . "\n";
             echo "Response body: " . $response->getContent() . "\n";
         }
 
@@ -108,7 +108,7 @@ class StoreStatisticsApiTest extends TestCase
         $this->assertEquals(8, $data['summary']['total_sales']);
         $this->assertEquals('daily', $data['period']);
 
-        echo "\n✅ Test passed: Can get daily statistics\n";
+        echo "\nTest passed: Can get daily statistics\n";
         echo "Total sales: {$data['summary']['total_sales']}, Amount: {$data['summary']['total_settlement_amount']}\n";
     }
 
@@ -154,7 +154,7 @@ class StoreStatisticsApiTest extends TestCase
         $data = $response->json('data');
         $this->assertEquals(15, $data['summary']['total_sales']);
 
-        echo "\n✅ Test passed: Can get monthly statistics\n";
+        echo "\nTest passed: Can get monthly statistics\n";
         echo "Total sales: {$data['summary']['total_sales']}\n";
     }
 
@@ -201,7 +201,7 @@ class StoreStatisticsApiTest extends TestCase
         $data = $response->json('data');
         $this->assertEquals(35, $data['summary']['total_sales']);
 
-        echo "\n✅ Test passed: Can get yearly statistics\n";
+        echo "\nTest passed: Can get yearly statistics\n";
     }
 
     #[Test]
@@ -235,7 +235,7 @@ class StoreStatisticsApiTest extends TestCase
         $this->assertEquals(5000000, $data['goal_achievement']['sales_target']);
         $this->assertEquals(50, $data['goal_achievement']['activation_target']);
 
-        echo "\n✅ Test passed: Goal achievement included in statistics\n";
+        echo "\nTest passed: Goal achievement included in statistics\n";
         echo "Achievement rate: {$data['goal_achievement']['sales_achievement_rate']}%\n";
     }
 
@@ -254,7 +254,7 @@ class StoreStatisticsApiTest extends TestCase
 
         $response2->assertStatus(403);
 
-        echo "\n✅ Test passed: Store user RBAC working correctly\n";
+        echo "\nTest passed: Store user RBAC working correctly\n";
     }
 
     #[Test]
@@ -274,7 +274,7 @@ class StoreStatisticsApiTest extends TestCase
 
         $response2->assertStatus(403);
 
-        echo "\n✅ Test passed: Branch user RBAC working correctly\n";
+        echo "\nTest passed: Branch user RBAC working correctly\n";
     }
 
     #[Test]
@@ -294,7 +294,7 @@ class StoreStatisticsApiTest extends TestCase
 
         $response2->assertStatus(200);
 
-        echo "\n✅ Test passed: HQ user can view all stores\n";
+        echo "\nTest passed: HQ user can view all stores\n";
     }
 
     #[Test]
@@ -332,7 +332,7 @@ class StoreStatisticsApiTest extends TestCase
         $this->assertEquals(5, $data['carrier_distribution']['KT']);
         $this->assertEquals(3, $data['carrier_distribution']['LG']);
 
-        echo "\n✅ Test passed: Carrier distribution accurate\n";
+        echo "\nTest passed: Carrier distribution accurate\n";
     }
 
     #[Test]
@@ -367,6 +367,6 @@ class StoreStatisticsApiTest extends TestCase
         $this->assertEquals(4, $data['activation_type_distribution']['번이']);
         $this->assertEquals(2, $data['activation_type_distribution']['기변']);
 
-        echo "\n✅ Test passed: Activation type distribution accurate\n";
+        echo "\nTest passed: Activation type distribution accurate\n";
     }
 }

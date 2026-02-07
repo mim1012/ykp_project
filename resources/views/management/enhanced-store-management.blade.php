@@ -407,7 +407,7 @@
         // 테스트 버튼 추가 (디버그용)
         function addTestButton() {
             const testButton = document.createElement('button');
-            testButton.innerText = '🔧 테스트 모달';
+            testButton.innerText = '테스트 모달';
             testButton.className = 'fixed bottom-4 right-4 bg-red-500 text-white px-4 py-2 rounded z-50';
             testButton.onclick = function() {
                 log('테스트 버튼 클릭됨');
@@ -494,11 +494,11 @@
                         filterSelect.innerHTML += `<option value="${branch.id}">${branch.name}</option>`;
                     });
                     
-                    log('✅ 본사 계정: 전체 지사 목록 로드됨 -', branches.length, '개');
+                    log('본사 계정: 전체 지사 목록 로드됨 -', branches.length, '개');
                 }
             } else {
                 // 지사 계정: hidden input으로 처리됨 (별도 처리 불필요)
-                log('✅ 지사 계정: 자동 지정 모드 (hidden input 사용)');
+                log('지사 계정: 자동 지정 모드 (hidden input 사용)');
                 
                 // 필터 선택박스만 채우기
                 const filterSelect = document.getElementById('branch-filter');

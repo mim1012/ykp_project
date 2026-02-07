@@ -157,7 +157,7 @@
         // 매장 통계 데이터 로드
         async function loadStoreStatistics() {
             try {
-                console.log('🏪 매장 통계 데이터 로딩...');
+                console.log('매장 통계 데이터 로딩...');
 
                 // 매장 전용 데이터 로드
                 const storeId = {{ $user->store_id ?? 1 }};
@@ -264,10 +264,10 @@
                 // 개인 성과 현황 업데이트
                 updatePersonalGoals(kpi);
 
-                console.log('✅ 매장 통계 로딩 완료');
+                console.log('매장 통계 로딩 완료');
 
             } catch (error) {
-                console.error('❌ 매장 통계 로딩 실패:', error);
+                console.error('매장 통계 로딩 실패:', error);
             }
         }
 

@@ -218,7 +218,7 @@ Route::get('/api/dashboard/store-ranking', function () {
 })->name('web.api.store.ranking');
 // Financial Summary API는 DashboardController에서 처리 (하드코딩 제거)
 // Route::get('/api/dashboard/financial-summary') -> api.php의 DashboardController::financialSummary 사용
-// 🚨 Dealer Performance API는 Line 911에서 실제 DB 조회로 구현됨 (중복 제거)
+// Dealer Performance API는 Line 911에서 실제 DB 조회로 구현됨 (중복 제거)
 // 기존 고급 대시보드 복구 (임시)
 Route::get('/premium-dash', function () {
     return view('premium-dashboard');
@@ -254,7 +254,7 @@ Route::middleware(['auth', 'rbac'])->group(function () {
         if (! in_array($userRole, ['headquarters', 'branch'])) {
             abort(403, '본사 또는 지사 관리자만 접근 가능합니다.');
         }
-        // 🚀 서버사이드에서 직접 매장 데이터 로드 (JavaScript 타이밍 이슈 완전 해결)
+        // 서버사이드에서 직접 매장 데이터 로드
         $query = \App\Models\Store::with(['branch']);
         // 권한별 필터링
         if ($userRole === 'branch') {
@@ -1118,7 +1118,7 @@ Route::get('/api/stores/{id}/stats', function ($id) {
             ->whereBetween('period_start', [now()->startOfMonth()->format('Y-m-d'), now()->endOfMonth()->format('Y-m-d')])
             ->first();
         $storeTarget = $storeGoal ? $storeGoal->sales_target : 5000000;
-        // 🚀 최적화된 매장 성과 응답 (목표 달성률 + KPI)
+        // 최적화된 매장 성과 응답 (목표 달성률 + KPI)
         return response()->json([
             'success' => true,
             'data' => [
@@ -1291,20 +1291,20 @@ Route::middleware(['web', 'auth'])->delete('/api/stores/{id}', function ($id) {
         // force 파라미터가 없고 관련 데이터가 있으면 확인 요청
         $forceDelete = request()->get('force', false);
         if (! $forceDelete && ($salesCount > 0)) {
-            // 🚨 비즈니스 데이터 보호 정책 강화
-            $guideMessage = "🚨 '{$store->name}' 매장 삭제 불가\n\n";
-            $guideMessage .= "📊 중요한 비즈니스 데이터가 연결되어 있습니다:\n";
+            // 비즈니스 데이터 보호 정책 강화
+            $guideMessage = "'{$store->name}' 매장 삭제 불가\n\n";
+            $guideMessage .= "중요한 비즈니스 데이터가 연결되어 있습니다:\n";
             $guideMessage .= "• 개통표 기록: {$salesCount}건\n";
             $guideMessage .= "• 사용자 계정: {$usersCount}개\n\n";
-            $guideMessage .= "🔒 데이터 보호 정책:\n";
+            $guideMessage .= "데이터 보호 정책:\n";
             $guideMessage .= "• 개통표 데이터는 회계/세무 목적으로 보존 필수\n";
             $guideMessage .= "• 임의 삭제 시 법적/감사 문제 발생 가능\n";
             $guideMessage .= "• 매장 폐점 시에도 데이터는 보관되어야 함\n\n";
-            $guideMessage .= "📋 권장 절차:\n";
+            $guideMessage .= "권장 절차:\n";
             $guideMessage .= "1️⃣ 매장 상태를 '휴업' 또는 '폐점'으로 변경\n";
             $guideMessage .= "2️⃣ 사용자 계정 비활성화\n";
             $guideMessage .= "3️⃣ 개통표 데이터는 보관 (삭제 금지)\n\n";
-            $guideMessage .= "⚠️ 그래도 강제 삭제하시겠습니까?\n";
+            $guideMessage .= "그래도 강제 삭제하시겠습니까?\n";
             $guideMessage .= '(책임자 승인 및 데이터 백업 완료 확인 필요)';
             return response()->json([
                 'success' => false,
@@ -1322,31 +1322,31 @@ Route::middleware(['web', 'auth'])->delete('/api/stores/{id}', function ($id) {
                 'user_guide' => $guideMessage,
                 'actions' => [
                     [
-                        'label' => '📊 데이터 백업 및 내보내기',
+                        'label' => '데이터 백업 및 내보내기',
                         'action' => 'backup_first',
                         'description' => '개통표 데이터를 CSV/Excel로 내보내기',
                         'recommended' => true,
                     ],
                     [
-                        'label' => '🏪 매장 상태 변경 (폐점 처리)',
+                        'label' => '매장 상태 변경 (폐점 처리)',
                         'action' => 'deactivate_store',
                         'description' => '매장을 폐점 상태로 변경 (데이터 보존)',
                         'safe' => true,
                     ],
                     [
-                        'label' => '👥 계정만 비활성화',
+                        'label' => '계정만 비활성화',
                         'action' => 'disable_accounts',
                         'description' => '사용자 계정만 비활성화 (매장 정보 보존)',
                     ],
                     [
-                        'label' => '🚨 완전 삭제 (위험)',
+                        'label' => '완전 삭제 (위험)',
                         'action' => 'force_delete',
                         'description' => '모든 데이터 영구 삭제',
-                        'warning' => '⚠️ 법적 책임 및 감사 문제 발생 가능',
+                        'warning' => '법적 책임 및 감사 문제 발생 가능',
                         'requiresApproval' => true,
                     ],
                     [
-                        'label' => '❌ 취소',
+                        'label' => '취소',
                         'action' => 'cancel',
                         'description' => '작업 취소',
                     ],
@@ -1697,7 +1697,7 @@ Route::middleware(['auth'])->get('/admin/accounts', function () {
 })->name('admin.accounts');
 // API route to get current user info (for AJAX requests)
 Route::middleware('auth')->get('/api/user', [AuthController::class, 'user'])->name('api.user');
-// 🔒 세션 안정성 강화 API
+// 세션 안정성 강화 API
 Route::middleware(['web'])->group(function () {
     // CSRF 토큰 갱신
     Route::get('/api/csrf-token', function () {

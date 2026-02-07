@@ -498,7 +498,7 @@
             // 만약 정산 시스템이 실행되지 않고 있다면 안내 메시지
             setTimeout(() => {
                 if (settlementWindow.closed) {
-                    alert('❌ YKP 정산 시스템이 실행되지 않고 있습니다.\n\n다음 명령어로 정산 시스템을 먼저 실행해주세요:\n\ncd ykp-settlement\nnpm run dev');
+                    alert('YKP 정산 시스템이 실행되지 않고 있습니다.\n\n다음 명령어로 정산 시스템을 먼저 실행해주세요:\n\ncd ykp-settlement\nnpm run dev');
                 }
             }, 1000);
         }
@@ -573,9 +573,9 @@
                     const endTime = performance.now();
                     
                     const result = await response.json();
-                    results += `✅ ${test.name}: ${response.status} (${(endTime - startTime).toFixed(1)}ms)\n`;
+                    results += `${test.name}: ${response.status} (${(endTime - startTime).toFixed(1)}ms)\n`;
                 } catch (error) {
-                    results += `❌ ${test.name}: 실패 (${error.message})\n`;
+                    results += `${test.name}: 실패 (${error.message})\n`;
                 }
             }
             

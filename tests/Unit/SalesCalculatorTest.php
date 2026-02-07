@@ -35,7 +35,7 @@ class SalesCalculatorTest extends TestCase
 
         $result = SalesCalculator::computeRow($data);
 
-        // ✅ 차감 수정: 12000 - 5000 + 300 + 1000 - 500 = 7800
+        // 차감 수정: 12000 - 5000 + 300 + 1000 - 500 = 7800
         $this->assertEquals(7800.0, $result['settlement']);
     }
 
@@ -47,7 +47,7 @@ class SalesCalculatorTest extends TestCase
 
         $result = SalesCalculator::computeRow($data);
 
-        // ✅ 세금 계산이 제거됨 (커밋 427845b6: 세금 계산 제거 및 마진=정산금으로 통일)
+        // 세금 계산이 제거됨 (커밋 427845b6: 세금 계산 제거 및 마진=정산금으로 통일)
         $this->assertEquals(0.0, $result['tax'], '세금은 0이어야 함');
         $this->assertEquals($result['settlement'], $result['margin_before'], '마진은 정산금과 동일해야 함');
         $this->assertEquals($result['settlement'], $result['margin_after'], '마진은 정산금과 동일해야 함');

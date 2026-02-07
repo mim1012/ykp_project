@@ -44,7 +44,7 @@ class StoreController extends Controller
         // 검색 기능 (토큰 기반 - 매장명, 지사명, 점주명, 코드)
         if ($request->has('search') && !empty($request->search)) {
             $searchTerm = $request->search;
-            Log::info('🔍 Store search executed', ['search_term' => $searchTerm]);
+            Log::info('Store search executed', ['search_term' => $searchTerm]);
 
             $query->where(function ($q) use ($searchTerm) {
                 // 매장명 검색
@@ -64,7 +64,7 @@ class StoreController extends Controller
         $perPage = $request->get('per_page', 20);
         $stores = $query->orderBy('stores.name')->paginate($perPage);
 
-        Log::info('📊 Store query result', [
+        Log::info('Store query result', [
             'total' => $stores->total(),
             'per_page' => $stores->perPage(),
             'has_search' => $request->has('search'),

@@ -586,12 +586,12 @@
                     
                     // 분석 데이터 갱신
                     loadRefundAnalysis();
-                    showNotification('✅ 수정 완료', 'success');
+                    showNotification('수정 완료', 'success');
                 } else {
-                    alert('❌ 수정 실패: ' + (result.message || '알 수 없는 오류'));
+                    alert('수정 실패: ' + (result.message || '알 수 없는 오류'));
                 }
             } catch (error) {
-                alert('❌ 네트워크 오류: ' + error.message);
+                alert('네트워크 오류: ' + error.message);
             }
         }
 
@@ -626,16 +626,16 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    showNotification('✅ 환수가 등록되었습니다!', 'success');
+                    showNotification('환수가 등록되었습니다!', 'success');
                     hideAddRefundModal();
                     loadRefundData();
                     loadRefundAnalysis();
                     loadRefundChart();
                 } else {
-                    alert('❌ 등록 실패: ' + (result.message || '알 수 없는 오류'));
+                    alert('등록 실패: ' + (result.message || '알 수 없는 오류'));
                 }
             } catch (error) {
-                alert('❌ 네트워크 오류: ' + error.message);
+                alert('네트워크 오류: ' + error.message);
             }
         });
 
@@ -657,12 +657,12 @@
                     loadRefundData();
                     loadRefundAnalysis();
                     loadRefundChart();
-                    showNotification('✅ 삭제 완료', 'success');
+                    showNotification('삭제 완료', 'success');
                 } else {
-                    alert('❌ 삭제 실패: ' + (result.message || '알 수 없는 오류'));
+                    alert('삭제 실패: ' + (result.message || '알 수 없는 오류'));
                 }
             } catch (error) {
-                alert('❌ 네트워크 오류: ' + error.message);
+                alert('네트워크 오류: ' + error.message);
             }
         }
 
@@ -677,14 +677,14 @@
             if (dealerCode) url += `dealer_code=${dealerCode}&`;
             
             window.open(url, '_blank');
-            showNotification('📊 환수 분석 보고서를 다운로드합니다', 'info');
+            showNotification('환수 분석 보고서를 다운로드합니다', 'info');
         }
 
         // 분석 갱신
         function refreshAnalysis() {
             loadRefundAnalysis();
             loadRefundChart();
-            showNotification('🔄 분석 데이터를 갱신했습니다', 'info');
+            showNotification('분석 데이터를 갱신했습니다', 'info');
         }
 
         // 알림 표시 헬퍼

@@ -40,25 +40,25 @@
     </script>
     <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css" rel="stylesheet">
 
-    {{-- 🔒 세션 안정성 강화 스크립트 --}}
+    {{--세션 안정성 강화 스크립트 --}}
     <script src="/js/session-stability.js"></script>
 
     {{-- CSRF 토큰 자동 갱신 컴포넌트 --}}
     @include('components.csrf-refresh')
     
-    {{-- 🚨 긴급: 전역 함수 즉시 등록 (ReferenceError 방지) --}}
+    {{--긴급: 전역 함수 즉시 등록 (ReferenceError 방지) --}}
     <script>
         window.showAddStoreModal = function() {
-            console.log('✅ 전역 showAddStoreModal 즉시 실행');
+            console.log('전역 showAddStoreModal 즉시 실행');
 
-            // 🔥 지사 목록을 먼저 로드
+            //지사 목록을 먼저 로드
             loadBranchOptions('modal-branch-select');
 
             const modal = document.getElementById('add-store-modal');
             if (modal) {
                 modal.classList.remove('hidden');
                 modal.style.display = 'flex';
-                console.log('✅ 모달 표시 성공');
+                console.log('모달 표시 성공');
 
                 // 첫 번째 입력 필드에 포커스
                 const nameInput = document.getElementById('modal-store-name');
@@ -66,20 +66,20 @@
                     nameInput.focus();
                 }
             } else {
-                console.error('❌ add-store-modal 찾을 수 없음');
+                console.error('add-store-modal 찾을 수 없음');
                 alert('매장 추가 기능을 호출했지만 모달을 찾을 수 없습니다.');
             }
         };
 
         window.loadBranchOptions = function(selectId) {
-            console.log('✅ 전역 loadBranchOptions 실행:', selectId);
+            console.log('전역 loadBranchOptions 실행:', selectId);
 
             const select = document.getElementById(selectId);
             const userRole = '{{ auth()->user()->role }}';
             const userBranchId = '{{ auth()->user()->branch_id }}';
 
             if (!select) {
-                console.error('❌ 드롭다운 요소를 찾을 수 없음:', selectId);
+                console.error('드롭다운 요소를 찾을 수 없음:', selectId);
                 return;
             }
 
@@ -87,66 +87,66 @@
 
             // 지사 계정인 경우 자신의 지사만 표시
             if (userRole === 'branch' && userBranchId) {
-                console.log('🏢 지사 계정:', userRole, '지사 ID:', userBranchId);
+                console.log('지사 계정:', userRole, '지사 ID:', userBranchId);
 
                 fetch('/api/branches')
                     .then(response => response.json())
                     .then(data => {
-                        console.log('📊 지사 API 응답:', data);
+                        console.log('지사 API 응답:', data);
 
                         if (data.success) {
                             const userBranch = data.data.find(branch => branch.id == userBranchId);
                             if (userBranch) {
                                 select.innerHTML = `<option value="${userBranch.id}" selected>${userBranch.name}</option>`;
-                                console.log('✅ 지사 계정용 지사 선택됨:', userBranch.name);
+                                console.log('지사 계정용 지사 선택됨:', userBranch.name);
 
                                 // 지사 선택 컨테이너 숨기기
                                 const container = document.getElementById('branch-select-container');
                                 if (container) {
                                     container.style.display = 'none';
-                                    console.log('✅ 지사 선택 컨테이너 숨김');
+                                    console.log('지사 선택 컨테이너 숨김');
                                 }
                             } else {
                                 select.innerHTML = '<option value="">지사 정보를 찾을 수 없습니다</option>';
-                                console.error('❌ 지사 정보 찾기 실패');
+                                console.error('지사 정보 찾기 실패');
                             }
                         } else {
                             select.innerHTML = '<option value="">지사 목록 로드 실패</option>';
-                            console.error('❌ API 응답 실패');
+                            console.error('API 응답 실패');
                         }
                     })
                     .catch(error => {
-                        console.error('❌ 지사 정보 로드 오류:', error);
+                        console.error('지사 정보 로드 오류:', error);
                         select.innerHTML = '<option value="">지사 정보 로드 오류</option>';
                     });
             } else {
-                console.log('🏛️ 본사 계정 - 모든 지사 표시');
+                console.log('본사 계정 - 모든 지사 표시');
 
                 fetch('/api/branches')
                     .then(response => response.json())
                     .then(data => {
-                        console.log('📊 본사용 지사 API 응답:', data);
+                        console.log('본사용 지사 API 응답:', data);
 
                         if (data.success) {
                             select.innerHTML = '<option value="">지사를 선택하세요...</option>';
                             data.data.forEach(branch => {
                                 select.innerHTML += `<option value="${branch.id}">${branch.name}</option>`;
                             });
-                            console.log('✅ 본사 계정용 지사 목록 로드 완료:', data.data.length, '개');
+                            console.log('본사 계정용 지사 목록 로드 완료:', data.data.length, '개');
                         } else {
                             select.innerHTML = '<option value="">지사 목록 로드 실패</option>';
-                            console.error('❌ API 응답 실패');
+                            console.error('API 응답 실패');
                         }
                     })
                     .catch(error => {
-                        console.error('❌ 지사 목록 로드 오류:', error);
+                        console.error('지사 목록 로드 오류:', error);
                         select.innerHTML = '<option value="">지사 목록 로드 오류</option>';
                     });
             }
         };
         
         window.closeAddStoreModal = function() {
-            console.log('✅ 전역 closeAddStoreModal 실행');
+            console.log('전역 closeAddStoreModal 실행');
             const modal = document.getElementById('add-store-modal');
             if (modal) {
                 modal.classList.add('hidden');
@@ -155,14 +155,14 @@
                 document.getElementById('modal-store-name').value = '';
                 document.getElementById('modal-owner-name').value = '';
                 document.getElementById('modal-phone').value = '';
-                console.log('✅ 모달 닫기 및 폼 초기화 완료');
+                console.log('모달 닫기 및 폼 초기화 완료');
             }
         };
 
         // 클립보드 복사 함수
         window.copyToClipboard = function(text) {
             navigator.clipboard.writeText(text).then(() => {
-                showToast('📋 클립보드에 복사되었습니다', 'success');
+                showToast('클립보드에 복사되었습니다', 'success');
             }).catch(() => {
                 const input = document.createElement('textarea');
                 input.value = text;
@@ -170,7 +170,7 @@
                 input.select();
                 document.execCommand('copy');
                 document.body.removeChild(input);
-                showToast('📋 클립보드에 복사되었습니다', 'success');
+                showToast('클립보드에 복사되었습니다', 'success');
             });
         };
 
@@ -267,7 +267,7 @@
         };
 
         window.submitAddStore = function() {
-            console.log('✅ 매장 추가 제출 시작');
+            console.log('매장 추가 제출 시작');
 
             // 지사 계정인 경우 자동으로 branch_id 설정
             const userRole = '{{ auth()->user()->role }}';
@@ -390,7 +390,7 @@
             })
             .then(result => {
                 if (result.success) {
-                    console.log('✅ 매장 생성 성공');
+                    console.log('매장 생성 성공');
 
                     // 모달 닫기
                     const modal = document.getElementById('add-store-modal');
@@ -399,24 +399,24 @@
                         modal.style.display = 'none';
                     }
 
-                    // 🔍 디버깅: API 응답 내용 확인
-                    console.log('📊 API 응답 전체:', result);
-                    console.log('🔑 account 정보:', result.account);
-                    console.log('🏪 store 정보:', result.data);
+                    //디버깅: API 응답 내용 확인
+                    console.log('API 응답 전체:', result);
+                    console.log('account 정보:', result.account);
+                    console.log('store 정보:', result.data);
 
-                    // 🎉 계정 정보 모달 표시 (본사/지사 모두)
+                    //계정 정보 모달 표시 (본사/지사 모두)
                     if (result.account && result.account.user_id) {
-                        console.log('✅ account 정상 생성됨, 모달 호출 시작');
+                        console.log('account 정상 생성됨, 모달 호출 시작');
                         // 함수는 이미 정의되어 있으므로 직접 호출
                         window.showPMAccountModal(result.account, result.data);
                     } else if (result.account && result.account.error) {
-                        console.log('⚠️ 매장은 생성됨, 계정 생성 실패:', result.account.error);
-                        alert(`매장이 생성되었습니다!\n\n⚠️ ${result.account.error}\n\n수동 계정 정보:\n이메일: ${result.account.email}\n비밀번호: ${result.account.password}`);
+                        console.log('매장은 생성됨, 계정 생성 실패:', result.account.error);
+                        alert(`매장이 생성되었습니다!\n\n${result.account.error}\n\n수동 계정 정보:\n이메일: ${result.account.email}\n비밀번호: ${result.account.password}`);
                     } else if (result.account) {
-                        console.log('✅ account 존재 (user_id 없음), 모달 호출');
+                        console.log('account 존재 (user_id 없음), 모달 호출');
                         window.showPMAccountModal(result.account, result.data);
                     } else {
-                        console.log('❌ account 정보 없음, alert 표시');
+                        console.log('account 정보 없음, alert 표시');
                         alert('매장이 성공적으로 생성되었습니다!');
                     }
 
@@ -436,7 +436,7 @@
                 let errorMessage = '매장 생성 중 오류가 발생했습니다.\n\n';
 
                 if (error.message.includes('인증이 필요') || error.message.includes('401') || error.message.includes('Unauthenticated')) {
-                    errorMessage = '🔐 세션이 만료되었습니다.\n\n다시 로그인해주세요.';
+                    errorMessage = '세션이 만료되었습니다.\n\n다시 로그인해주세요.';
                     console.error('인증 실패 - 로그인 페이지로 이동');
 
                     alert(errorMessage);
@@ -446,7 +446,7 @@
                     }, 3000);
                     return;
                 } else if (error.message.includes('세션이 만료')) {
-                    errorMessage = '🔐 ' + error.message;
+                    errorMessage = '' + error.message;
                     alert(errorMessage);
                     setTimeout(() => {
                         location.reload();
@@ -455,7 +455,7 @@
                 } else if (error.message.includes('권한이 없') || error.message.includes('403')) {
                     errorMessage += '권한 오류: 매장을 추가할 권한이 없습니다.';
                 } else if (error.message.includes('서버 내부 오류') || error.message.includes('500')) {
-                    errorMessage = '⚠️ 서버 내부 오류가 발생했습니다.\n\n잠시 후 다시 시도해주세요.';
+                    errorMessage = '서버 내부 오류가 발생했습니다.\n\n잠시 후 다시 시도해주세요.';
                 } else if (error.message.includes('422')) {
                     errorMessage += '입력값 오류: 필수 항목을 모두 입력했는지 확인해주세요.';
                 } else if (error.message.includes('CSRF')) {
@@ -474,7 +474,7 @@
                         errorMessage += '보안 토큰 오류: 페이지를 새로고침해주세요.';
                     }
                 } else if (error.message.includes('서버로부터 응답을 받지 못했습니다')) {
-                    errorMessage = '⚠️ 서버로부터 응답을 받지 못했습니다.\n\n네트워크 연결을 확인하거나 잠시 후 다시 시도해주세요.';
+                    errorMessage = '서버로부터 응답을 받지 못했습니다.\n\n네트워크 연결을 확인하거나 잠시 후 다시 시도해주세요.';
                 } else {
                     errorMessage += '오류 내용: ' + error.message;
                 }
@@ -491,15 +491,15 @@
             if (typeof submitAddStore === 'undefined') {
                 submitAddStore = window.submitAddStore;
             }
-            console.log('✅ DOMContentLoaded - 함수 등록 확인:', {
+            console.log('DOMContentLoaded - 함수 등록 확인:', {
                 showAddStoreModal: typeof showAddStoreModal,
                 submitAddStore: typeof submitAddStore
             });
         });
         
-        // 🔥 PM 긴급 요구사항: 계정 생성 및 안내 모달 표시
+        //PM 긴급 요구사항: 계정 생성 및 안내 모달 표시
         window.createAccountAndShowCredentials = async function(storeId, storeData) {
-            console.log('🔥 매장 ID', storeId, '에 대한 자동 계정 생성 시작');
+            console.log('매장 ID', storeId, '에 대한 자동 계정 생성 시작');
             
             try {
                 const response = await fetch(`/api/stores/${storeId}/account`, {
@@ -601,7 +601,7 @@
             });
         };
         
-        console.log('✅ 헤드 섹션에서 showAddStoreModal 전역 등록 완료');
+        console.log('헤드 섹션에서 showAddStoreModal 전역 등록 완료');
     </script>
 </head>
 <body class="bg-gray-50">
@@ -1263,7 +1263,7 @@
     <script>
         // 서버에서 전달된 매장 데이터를 즉시 설정 (권한 체크용)
         window.loadedStores = @json($stores);
-        console.log('✅ 서버 데이터로 매장 초기화:', window.loadedStores?.length || 0, '개');
+        console.log('서버 데이터로 매장 초기화:', window.loadedStores?.length || 0, '개');
 
         // 클린코드: 상수 정의 (매직넘버 제거)
         const CONFIG = {
@@ -1348,7 +1348,7 @@
                 if (window.loadedStores && Array.isArray(window.loadedStores)) {
                     const store = window.loadedStores.find(s => s.id == storeId);
                     if (store) {
-                        console.log(`✅ 매장 ${storeId} 권한 확인 (서버 데이터): branch_id=${store.branch_id}, user.branch_id=${this.user.branch_id}`);
+                        console.log(`매장 ${storeId} 권한 확인 (서버 데이터): branch_id=${store.branch_id}, user.branch_id=${this.user.branch_id}`);
                         return store.branch_id === this.user.branch_id;
                     }
                 }
@@ -1357,7 +1357,7 @@
                 if (typeof allStores !== 'undefined' && Array.isArray(allStores)) {
                     const store = allStores.find(s => s.id == storeId);
                     if (store) {
-                        console.log(`✅ 매장 ${storeId} 권한 확인 (검색 데이터): branch_id=${store.branch_id}`);
+                        console.log(`매장 ${storeId} 권한 확인 (검색 데이터): branch_id=${store.branch_id}`);
                         return store.branch_id === this.user.branch_id;
                     }
                 }
@@ -1368,7 +1368,7 @@
                         const cachedStore = localStorage.getItem(`store_${storeId}`);
                         if (cachedStore) {
                             const store = JSON.parse(cachedStore);
-                            console.log(`✅ 매장 ${storeId} 권한 확인 (캐시): branch_id=${store.branch_id}`);
+                            console.log(`매장 ${storeId} 권한 확인 (캐시): branch_id=${store.branch_id}`);
                             return store.branch_id === this.user.branch_id;
                         }
                     } catch (e) {
@@ -1377,7 +1377,7 @@
 
                     // 서버 데이터에 해당 매장이 없으면, 지사 계정은 자신의 지사 매장만 볼 수 있으므로
                     // 이 매장은 다른 지사 소속이거나 존재하지 않는 것
-                    console.log(`ℹ️ 매장 ${storeId}가 현재 데이터에 없음 - 다른 지사 소속일 수 있음`);
+                    console.log(`매장 ${storeId}가 현재 데이터에 없음 - 다른 지사 소속일 수 있음`);
                     return false;
                 }
 
@@ -1441,7 +1441,7 @@
 
         // 탭 시스템 제거됨 - 직접 매장 관리만 표시
 
-        // ✨ 매장 목록 로드 함수 (지사별 독립 페이지네이션 + 검색 지원)
+        //매장 목록 로드 함수 (지사별 독립 페이지네이션 + 검색 지원)
         let allStores = []; // 전체 매장 데이터 캐시
         let branchPages = {}; // 각 지사별 현재 페이지 { branchId: pageNumber }
         let currentSearch = '';
@@ -1545,14 +1545,14 @@
         }
 
         window.loadStores = async function(search = '') {
-            console.log('🔄 loadStores 시작 - 검색:', search);
+            console.log('loadStores 시작 - 검색:', search);
 
             currentSearch = search;
 
             try {
                 const gridElement = document.getElementById('stores-grid');
                 if (!gridElement) {
-                    console.error('❌ stores-grid 요소를 찾을 수 없음');
+                    console.error('stores-grid 요소를 찾을 수 없음');
                     return;
                 }
 
@@ -1574,14 +1574,14 @@
                 }
 
                 const result = await response.json();
-                console.log('✅ API 응답:', result);
+                console.log('API 응답:', result);
 
-                // 🛡️ API 응답 구조 방어
+                //API 응답 구조 방어
                 const storesData = Array.isArray(result.data)
                     ? result.data
                     : (result.data?.data || []);
 
-                console.log('📦 매장 데이터 추출:', {
+                console.log('매장 데이터 추출:', {
                     isArray: Array.isArray(result.data),
                     count: storesData.length,
                     sample: storesData[0]
@@ -1598,7 +1598,7 @@
                 renderStoresByBranch();
 
             } catch (error) {
-                console.error('❌ loadStores 오류:', error);
+                console.error('loadStores 오류:', error);
                 const gridElement = document.getElementById('stores-grid');
                 if (gridElement) {
                     gridElement.innerHTML = `
@@ -1615,7 +1615,7 @@
             }
         };
 
-        // 🎨 지사별 독립 페이지네이션으로 매장 렌더링
+        //지사별 독립 페이지네이션으로 매장 렌더링
         function renderStoresByBranch(storesToRender = null, targetElement = null) {
             try {
                 // 필터링된 매장이 전달되지 않으면 전체 매장 + 현재 필터 적용
@@ -1625,17 +1625,17 @@
                     if (currentStoreTypeFilter !== 'all') {
                         filteredStores = allStores.filter(store => store.store_type === currentStoreTypeFilter);
                     }
-                    // 🔧 페이지 변경 시에도 정렬 유지
+                    // 페이지 변경 시에도 정렬 유지
                     filteredStores = sortStores(filteredStores);
                 }
 
-                console.log('🎨 renderStoresByBranch 시작 - 필터된 매장:', filteredStores.length);
+                console.log('renderStoresByBranch 시작 - 필터된 매장:', filteredStores.length);
 
                 const gridElement = targetElement || document.getElementById('stores-grid');
                 const userRole = '{{ auth()->user()->role }}';
 
                 if (!gridElement) {
-                    throw new Error('❌ stores-grid 요소를 찾을 수 없습니다');
+                    throw new Error('stores-grid 요소를 찾을 수 없습니다');
                 }
 
                 if (!filteredStores || filteredStores.length === 0) {
@@ -1665,7 +1665,7 @@
                     storesByBranch[branchId].stores.push(store);
                 });
 
-                console.log('🏢 지사별 그룹화:', Object.keys(storesByBranch).map(id => storesByBranch[id].name));
+                console.log('지사별 그룹화:', Object.keys(storesByBranch).map(id => storesByBranch[id].name));
 
                 let html = '<div class="space-y-6">';
 
@@ -1791,9 +1791,9 @@
 
                 html += '</div>';
                 gridElement.innerHTML = html;
-                console.log('✅ 렌더링 완료 - 총 매장:', allStores.length);
+                console.log('렌더링 완료 - 총 매장:', allStores.length);
             } catch (error) {
-                console.error('❌ renderStoresByBranch 오류:', error);
+                console.error('renderStoresByBranch 오류:', error);
                 console.error('오류 스택:', error.stack);
 
                 const gridElement = document.getElementById('stores-grid');
@@ -1829,7 +1829,7 @@
             }, 100);
         };
 
-        // 🗑️ 전체 페이지네이션 함수 제거됨 (지사별 독립 페이지네이션으로 대체)
+        //전체 페이지네이션 함수 제거됨 (지사별 독립 페이지네이션으로 대체)
 
         // 검색 기능 (실시간 검색)
         let searchTimeout;
@@ -1842,7 +1842,7 @@
 
                     // 300ms 디바운싱
                     searchTimeout = setTimeout(() => {
-                        console.log('🔍 검색 실행:', searchValue);
+                        console.log('검색 실행:', searchValue);
                         loadStores(searchValue); // 지사별 페이지네이션에 맞게 수정됨
                     }, 300);
                 });
@@ -1851,7 +1851,7 @@
 
         // 매장 수정 모달 열기
         window.openEditModal = async function(storeId) {
-            console.log('✏️ 매장 수정 모달 열기:', storeId);
+            console.log('매장 수정 모달 열기:', storeId);
 
             try {
                 // 매장 정보 가져오기
@@ -1906,11 +1906,11 @@
                 const modal = document.getElementById('edit-store-modal');
                 if (modal) {
                     modal.classList.remove('hidden');
-                    console.log('✅ 수정 모달 표시 완료');
+                    console.log('수정 모달 표시 완료');
                 }
 
             } catch (error) {
-                console.error('❌ 매장 정보 로드 오류:', error);
+                console.error('매장 정보 로드 오류:', error);
                 alert('매장 정보를 불러오는 중 오류가 발생했습니다:\n' + error.message);
             }
         };
@@ -1941,7 +1941,7 @@
                     }
                 }
             } catch (error) {
-                console.error('❌ 지사 목록 로드 오류:', error);
+                console.error('지사 목록 로드 오류:', error);
                 const select = document.getElementById('edit-store-branch');
                 if (select) {
                     select.innerHTML = '<option value="">지사 목록 로드 실패</option>';
@@ -1954,13 +1954,13 @@
             const modal = document.getElementById('edit-store-modal');
             if (modal) {
                 modal.classList.add('hidden');
-                console.log('✅ 수정 모달 닫기');
+                console.log('수정 모달 닫기');
             }
         };
 
         // 매장 정보 저장
         window.saveStoreChanges = async function() {
-            console.log('💾 매장 정보 저장 시작');
+            console.log('매장 정보 저장 시작');
 
             const storeId = document.getElementById('edit-store-id').value;
             const storeName = document.getElementById('edit-store-name').value.trim();
@@ -2029,7 +2029,7 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    alert('✅ 매장 정보가 성공적으로 수정되었습니다!');
+                    alert('매장 정보가 성공적으로 수정되었습니다!');
                     closeEditStoreModal();
                     // 목록 새로고침 (지사별 페이지네이션)
                     loadStores(currentSearch);
@@ -2038,7 +2038,7 @@
                 }
 
             } catch (error) {
-                console.error('❌ 매장 정보 저장 오류:', error);
+                console.error('매장 정보 저장 오류:', error);
                 alert('매장 정보 저장 중 오류가 발생했습니다:\n' + error.message);
             }
         };
@@ -2334,7 +2334,7 @@
         
         // 지사 통계 조회 (완전 구현)
         function viewBranchStats(branchId) {
-            console.log('📊 지사 통계 조회 시작:', branchId);
+            console.log('지사 통계 조회 시작:', branchId);
 
             // 먼저 지사 정보 로드
             fetch(`/api/branches/${branchId}`)
@@ -2344,9 +2344,9 @@
                         const branch = data.data;
 
                         // 지사 통계 안내 메시지
-                        let statsMessage = `📊 ${branch.name} 지사 통계 안내\n`;
+                        let statsMessage = `${branch.name} 지사 통계 안내\n`;
                         statsMessage += `${'='.repeat(40)}\n\n`;
-                        statsMessage += `📈 확인 가능한 정보:\n`;
+                        statsMessage += `확인 가능한 정보:\n`;
                         statsMessage += `• 소속 매장별 매출 현황\n`;
                         statsMessage += `• 지사 전체 성과 분석\n`;
                         statsMessage += `• 매장 간 성과 비교\n`;
@@ -2355,24 +2355,24 @@
                         statsMessage += `상세 통계 페이지로 이동하시겠습니까?`;
 
                         if (confirm(statsMessage)) {
-                            console.log(`✅ ${branch.name} 지사 통계 페이지로 이동`);
+                            console.log(`${branch.name} 지사 통계 페이지로 이동`);
 
                             // 지사별 통계 페이지로 이동
                             window.location.href = `/statistics/enhanced?branch=${branchId}&name=${encodeURIComponent(branch.name)}&role=branch`;
                         } else {
-                            console.log('❌ 사용자가 통계 페이지 이동 취소');
+                            console.log('사용자가 통계 페이지 이동 취소');
                         }
                     } else {
-                        alert('❌ 지사 정보를 불러올 수 없습니다: ' + (data.error || '알 수 없는 오류'));
+                        alert('지사 정보를 불러올 수 없습니다: ' + (data.error || '알 수 없는 오류'));
                     }
                 })
                 .catch(error => {
                     console.error('지사 정보 로드 오류:', error);
-                    alert('❌ 지사 정보 로드 중 오류가 발생했습니다.');
+                    alert('지사 정보 로드 중 오류가 발생했습니다.');
                 });
         }
 
-        // 🔄 매장 데이터 캐싱 시스템 (권한 체크용)
+        //매장 데이터 캐싱 시스템 (권한 체크용)
         function cacheStoreData() {
             fetch('/api/stores')
                 .then(response => response.json())
@@ -2391,11 +2391,11 @@
                             localStorage.setItem(`store_${store.id}`, JSON.stringify(cacheData));
                         });
 
-                        console.log(`✅ 매장 데이터 캐싱 완료: ${data.data.length}개 매장`);
+                        console.log(`매장 데이터 캐싱 완료: ${data.data.length}개 매장`);
                     }
                 })
                 .catch(error => {
-                    console.warn('⚠️ 매장 데이터 캐싱 실패:', error);
+                    console.warn('매장 데이터 캐싱 실패:', error);
                 });
         }
 
@@ -2486,7 +2486,7 @@
         // 매장 추가 모달 표시
         // PM 지시: 전역 등록으로 ReferenceError 완전 해결
         window.showAddStoreModal = function() {
-            console.log('✅ showAddStoreModal 전역 함수 호출됨');
+            console.log('showAddStoreModal 전역 함수 호출됨');
             // 지사 목록을 동적으로 로드
             loadBranchOptions('modal-branch-select');
             document.getElementById('add-store-modal').classList.remove('hidden');
@@ -2580,7 +2580,7 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showToast('✅ 매장이 성공적으로 추가되었습니다!', 'success');
+                    showToast('매장이 성공적으로 추가되었습니다!', 'success');
                     closeAddStoreModal();
 
                     // 계정 정보 모달 표시
@@ -2590,7 +2590,7 @@
 
                     loadStores(); // 목록 새로고침
                 } else {
-                    showToast('❌ ' + (data.message || data.error || '매장 추가 실패'), 'error');
+                    showToast('' + (data.message || data.error || '매장 추가 실패'), 'error');
                 }
             })
             .catch(error => {
@@ -2621,11 +2621,11 @@
                         branchId = branch ? branch.id : null;
                         
                         if (!branchId) {
-                            alert(`❌ "${branchName}" 지사를 찾을 수 없습니다.\n\n등록된 지사 목록:\n${branchData.data.map(b => `• ${b.name}`).join('\n')}`);
+                            alert(`"${branchName}" 지사를 찾을 수 없습니다.\n\n등록된 지사 목록:\n${branchData.data.map(b => `• ${b.name}`).join('\n')}`);
                             return;
                         }
                         
-                        console.log(`✅ 지사 매핑 완료: ${branchName} → ID ${branchId}`);
+                        console.log(`지사 매핑 완료: ${branchName} → ID ${branchId}`);
                     } else {
                         alert('지사 목록을 불러올 수 없습니다.');
                         return;
@@ -2664,11 +2664,11 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showToast('✅ 매장이 성공적으로 추가되었습니다!', 'success');
+                    showToast('매장이 성공적으로 추가되었습니다!', 'success');
                     closeAddStoreModal();
                     loadStores(); // 목록 새로고침
                 } else {
-                    showToast('❌ ' + (data.message || data.error || '매장 추가 실패'), 'error');
+                    showToast('' + (data.message || data.error || '매장 추가 실패'), 'error');
                 }
             })
             .catch(error => {
@@ -2726,12 +2726,12 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showToast(`✅ 지사가 성공적으로 추가되었습니다!\n📧 관리자 계정: ${data.data.login_info.email}\n🔑 초기 비밀번호: ${data.data.login_info.password}`, 'success');
+                    showToast(`지사가 성공적으로 추가되었습니다!\n관리자 계정: ${data.data.login_info.email}\n초기 비밀번호: ${data.data.login_info.password}`, 'success');
                     closeAddBranchModal();
                     loadBranches(); // 지사 목록 새로고침
                     loadStores(); // 매장 목록도 새로고침 (지사 구조 변경 반영)
                 } else {
-                    showToast('❌ ' + (data.message || data.error || '지사 추가 실패'), 'error');
+                    showToast('' + (data.message || data.error || '지사 추가 실패'), 'error');
                 }
             })
             .catch(error => {
@@ -2799,12 +2799,12 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showToast('✅ 지사 정보가 성공적으로 수정되었습니다!', 'success');
+                    showToast('지사 정보가 성공적으로 수정되었습니다!', 'success');
                     closeEditBranchModal();
                     loadBranches(); // 지사 목록 새로고침
                     loadStores(); // 매장 목록도 새로고침
                 } else {
-                    showToast('❌ ' + (data.message || data.error || '지사 수정 실패'), 'error');
+                    showToast('' + (data.message || data.error || '지사 수정 실패'), 'error');
                 }
             })
             .catch(error => {
@@ -2814,7 +2814,7 @@
         }
         
         function deleteBranch(branchId) {
-            if (!confirm('정말로 이 지사를 삭제하시겠습니까?\n\n⚠️ 주의: 지사를 삭제하면 해당 지사 관리자 계정도 비활성화됩니다.\n하위 매장이 있는 경우 삭제할 수 없습니다.')) {
+            if (!confirm('정말로 이 지사를 삭제하시겠습니까?\n\n주의: 지사를 삭제하면 해당 지사 관리자 계정도 비활성화됩니다.\n하위 매장이 있는 경우 삭제할 수 없습니다.')) {
                 return;
             }
             
@@ -2827,15 +2827,15 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showToast('✅ 지사가 성공적으로 삭제되었습니다!', 'success');
+                    showToast('지사가 성공적으로 삭제되었습니다!', 'success');
                     closeEditBranchModal();
                     loadBranches(); // 지사 목록 새로고침
                     loadStores(); // 매장 목록도 새로고침
                 } else {
                     if (data.stores_count && data.stores_count > 0) {
-                        showToast(`❌ 하위 매장이 ${data.stores_count}개 있어 삭제할 수 없습니다.\n매장: ${data.stores.join(', ')}\n먼저 매장을 다른 지사로 이관하거나 삭제해주세요.`, 'error');
+                        showToast(`하위 매장이 ${data.stores_count}개 있어 삭제할 수 없습니다.\n매장: ${data.stores.join(', ')}\n먼저 매장을 다른 지사로 이관하거나 삭제해주세요.`, 'error');
                     } else {
-                        showToast('❌ ' + (data.message || data.error || '지사 삭제 실패'), 'error');
+                        showToast('' + (data.message || data.error || '지사 삭제 실패'), 'error');
                     }
                 }
             })
@@ -2847,24 +2847,24 @@
 
         // 사용자 추가 기능 (완전 구현)
         function addUser() {
-            console.log('👤 새 사용자 추가 시작');
+            console.log('새 사용자 추가 시작');
 
             // 사용자 정보 입력 받기
             const userName = prompt('새 사용자 이름을 입력하세요:', '');
             if (!userName || userName.trim() === '') {
-                alert('❌ 사용자 이름은 필수입니다.');
+                alert('사용자 이름은 필수입니다.');
                 return;
             }
 
             const userEmail = prompt('이메일을 입력하세요:', `${userName.toLowerCase().replace(/\s+/g, '')}@ykp.com`);
             if (!userEmail || !userEmail.includes('@')) {
-                alert('❌ 올바른 이메일을 입력해주세요.');
+                alert('올바른 이메일을 입력해주세요.');
                 return;
             }
 
             const userPassword = prompt('비밀번호를 입력하세요 (6자리 이상):', '123456');
             if (!userPassword || userPassword.length < 6) {
-                alert('❌ 비밀번호는 6자리 이상이어야 합니다.');
+                alert('비밀번호는 6자리 이상이어야 합니다.');
                 return;
             }
 
@@ -2874,7 +2874,7 @@
             const roleChoice = prompt(`역할을 선택하세요:\n1. ${roleNames[0]}\n2. ${roleNames[1]}\n3. ${roleNames[2]}\n번호를 입력하세요:`);
 
             if (!roleChoice || roleChoice < 1 || roleChoice > 3) {
-                alert('❌ 올바른 역할을 선택해주세요.');
+                alert('올바른 역할을 선택해주세요.');
                 return;
             }
 
@@ -2892,7 +2892,7 @@
                     const branchIdInput = prompt('지사 ID를 입력하세요:', '');
                     branchId = parseInt(branchIdInput);
                     if (isNaN(branchId)) {
-                        alert('❌ 올바른 지사 ID를 입력해주세요.');
+                        alert('올바른 지사 ID를 입력해주세요.');
                         return;
                     }
                 }
@@ -2902,7 +2902,7 @@
                 const storeIdInput = prompt('매장 ID를 입력하세요:', '');
                 storeId = parseInt(storeIdInput);
                 if (isNaN(storeId)) {
-                    alert('❌ 올바른 매장 ID를 입력해주세요.');
+                    alert('올바른 매장 ID를 입력해주세요.');
                     return;
                 }
             }
@@ -2918,7 +2918,7 @@
             confirmMessage += `\n생성하시겠습니까?`;
 
             if (!confirm(confirmMessage)) {
-                console.log('❌ 사용자 생성 취소');
+                console.log('사용자 생성 취소');
                 return;
             }
 
@@ -2942,7 +2942,7 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    alert(`✅ "${userName}" 사용자가 성공적으로 생성되었습니다!\n\n📧 이메일: ${userEmail}\n🔑 비밀번호: ${userPassword}\n🏢 역할: ${selectedRoleName}\n\n이 정보를 해당 사용자에게 전달하세요.`);
+                    alert(`"${userName}" 사용자가 성공적으로 생성되었습니다!\n\n이메일: ${userEmail}\n비밀번호: ${userPassword}\n역할: ${selectedRoleName}\n\n이 정보를 해당 사용자에게 전달하세요.`);
 
                     // 활동 로그 기록
                     fetch('/api/activities/log', {
@@ -2963,12 +2963,12 @@
                     // 페이지 새로고침
                     loadUsers();
                 } else {
-                    alert('❌ 사용자 생성 실패: ' + (data.error || '알 수 없는 오류'));
+                    alert('사용자 생성 실패: ' + (data.error || '알 수 없는 오류'));
                 }
             })
             .catch(error => {
                 console.error('사용자 생성 오류:', error);
-                alert('❌ 사용자 생성 중 오류가 발생했습니다.');
+                alert('사용자 생성 중 오류가 발생했습니다.');
             });
         }
 
@@ -2977,16 +2977,16 @@
 
         // 전역 editStore 함수 - 모든 버튼에서 사용
         window.editStore = function editStore(storeId, storeName) {
-            console.log('✏️ 매장 수정 시작:', storeId, storeName || 'Unknown');
+            console.log('매장 수정 시작:', storeId, storeName || 'Unknown');
             // 권한 체크 (선택사항 - permissionManager가 없어도 동작)
             if (window.permissionManager && !window.permissionManager.canEditStore(storeId)) {
-                showToast('❌ 이 매장을 수정할 권한이 없습니다.', 'error');
+                showToast('이 매장을 수정할 권한이 없습니다.', 'error');
                 return;
             }
 
             currentEditStoreId = storeId;
 
-            console.log('📡 매장 정보 로딩 중...');
+            console.log('매장 정보 로딩 중...');
 
             // 지사 목록을 먼저 로드
             loadBranchOptions('edit-branch-select');
@@ -2994,7 +2994,7 @@
             // DB에서 매장 정보 자동 로드
             fetch(`/api/stores/${storeId}`)
                 .then(response => {
-                    console.log('📡 매장 정보 API 응답:', response.status);
+                    console.log('매장 정보 API 응답:', response.status);
 
                     if (!response.ok) {
                         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -3009,16 +3009,16 @@
                     return response.json();
                 })
                 .then(data => {
-                    console.log('📊 매장 데이터:', data);
+                    console.log('매장 데이터:', data);
 
                     if (data.success) {
                         const store = data.data;
-                        console.log('✅ 매장 정보 로드 완료:', store.name);
+                        console.log('매장 정보 로드 완료:', store.name);
 
                         // 모달이 존재하는지 확인
                         const editModal = document.getElementById('edit-store-modal');
                         if (!editModal) {
-                            console.error('❌ edit-store-modal을 찾을 수 없음');
+                            console.error('edit-store-modal을 찾을 수 없음');
                             alert('매장 수정 모달을 찾을 수 없습니다.\n페이지를 새로고침해주세요.');
                             return;
                         }
@@ -3028,9 +3028,9 @@
                             const field = document.getElementById(id);
                             if (field) {
                                 field.value = value || '';
-                                console.log(`✅ ${id} 설정:`, value);
+                                console.log(`${id} 설정:`, value);
                             } else {
-                                console.warn(`⚠️ 필드 찾기 실패: ${id}`);
+                                console.warn(`필드 찾기 실패: ${id}`);
                             }
                         };
 
@@ -3058,30 +3058,30 @@
                             setTimeout(() => nameInput.focus(), 100);
                         }
 
-                        showToast(`📝 ${store.name} 매장 정보를 불러왔습니다.`, 'success');
+                        showToast(`${store.name} 매장 정보를 불러왔습니다.`, 'success');
                     } else {
                         throw new Error(data.error || '매장 정보를 가져올 수 없습니다.');
                     }
                 })
                 .catch(error => {
-                    console.error('❌ 매장 정보 로드 오류:', error);
+                    console.error('매장 정보 로드 오류:', error);
 
                     let errorMessage = '매장 정보 로드 중 오류가 발생했습니다.\n\n';
 
                     if (error.message.includes('HTTP 404')) {
                         errorMessage += '📍 해당 매장을 찾을 수 없습니다.';
                     } else if (error.message.includes('HTTP 403')) {
-                        errorMessage += '🔒 매장 정보 조회 권한이 없습니다.';
+                        errorMessage += '매장 정보 조회 권한이 없습니다.';
                     } else if (error.message.includes('HTTP 500')) {
-                        errorMessage += '🔧 서버 내부 오류가 발생했습니다.';
+                        errorMessage += '서버 내부 오류가 발생했습니다.';
                     } else if (error.message.includes('NetworkError') || error.message.includes('fetch')) {
                         errorMessage += '🌐 네트워크 연결을 확인해주세요.';
                     } else {
-                        errorMessage += `🔍 오류 세부사항: ${error.message}`;
+                        errorMessage += `오류 세부사항: ${error.message}`;
                     }
 
-                    alert(`❌ ${errorMessage}`);
-                    showToast('❌ 매장 정보 로드 실패', 'error');
+                    alert(`${errorMessage}`);
+                    showToast('매장 정보 로드 실패', 'error');
                 });
         };
         
@@ -3135,16 +3135,16 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showToast('✅ 매장 정보가 수정되었습니다!', 'success');
+                    showToast('매장 정보가 수정되었습니다!', 'success');
                     closeEditStoreModal();
                     loadStores(); // 목록 새로고침
                 } else {
-                    showToast('❌ ' + (data.error || '수정 실패'), 'error');
+                    showToast('' + (data.error || '수정 실패'), 'error');
                 }
             })
             .catch(error => {
                 console.error('매장 수정 오류:', error);
-                showToast('❌ 수정 중 오류가 발생했습니다.', 'error');
+                showToast('수정 중 오류가 발생했습니다.', 'error');
             });
         }
         
@@ -3154,15 +3154,15 @@
             currentEditStoreId = null;
         }
 
-        // 📊 매장 통계 관련 상태 변수
+        //매장 통계 관련 상태 변수
         let currentStatsStoreId = null;
         let currentStatsPeriod = 'monthly'; // 'daily', 'monthly', 'yearly'
 
-        // 📊 통합된 매장 성과 보기 함수 (중복 제거)
+        //통합된 매장 성과 보기 함수 (중복 제거)
         function viewStoreStatsModal(storeId) {
             // 권한 체크 먼저 (permissionManager가 있다면)
             if (window.permissionManager && !window.permissionManager.canViewStats(storeId)) {
-                showToast('❌ 이 매장의 성과를 조회할 권한이 없습니다.', 'error');
+                showToast('이 매장의 성과를 조회할 권한이 없습니다.', 'error');
                 return;
             }
 
@@ -3188,7 +3188,7 @@
 
                         // 통계 로드
                         refreshStoreStats();
-                        showToast(`📈 ${data.data.name} 성과 데이터를 로딩합니다...`, 'info');
+                        showToast(`${data.data.name} 성과 데이터를 로딩합니다...`, 'info');
                     }
                 });
         }
@@ -3205,15 +3205,15 @@
             if (period === 'daily') {
                 monthSelect.classList.add('hidden');
                 dateInput.classList.remove('hidden');
-                document.getElementById('stats-breakdown-title').textContent = '📋 시간대별 상세';
+                document.getElementById('stats-breakdown-title').textContent = '시간대별 상세';
             } else if (period === 'monthly') {
                 monthSelect.classList.remove('hidden');
                 dateInput.classList.add('hidden');
-                document.getElementById('stats-breakdown-title').textContent = '📋 일별 상세';
+                document.getElementById('stats-breakdown-title').textContent = '일별 상세';
             } else { // yearly
                 monthSelect.classList.add('hidden');
                 dateInput.classList.add('hidden');
-                document.getElementById('stats-breakdown-title').textContent = '📋 월별 상세';
+                document.getElementById('stats-breakdown-title').textContent = '월별 상세';
             }
 
             refreshStoreStats();
@@ -3257,14 +3257,14 @@
                 .then(data => {
                     if (data.success) {
                         updateStatsDisplay(data.data);
-                        showToast('📊 성과 데이터 로드 완료!', 'success');
+                        showToast('성과 데이터 로드 완료!', 'success');
                     } else {
-                        showToast('❌ 데이터 로드 실패', 'error');
+                        showToast('데이터 로드 실패', 'error');
                     }
                 })
                 .catch(error => {
                     console.error('통계 로드 오류:', error);
-                    showToast('❌ 성과 데이터 로드 실패', 'error');
+                    showToast('성과 데이터 로드 실패', 'error');
                 });
         }
 
@@ -3509,31 +3509,31 @@
 
         // 개선된 사용자 수정 함수
         function editUser(userId) {
-            console.log('👤 사용자 수정 시작:', userId);
+            console.log('사용자 수정 시작:', userId);
 
             // 사용자 정보 로딩
             fetch(`/api/users/${userId}`)
                 .then(response => {
-                    console.log('📡 사용자 정보 API 응답:', response.status);
+                    console.log('사용자 정보 API 응답:', response.status);
                     if (!response.ok) {
                         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                     }
                     return response.json();
                 })
                 .then(data => {
-                    console.log('📊 사용자 데이터:', data);
+                    console.log('사용자 데이터:', data);
 
                     if (data.success) {
                         const user = data.data;
-                        console.log('✅ 사용자 정보 로드 완료:', user.name);
+                        console.log('사용자 정보 로드 완료:', user.name);
 
                         // 사용자 정보 수정 폼
-                        let editForm = `👤 ${user.name} 계정 정보 수정\n`;
+                        let editForm = `${user.name} 계정 정보 수정\n`;
                         editForm += `${'='.repeat(40)}\n\n`;
                         editForm += `📧 이메일: ${user.email}\n`;
-                        editForm += `🔑 역할: ${getRoleText(user.role)}\n`;
-                        editForm += `🏢 소속: ${user.store?.name || user.branch?.name || '본사'}\n`;
-                        editForm += `📊 상태: ${user.is_active ? '활성' : '비활성'}\n\n`;
+                        editForm += `역할: ${getRoleText(user.role)}\n`;
+                        editForm += `소속: ${user.store?.name || user.branch?.name || '본사'}\n`;
+                        editForm += `상태: ${user.is_active ? '활성' : '비활성'}\n\n`;
 
                         // 수정 옵션 선택
                         const editOptions = [
@@ -3548,7 +3548,7 @@
                         const option = prompt(editForm + '수정할 항목을 선택하세요:\n\n' + editOptions.join('\n'));
 
                         if (!option || option === '0') {
-                            console.log('❌ 사용자가 수정 취소');
+                            console.log('사용자가 수정 취소');
                             return;
                         }
 
@@ -3570,7 +3570,7 @@
                                 deleteUser(userId, user);
                                 break;
                             default:
-                                alert('❌ 잘못된 선택입니다.');
+                                alert('잘못된 선택입니다.');
                         }
 
                     } else {
@@ -3578,31 +3578,31 @@
                     }
                 })
                 .catch(error => {
-                    console.error('❌ 사용자 정보 로드 오류:', error);
+                    console.error('사용자 정보 로드 오류:', error);
 
                     let errorMessage = '사용자 정보를 불러오는 중 오류가 발생했습니다.\n\n';
 
                     if (error.message.includes('HTTP 404')) {
                         errorMessage += '📍 해당 사용자를 찾을 수 없습니다.';
                     } else if (error.message.includes('HTTP 403')) {
-                        errorMessage += '🔒 사용자 정보 조회 권한이 없습니다.';
+                        errorMessage += '사용자 정보 조회 권한이 없습니다.';
                     } else {
-                        errorMessage += `🔍 오류: ${error.message}`;
+                        errorMessage += `오류: ${error.message}`;
                     }
 
-                    alert(`❌ ${errorMessage}`);
+                    alert(`${errorMessage}`);
                 });
         }
 
         // 비밀번호 리셋
         function resetUserPassword(userId, user) {
-            const newPassword = prompt(`🔑 ${user.name}의 새 비밀번호를 입력하세요:`, '123456');
+            const newPassword = prompt(`${user.name}의 새 비밀번호를 입력하세요:`, '123456');
             if (!newPassword || newPassword.length < 6) {
-                alert('❌ 비밀번호는 6자리 이상이어야 합니다.');
+                alert('비밀번호는 6자리 이상이어야 합니다.');
                 return;
             }
 
-            if (!confirm(`🔑 ${user.name}의 비밀번호를 "${newPassword}"로 변경하시겠습니까?`)) {
+            if (!confirm(`${user.name}의 비밀번호를 "${newPassword}"로 변경하시겠습니까?`)) {
                 return;
             }
 
@@ -3617,15 +3617,15 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    alert(`✅ 비밀번호 리셋 완료!\n\n📧 ${user.email}\n🔑 새 비밀번호: ${newPassword}\n\n이 정보를 해당 사용자에게 전달하세요.`);
+                    alert(`비밀번호 리셋 완료!\n\n${user.email}\n새 비밀번호: ${newPassword}\n\n이 정보를 해당 사용자에게 전달하세요.`);
                     loadStores(); // 사용자 목록 새로고침
                 } else {
-                    alert('❌ 비밀번호 리셋 실패: ' + (data.error || '알 수 없는 오류'));
+                    alert('비밀번호 리셋 실패: ' + (data.error || '알 수 없는 오류'));
                 }
             })
             .catch(error => {
                 console.error('비밀번호 리셋 오류:', error);
-                alert('❌ 비밀번호 리셋 중 오류가 발생했습니다.');
+                alert('비밀번호 리셋 중 오류가 발생했습니다.');
             });
         }
 
@@ -3634,7 +3634,7 @@
             const newStatus = user.is_active ? 'inactive' : 'active';
             const actionText = newStatus === 'active' ? '활성화' : '비활성화';
 
-            if (!confirm(`📊 ${user.name} 계정을 ${actionText}하시겠습니까?`)) {
+            if (!confirm(`${user.name} 계정을 ${actionText}하시겠습니까?`)) {
                 return;
             }
 
@@ -3648,15 +3648,15 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    alert(`✅ ${user.name} 계정이 ${actionText}되었습니다.`);
+                    alert(`${user.name} 계정이 ${actionText}되었습니다.`);
                     loadStores(); // 사용자 목록 새로고침
                 } else {
-                    alert('❌ 계정 상태 변경 실패: ' + (data.error || '알 수 없는 오류'));
+                    alert('계정 상태 변경 실패: ' + (data.error || '알 수 없는 오류'));
                 }
             })
             .catch(error => {
                 console.error('계정 상태 변경 오류:', error);
-                alert('❌ 계정 상태 변경 중 오류가 발생했습니다.');
+                alert('계정 상태 변경 중 오류가 발생했습니다.');
             });
         }
 
@@ -3767,7 +3767,7 @@
             }
             
             // 실제 계정 생성 API 호출
-            console.log('🔄 사용자 계정 생성 API 호출 시작...', userData);
+            console.log('사용자 계정 생성 API 호출 시작...', userData);
 
             fetch(`/api/stores/${currentStoreForUser}/create-user`, {
                 method: 'POST',
@@ -3787,7 +3787,7 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showToast(`✅ ${userData.name} 계정이 성공적으로 생성되었습니다!\n📧 ${userData.email}\n🔑 비밀번호: ${userData.password}`, 'success');
+                    showToast(`${userData.name} 계정이 성공적으로 생성되었습니다!\n${userData.email}\n비밀번호: ${userData.password}`, 'success');
 
                     // 활동 로그 기록
                     fetch('/api/activities/log', {
@@ -3808,28 +3808,28 @@
                     closeAddUserModal();
                     loadUsers(); // 목록 새로고침
                 } else {
-                    showToast(`❌ 계정 생성 실패: ${data.error || '알 수 없는 오류'}`, 'error');
+                    showToast(`계정 생성 실패: ${data.error || '알 수 없는 오류'}`, 'error');
                 }
             })
             .catch(error => {
                 console.error('계정 생성 API 오류:', error);
-                showToast('❌ 계정 생성 중 네트워크 오류가 발생했습니다.', 'error');
+                showToast('계정 생성 중 네트워크 오류가 발생했습니다.', 'error');
             });
         };
         
-        // 🔒 전역 상태 초기화
+        //전역 상태 초기화
         window.storesPageInitialized = false;
         
-        // 🛠️ 매장별 액션 버튼 함수들 정의 - editStore 함수 제거 (중복 해결)
+        //매장별 액션 버튼 함수들 정의 - editStore 함수 제거 (중복 해결)
         
-        // 🗑️ 중복 정의 제거됨 (통합된 함수 사용)
+        //중복 정의 제거됨 (통합된 함수 사용)
         
         // 통합된 매장 삭제 함수 (올바른 API 엔드포인트 사용)
         window.deleteStore = function(storeId) {
             const store = allStores?.find(s => s.id === storeId);
             const storeName = store?.name || `매장 ID ${storeId}`;
 
-            if (!confirm(`⚠️ 정말로 "${storeName}" 매장을 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`)) {
+            if (!confirm(`정말로 "${storeName}" 매장을 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`)) {
                 return;
             }
 
@@ -3850,47 +3850,47 @@
             })
             .then(data => {
                 if (data.success) {
-                    alert(`✅ "${storeName}" ${data.message || '매장이 삭제되었습니다.'}`);
+                    alert(`"${storeName}" ${data.message || '매장이 삭제되었습니다.'}`);
                     if (typeof loadStores === 'function') {
                         loadStores(); // 목록 새로고침
                     } else {
                         location.reload();
                     }
                 } else {
-                    alert('❌ 삭제 실패: ' + (data.error || '알 수 없는 오류'));
+                    alert('삭제 실패: ' + (data.error || '알 수 없는 오류'));
                 }
             })
             .catch(error => {
                 console.error('매장 삭제 오류:', error);
                 if (error.message.includes('인증')) {
-                    alert('❌ ' + error.message);
+                    alert('' + error.message);
                     window.location.href = '/login';
                 } else {
-                    alert('❌ 매장 삭제 중 오류가 발생했습니다: ' + error.message);
+                    alert('매장 삭제 중 오류가 발생했습니다: ' + error.message);
                 }
             });
         };
         
-        // ✨ 안전한 초기화 함수 + 버튼 이벤트 등록
+        //안전한 초기화 함수 + 버튼 이벤트 등록
         function initializeStoresPage() {
             if (window.storesPageInitialized) {
-                console.log('ℹ️ 이미 초기화됨 - 스킵');
+                console.log('이미 초기화됨 - 스킵');
                 return false;
             }
             
-            console.log('✅ 매장관리 페이지 초기화 시작');
+            console.log('매장관리 페이지 초기화 시작');
             
-            // 🛠️ 매장 액션 버튼 이벤트 리스너 등록
+            //매장 액션 버튼 이벤트 리스너 등록
             setupStoreActionButtons();
             
             // loadStores 함수 실행
             if (typeof window.loadStores === 'function') {
-                console.log('✅ loadStores 함수 실행');
+                console.log('loadStores 함수 실행');
                 window.loadStores();
                 window.storesPageInitialized = true;
                 return true;
             } else {
-                console.error('❌ loadStores 함수 미정의');
+                console.error('loadStores 함수 미정의');
                 return false;
             }
         }
@@ -3899,12 +3899,12 @@
         
         // 강화된 매장 계정 생성/수정 함수
         window.createStoreAccount = function createStoreAccount(storeId, storeName) {
-            console.log('👤 매장 계정 생성/수정 시작:', storeId, storeName);
+            console.log('매장 계정 생성/수정 시작:', storeId, storeName);
 
             // 먼저 기존 계정 상태 확인
             fetch(`/debug/store-account/${storeId}`)
                 .then(response => {
-                    console.log('📡 계정 상태 API 응답:', response.status, response.headers.get('content-type'));
+                    console.log('계정 상태 API 응답:', response.status, response.headers.get('content-type'));
 
                     if (!response.ok) {
                         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -3912,12 +3912,12 @@
 
                     // Content-Type 안전 검증
                     const contentType = response.headers.get('content-type') || '';
-                    console.log('🔍 Response Content-Type:', contentType);
+                    console.log('Response Content-Type:', contentType);
 
                     if (!contentType.includes('application/json')) {
                         // HTML 오류 페이지인 경우 텍스트로 읽어서 에러 추출
                         return response.text().then(htmlText => {
-                            console.log('⚠️ HTML 응답 받음:', htmlText.substring(0, 200));
+                            console.log('HTML 응답 받음:', htmlText.substring(0, 200));
 
                             // Laravel 오류 페이지에서 에러 메시지 추출
                             const errorMatch = htmlText.match(/<title>([^<]+)<\/title>/);
@@ -3932,22 +3932,22 @@
                 .then(data => {
                     if (data.success) {
                         const accountInfo = data.data;
-                        console.log('📊 매장 계정 상태:', accountInfo);
+                        console.log('매장 계정 상태:', accountInfo);
 
                         if (accountInfo.account_exists) {
                             // 기존 계정이 있는 경우
                             const existingAccount = accountInfo.existing_account;
-                            let accountMessage = `👤 "${storeName}" 매장 계정 정보\n`;
+                            let accountMessage = `"${storeName}" 매장 계정 정보\n`;
                             accountMessage += `${'='.repeat(40)}\n\n`;
                             accountMessage += `📧 기존 계정: ${existingAccount.email}\n`;
-                            accountMessage += `👤 이름: ${existingAccount.name}\n`;
-                            accountMessage += `📊 상태: ${existingAccount.is_active ? '✅ 활성' : '❌ 비활성'}\n\n`;
+                            accountMessage += `이름: ${existingAccount.name}\n`;
+                            accountMessage += `상태: ${existingAccount.is_active ? '활성' : '비활성'}\n\n`;
 
                             if (!existingAccount.is_active) {
-                                accountMessage += `⚠️ 계정이 비활성화되어 있습니다.\n`;
+                                accountMessage += `계정이 비활성화되어 있습니다.\n`;
                                 accountMessage += `계정을 활성화하고 비밀번호를 리셋하시겠습니까?`;
                             } else {
-                                accountMessage += `✅ 계정이 이미 활성화되어 있습니다.\n`;
+                                accountMessage += `계정이 이미 활성화되어 있습니다.\n`;
                                 accountMessage += `비밀번호를 리셋하시겠습니까?`;
                             }
 
@@ -3957,11 +3957,11 @@
                             }
                         } else {
                             // 새 계정 생성
-                            let createMessage = `👤 "${storeName}" 매장 새 계정 생성\n`;
+                            let createMessage = `"${storeName}" 매장 새 계정 생성\n`;
                             createMessage += `${'='.repeat(40)}\n\n`;
                             createMessage += `📧 생성될 이메일: ${accountInfo.suggested_email}\n`;
-                            createMessage += `🔑 기본 비밀번호: 123456\n`;
-                            createMessage += `🏪 역할: 매장 관리자\n\n`;
+                            createMessage += `기본 비밀번호: 123456\n`;
+                            createMessage += `역할: 매장 관리자\n\n`;
                             createMessage += `새 계정을 생성하시겠습니까?`;
 
                             if (confirm(createMessage)) {
@@ -3974,8 +3974,8 @@
                     }
                 })
                 .catch(error => {
-                    console.error('❌ 계정 상태 확인 오류:', error);
-                    alert('❌ 계정 상태 확인 중 오류가 발생했습니다.\n기본 계정 생성을 진행하시겠습니까?');
+                    console.error('계정 상태 확인 오류:', error);
+                    alert('계정 상태 확인 중 오류가 발생했습니다.\n기본 계정 생성을 진행하시겠습니까?');
 
                     // 기본 계정 생성 프로세스로 폴백
                     createNewStoreAccount(storeId, storeName);
@@ -3984,7 +3984,7 @@
 
         // 매장 계정 활성화/리셋
         function activateStoreAccount(storeId, storeName) {
-            console.log('🔄 매장 계정 활성화/리셋:', storeId);
+            console.log('매장 계정 활성화/리셋:', storeId);
 
             fetch(`/api/stores/${storeId}/ensure-account`, {
                 method: 'POST',
@@ -3996,21 +3996,21 @@
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    let successMessage = `✅ "${storeName}" 계정 ${data.action === 'activated' ? '활성화' : '생성'} 완료!\n\n`;
+                    let successMessage = `"${storeName}" 계정 ${data.action === 'activated' ? '활성화' : '생성'} 완료!\n\n`;
                     successMessage += `📧 이메일: ${data.user.email}\n`;
-                    successMessage += `🔑 비밀번호: 123456\n`;
-                    successMessage += `📊 상태: 활성\n\n`;
+                    successMessage += `비밀번호: 123456\n`;
+                    successMessage += `상태: 활성\n\n`;
                     successMessage += `이 정보를 매장 관리자에게 전달하세요.`;
 
                     alert(successMessage);
-                    console.log(`✅ ${storeName} 계정 처리 완료`);
+                    console.log(`${storeName} 계정 처리 완료`);
                 } else {
-                    alert('❌ 계정 처리 실패: ' + (data.error || '알 수 없는 오류'));
+                    alert('계정 처리 실패: ' + (data.error || '알 수 없는 오류'));
                 }
             })
             .catch(error => {
-                console.error('❌ 계정 처리 오류:', error);
-                alert('❌ 계정 처리 중 오류가 발생했습니다.');
+                console.error('계정 처리 오류:', error);
+                alert('계정 처리 중 오류가 발생했습니다.');
             });
         }
 
@@ -4040,23 +4040,23 @@
             .then(response => response.json())
             .then(result => {
                 if (result.success) {
-                    alert(`✅ ${storeName} 계정이 생성되었습니다!\n이메일: ${email}\n비밀번호: ${password}`);
+                    alert(`${storeName} 계정이 생성되었습니다!\n이메일: ${email}\n비밀번호: ${password}`);
                 } else {
-                    alert('❌ 계정 생성 실패: ' + (result.error || '알 수 없는 오류'));
+                    alert('계정 생성 실패: ' + (result.error || '알 수 없는 오류'));
                 }
             })
             .catch(error => {
-                alert('❌ 네트워크 오류: ' + error.message);
+                alert('네트워크 오류: ' + error.message);
             });
         };
         
-        // 📊 통합된 매장 성과 보기 함수 (중복 제거 완료)
+        //통합된 매장 성과 보기 함수 (중복 제거 완료)
         window.viewStoreStats = function(storeId, storeName) {
-            console.log('📊 통합 매장 성과 보기:', storeId, storeName);
+            console.log('통합 매장 성과 보기:', storeId, storeName);
 
             // 권한 체크 (permissionManager가 있다면)
             if (window.permissionManager && !window.permissionManager.canViewStats(storeId)) {
-                alert('❌ 이 매장의 성과를 조회할 권한이 없습니다.');
+                alert('이 매장의 성과를 조회할 권한이 없습니다.');
                 return;
             }
 
@@ -4064,14 +4064,14 @@
             const finalStoreName = storeName || `매장 ${storeId}`;
 
             // 성과 조회 옵션 제공
-            let statsOptions = `📊 ${finalStoreName} 성과 분석 옵션\n`;
+            let statsOptions = `${finalStoreName} 성과 분석 옵션\n`;
             statsOptions += `${'='.repeat(45)}\n\n`;
             statsOptions += `어떤 방식으로 성과를 확인하시겠습니까?\n\n`;
-            statsOptions += `1. 📈 상세 통계 페이지로 이동\n`;
+            statsOptions += `1. 상세 통계 페이지로 이동\n`;
             statsOptions += `   • 기간별 성과 추이\n`;
             statsOptions += `   • 매장 순위 및 비교\n`;
             statsOptions += `   • 목표 달성률 분석\n\n`;
-            statsOptions += `2. 🔍 빠른 성과 요약 보기\n`;
+            statsOptions += `2. 빠른 성과 요약 보기\n`;
             statsOptions += `   • 이번달 매출 및 개통건수\n`;
             statsOptions += `   • 순위 및 성장률\n\n`;
             statsOptions += `선택하세요 (1 또는 2):`;
@@ -4080,11 +4080,11 @@
 
             if (choice === '1') {
                 // 상세 통계 페이지로 이동
-                console.log(`✅ ${finalStoreName} 상세 통계 페이지로 이동`);
+                console.log(`${finalStoreName} 상세 통계 페이지로 이동`);
                 window.location.href = `/statistics/enhanced?store=${storeId}&name=${encodeURIComponent(finalStoreName)}`;
             } else if (choice === '2') {
                 // 빠른 성과 요약 (모달)
-                console.log(`✅ ${finalStoreName} 빠른 성과 요약 표시`);
+                console.log(`${finalStoreName} 빠른 성과 요약 표시`);
                 if (typeof viewStoreStatsModal === 'function') {
                     viewStoreStatsModal(storeId);
                 } else {
@@ -4092,21 +4092,21 @@
                     window.location.href = `/statistics/enhanced?store=${storeId}&name=${encodeURIComponent(finalStoreName)}`;
                 }
             } else if (choice !== null) {
-                alert('❌ 올바른 옵션을 선택해주세요 (1 또는 2)');
+                alert('올바른 옵션을 선택해주세요 (1 또는 2)');
             }
         };
         
 
         // 삭제됨 - deleteStore 함수로 통합
         /* window.deleteStoreWithConfirmation = function(storeId, storeName, forceDelete = false) {
-            console.log('🗑️ 매장 삭제 확인:', { storeId, storeName, forceDelete });
+            console.log('매장 삭제 확인:', { storeId, storeName, forceDelete });
 
             // 첫 번째 확인
-            if (!forceDelete && !confirm(`⚠️ 정말로 "${storeName}" 매장을 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`)) {
-                console.log('❌ 사용자가 삭제 취소');
+            if (!forceDelete && !confirm(`정말로 "${storeName}" 매장을 삭제하시겠습니까?\n\n이 작업은 되돌릴 수 없습니다.`)) {
+                console.log('사용자가 삭제 취소');
                 return;
             }
-            console.log('📡 매장 삭제 API 호출...');
+            console.log('매장 삭제 API 호출...');
 
             // API 호출
             const url = forceDelete ?
@@ -4120,18 +4120,18 @@
                 }
             })
             .then(response => {
-                console.log('📡 매장 삭제 API 응답:', response.status);
+                console.log('매장 삭제 API 응답:', response.status);
                 return response.json();
             })
             .then(result => {
-                console.log('📊 매장 삭제 결과:', result);
+                console.log('매장 삭제 결과:', result);
 
                 if (result.success) {
                     // 성공 시
-                    let successMessage = `✅ "${storeName}" 매장이 성공적으로 삭제되었습니다.`;
+                    let successMessage = `"${storeName}" 매장이 성공적으로 삭제되었습니다.`;
 
                     if (result.deleted_data) {
-                        successMessage += `\n\n📊 삭제된 데이터:`;
+                        successMessage += `\n\n삭제된 데이터:`;
                         if (result.deleted_data.sales_count > 0) {
                             successMessage += `\n• 개통표 기록: ${result.deleted_data.sales_count}건`;
                         }
@@ -4145,41 +4145,41 @@
 
                 } else if (result.requires_confirmation) {
                     // 확인이 필요한 경우 (관련 데이터 존재) - 상세 가이드 표시
-                    console.log('⚠️ 관련 데이터 확인 필요 - 사용자 가이드 표시');
+                    console.log('관련 데이터 확인 필요 - 사용자 가이드 표시');
 
                     showStoreDeleteGuide(storeId, storeName, result);
 
                 } else {
                     // 일반 오류
-                    alert('❌ 매장 삭제 실패: ' + (result.error || '알 수 없는 오류'));
+                    alert('매장 삭제 실패: ' + (result.error || '알 수 없는 오류'));
                 }
             })
             .catch(error => {
-                console.error('❌ 매장 삭제 네트워크 오류:', error);
-                alert('❌ 네트워크 오류가 발생했습니다: ' + error.message);
+                console.error('매장 삭제 네트워크 오류:', error);
+                alert('네트워크 오류가 발생했습니다: ' + error.message);
             });
         };
 
-        // 🗑️ 매장 삭제 상세 가이드 함수
+        //매장 삭제 상세 가이드 함수
         function showStoreDeleteGuide(storeId, storeName, result) {
-            console.log('📋 매장 삭제 가이드 표시:', result);
+            console.log('매장 삭제 가이드 표시:', result);
 
             // 사용자 친화적인 옵션 선택 UI 생성
-            let optionMessage = `🗑️ "${storeName}" 매장 삭제 옵션\n`;
+            let optionMessage = `"${storeName}" 매장 삭제 옵션\n`;
             optionMessage += `${'='.repeat(50)}\n\n`;
 
-            optionMessage += `📊 연결된 데이터:\n`;
+            optionMessage += `연결된 데이터:\n`;
             Object.entries(result.details.data_types).forEach(([type, count]) => {
                 optionMessage += `• ${type}: ${count}\n`;
             });
 
-            optionMessage += `\n🔧 삭제 방법을 선택하세요:\n\n`;
+            optionMessage += `\n삭제 방법을 선택하세요:\n\n`;
 
             result.actions.forEach((action, index) => {
                 optionMessage += `${index + 1}. ${action.label}\n`;
                 optionMessage += `   ${action.description}\n`;
                 if (action.warning) {
-                    optionMessage += `   ⚠️ ${action.warning}\n`;
+                    optionMessage += `   ${action.warning}\n`;
                 }
                 optionMessage += `\n`;
             });
@@ -4187,17 +4187,17 @@
             const choice = prompt(optionMessage + '선택하세요 (번호 입력):');
 
             if (!choice || choice === '3') {
-                console.log('❌ 사용자가 삭제 취소');
+                console.log('사용자가 삭제 취소');
                 return;
             }
 
             const selectedAction = result.actions[parseInt(choice) - 1];
             if (!selectedAction) {
-                alert('❌ 잘못된 선택입니다.');
+                alert('잘못된 선택입니다.');
                 return;
             }
 
-            console.log('✅ 사용자 선택:', selectedAction.label);
+            console.log('사용자 선택:', selectedAction.label);
 
             switch (selectedAction.action) {
                 case 'backup_first':
@@ -4213,20 +4213,20 @@
                     handleForceDelete(storeId, storeName);
                     break;
                 default:
-                    console.log('❌ 알 수 없는 액션');
+                    console.log('알 수 없는 액션');
             }
         }
 
-        // 📊 데이터 백업 후 삭제 처리
+        //데이터 백업 후 삭제 처리
         function handleBackupFirstDeletion(storeId, storeName, result) {
-            let backupMessage = `📊 "${storeName}" 데이터 백업 안내\n`;
+            let backupMessage = `"${storeName}" 데이터 백업 안내\n`;
             backupMessage += `${'='.repeat(40)}\n\n`;
 
             backupMessage += `백업할 데이터:\n`;
             backupMessage += `• 개통표 기록: ${result.details.sales_count}건\n`;
             backupMessage += `• 사용자 계정: ${result.details.users_count}개\n\n`;
 
-            backupMessage += `💾 백업 방법:\n`;
+            backupMessage += `백업 방법:\n`;
             backupMessage += `1. 통계 페이지에서 해당 매장 데이터 내보내기\n`;
             backupMessage += `2. 계정 관리에서 사용자 정보 내보내기\n`;
             backupMessage += `3. 백업 완료 후 다시 삭제 시도\n\n`;
@@ -4236,16 +4236,16 @@
             if (confirm(backupMessage)) {
                 // 통계 페이지로 이동하여 데이터 백업
                 window.open(`/statistics/enhanced?store=${storeId}&name=${encodeURIComponent(storeName)}&backup=true`, '_blank');
-                alert('📊 백업 페이지가 열렸습니다.\n백업 완료 후 다시 삭제를 시도해주세요.');
+                alert('백업 페이지가 열렸습니다.\n백업 완료 후 다시 삭제를 시도해주세요.');
             }
         }
 
-        // 🗑️ 강제 삭제 처리
+        //강제 삭제 처리
         function handleForceDelete(storeId, storeName) {
-            let confirmMessage = `⚠️ "${storeName}" 강제 삭제 최종 확인\n`;
+            let confirmMessage = `"${storeName}" 강제 삭제 최종 확인\n`;
             confirmMessage += `${'='.repeat(40)}\n\n`;
 
-            confirmMessage += `🚨 다음 데이터들이 영구적으로 삭제됩니다:\n`;
+            confirmMessage += `다음 데이터들이 영구적으로 삭제됩니다:\n`;
             confirmMessage += `• 모든 개통표 기록\n`;
             confirmMessage += `• 관련 사용자 계정\n`;
             confirmMessage += `• 매장 통계 데이터\n`;
@@ -4259,23 +4259,23 @@
             const confirmation = prompt(confirmMessage);
 
             if (confirmation === storeName) {
-                console.log('✅ 사용자가 매장명 확인 완료 - 강제 삭제 진행');
+                console.log('사용자가 매장명 확인 완료 - 강제 삭제 진행');
                 deleteStoreWithConfirmation(storeId, storeName, true);
             } else if (confirmation !== null) {
-                alert('❌ 매장명이 일치하지 않습니다.\n삭제가 취소되었습니다.');
+                alert('매장명이 일치하지 않습니다.\n삭제가 취소되었습니다.');
             }
         }
 
-        // 🏪 매장 폐점 처리 (데이터 보존)
+        //매장 폐점 처리 (데이터 보존)
         function handleStoreDeactivation(storeId, storeName) {
-            let deactivateMessage = `🏪 "${storeName}" 매장 폐점 처리\n`;
+            let deactivateMessage = `"${storeName}" 매장 폐점 처리\n`;
             deactivateMessage += `${'='.repeat(40)}\n\n`;
-            deactivateMessage += `📋 폐점 처리 내용:\n`;
+            deactivateMessage += `폐점 처리 내용:\n`;
             deactivateMessage += `• 매장 상태: 운영중 → 폐점\n`;
             deactivateMessage += `• 사용자 계정: 자동 비활성화\n`;
-            deactivateMessage += `• 개통표 데이터: 완전 보존 ✅\n`;
-            deactivateMessage += `• 매장 정보: 완전 보존 ✅\n\n`;
-            deactivateMessage += `💡 장점:\n`;
+            deactivateMessage += `• 개통표 데이터: 완전 보존\n`;
+            deactivateMessage += `• 매장 정보: 완전 보존\n\n`;
+            deactivateMessage += `장점:\n`;
             deactivateMessage += `• 데이터 손실 없음\n`;
             deactivateMessage += `• 필요시 재개점 가능\n`;
             deactivateMessage += `• 법적/감사 요구사항 준수\n\n`;
@@ -4292,8 +4292,8 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        let successMessage = `✅ "${storeName}" 매장 폐점 처리 완료!\n\n`;
-                        successMessage += `📊 보존된 데이터:\n`;
+                        let successMessage = `"${storeName}" 매장 폐점 처리 완료!\n\n`;
+                        successMessage += `보존된 데이터:\n`;
                         successMessage += `• 개통표 기록: ${data.preserved_data.sales_count}건\n`;
                         successMessage += `• 사용자 정보: ${data.preserved_data.users_count}개\n\n`;
                         successMessage += `${data.note}`;
@@ -4301,25 +4301,25 @@
                         alert(successMessage);
                         location.reload();
                     } else {
-                        alert('❌ 폐점 처리 실패: ' + (data.error || '알 수 없는 오류'));
+                        alert('폐점 처리 실패: ' + (data.error || '알 수 없는 오류'));
                     }
                 })
                 .catch(error => {
-                    alert('❌ 폐점 처리 중 오류가 발생했습니다.');
+                    alert('폐점 처리 중 오류가 발생했습니다.');
                 });
             }
         }
 
-        // 👥 계정만 비활성화 처리
+        // 계정만 비활성화 처리
         function handleAccountDisabling(storeId, storeName) {
             let disableMessage = `👥 "${storeName}" 매장 계정 비활성화\n`;
             disableMessage += `${'='.repeat(40)}\n\n`;
-            disableMessage += `📋 비활성화 내용:\n`;
+            disableMessage += `비활성화 내용:\n`;
             disableMessage += `• 사용자 계정: 로그인 불가 처리\n`;
-            disableMessage += `• 매장 정보: 완전 보존 ✅\n`;
-            disableMessage += `• 개통표 데이터: 완전 보존 ✅\n`;
+            disableMessage += `• 매장 정보: 완전 보존\n`;
+            disableMessage += `• 개통표 데이터: 완전 보존\n`;
             disableMessage += `• 매장 상태: 운영중 유지\n\n`;
-            disableMessage += `💡 용도: 일시적 운영 중단, 직원 교체 등\n\n`;
+            disableMessage += `용도: 일시적 운영 중단, 직원 교체 등\n\n`;
             disableMessage += `계정 비활성화를 진행하시겠습니까?`;
 
             if (confirm(disableMessage)) {
@@ -4333,21 +4333,21 @@
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        alert(`✅ "${storeName}" 매장 계정 비활성화 완료!\n\n비활성화된 계정: ${data.affected_accounts}개\n\n필요시 계정 관리에서 재활성화 가능합니다.`);
+                        alert(`"${storeName}" 매장 계정 비활성화 완료!\n\n비활성화된 계정: ${data.affected_accounts}개\n\n필요시 계정 관리에서 재활성화 가능합니다.`);
                         location.reload();
                     } else {
-                        alert('❌ 계정 비활성화 실패: ' + (data.error || '알 수 없는 오류'));
+                        alert('계정 비활성화 실패: ' + (data.error || '알 수 없는 오류'));
                     }
                 })
                 .catch(error => {
-                    alert('❌ 계정 비활성화 중 오류가 발생했습니다.');
+                    alert('계정 비활성화 중 오류가 발생했습니다.');
                 });
             }
         }
 
-        // 🛠️ 매장 버튼 이벤트 리스너 설정
+        //매장 버튼 이벤트 리스너 설정
         function setupStoreActionButtons() {
-            console.log('🛠️ 매장 버튼 이벤트 등록 시작');
+            console.log('매장 버튼 이벤트 등록 시작');
             
             // 이벤트 위임 사용 (동적 요소에도 작동)
             document.addEventListener('click', function(e) {
@@ -4365,28 +4365,28 @@
                 }
                 
                 if (target.classList.contains('store-edit-btn')) {
-                    console.log('✏️ 매장 수정 클릭:', storeId, storeName);
+                    console.log('매장 수정 클릭:', storeId, storeName);
                     alert('매장 수정: ' + storeName + ' (ID: ' + storeId + ')');
                 } else if (target.classList.contains('store-account-btn')) {
-                    console.log('👤 계정 생성 클릭:', storeId, storeName);
+                    console.log('계정 생성 클릭:', storeId, storeName);
 
                     // 개선된 계정 생성 함수 호출
                     createStoreAccount(storeId, storeName);
                 } else if (target.classList.contains('store-stats-btn')) {
-                    console.log('📊 성과 보기 클릭:', storeId, storeName);
+                    console.log('성과 보기 클릭:', storeId, storeName);
 
                     // 개선된 성과 보기 함수 호출
                     viewStoreStats(storeId, storeName);
                 } else if (target.classList.contains('store-delete-btn')) {
-                    console.log('🗑️ 매장 삭제 클릭:', storeId, storeName);
+                    console.log('매장 삭제 클릭:', storeId, storeName);
                     deleteStore(storeId); // 통합된 함수 호출
                 }
             });
             
-            console.log('✅ 매장 버튼 이벤트 등록 완료');
+            console.log('매장 버튼 이벤트 등록 완료');
         }
 
-        // ⚠️ 중복 초기화 코드 제거됨 - 라인 4097의 단순 초기화만 사용
+        //중복 초기화 코드 제거됨 - 라인 4097의 단순 초기화만 사용
 
         // 전역 오류 처리
         window.addEventListener('error', function(e) {
@@ -4396,7 +4396,7 @@
             
             // 오류 시 긴급 복구 시도
             if (!window.storesPageInitialized) {
-                console.log('🚑 오류 감지 - 긴급 복구 시도');
+                console.log('오류 감지 - 긴급 복구 시도');
                 setTimeout(() => {
                     if (typeof initializeStoresPage === 'function') {
                         initializeStoresPage();
@@ -4458,16 +4458,16 @@
                     // 매장 목록 실시간 업데이트
                     await refreshStoreList();
 
-                    // 🔍 디버깅: API 응답 내용 확인
-                    console.log('📊 API 응답 전체 (async):', storeResult);
-                    console.log('🔑 account 정보 (async):', storeResult.account);
+                    //디버깅: API 응답 내용 확인
+                    console.log('API 응답 전체 (async):', storeResult);
+                    console.log('account 정보 (async):', storeResult.account);
 
-                    // 🎉 계정 정보 모달 표시 (이미 계정이 생성되어 응답에 포함됨)
+                    //계정 정보 모달 표시 (이미 계정이 생성되어 응답에 포함됨)
                     if (storeResult.account) {
-                        console.log('✅ account 존재 (async), 모달 호출 시작');
+                        console.log('account 존재 (async), 모달 호출 시작');
                         showStoreAccountModal(storeResult.account, storeResult.data);
                     } else {
-                        console.log('❌ account 정보 없음 (async), 토스트 표시');
+                        console.log('account 정보 없음 (async), 토스트 표시');
                         showToast('매장이 성공적으로 추가되었습니다!', 'success');
                     }
                 } else {
@@ -4586,7 +4586,7 @@
         async function refreshStoreList() {
             if (typeof loadStores === 'function') {
                 await loadStores();
-                console.log('✅ 매장 목록 실시간 업데이트 완료');
+                console.log('매장 목록 실시간 업데이트 완료');
             }
         }
 
@@ -4675,9 +4675,9 @@
         // 클립보드 복사
         function copyToClipboard(text) {
             navigator.clipboard.writeText(text).then(() => {
-                showToast('📋 클립보드에 복사되었습니다', 'success');
+                showToast('클립보드에 복사되었습니다', 'success');
             }).catch(() => {
-                showToast('❌ 복사 실패', 'error');
+                showToast('복사 실패', 'error');
             });
         }
 
@@ -4728,13 +4728,13 @@
             printWindow.print();
         }
 
-        // 🔥 페이지 로드 시 매장 목록 자동 로딩 (초기화 코드)
+        //페이지 로드 시 매장 목록 자동 로딩 (초기화 코드)
         window.addEventListener('DOMContentLoaded', function() {
-            console.log('✅ 페이지 로드 완료 - 매장 목록 로딩 시작');
+            console.log('페이지 로드 완료 - 매장 목록 로딩 시작');
             if (typeof loadStores === 'function') {
                 loadStores(); // 매장 목록 로드
             } else {
-                console.error('❌ loadStores 함수를 찾을 수 없습니다');
+                console.error('loadStores 함수를 찾을 수 없습니다');
             }
         });
 

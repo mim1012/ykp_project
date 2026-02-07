@@ -203,7 +203,7 @@
                 // Check response status first
                 if (!response.ok) {
                     const text = await response.text();
-                    console.error('❌ Server Error Response:', {
+                    console.error('Server Error Response:', {
                         status: response.status,
                         statusText: response.statusText,
                         headers: Object.fromEntries(response.headers.entries()),
@@ -220,11 +220,11 @@
 
                 // Check if response is JSON
                 const contentType = response.headers.get('content-type');
-                log('📡 Response Content-Type:', contentType);
+                log('Response Content-Type:', contentType);
 
                 if (!contentType || !contentType.includes('application/json')) {
                     const text = await response.text();
-                    console.error('❌ Non-JSON response:', {
+                    console.error('Non-JSON response:', {
                         contentType,
                         body: text.substring(0, 500)
                     });
@@ -232,17 +232,17 @@
                 }
 
                 const data = await response.json();
-                log('✅ Response Data:', data);
+                log('Response Data:', data);
 
                 if (data.success) {
                     createdStores = data.data.created_stores || [];
                     showResult(data.data);
                 } else {
-                    console.error('❌ API Error:', data);
+                    console.error('API Error:', data);
                     throw new Error(data.error || '알 수 없는 오류가 발생했습니다.');
                 }
             } catch (error) {
-                console.error('❌ Upload error:', {
+                console.error('Upload error:', {
                     message: error.message,
                     stack: error.stack
                 });

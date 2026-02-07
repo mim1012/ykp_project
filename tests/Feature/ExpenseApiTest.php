@@ -79,7 +79,7 @@ class ExpenseApiTest extends TestCase
             'amount' => 1500000,
         ]);
 
-        echo "\n✅ Test passed: Store user can create expense\n";
+        echo "\nTest passed: Store user can create expense\n";
     }
 
     #[Test]
@@ -98,7 +98,7 @@ class ExpenseApiTest extends TestCase
                      'message' => 'Only store users can create expenses',
                  ]);
 
-        echo "\n✅ Test passed: Branch user cannot create expense\n";
+        echo "\nTest passed: Branch user cannot create expense\n";
     }
 
     #[Test]
@@ -122,7 +122,7 @@ class ExpenseApiTest extends TestCase
                      'meta' => ['current_page', 'total'],
                  ]);
 
-        echo "\n✅ Test passed: Store user can get their expenses\n";
+        echo "\nTest passed: Store user can get their expenses\n";
         echo "Total expenses: " . count($response->json('data')) . "\n";
     }
 
@@ -153,7 +153,7 @@ class ExpenseApiTest extends TestCase
             'amount' => 60000,
         ]);
 
-        echo "\n✅ Test passed: Store user can update their expense\n";
+        echo "\nTest passed: Store user can update their expense\n";
     }
 
     #[Test]
@@ -174,7 +174,7 @@ class ExpenseApiTest extends TestCase
                      'message' => 'Only store users can update expenses',
                  ]);
 
-        echo "\n✅ Test passed: Branch user cannot update expense\n";
+        echo "\nTest passed: Branch user cannot update expense\n";
     }
 
     #[Test]
@@ -197,7 +197,7 @@ class ExpenseApiTest extends TestCase
             'id' => $expense->id,
         ]);
 
-        echo "\n✅ Test passed: Store user can delete their expense\n";
+        echo "\nTest passed: Store user can delete their expense\n";
     }
 
     #[Test]
@@ -229,7 +229,7 @@ class ExpenseApiTest extends TestCase
                  ]);
 
         $data = $response->json('data');
-        echo "\n✅ Test passed: Monthly summary\n";
+        echo "\nTest passed: Monthly summary\n";
         echo "Period: {$data['period']}, Count: {$data['count']}, Total: {$data['total']}\n";
     }
 
@@ -249,7 +249,7 @@ class ExpenseApiTest extends TestCase
                      'success' => true,
                  ]);
 
-        echo "\n✅ Test passed: Branch user can view branch expenses\n";
+        echo "\nTest passed: Branch user can view branch expenses\n";
         echo "Total expenses visible: " . count($response->json('data')) . "\n";
     }
 
@@ -269,6 +269,6 @@ class ExpenseApiTest extends TestCase
                      'success' => true,
                  ]);
 
-        echo "\n✅ Test passed: HQ user can view all expenses\n";
+        echo "\nTest passed: HQ user can view all expenses\n";
     }
 }

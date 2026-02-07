@@ -157,7 +157,7 @@ class SaleService implements SaleServiceInterface
                         && is_numeric($saleData['id'])
                         && $saleData['id'] < 9999999999; // 임시 ID는 Date.now() 기반이므로 10자리 이상 (예: 1730000000000)
 
-                    Log::info('💾 Processing sale record', [
+                    Log::info('Processing sale record', [
                         'row_index' => $index,
                         'has_real_id' => $hasRealId,
                         'id' => $saleData['id'] ?? 'null',
@@ -181,7 +181,7 @@ class SaleService implements SaleServiceInterface
                         // 기존 레코드 확인
                         $existingRecord = Sale::where('id', $saleData['id'])->first();
                         if ($existingRecord) {
-                            Log::info("🔍 Found existing record for UPDATE", [
+                            Log::info("Found existing record for UPDATE", [
                                 'id' => $saleData['id'],
                                 'existing_store_id' => $existingRecord->store_id,
                                 'request_store_id' => $mergedData['store_id'],
@@ -190,7 +190,7 @@ class SaleService implements SaleServiceInterface
 
                             // store_id가 일치하지 않으면 기존 레코드의 store_id 유지
                             if ($existingRecord->store_id != $mergedData['store_id']) {
-                                Log::warning("⚠️ store_id mismatch - keeping existing store_id", [
+                                Log::warning("store_id mismatch - keeping existing store_id", [
                                     'existing_store_id' => $existingRecord->store_id,
                                     'request_store_id' => $mergedData['store_id']
                                 ]);
@@ -198,7 +198,7 @@ class SaleService implements SaleServiceInterface
                                 $mergedData['branch_id'] = $existingRecord->branch_id;
                             }
                         } else {
-                            Log::warning("⚠️ Record not found for UPDATE - will INSERT instead", [
+                            Log::warning("Record not found for UPDATE - will INSERT instead", [
                                 'id' => $saleData['id'],
                                 'store_id' => $mergedData['store_id']
                             ]);
@@ -209,12 +209,12 @@ class SaleService implements SaleServiceInterface
                             ->update($mergedData);
 
                         if ($updatedCount > 0) {
-                            Log::info("✅ UPDATE SUCCESS - ID: {$saleData['id']}", [
+                            Log::info("UPDATE SUCCESS - ID: {$saleData['id']}", [
                                 'updated_fields_count' => count($mergedData),
                                 'updated_count' => $updatedCount
                             ]);
                         } else {
-                            Log::warning("❌ UPDATE FAILED - No rows updated for ID: {$saleData['id']}", [
+                            Log::warning("UPDATE FAILED - No rows updated for ID: {$saleData['id']}", [
                                 'reason' => 'ID not found in database',
                                 'sale_id' => $saleData['id']
                             ]);
@@ -225,11 +225,11 @@ class SaleService implements SaleServiceInterface
                         $mergedData['updated_at'] = now();
                         $newRecord = Sale::create($mergedData);
 
-                        // 🔄 가망고객 → 개통고객 자동 전환 (전화번호 매칭)
+                        // 가망고객 -> 개통고객 자동 전환 (전화번호 매칭)
                         if ($newRecord->phone_number) {
                             $convertedCustomer = $this->customerService->autoLinkProspectToSale($newRecord);
                             if ($convertedCustomer) {
-                                Log::info("🎯 Prospect converted to activated customer", [
+                                Log::info("Prospect converted to activated customer", [
                                     'customer_id' => $convertedCustomer->id,
                                     'sale_id' => $newRecord->id,
                                     'phone_number' => $newRecord->phone_number,
@@ -241,13 +241,13 @@ class SaleService implements SaleServiceInterface
                         $originalId = $saleData['id'] ?? null;
                         if ($originalId) {
                             $idMappings[$originalId] = $newRecord->id;
-                            Log::info("🔄 ID Mapping created", [
+                            Log::info("ID Mapping created", [
                                 'temp_id' => $originalId,
                                 'real_id' => $newRecord->id
                             ]);
                         }
 
-                        Log::info("✅ INSERT SUCCESS - New record created", [
+                        Log::info("INSERT SUCCESS - New record created", [
                             'new_id' => $newRecord->id,
                             'original_id' => $originalId ?? 'none',
                             'store_id' => $newRecord->store_id,
@@ -282,7 +282,7 @@ class SaleService implements SaleServiceInterface
                 'id_mappings' => $idMappings, // 임시 ID → 실제 DB ID 매핑 반환
             ];
 
-            Log::info('💾 Returning response', [
+            Log::info('Returning response', [
                 'has_id_mappings' => !empty($idMappings),
                 'id_mappings_keys' => array_keys($idMappings),
                 'response' => $response,

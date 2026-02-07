@@ -41,7 +41,7 @@ class AuthController extends Controller
         $credentials = $request->only('email', 'password');
         $remember = $request->filled('remember');
 
-        // 🚑 Timebox 오류 해결: try-catch로 감싸서 안전하게 처리
+        // Timebox 오류 해결: try-catch로 감싸서 안전하게 처리
         try {
             $loginSuccess = Auth::attempt($credentials, $remember);
         } catch (\Exception $e) {

@@ -114,13 +114,13 @@ class LocalTestSeeder extends Seeder
             'is_active' => true
         ]);
 
-        echo "✅ 테스트 데이터 생성 완료!\n\n";
+        echo "테스트 데이터 생성 완료!\n\n";
         echo "=== 로그인 계정 정보 ===\n";
-        echo "📌 본사: hq@test.com / password\n";
-        echo "📌 서울지사: seoul@test.com / password\n";
-        echo "📌 경기지사: gyeonggi@test.com / password\n";
-        echo "📌 강남점: gangnam@test.com / password\n";
-        echo "📌 홍대점: hongdae@test.com / password\n";
-        echo "📌 분당점: bundang@test.com / password\n";
+        echo "본사: hq@test.com / password\n";
+        echo "서울지사: seoul@test.com / password\n";
+        echo "경기지사: gyeonggi@test.com / password\n";
+        echo "강남점: gangnam@test.com / password\n";
+        echo "홍대점: hongdae@test.com / password\n";
+        echo "분당점: bundang@test.com / password\n";
     }
 }

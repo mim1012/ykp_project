@@ -70,7 +70,7 @@ class CustomerApiTest extends TestCase
             'store_id' => $this->store->id,
         ]);
 
-        echo "\n✅ Test passed: Store user can create prospect customer\n";
+        echo "\nTest passed: Store user can create prospect customer\n";
         echo "Response: " . $response->getContent() . "\n";
     }
 
@@ -97,7 +97,7 @@ class CustomerApiTest extends TestCase
                      'meta' => ['current_page', 'total'],
                  ]);
 
-        echo "\n✅ Test passed: Store user can get their customers\n";
+        echo "\nTest passed: Store user can get their customers\n";
         echo "Total customers: " . count($response->json('data')) . "\n";
     }
 
@@ -129,7 +129,7 @@ class CustomerApiTest extends TestCase
             'notes' => '업데이트된 메모',
         ]);
 
-        echo "\n✅ Test passed: Store user can update customer\n";
+        echo "\nTest passed: Store user can update customer\n";
     }
 
     #[Test]
@@ -154,7 +154,7 @@ class CustomerApiTest extends TestCase
             'id' => $customer->id,
         ]);
 
-        echo "\n✅ Test passed: Store user can delete prospect customer\n";
+        echo "\nTest passed: Store user can delete prospect customer\n";
     }
 
     #[Test]
@@ -180,7 +180,7 @@ class CustomerApiTest extends TestCase
                      'message' => 'Customer with this phone number already exists',
                  ]);
 
-        echo "\n✅ Test passed: Duplicate customer prevention works\n";
+        echo "\nTest passed: Duplicate customer prevention works\n";
     }
 
     #[Test]
@@ -217,7 +217,7 @@ class CustomerApiTest extends TestCase
                  ]);
 
         $stats = $response->json('data');
-        echo "\n✅ Test passed: Customer statistics\n";
+        echo "\nTest passed: Customer statistics\n";
         echo "Total: {$stats['total_customers']}, Prospects: {$stats['prospects']}, Activated: {$stats['activated']}\n";
         echo "Conversion Rate: {$stats['conversion_rate']}%\n";
     }

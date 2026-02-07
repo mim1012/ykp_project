@@ -76,7 +76,7 @@ class StoreClassificationApiTest extends TestCase
             'store_type' => 'direct',
         ]);
 
-        echo "\n✅ Test passed: Branch user can update store classification\n";
+        echo "\nTest passed: Branch user can update store classification\n";
     }
 
     #[Test]
@@ -92,7 +92,7 @@ class StoreClassificationApiTest extends TestCase
                      'success' => true,
                  ]);
 
-        echo "\n✅ Test passed: HQ user can update store classification\n";
+        echo "\nTest passed: HQ user can update store classification\n";
     }
 
     #[Test]
@@ -115,7 +115,7 @@ class StoreClassificationApiTest extends TestCase
             'store_type' => 'franchise',
         ]);
 
-        echo "\n✅ Test passed: Store user cannot update classification (RBAC)\n";
+        echo "\nTest passed: Store user cannot update classification (RBAC)\n";
     }
 
     #[Test]
@@ -136,7 +136,7 @@ class StoreClassificationApiTest extends TestCase
                      'message' => 'You can only update stores in your branch',
                  ]);
 
-        echo "\n✅ Test passed: Branch user cannot update other branch stores (RBAC)\n";
+        echo "\nTest passed: Branch user cannot update other branch stores (RBAC)\n";
     }
 
     #[Test]
@@ -149,7 +149,7 @@ class StoreClassificationApiTest extends TestCase
 
         $response->assertStatus(422); // Validation error
 
-        echo "\n✅ Test passed: Invalid store_type rejected\n";
+        echo "\nTest passed: Invalid store_type rejected\n";
     }
 
     #[Test]
@@ -173,7 +173,7 @@ class StoreClassificationApiTest extends TestCase
             'email' => 'store@example.com',
         ]);
 
-        echo "\n✅ Test passed: Branch user can update business info\n";
+        echo "\nTest passed: Branch user can update business info\n";
     }
 
     #[Test]
@@ -190,7 +190,7 @@ class StoreClassificationApiTest extends TestCase
                      'success' => true,
                  ]);
 
-        echo "\n✅ Test passed: HQ user can update business info\n";
+        echo "\nTest passed: HQ user can update business info\n";
     }
 
     #[Test]
@@ -207,7 +207,7 @@ class StoreClassificationApiTest extends TestCase
                      'message' => 'Store users cannot update business information',
                  ]);
 
-        echo "\n✅ Test passed: Store user cannot update business info (RBAC)\n";
+        echo "\nTest passed: Store user cannot update business info (RBAC)\n";
     }
 
     #[Test]
@@ -234,7 +234,7 @@ class StoreClassificationApiTest extends TestCase
 
         $response2->assertStatus(200);
 
-        echo "\n✅ Test passed: Business info fields are optional\n";
+        echo "\nTest passed: Business info fields are optional\n";
     }
 
     #[Test]
@@ -247,6 +247,6 @@ class StoreClassificationApiTest extends TestCase
 
         $response->assertStatus(422); // Validation error
 
-        echo "\n✅ Test passed: Invalid email format rejected\n";
+        echo "\nTest passed: Invalid email format rejected\n";
     }
 }

@@ -50,7 +50,7 @@ class ErrorBoundary extends React.Component {
 
         // 개발 환경에서는 콘솔에 상세 정보 출력
         if (process.env.NODE_ENV === 'development') {
-            console.group('🔴 Error Boundary Details');
+            console.group('Error Boundary Details');
             console.error('Error:', error.toString());
             console.error('Component Stack:', errorInfo.componentStack);
             console.groupEnd();

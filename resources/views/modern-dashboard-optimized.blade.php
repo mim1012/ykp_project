@@ -404,7 +404,7 @@
             const originalText = button.innerHTML;
             
             // 버튼 로딩 상태
-            button.innerHTML = '🔄 로딩...';
+            button.innerHTML = '로딩...';
             button.disabled = true;
             
             loadSystemStats().finally(() => {

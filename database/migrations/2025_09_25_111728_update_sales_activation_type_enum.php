@@ -30,7 +30,7 @@ return new class extends Migration
         } else {
             // SQLite/MySQL/MariaDB - 데이터 보존하면서 컬럼 타입 변경
 
-            // ✅ SQLite: 인덱스가 있는 컬럼은 먼저 인덱스를 삭제해야 함
+            // SQLite: 인덱스가 있는 컬럼은 먼저 인덱스를 삭제해야 함
             try {
                 Schema::table('sales', function (Blueprint $table) {
                     // activation_type 관련 인덱스 삭제
@@ -58,7 +58,7 @@ return new class extends Migration
             DB::statement("ALTER TABLE sales DROP COLUMN activation_type");
             DB::statement("ALTER TABLE sales DROP COLUMN carrier");
 
-            // ✅ SQLite는 ENUM을 지원하지 않으므로 VARCHAR 사용
+            // SQLite는 ENUM을 지원하지 않으므로 VARCHAR 사용
             if (DB::connection()->getDriverName() === 'sqlite') {
                 DB::statement("ALTER TABLE sales ADD COLUMN activation_type VARCHAR(10) NULL");
                 DB::statement("ALTER TABLE sales ADD COLUMN carrier VARCHAR(10) NULL");

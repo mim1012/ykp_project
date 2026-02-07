@@ -54,7 +54,7 @@
                 if (window.location.search.includes('logout=success')) {
                     const logoutMessage = document.createElement('div');
                     logoutMessage.className = 'mb-4 p-4 bg-blue-50 border border-blue-200 text-blue-800 rounded-lg';
-                    logoutMessage.innerHTML = '✅ 로그아웃되었습니다. 다른 계정으로 로그인할 수 있습니다.';
+                    logoutMessage.innerHTML = '로그아웃되었습니다. 다른 계정으로 로그인할 수 있습니다.';
 
                     const form = document.querySelector('form');
                     if (form) {

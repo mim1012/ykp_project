@@ -83,7 +83,7 @@ class NoticeApiTest extends TestCase
             'author_user_id' => $this->hqUser->id,
         ]);
 
-        echo "\n✅ Test passed: HQ user can create notice for all\n";
+        echo "\nTest passed: HQ user can create notice for all\n";
     }
 
     #[Test]
@@ -104,7 +104,7 @@ class NoticeApiTest extends TestCase
             'target_audience' => 'branches',
         ]);
 
-        echo "\n✅ Test passed: Branch user can create notice for own branch\n";
+        echo "\nTest passed: Branch user can create notice for own branch\n";
     }
 
     #[Test]
@@ -123,7 +123,7 @@ class NoticeApiTest extends TestCase
                      'message' => 'Branch users cannot create notices for all users',
                  ]);
 
-        echo "\n✅ Test passed: Branch user cannot create notice for all\n";
+        echo "\nTest passed: Branch user cannot create notice for all\n";
     }
 
     #[Test]
@@ -145,7 +145,7 @@ class NoticeApiTest extends TestCase
                      'message' => 'Branch users can only target their own branch',
                  ]);
 
-        echo "\n✅ Test passed: Branch user cannot target other branch\n";
+        echo "\nTest passed: Branch user cannot target other branch\n";
     }
 
     #[Test]
@@ -164,7 +164,7 @@ class NoticeApiTest extends TestCase
                      'message' => 'Only headquarters and branch users can create notices',
                  ]);
 
-        echo "\n✅ Test passed: Store user cannot create notice\n";
+        echo "\nTest passed: Store user cannot create notice\n";
     }
 
     #[Test]
@@ -189,7 +189,7 @@ class NoticeApiTest extends TestCase
         $response3->assertStatus(200);
         $this->assertGreaterThan(0, count($response3->json('data')));
 
-        echo "\n✅ Test passed: All users can see notice for all\n";
+        echo "\nTest passed: All users can see notice for all\n";
     }
 
     #[Test]
@@ -205,7 +205,7 @@ class NoticeApiTest extends TestCase
         $data = $response->json('data');
         $this->assertGreaterThan(0, count($data));
 
-        echo "\n✅ Test passed: Branch user can see branch-targeted notice\n";
+        echo "\nTest passed: Branch user can see branch-targeted notice\n";
     }
 
     #[Test]
@@ -220,7 +220,7 @@ class NoticeApiTest extends TestCase
         $data = $response->json('data');
         $this->assertGreaterThan(0, count($data));
 
-        echo "\n✅ Test passed: Store user can see store-targeted notice\n";
+        echo "\nTest passed: Store user can see store-targeted notice\n";
     }
 
     #[Test]
@@ -239,7 +239,7 @@ class NoticeApiTest extends TestCase
         $noticeIds = collect($data)->pluck('id')->toArray();
         $this->assertNotContains($notice->id, $noticeIds);
 
-        echo "\n✅ Test passed: Store user cannot see other store's targeted notice\n";
+        echo "\nTest passed: Store user cannot see other store's targeted notice\n";
     }
 
     #[Test]
@@ -266,7 +266,7 @@ class NoticeApiTest extends TestCase
         $this->assertEquals($pinnedNotice->id, $firstNotice['id']);
         $this->assertTrue($firstNotice['is_pinned']);
 
-        echo "\n✅ Test passed: Pinned notices appear first\n";
+        echo "\nTest passed: Pinned notices appear first\n";
     }
 
     #[Test]
@@ -288,7 +288,7 @@ class NoticeApiTest extends TestCase
         $this->assertNotContains($expiredNotice->id, $noticeIds);
         $this->assertContains($activeNotice->id, $noticeIds);
 
-        echo "\n✅ Test passed: Expired notices are hidden by default\n";
+        echo "\nTest passed: Expired notices are hidden by default\n";
     }
 
     #[Test]
@@ -307,7 +307,7 @@ class NoticeApiTest extends TestCase
 
         $this->assertContains($expiredNotice->id, $noticeIds);
 
-        echo "\n✅ Test passed: Expired notices can be included\n";
+        echo "\nTest passed: Expired notices can be included\n";
     }
 
     #[Test]
@@ -334,7 +334,7 @@ class NoticeApiTest extends TestCase
             'title' => '수정된 제목',
         ]);
 
-        echo "\n✅ Test passed: Author can update notice\n";
+        echo "\nTest passed: Author can update notice\n";
     }
 
     #[Test]
@@ -355,7 +355,7 @@ class NoticeApiTest extends TestCase
                      'message' => 'Unauthorized to update this notice',
                  ]);
 
-        echo "\n✅ Test passed: Non-author cannot update notice\n";
+        echo "\nTest passed: Non-author cannot update notice\n";
     }
 
     #[Test]
@@ -376,7 +376,7 @@ class NoticeApiTest extends TestCase
 
         $this->assertDatabaseMissing('notice_posts', ['id' => $notice->id]);
 
-        echo "\n✅ Test passed: HQ can delete any notice\n";
+        echo "\nTest passed: HQ can delete any notice\n";
     }
 
     #[Test]
@@ -392,7 +392,7 @@ class NoticeApiTest extends TestCase
         $response->assertStatus(200);
         $this->assertDatabaseMissing('notice_posts', ['id' => $notice->id]);
 
-        echo "\n✅ Test passed: Author can delete own notice\n";
+        echo "\nTest passed: Author can delete own notice\n";
     }
 
     #[Test]
@@ -415,7 +415,7 @@ class NoticeApiTest extends TestCase
         $notice->refresh();
         $this->assertTrue($notice->is_pinned);
 
-        echo "\n✅ Test passed: HQ can pin notice\n";
+        echo "\nTest passed: HQ can pin notice\n";
     }
 
     #[Test]
@@ -435,7 +435,7 @@ class NoticeApiTest extends TestCase
                      'message' => 'Only headquarters can pin/unpin notices',
                  ]);
 
-        echo "\n✅ Test passed: Branch user cannot pin notice\n";
+        echo "\nTest passed: Branch user cannot pin notice\n";
     }
 
     #[Test]
@@ -454,7 +454,7 @@ class NoticeApiTest extends TestCase
         $notice->refresh();
         $this->assertEquals(1, $notice->view_count);
 
-        echo "\n✅ Test passed: View count increments on read\n";
+        echo "\nTest passed: View count increments on read\n";
     }
 
     #[Test]
@@ -486,6 +486,6 @@ class NoticeApiTest extends TestCase
             );
         }
 
-        echo "\n✅ Test passed: Can search notices by keyword\n";
+        echo "\nTest passed: Can search notices by keyword\n";
     }
 }

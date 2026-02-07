@@ -532,7 +532,7 @@
             const settlementWindow = window.open('http://localhost:5175', '_blank', 'width=1400,height=800');
             setTimeout(() => {
                 if (settlementWindow.closed) {
-                    alert('❌ 정산 시스템이 실행되지 않고 있습니다.\n\n터미널에서 실행해주세요:\ncd ykp-settlement && npm run dev');
+                    alert('정산 시스템이 실행되지 않고 있습니다.\n\n터미널에서 실행해주세요:\ncd ykp-settlement && npm run dev');
                 }
             }, 1000);
         }
@@ -545,7 +545,7 @@
             @if(auth()->user()->isHeadquarters() || auth()->user()->isBranch())
                 window.location.href = '/test/complete-aggrid';
             @else
-                alert('⚠️ 권한이 없습니다.\n지사장 이상만 접근 가능합니다.');
+                alert('권한이 없습니다.\n지사장 이상만 접근 가능합니다.');
             @endif
         }
         
@@ -553,7 +553,7 @@
             @if(auth()->user()->isHeadquarters() || auth()->user()->isBranch())
                 window.location.href = '/fixed-expenses';
             @else
-                alert('⚠️ 권한이 없습니다.\n지사장 이상만 접근 가능합니다.');
+                alert('권한이 없습니다.\n지사장 이상만 접근 가능합니다.');
             @endif
         }
         
@@ -561,7 +561,7 @@
             @if(auth()->user()->isHeadquarters() || auth()->user()->isBranch())
                 window.location.href = '/payroll';
             @else
-                alert('⚠️ 권한이 없습니다.\n지사장 이상만 접근 가능합니다.');
+                alert('권한이 없습니다.\n지사장 이상만 접근 가능합니다.');
             @endif
         }
         
@@ -575,9 +575,9 @@
                     '4. 성능 모니터링 (/dev/performance)',
                     '5. 관리자 패널 (/admin)'
                 ];
-                alert('🛠️ 개발자 도구\n\n' + tools.join('\n'));
+                alert('개발자 도구\n\n' + tools.join('\n'));
             @else
-                alert('⚠️ 권한이 없습니다.\n개발자만 접근 가능합니다.');
+                alert('권한이 없습니다.\n개발자만 접근 가능합니다.');
             @endif
         }
         
@@ -597,7 +597,7 @@
             @if(auth()->user()->isSuperUser())
                 window.location.href = '/admin';
             @else
-                alert('⚠️ 권한이 없습니다.\n본사 관리자 또는 개발자만 접근 가능합니다.');
+                alert('권한이 없습니다.\n본사 관리자 또는 개발자만 접근 가능합니다.');
             @endif
         }
 

@@ -16,7 +16,7 @@ class DeleteSpecificBranches extends Command
 
     public function handle()
     {
-        $this->info('🎯 특정 테스트 지사 삭제');
+        $this->info('특정 테스트 지사 삭제');
 
         // 삭제할 특정 지사 ID들
         $targetBranchIds = [1, 6, 7, 12, 13]; // TEST001, GG001, test, E2E999, BB01
@@ -24,7 +24,7 @@ class DeleteSpecificBranches extends Command
         $targetBranches = Branch::whereIn('id', $targetBranchIds)->get();
 
         if ($targetBranches->isEmpty()) {
-            $this->info('✅ 삭제할 지사가 없습니다.');
+            $this->info('삭제할 지사가 없습니다.');
 
             return;
         }
@@ -47,23 +47,23 @@ class DeleteSpecificBranches extends Command
             })
         );
 
-        if (! $this->option('force') && ! $this->confirm('🚨 위 테스트 지사들과 모든 종속 데이터를 완전히 삭제하시겠습니까?\n(매장, 매출, 사용자 모두 삭제됩니다)')) {
+        if (! $this->option('force') && ! $this->confirm('위 테스트 지사들과 모든 종속 데이터를 완전히 삭제하시겠습니까?\n(매장, 매출, 사용자 모두 삭제됩니다)')) {
             $this->info('취소되었습니다.');
 
             return;
         }
 
-        $this->info('🔥 CASCADE 삭제 시작...');
+        $this->info('CASCADE 삭제 시작...');
 
         $totalDeleted = 0;
         foreach ($targetBranches as $branch) {
-            $this->warn("🚨 {$branch->name} ({$branch->code}) 삭제 중...");
+            $this->warn("{$branch->name} ({$branch->code}) 삭제 중...");
 
             // 1단계: Sales 데이터 삭제
             $salesCount = Sale::where('branch_id', $branch->id)->count();
             if ($salesCount > 0) {
                 Sale::where('branch_id', $branch->id)->delete();
-                $this->info("   📊 매출 데이터 삭제: {$salesCount}건");
+                $this->info("   매출 데이터 삭제: {$salesCount}건");
             }
 
             // Store별 Sales도 삭제
@@ -72,7 +72,7 @@ class DeleteSpecificBranches extends Command
                 $storeSalesCount = Sale::whereIn('store_id', $stores)->count();
                 if ($storeSalesCount > 0) {
                     Sale::whereIn('store_id', $stores)->delete();
-                    $this->info("   📊 매장별 매출 데이터 삭제: {$storeSalesCount}건");
+                    $this->info("   매장별 매출 데이터 삭제: {$storeSalesCount}건");
                 }
             }
 
@@ -99,7 +99,7 @@ class DeleteSpecificBranches extends Command
                     ]);
                 }
 
-                $this->info('   👤 사용자 계정 해제: '.($usersCount + $storeUsersCount).'개');
+                $this->info('   사용자 계정 해제: '.($usersCount + $storeUsersCount).'개');
             }
 
             // 3단계: Stores 삭제
@@ -107,17 +107,17 @@ class DeleteSpecificBranches extends Command
             if ($storesCount > 0) {
                 $storeNames = Store::where('branch_id', $branch->id)->pluck('name')->toArray();
                 Store::where('branch_id', $branch->id)->delete();
-                $this->info("   🏪 매장 삭제: {$storesCount}개 (".implode(', ', $storeNames).')');
+                $this->info("   매장 삭제: {$storesCount}개 (".implode(', ', $storeNames).')');
             }
 
             // 4단계: Branch 삭제
             $branch->delete();
-            $this->info("   ✅ 지사 삭제 완료: {$branch->name}");
+            $this->info("   지사 삭제 완료: {$branch->name}");
 
             $totalDeleted++;
         }
 
-        $this->info("🎉 완전 정리 완료! 총 {$totalDeleted}개 지사 및 모든 종속 데이터 삭제됨");
-        $this->info('🔄 매장 관리 페이지를 새로고침하여 확인하세요.');
+        $this->info("완전 정리 완료! 총 {$totalDeleted}개 지사 및 모든 종속 데이터 삭제됨");
+        $this->info('매장 관리 페이지를 새로고침하여 확인하세요.');
     }
 }

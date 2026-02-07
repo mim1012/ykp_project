@@ -7,7 +7,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <script src="https://cdn.tailwindcss.com"></script>
     
-    {{-- 🔒 세션 안정성 강화 --}}
+    {{-- 세션 안정성 강화 --}}
     <script src="/js/session-stability.js"></script>
     <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable.css" rel="stylesheet">
     
@@ -598,7 +598,7 @@
             
             const button = event.target;
             const originalText = button.innerHTML;
-            button.innerHTML = '🔄 생성 중...';
+            button.innerHTML = '생성 중...';
             button.disabled = true;
             
             try {
@@ -617,14 +617,14 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    showNotification('✅ 이번달 정산이 생성되었습니다!', 'success');
+                    showNotification('이번달 정산이 생성되었습니다!', 'success');
                     loadSettlements();
                     loadMonthlyDashboard();
                 } else {
-                    alert('❌ 생성 실패: ' + (result.message || '알 수 없는 오류'));
+                    alert('생성 실패: ' + (result.message || '알 수 없는 오류'));
                 }
             } catch (error) {
-                alert('❌ 네트워크 오류: ' + error.message);
+                alert('네트워크 오류: ' + error.message);
             } finally {
                 button.innerHTML = originalText;
                 button.disabled = false;
@@ -638,7 +638,7 @@
             const currentMonth = new Date().toISOString().slice(0, 7);
             const button = event.target;
             const originalText = button.innerHTML;
-            button.innerHTML = '📊 생성 중...';
+            button.innerHTML = '생성 중...';
             button.disabled = true;
             
             try {
@@ -658,10 +658,10 @@
                     loadSettlements();
                     loadMonthlyDashboard();
                 } else {
-                    alert('❌ 일괄 생성 실패: ' + (result.message || '알 수 없는 오류'));
+                    alert('일괄 생성 실패: ' + (result.message || '알 수 없는 오류'));
                 }
             } catch (error) {
-                alert('❌ 네트워크 오류: ' + error.message);
+                alert('네트워크 오류: ' + error.message);
             } finally {
                 button.innerHTML = originalText;
                 button.disabled = false;
@@ -684,13 +684,13 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    showNotification('✅ 정산이 확정되었습니다', 'success');
+                    showNotification('정산이 확정되었습니다', 'success');
                     loadSettlements();
                 } else {
-                    alert('❌ 확정 실패: ' + (result.message || '알 수 없는 오류'));
+                    alert('확정 실패: ' + (result.message || '알 수 없는 오류'));
                 }
             } catch (error) {
-                alert('❌ 네트워크 오류: ' + error.message);
+                alert('네트워크 오류: ' + error.message);
             }
         }
 
@@ -710,13 +710,13 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    showNotification('✅ 정산이 마감되었습니다', 'warning');
+                    showNotification('정산이 마감되었습니다', 'warning');
                     loadSettlements();
                 } else {
-                    alert('❌ 마감 실패: ' + (result.message || '알 수 없는 오류'));
+                    alert('마감 실패: ' + (result.message || '알 수 없는 오류'));
                 }
             } catch (error) {
-                alert('❌ 네트워크 오류: ' + error.message);
+                alert('네트워크 오류: ' + error.message);
             }
         }
 
@@ -824,7 +824,7 @@
             if (dealerCode) url += `&dealer_code=${dealerCode}`;
             
             window.open(url, '_blank');
-            showNotification('📊 월마감정산 보고서를 다운로드합니다', 'info');
+            showNotification('월마감정산 보고서를 다운로드합니다', 'info');
         }
 
         // 도움말 모달

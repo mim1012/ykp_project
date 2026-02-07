@@ -31,14 +31,14 @@ class TestSentryCommand extends Command
         try {
             // Test capturing a message
             Sentry::captureMessage('Test message from YKP Dashboard', 'info');
-            $this->info('✅ Message sent to Sentry successfully!');
+            $this->info('Message sent to Sentry successfully!');
 
             // Test capturing an exception
             $this->warn('Sending test exception...');
             throw new \Exception('Test exception from YKP Dashboard');
         } catch (\Exception $e) {
             Sentry::captureException($e);
-            $this->error('✅ Exception captured and sent to Sentry!');
+            $this->error('Exception captured and sent to Sentry!');
         }
 
         // Test user context
@@ -50,7 +50,7 @@ class TestSentryCommand extends Command
             ]);
         });
 
-        $this->info('✅ User context configured!');
+        $this->info('User context configured!');
 
         // Test breadcrumbs
         Sentry::addBreadcrumb([
@@ -59,7 +59,7 @@ class TestSentryCommand extends Command
             'level' => 'info',
         ]);
 
-        $this->info('✅ Breadcrumb added!');
+        $this->info('Breadcrumb added!');
 
         $this->newLine();
         $this->info('Sentry test completed successfully!');

@@ -174,7 +174,7 @@
 
             // 매장별 통계 엑셀 다운로드 버튼 이벤트
             document.getElementById('export-store-stats-btn').addEventListener('click', function() {
-                console.log('📥 매장별 통계 엑셀 다운로드 시작...');
+                console.log('매장별 통계 엑셀 다운로드 시작...');
                 window.location.href = '/api/reports/store-statistics';
             });
             const preset = (type) => {
@@ -206,29 +206,29 @@
         async function safeJsonParse(response, apiName) {
             try {
                 // HTTP 상태 코드 정확히 체크
-                console.log(`🔍 ${apiName} API 상태:`, response.status, response.statusText, response.url);
+                console.log(`${apiName} API 상태:`, response.status, response.statusText, response.url);
                 
                 if (!response.ok) {
                     const text = await response.text();
-                    console.warn(`⚠️ ${apiName} API 실제 오류 (${response.status}):`, text.substring(0, 200));
+                    console.warn(`${apiName} API 실제 오류 (${response.status}):`, text.substring(0, 200));
                     return { success: false, data: {} };
                 }
                 
                 const text = await response.text();
-                console.log(`📄 ${apiName} API 응답 내용:`, text.substring(0, 200) + '...');
+                console.log(`${apiName} API 응답 내용:`, text.substring(0, 200) + '...');
                 
                 // HTML 응답 감지 (실제 오류인 경우)
                 if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
-                    console.warn(`⚠️ ${apiName} API가 HTML을 반환했습니다 (라우트 문제):`, text.substring(0, 100));
+                    console.warn(`${apiName} API가 HTML을 반환했습니다 (라우트 문제):`, text.substring(0, 100));
                     return { success: false, data: {} };
                 }
                 
                 const json = JSON.parse(text);
-                console.log(`✅ ${apiName} API 성공 (실제 200 OK):`, json);
+                console.log(`${apiName} API 성공 (실제 200 OK):`, json);
                 return json;
                 
             } catch (error) {
-                console.error(`❌ ${apiName} API 진짜 파싱 오류:`, error);
+                console.error(`${apiName} API 진짜 파싱 오류:`, error);
                 return { success: false, data: {} };
             }
         }
@@ -237,7 +237,7 @@
         async function callApiSequentially(apiConfig, retryCount = 2) {
             for (let attempt = 1; attempt <= retryCount + 1; attempt++) {
                 try {
-                    console.log(`🔄 ${apiConfig.name} API 호출 시도 ${attempt}/${retryCount + 1}: ${apiConfig.url}`);
+                    console.log(`${apiConfig.name} API 호출 시도 ${attempt}/${retryCount + 1}: ${apiConfig.url}`);
                     
                     const response = await fetch(apiConfig.url, { 
                         credentials: 'same-origin',
@@ -250,28 +250,28 @@
                     const result = await safeJsonParse(response, apiConfig.name);
                     
                     if (result.success) {
-                        console.log(`✅ ${apiConfig.name} API 성공 (${attempt}번째 시도)`);
+                        console.log(`${apiConfig.name} API 성공 (${attempt}번째 시도)`);
                         return result;
                     } else if (attempt < retryCount + 1) {
-                        console.warn(`⚠️ ${apiConfig.name} API 실패, 재시도 중... (${attempt}/${retryCount + 1})`);
+                        console.warn(`${apiConfig.name} API 실패, 재시도 중... (${attempt}/${retryCount + 1})`);
                         await new Promise(resolve => setTimeout(resolve, 200 * attempt)); // 점진적 대기
                     }
                 } catch (error) {
-                    console.error(`❌ ${apiConfig.name} API 오류 (${attempt}번째 시도):`, error);
+                    console.error(`${apiConfig.name} API 오류 (${attempt}번째 시도):`, error);
                     if (attempt < retryCount + 1) {
                         await new Promise(resolve => setTimeout(resolve, 200 * attempt));
                     }
                 }
             }
             
-            console.error(`💥 ${apiConfig.name} API 최종 실패 (${retryCount + 1}번 시도 모두 실패)`);
+            console.error(`${apiConfig.name} API 최종 실패 (${retryCount + 1}번 시도 모두 실패)`);
             return { success: false, data: {} };
         }
 
-        // 🎨 섹션별 즉시 UI 업데이트 함수 (사용자 경험 개선)
+        // 섹션별 즉시 UI 업데이트 함수 (사용자 경험 개선)
         function updateUISection(apiName, result, config) {
             try {
-                console.log(`🎨 ${apiName} 섹션 UI 업데이트 중...`);
+                console.log(`${apiName} 섹션 UI 업데이트 중...`);
                 
                 switch(apiName) {
                     case 'profile':
@@ -294,7 +294,7 @@
                             // 시스템 목표는 Goals API에서 가져오기
                             updateSystemGoalAchievement(monthSales);
 
-                            console.log(`💰 매출 정보 업데이트 완료: ₩${Number(monthSales).toLocaleString()}`);
+                            console.log(`매출 정보 업데이트 완료: ₩${Number(monthSales).toLocaleString()}`);
                         }
                         break;
                         
@@ -305,21 +305,21 @@
                                 totalBranchesElement.textContent = `${result.data.length}개 지사`;
                                 totalBranchesElement.className = 'text-2xl font-bold text-gray-900';
                             }
-                            console.log(`🏢 지사 정보 업데이트 완료: ${result.data.length}개`);
+                            console.log(`지사 정보 업데이트 완료: ${result.data.length}개`);
                         }
                         break;
                         
                     case 'ranking':
                         if (result.success && Array.isArray(result.data)) {
                             updateStoreRanking(result.data);
-                            console.log(`🏆 매장 랭킹 업데이트 완료: ${result.data.length}개 매장`);
+                            console.log(`매장 랭킹 업데이트 완료: ${result.data.length}개 매장`);
                         }
                         break;
                         
                     case 'financial':
                         if (result.success && result.data) {
                             updateFinancialSummary(result.data);
-                            console.log(`💵 재무 요약 업데이트 완료`);
+                            console.log(`재무 요약 업데이트 완료`);
                         }
                         break;
                         
@@ -327,31 +327,31 @@
                         if (result.success && Array.isArray(result.data)) {
                             // 지사별 성과 차트에 즉시 반영
                             updateBranchChart(result.data, config.period || 'monthly');
-                            console.log(`🏢 지사별 성과 업데이트 완료: ${result.data.length}개 지사`);
+                            console.log(`지사별 성과 업데이트 완료: ${result.data.length}개 지사`);
                         }
                         break;
 
                     case 'carrier':
                         if (result.success && result.data?.carrier_breakdown) {
                             updateCarrierTable(result.data.carrier_breakdown);
-                            console.log(`📊 통신사 점유율 업데이트 완료: ${result.data.carrier_breakdown.length}개 통신사`);
+                            console.log(`통신사 점유율 업데이트 완료: ${result.data.carrier_breakdown.length}개 통신사`);
                         }
                         break;
 
                     case 'monthlyTrend':
                         if (result.success && result.data) {
                             updateMonthlyTrendChart(result.data);
-                            console.log(`📈 월별 성장 추이 업데이트 완료: ${result.data.labels?.length || 0}개월 데이터`);
+                            console.log(`월별 성장 추이 업데이트 완료: ${result.data.labels?.length || 0}개월 데이터`);
                         }
                         break;
                 }
 
             } catch (error) {
-                console.error(`❌ ${apiName} UI 업데이트 오류:`, error);
+                console.error(`${apiName} UI 업데이트 오류:`, error);
             }
         }
 
-        // 📊 매장 랭킹 업데이트 함수
+        // 매장 랭킹 업데이트 함수
         function updateStoreRanking(rankings) {
             try {
                 const rankingContainer = document.getElementById('dynamic-ranking-container');
@@ -386,7 +386,7 @@
             }
         }
 
-        // 💵 재무 요약 업데이트 함수
+        // 재무 요약 업데이트 함수
         function updateFinancialSummary(finData) {
             try {
                 // API 응답에서 실제 데이터 사용
@@ -424,7 +424,7 @@
             }
         }
 
-        // 📊 통신사 테이블 및 차트 업데이트 함수
+        // 통신사 테이블 및 차트 업데이트 함수
         function updateCarrierTable(carrierBreakdown) {
             try {
                 // 테이블 업데이트
@@ -450,7 +450,7 @@
             }
         }
 
-        // 📊 통신사별 점유율 도넛 차트 업데이트 함수
+        // 통신사별 점유율 도넛 차트 업데이트 함수
         function updateCarrierChart(carrierBreakdown) {
             try {
                 const ctx = document.getElementById('carrierShareChart');
@@ -463,7 +463,7 @@
 
                 // 데이터 검증
                 if (!carrierBreakdown || carrierBreakdown.length === 0) {
-                    console.warn('⚠️ 통신사 데이터가 비어있습니다.');
+                    console.warn('통신사 데이터가 비어있습니다.');
                     return;
                 }
 
@@ -525,13 +525,13 @@
                     }
                 });
 
-                console.log(`📊 통신사 차트 생성 완료: ${carrierBreakdown.length}개 통신사`);
+                console.log(`통신사 차트 생성 완료: ${carrierBreakdown.length}개 통신사`);
             } catch (error) {
                 console.error('통신사 차트 업데이트 오류:', error);
             }
         }
 
-        // 📈 지사별 성과 차트 업데이트 함수
+        // 지사별 성과 차트 업데이트 함수
         function updateBranchChart(branchPerformanceData, period) {
             try {
                 const ctx = document.getElementById('branchComparisonChart');
@@ -567,7 +567,7 @@
                         plugins: {
                             title: { 
                                 display: true, 
-                                text: `🏢 지사별 매출 성과 (${period === 'monthly' ? '월간' : period === 'weekly' ? '주간' : '일간'})`,
+                                text: `지사별 매출 성과 (${period === 'monthly' ? '월간' : period === 'weekly' ? '주간' : '일간'})`,
                                 font: { size: 14, weight: 'bold' }
                             },
                             legend: {
@@ -598,13 +598,13 @@
                     }
                 });
                 
-                console.log(`📊 지사별 성과 차트 업데이트 완료: ${(branchPerformanceData || []).length}개 데이터`);
+                console.log(`지사별 성과 차트 업데이트 완료: ${(branchPerformanceData || []).length}개 데이터`);
             } catch (error) {
                 console.error('지사별 성과 차트 업데이트 오류:', error);
             }
         }
 
-        // 📈 월별 성장 추이 꺾은선 그래프 업데이트 함수
+        // 월별 성장 추이 꺾은선 그래프 업데이트 함수
         function updateMonthlyTrendChart(trendData) {
             try {
                 const ctx = document.getElementById('monthlyTrendChart');
@@ -617,7 +617,7 @@
 
                 // 데이터 검증
                 if (!trendData.labels || !trendData.sales || trendData.labels.length === 0) {
-                    console.warn('⚠️ 월별 추이 데이터가 비어있습니다.');
+                    console.warn('월별 추이 데이터가 비어있습니다.');
                     return;
                 }
 
@@ -660,7 +660,7 @@
                         plugins: {
                             title: {
                                 display: true,
-                                text: '📈 월별 총 매출액 추이 (최근 12개월)',
+                                text: '월별 총 매출액 추이 (최근 12개월)',
                                 font: { size: 14, weight: 'bold' }
                             },
                             legend: {
@@ -709,7 +709,7 @@
                     }
                 });
 
-                console.log(`📈 월별 추이 그래프 생성 완료: ${trendData.labels.length}개월 데이터`);
+                console.log(`월별 추이 그래프 생성 완료: ${trendData.labels.length}개월 데이터`);
             } catch (error) {
                 console.error('월별 추이 그래프 업데이트 오류:', error);
             }
@@ -743,7 +743,7 @@
                     { name: 'monthlyTrend', url: `/api/statistics/monthly-trend?start_date=${startDate}&end_date=${endDate}` }
                 ];
 
-                // 🔄 순차 호출 및 즉시 UI 업데이트
+                // 순차 호출 및 즉시 UI 업데이트
                 const apiResults = {};
                 
                 for (const apiConfig of apiSequence) {
@@ -755,7 +755,7 @@
                     // API 호출 및 결과 저장
                     apiResults[apiConfig.name] = await callApiSequentially(apiConfig);
                     
-                    // 🎨 각 API 완료 시 즉시 UI 업데이트
+                    // 각 API 완료 시 즉시 UI 업데이트
                     updateUISection(apiConfig.name, apiResults[apiConfig.name], {
                         period, limit, startDate, endDate
                     });
@@ -770,11 +770,11 @@
                 const fin = apiResults.financial;
                 const carrierPerf = apiResults.carrier;
 
-                // 🎉 최종 로딩 완료 (지사별 성과 차트는 updateUISection에서 이미 업데이트됨)
+                // 최종 로딩 완료 (지사별 성과 차트는 updateUISection에서 이미 업데이트됨)
                 console.log('로딩 완료');
 
             } catch (error) {
-                console.error('❌ 본사 통계 로딩 실패:', error);
+                console.error('본사 통계 로딩 실패:', error);
             }
         }
 
@@ -784,7 +784,7 @@
         }
 
         function downloadSystemReport() {
-            alert('📄 전체 시스템 리포트 다운로드 기능 구현 예정');
+            alert('전체 시스템 리포트 다운로드 기능 구현 예정');
         }
 
         // 전체 매장 수 로딩 함수
@@ -796,7 +796,7 @@
                 if (result.success) {
                     document.getElementById('total-stores').textContent = `${result.count}개 매장`;
                     document.getElementById('total-stores').className = 'text-2xl font-bold text-gray-900';
-                    console.log(`🏪 전체 매장 수 업데이트: ${result.count}개`);
+                    console.log(`전체 매장 수 업데이트: ${result.count}개`);
                 } else {
                     document.getElementById('total-stores').textContent = '0개 매장';
                 }

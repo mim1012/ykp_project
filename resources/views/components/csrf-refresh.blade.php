@@ -29,7 +29,7 @@
                     const metaTag = document.querySelector('meta[name="csrf-token"]');
                     if (metaTag) {
                         metaTag.setAttribute('content', xsrfToken);
-                        csrfLog('✅ CSRF 토큰 갱신 완료');
+                        csrfLog('CSRF 토큰 갱신 완료');
                         return xsrfToken;
                     }
                 }
@@ -42,11 +42,11 @@
 
     // 419 에러 발생 시 자동 토큰 갱신
     window.handleCsrfError = async function(retry = true) {
-        csrfLog('🔄 CSRF 토큰 오류 감지 - 토큰 갱신 시도');
+        csrfLog('CSRF 토큰 오류 감지 - 토큰 갱신 시도');
         const newToken = await refreshCsrfToken();
 
         if (newToken && retry) {
-            csrfLog('🔄 새 토큰으로 재시도');
+            csrfLog('새 토큰으로 재시도');
             return newToken;
         } else {
             if (confirm('보안 토큰이 만료되었습니다. 페이지를 새로고침하시겠습니까?')) {

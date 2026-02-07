@@ -547,12 +547,12 @@
                     loadSummary(); // 요약 정보 갱신
                     
                     // 성공 피드백
-                    showNotification('✅ 저장완료', 'success');
+                    showNotification(' 저장완료', 'success');
                 } else {
-                    alert('💼 급여 정보 수정에 실패했습니다. 입력 내용을 확인해주세요.');
+                    alert('급여 정보 수정에 실패했습니다. 입력 내용을 확인해주세요.');
                 }
             } catch (error) {
-                alert('📞 네트워크 연결 문제로 저장하지 못했습니다. 잠시 후 다시 시도해주세요.');
+                alert('네트워크 연결 문제로 저장하지 못했습니다. 잠시 후 다시 시도해주세요.');
             }
         }
 
@@ -573,12 +573,12 @@
                     // 그리드 데이터 새로고침
                     loadPayrollData();
                     loadSummary();
-                    showNotification('✅ 지급상태 변경완료', 'success');
+                    showNotification(' 지급상태 변경완료', 'success');
                 } else {
-                    alert('❌ 상태 변경 실패: ' + (result.message || '알 수 없는 오류'));
+                    alert(' 상태 변경 실패: ' + (result.message || '알 수 없는 오류'));
                 }
             } catch (error) {
-                alert('❌ 네트워크 오류: ' + error.message);
+                alert(' 네트워크 오류: ' + error.message);
             }
         }
 
@@ -619,7 +619,7 @@
         async function saveAllChanges() {
             const button = event.target;
             const originalText = button.innerHTML;
-            button.innerHTML = '💾 저장 중...';
+            button.innerHTML = '저장 중...';
             button.disabled = true;
             
             try {
@@ -640,13 +640,13 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    showNotification('✅ 모든 변경사항이 저장되었습니다!', 'success');
+                    showNotification(' 모든 변경사항이 저장되었습니다!', 'success');
                     loadSummary();
                 } else {
-                    alert('❌ 저장 실패: ' + (result.message || '알 수 없는 오류'));
+                    alert(' 저장 실패: ' + (result.message || '알 수 없는 오류'));
                 }
             } catch (error) {
-                alert('❌ 네트워크 오류: ' + error.message);
+                alert(' 네트워크 오류: ' + error.message);
             } finally {
                 button.innerHTML = originalText;
                 button.disabled = false;
@@ -663,7 +663,7 @@
             
             // 파일 다운로드
             window.open(url, '_blank');
-            showNotification('📊 엑셀 파일을 다운로드합니다', 'info');
+            showNotification('엑셀 파일을 다운로드합니다', 'info');
         }
 
         // 알림 표시 헬퍼
@@ -703,12 +703,12 @@
                 if (result.success) {
                     loadPayrollData();
                     loadSummary();
-                    showNotification('✅ 삭제 완료', 'success');
+                    showNotification(' 삭제 완료', 'success');
                 } else {
-                    alert('❌ 삭제 실패: ' + (result.message || '알 수 없는 오류'));
+                    alert(' 삭제 실패: ' + (result.message || '알 수 없는 오류'));
                 }
             } catch (error) {
-                alert('❌ 네트워크 오류: ' + error.message);
+                alert(' 네트워크 오류: ' + error.message);
             }
         }
     </script>

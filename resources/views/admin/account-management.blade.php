@@ -138,44 +138,44 @@
         document.addEventListener('DOMContentLoaded', function() {
             loadAccounts();
 
-            // ✨ 실시간 업데이트 강화 - 1분마다 자동 새로고침
+            // 실시간 업데이트 강화 - 1분마다 자동 새로고침
             setInterval(loadAccounts, 60000);
 
-            // 🔄 실시간 업데이트 리스너 초기화
+            // 실시간 업데이트 리스너 초기화
             initRealtimeAccountSync();
         });
 
-        // 🔄 실시간 계정 동기화 리스너
+        // 실시간 계정 동기화 리스너
         function initRealtimeAccountSync() {
-            log('📡 실시간 계정 동기화 리스너 초기화...');
+            log('실시간 계정 동기화 리스너 초기화...');
 
             // 1. localStorage 이벤트로 다른 탭의 변경사항 감지
             window.addEventListener('storage', function(event) {
                 if (event.key === 'account_update_trigger') {
                     try {
                         const updateData = JSON.parse(event.newValue);
-                        log('📨 계정 업데이트 신호 수신:', updateData);
+                        log('계정 업데이트 신호 수신:', updateData);
 
                         if (updateData.type === 'account_change') {
-                            log('🔄 다른 탭에서 계정 변경 감지 - 데이터 새로고침');
+                            log('다른 탭에서 계정 변경 감지 - 데이터 새로고침');
                             setTimeout(loadAccounts, 1000); // 1초 후 새로고침
                         }
                     } catch (e) {
-                        console.error('❌ 계정 업데이트 처리 오류:', e);
+                        console.error('계정 업데이트 처리 오류:', e);
                     }
                 }
             });
 
             // 2. 주기적 데이터 동기화 (30초마다)
             setInterval(() => {
-                log('⏰ 주기적 계정 데이터 동기화...');
+                log('주기적 계정 데이터 동기화...');
                 loadAccountsQuietly();
             }, 30000);
 
-            log('✅ 실시간 계정 동기화 리스너 초기화 완료');
+            log('실시간 계정 동기화 리스너 초기화 완료');
         }
 
-        // 🔇 조용한 계정 로드 (UI 갱신 없이 백그라운드 동기화)
+        // 조용한 계정 로드 (UI 갱신 없이 백그라운드 동기화)
         async function loadAccountsQuietly() {
             try {
                 const response = await fetch('/api/accounts/all');
@@ -188,20 +188,20 @@
 
                 // 기존 데이터와 비교하여 변경사항이 있을 때만 업데이트
                 if (JSON.stringify(allAccounts) !== JSON.stringify(newAccounts)) {
-                    log('🔄 계정 데이터 변경 감지 - UI 업데이트');
+                    log('계정 데이터 변경 감지 - UI 업데이트');
                     allAccounts = newAccounts;
                     renderAccounts(allAccounts);
                     updateStatistics(allAccounts);
                 }
             } catch (error) {
-                console.warn('⚠️ 조용한 계정 동기화 실패:', error.message);
+                console.warn('조용한 계정 동기화 실패:', error.message);
             }
         }
 
         // 모든 계정 로드 (대시보드와 동일한 API 사용)
         async function loadAccounts() {
             try {
-                log('📊 계정관리: 대시보드와 동일한 API 호출');
+                log('계정관리: 대시보드와 동일한 API 호출');
                 const response = await fetch('/api/users'); // 대시보드와 동일한 API
                 const data = await response.json();
                 
@@ -339,13 +339,13 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    alert(`✅ 비밀번호가 성공적으로 리셋되었습니다!\n\n📧 ${data.user.email}\n🔑 새 비밀번호: ${newPassword}\n\n⚠️ 이 정보를 해당 사용자에게 전달하세요!`);
+                    alert(`비밀번호가 성공적으로 리셋되었습니다!\n\n${data.user.email}\n새 비밀번호: ${newPassword}\n\n이 정보를 해당 사용자에게 전달하세요!`);
                     closeResetPasswordModal();
                 } else {
-                    alert('❌ 비밀번호 리셋 실패: ' + data.error);
+                    alert('비밀번호 리셋 실패: ' + data.error);
                 }
             } catch (error) {
-                alert('❌ 비밀번호 리셋 중 오류가 발생했습니다.');
+                alert('비밀번호 리셋 중 오류가 발생했습니다.');
             }
         }
 
@@ -372,13 +372,13 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    alert(`✅ ${user.name} 계정이 ${actionText}되었습니다.`);
+                    alert(`${user.name} 계정이 ${actionText}되었습니다.`);
                     loadAccounts(); // 목록 새로고침
                 } else {
-                    alert('❌ 계정 상태 변경 실패: ' + data.error);
+                    alert('계정 상태 변경 실패: ' + data.error);
                 }
             } catch (error) {
-                alert('❌ 계정 상태 변경 중 오류가 발생했습니다.');
+                alert('계정 상태 변경 중 오류가 발생했습니다.');
             }
         }
 
@@ -408,7 +408,7 @@
             link.download = `YKP_ERP_모든계정정보_${new Date().toISOString().split('T')[0]}.csv`;
             link.click();
             
-            alert('📤 모든 계정 정보가 다운로드되었습니다!\n\n파일에는 로그인 정보가 포함되어 있으니 안전하게 관리하세요.');
+            alert('모든 계정 정보가 다운로드되었습니다!\n\n파일에는 로그인 정보가 포함되어 있으니 안전하게 관리하세요.');
         }
 
         // 유틸리티 함수들

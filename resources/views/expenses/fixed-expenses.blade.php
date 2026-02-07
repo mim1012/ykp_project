@@ -452,17 +452,17 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    alert('✅ 고정지출이 등록되었습니다!');
+                    alert('고정지출이 등록되었습니다!');
                     this.reset();
                     document.querySelector('input[name="year_month"]').value = new Date().toISOString().slice(0, 7);
                     loadFixedExpenses();
                     loadUpcomingPayments();
                     loadSummary();
                 } else {
-                    alert('❌ 등록 실패: ' + (result.message || '알 수 없는 오류'));
+                    alert('등록 실패: ' + (result.message || '알 수 없는 오류'));
                 }
             } catch (error) {
-                alert('❌ 네트워크 오류: ' + error.message);
+                alert('네트워크 오류: ' + error.message);
             }
         });
 
@@ -485,15 +485,15 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    alert('✅ 지급 완료 처리되었습니다!');
+                    alert('지급 완료 처리되었습니다!');
                     loadFixedExpenses();
                     loadUpcomingPayments();
                     loadSummary();
                 } else {
-                    alert('❌ 처리 실패: ' + (result.message || '알 수 없는 오류'));
+                    alert('처리 실패: ' + (result.message || '알 수 없는 오류'));
                 }
             } catch (error) {
-                alert('❌ 네트워크 오류: ' + error.message);
+                alert('네트워크 오류: ' + error.message);
             }
         }
 

@@ -14,14 +14,14 @@ class DatabaseBackup extends Command
 
     public function handle()
     {
-        $this->info('🔄 YKP ERP 데이터베이스 백업 시작...');
+        $this->info('YKP ERP 데이터베이스 백업 시작...');
 
         try {
             // 백업 디렉토리 생성
             $backupDir = storage_path('app/backups');
             if (! file_exists($backupDir)) {
                 mkdir($backupDir, 0755, true);
-                $this->info("📁 백업 디렉토리 생성: {$backupDir}");
+                $this->info("백업 디렉토리 생성: {$backupDir}");
             }
 
             $timestamp = now()->format('Y-m-d_H-i-s');
@@ -32,7 +32,7 @@ class DatabaseBackup extends Command
             $dbUrl = config('database.connections.pgsql.url') ?? env('DATABASE_URL');
 
             if (! $dbUrl) {
-                $this->error('❌ 데이터베이스 URL이 설정되지 않았습니다.');
+                $this->error('데이터베이스 URL이 설정되지 않았습니다.');
 
                 return 1;
             }
@@ -40,12 +40,12 @@ class DatabaseBackup extends Command
             // PostgreSQL 백업 명령어 실행
             $backupCommand = "pg_dump \"{$dbUrl}\" > \"{$filepath}\"";
 
-            $this->info('🔧 백업 명령어 실행 중...');
+            $this->info('백업 명령어 실행 중...');
             exec($backupCommand, $output, $exitCode);
 
             if ($exitCode === 0 && file_exists($filepath)) {
                 $fileSize = $this->formatBytes(filesize($filepath));
-                $this->info('✅ 백업 완료!');
+                $this->info('백업 완료!');
                 $this->table(['항목', '값'], [
                     ['파일명', $filename],
                     ['크기', $fileSize],
@@ -70,7 +70,7 @@ class DatabaseBackup extends Command
 
                 return 0;
             } else {
-                $this->error("❌ 백업 실패 (Exit Code: {$exitCode})");
+                $this->error("백업 실패 (Exit Code: {$exitCode})");
                 Log::error('Database backup failed', [
                     'exit_code' => $exitCode,
                     'command' => $backupCommand,
@@ -81,7 +81,7 @@ class DatabaseBackup extends Command
             }
 
         } catch (\Exception $e) {
-            $this->error("❌ 백업 중 오류 발생: {$e->getMessage()}");
+            $this->error("백업 중 오류 발생: {$e->getMessage()}");
             Log::error('Database backup exception', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
@@ -114,12 +114,12 @@ class DatabaseBackup extends Command
             if (filemtime($filepath) < $cutoffTime) {
                 unlink($filepath);
                 $deletedCount++;
-                $this->info("🗑️ 오래된 백업 삭제: {$file}");
+                $this->info("오래된 백업 삭제: {$file}");
             }
         }
 
         if ($deletedCount > 0) {
-            $this->info("✅ {$deletedCount}개 오래된 백업 파일 정리 완료");
+            $this->info("{$deletedCount}개 오래된 백업 파일 정리 완료");
         }
     }
 
@@ -138,7 +138,7 @@ class DatabaseBackup extends Command
             $compressedSize = filesize($compressedPath);
             $compressionRatio = round((1 - $compressedSize / $originalSize) * 100, 1);
 
-            $this->info("🗜️ 압축 완료: {$compressionRatio}% 크기 감소");
+            $this->info("압축 완료: {$compressionRatio}% 크기 감소");
         }
     }
 

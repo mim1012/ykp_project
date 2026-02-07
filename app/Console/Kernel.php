@@ -19,7 +19,7 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // 🔄 매일 새벽 3시 데이터베이스 백업
+        // 매일 새벽 3시 데이터베이스 백업
         $schedule->command('db:backup')
             ->dailyAt('03:00')
             ->withoutOverlapping(120) // 2시간 타임아웃
@@ -31,13 +31,13 @@ class Kernel extends ConsoleKernel
                 \Log::info('YKP ERP 데이터베이스 백업 성공');
             });
 
-        // 🗜️ 주말마다 압축 백업 (토요일 새벽 2시)
+        // 주말마다 압축 백업 (토요일 새벽 2시)
         $schedule->command('db:backup --compress')
             ->weeklyOn(6, '02:00') // 토요일 새벽 2시
             ->withoutOverlapping(180)
             ->runInBackground();
 
-        // 🧹 매주 일요일 오래된 백업 파일 정리
+        // 매주 일요일 오래된 백업 파일 정리
         $schedule->call(function () {
             $backupDir = storage_path('app/backups');
             $cutoffTime = now()->subDays(30)->timestamp;
@@ -66,7 +66,7 @@ class Kernel extends ConsoleKernel
             ->name('cleanup-old-backups')
             ->withoutOverlapping();
 
-        // 📊 매일 오전 9시 시스템 상태 체크
+        // 매일 오전 9시 시스템 상태 체크
         $schedule->call(function () {
             $stats = [
                 'stores_count' => \App\Models\Store::count(),
@@ -90,7 +90,7 @@ class Kernel extends ConsoleKernel
             ->dailyAt('09:00')
             ->name('daily-system-check');
 
-        // ⚡ 매시간 성능 최적화 작업
+        // 매시간 성능 최적화 작업
         $schedule->call(function () {
             try {
                 // PostgreSQL VACUUM ANALYZE (성능 최적화)

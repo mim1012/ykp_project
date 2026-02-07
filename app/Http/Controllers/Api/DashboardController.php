@@ -522,7 +522,7 @@ class DashboardController extends Controller
             $storeQuery = $salesQuery->clone()
                 ->select('store_id', DB::raw('SUM(settlement_amount) as total'));
 
-            // 🔥 수정: 전국 전체 매장 중 순위 계산 (필터링 제거)
+            // 전국 전체 매장 중 순위 계산 (필터링 제거)
             // 모든 계정이 전국 순위를 볼 수 있도록 변경
 
             $storeRankings = $storeQuery->groupBy('store_id')
@@ -554,7 +554,7 @@ class DashboardController extends Controller
                             'rank' => $storeRank,
                             'total' => $storeTotal,
                             'user_store_id' => $user->store_id,
-                            'scope' => 'nationwide', // 🔥 수정: 항상 전국 순위
+                            'scope' => 'nationwide',
                         ],
                     ],
                     'meta' => [

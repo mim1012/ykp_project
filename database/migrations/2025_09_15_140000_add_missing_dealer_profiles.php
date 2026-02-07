@@ -153,9 +153,9 @@ return new class extends Migration
 
             if (! $existing) {
                 DealerProfile::create($dealer);
-                echo "✅ 대리점 추가: {$dealer['dealer_name']} ({$dealer['dealer_code']})\n";
+                echo "대리점 추가: {$dealer['dealer_name']} ({$dealer['dealer_code']})\n";
             } else {
-                echo "ℹ️ 이미 존재: {$dealer['dealer_name']} ({$dealer['dealer_code']})\n";
+                echo "이미 존재: {$dealer['dealer_name']} ({$dealer['dealer_code']})\n";
             }
         }
     }

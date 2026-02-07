@@ -43,7 +43,7 @@ export const Dashboard = ({ onNavigate }) => {
                         labels: Array.from({length: 30}, (_, i) => `${i+1}일`),
                         datasets: [{
                             label: '매출',
-                            data: [], // 🔄 실제 API 데이터로 교체 예정
+                            data: [], // 실제 API 데이터로 교체 예정
                             borderColor: '#0ea5e9',
                             backgroundColor: 'rgba(14, 165, 233, 0.1)',
                             tension: 0.4

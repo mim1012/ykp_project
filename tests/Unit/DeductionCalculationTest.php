@@ -33,9 +33,9 @@ class DeductionCalculationTest extends TestCase
         // 기대값 계산 (세금 계산은 0으로 변경됨 - 커밋 427845b6)
         $expectedTotalRebate = 100000 + 10000 + 5000 + 3000 + 2000; // = 120000
         $expectedSettlement = $expectedTotalRebate - 15000; // = 105000 (차감이 빼기로 적용)
-        $expectedTax = 0; // ✅ 세금 계산 제거됨 (커밋 427845b6: 마진=정산금으로 통일)
-        $expectedMarginBefore = $expectedSettlement; // ✅ 마진 = 정산금
-        $expectedMarginAfter = $expectedSettlement; // ✅ 마진 = 정산금
+        $expectedTax = 0; // 세금 계산 제거됨 (커밋 427845b6: 마진=정산금으로 통일)
+        $expectedMarginBefore = $expectedSettlement; // 마진 = 정산금
+        $expectedMarginAfter = $expectedSettlement; // 마진 = 정산금
 
         // 검증
         $this->assertEquals($expectedTotalRebate, $result['total_rebate'], '리베총계 계산 오류');

@@ -265,9 +265,9 @@
                         pageHeader.after(storeNotice);
                     }
 
-                    console.log(`📊 매장 직원 통계 모드: ${myStoreName} (ID: ${myStoreId})`);
+                    console.log(`매장 직원 통계 모드: ${myStoreName} (ID: ${myStoreId})`);
                 } else {
-                    console.warn('⚠️ 매장 정보를 찾을 수 없음');
+                    console.warn('매장 정보를 찾을 수 없음');
                 }
             } else if (storeId && storeName) {
                 // 일반 매장 필터 (본사/지사 관리자용)
@@ -334,7 +334,7 @@
         }
 
         // KPI 데이터 로드
-        // 🛡️ 안전한 KPI 데이터 로드 (매장 ID 검증 + 에러 처리)
+        // 안전한 KPI 데이터 로드 (매장 ID 검증 + 에러 처리)
         async function loadKPIData() {
             try {
                 // storeFilter.id가 객체나 배열이 아닌 숫자/문자열인지 확인
@@ -347,8 +347,8 @@
                 }
                 const url = `/api/statistics/kpi?days=${currentPeriod}${storeParam}`;
 
-                console.log('📡 KPI API 호출:', url);
-                console.log('🔍 storeFilter:', storeFilter);
+                console.log('KPI API 호출:', url);
+                console.log('storeFilter:', storeFilter);
 
                 const response = await fetch(url);
 
@@ -356,7 +356,7 @@
                 const contentType = response.headers.get('content-type');
                 if (!contentType || !contentType.includes('application/json')) {
                     const htmlText = await response.text();
-                    console.error('❌ API가 HTML 반환:', htmlText.substring(0, 200));
+                    console.error('API가 HTML 반환:', htmlText.substring(0, 200));
 
                     if (htmlText.includes('404') || htmlText.includes('Not Found')) {
                         throw new Error('매장을 찾을 수 없습니다. 매장 ID를 확인해주세요.');
@@ -370,18 +370,18 @@
                 if (result.success) {
                     // 실제 데이터 업데이트
                     updateKPICards(result.data);
-                    console.log('✅ KPI 데이터 로드 성공:', result.data);
+                    console.log('KPI 데이터 로드 성공:', result.data);
                 } else {
                     // API 오류 처리
                     if (result.available_stores) {
-                        console.log('💡 사용 가능한 매장들:', result.available_stores);
+                        console.log('사용 가능한 매장들:', result.available_stores);
                         showToast(`매장 ID ${result.requested_store_id}가 존재하지 않습니다. 다른 매장을 선택해주세요.`, 'error');
                     } else {
                         throw new Error(result.error || 'KPI 데이터 로드 실패');
                     }
                 }
             } catch (error) {
-                console.error('❌ KPI API 호출 실패:', error);
+                console.error('KPI API 호출 실패:', error);
 
                 // 에러 종류별 처리
                 if (error.message.includes('매장을 찾을 수 없습니다')) {

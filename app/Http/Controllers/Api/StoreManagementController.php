@@ -61,7 +61,7 @@ class StoreManagementController extends Controller
 
             // 검색 기능 (매장명, 점주명, 코드, 지사명, 주소 ILIKE 검색)
             if ($search = $request->input('search')) {
-                Log::info('🔍 Store search executed', ['search_term' => $search]);
+                Log::info('Store search executed', ['search_term' => $search]);
 
                 $query->where(function ($q) use ($search) {
                     $q->where('stores.name', 'ILIKE', "%{$search}%")
@@ -82,7 +82,7 @@ class StoreManagementController extends Controller
                 ->orderBy('stores.name')
                 ->paginate($perPage);
 
-            Log::info('📊 Store query result', [
+            Log::info('Store query result', [
                 'total' => $stores->total(),
                 'per_page' => $stores->perPage(),
                 'has_search' => $request->has('search'),
@@ -744,7 +744,7 @@ class StoreManagementController extends Controller
     {
         $currentUser = auth()->user();
 
-        // ✅ 본사 권한 체크
+        // 본사 권한 체크
         if ($currentUser->role !== 'headquarters') {
             return response()->json([
                 'success' => false,
@@ -818,7 +818,7 @@ class StoreManagementController extends Controller
     {
         $currentUser = auth()->user();
 
-        // ✅ 본사 권한 체크
+        // 본사 권한 체크
         if ($currentUser->role !== 'headquarters') {
             return response()->json([
                 'success' => false,
@@ -905,7 +905,7 @@ class StoreManagementController extends Controller
     {
         $currentUser = auth()->user();
 
-        // ✅ 본사 권한 체크
+        // 본사 권한 체크
         if ($currentUser->role !== 'headquarters') {
             return response()->json([
                 'success' => false,
@@ -1053,32 +1053,32 @@ class StoreManagementController extends Controller
             $currentUser = auth()->user();
 
             if (!$currentUser) {
-                Log::error('❌ 인증 실패: 사용자 없음');
+                Log::error('인증 실패: 사용자 없음');
                 return response()->json([
                     'success' => false,
                     'error' => '로그인이 필요합니다.',
                 ], 401);
             }
 
-            Log::info('✅ 사용자 인증 확인', [
+            Log::info('사용자 인증 확인', [
                 'user_id' => $currentUser->id,
                 'email' => $currentUser->email,
                 'role' => $currentUser->role,
             ]);
 
             if (! in_array($currentUser->role, ['headquarters', 'branch'])) {
-                Log::warning('❌ 권한 부족', ['user_id' => $currentUser->id, 'role' => $currentUser->role]);
+                Log::warning('권한 부족', ['user_id' => $currentUser->id, 'role' => $currentUser->role]);
                 return response()->json([
                     'success' => false,
                     'error' => '매장 생성 권한이 없습니다.',
                 ], 403);
             }
 
-            Log::info('📂 파일 검증 시작');
+            Log::info('파일 검증 시작');
 
             // 파일 존재 확인
             if (!$request->hasFile('file')) {
-                Log::error('❌ 파일 없음', [
+                Log::error('파일 없음', [
                     'has_file' => $request->hasFile('file'),
                     'all_files' => $request->allFiles(),
                 ]);
@@ -1094,7 +1094,7 @@ class StoreManagementController extends Controller
                     'file' => 'required|file|mimes:xlsx,xls,csv|max:10240', // CSV도 추가, 최대 10MB
                 ]);
             } catch (\Illuminate\Validation\ValidationException $e) {
-                Log::error('❌ 파일 검증 실패', [
+                Log::error('파일 검증 실패', [
                     'errors' => $e->errors(),
                 ]);
                 return response()->json([
@@ -1104,7 +1104,7 @@ class StoreManagementController extends Controller
             }
 
             $file = $request->file('file');
-            Log::info('✅ 파일 업로드 확인', [
+            Log::info('파일 업로드 확인', [
                 'filename' => $file->getClientOriginalName(),
                 'size' => $file->getSize(),
                 'mime_type' => $file->getMimeType(),
@@ -1113,13 +1113,13 @@ class StoreManagementController extends Controller
 
             // 파일을 임시 위치에 저장
             $filePath = $file->getRealPath();
-            Log::info('📁 파일 경로', ['path' => $filePath, 'exists' => file_exists($filePath)]);
+            Log::info('파일 경로', ['path' => $filePath, 'exists' => file_exists($filePath)]);
 
             // Import 처리
-            Log::info('🚀 Import 처리 시작');
+            Log::info('Import 처리 시작');
             $import = new StoresBulkImport($filePath);
             $import->processAllSheets();
-            Log::info('✅ Import 처리 완료');
+            Log::info('Import 처리 완료');
 
             $results = $import->getResults();
             $errors = $import->getErrors();
@@ -1159,7 +1159,7 @@ class StoreManagementController extends Controller
             ]);
 
         } catch (\Illuminate\Database\QueryException $e) {
-            Log::error('❌ 데이터베이스 오류', [
+            Log::error('데이터베이스 오류', [
                 'error' => $e->getMessage(),
                 'sql' => $e->getSql() ?? 'N/A',
                 'bindings' => $e->getBindings() ?? [],
@@ -1173,7 +1173,7 @@ class StoreManagementController extends Controller
             ], 500);
 
         } catch (\Exception $e) {
-            Log::error('❌ 매장 대량 생성 실패', [
+            Log::error('매장 대량 생성 실패', [
                 'error' => $e->getMessage(),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
